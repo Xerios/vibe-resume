@@ -4,12 +4,20 @@
  */
 
 export const KEYS = {
-	snapshot: 'cv-editor:snapshot:v1',
+	/** Pre-multi-file snapshot key; read once at startup to migrate into the file registry. */
+	legacySnapshot: 'cv-editor:snapshot:v1',
+	files: 'cv-editor:files:v1',
+	activeFile: 'cv-editor:active-file',
 	theme: 'cv-theme',
 	editorWidth: 'cv-editor:width',
 	historyOpen: 'cv-editor:history-open',
 	sourceHidden: 'cv-editor:source-hidden'
 };
+
+/** @param {string} fileId */
+export function snapshotKey(fileId) {
+	return `cv-editor:snapshot:v1:${fileId}`;
+}
 
 /** @param {Uint8Array} bytes */
 export function bytesToBase64(bytes) {
@@ -69,4 +77,18 @@ export function formatBytes(bytes) {
 	if (bytes < 1024) return `${bytes} B`;
 	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
 	return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+/**
+ * @param {number | null} epochMs
+ * @param {number} [nowMs]
+ */
+export function relativeTime(epochMs, nowMs = Date.now()) {
+	if (!epochMs) return 'unknown time';
+	const secs = Math.max(0, Math.round((nowMs - epochMs) / 1000));
+	if (secs < 60) return 'just now';
+	if (secs < 3600) return `${Math.floor(secs / 60)} min ago`;
+	if (secs < 86_400) return `${Math.floor(secs / 3600)} h ago`;
+	if (secs < 86_400 * 30) return `${Math.floor(secs / 86_400)} d ago`;
+	return new Date(epochMs).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }

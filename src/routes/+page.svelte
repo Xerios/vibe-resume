@@ -1,15 +1,21 @@
 <script>
 	import { onMount, tick } from 'svelte';
 	import HistoryPanel from '$lib/components/HistoryPanel.svelte';
+	import TabBar from '$lib/components/TabBar.svelte';
 	import Toolbar from '$lib/components/Toolbar.svelte';
+	import TrashPanel from '$lib/components/TrashPanel.svelte';
 	import YamlEditor from '$lib/components/YamlEditor.svelte';
 	import { CvDoc } from '$lib/cv/doc.svelte.js';
+	import { FileManager } from '$lib/cv/files.svelte.js';
 	import { buildCV, parseCv } from '$lib/cv/render.js';
 	import { KEYS, read, write } from '$lib/cv/storage.js';
 
 	const PARSE_DEBOUNCE_MS = 250;
 
 	const cv = new CvDoc();
+	const files = new FileManager();
+	/** Which document `parsed` reflects — used to bypass the debounce when a tab switch swaps it out from under us. */
+	let lastParsedDocId = -1;
 
 	/** Last successfully parsed CV. Kept on a parse error so the preview doesn't blank. */
 	let parsed = $state(/** @type {any} */ (null));
@@ -27,6 +33,7 @@
 	let dragging = false;
 	/** @type {ReturnType<typeof setTimeout> | undefined} */
 	let toastTimer;
+	let trashOpen = $state(false);
 
 	const previewHtml = $derived.by(() => {
 		if (!parsed) return '';
@@ -47,8 +54,9 @@
 	});
 
 	onMount(() => {
+		files.init();
 		cv.bindEditor((text) => editor?.replaceAll(text));
-		cv.init();
+		cv.init(/** @type {string} */ (files.activeId));
 
 		const flush = () => cv.flush();
 		const onVisibility = () => {
@@ -72,9 +80,13 @@
 	// step with the editor in both directions, so nothing here watches keystrokes.
 	$effect(() => {
 		const text = cv.yaml;
+		const docId = cv.docId;
 		if (!text) return;
-		if (!parsed) {
-			reparse(text); // first paint shouldn't wait on the debounce
+		if (!parsed || docId !== lastParsedDocId) {
+			// First paint, and switching to a different document (tab switch, reset,
+			// clear history) shouldn't wait on the debounce meant for keystrokes.
+			lastParsedDocId = docId;
+			reparse(text);
 			return;
 		}
 		const id = setTimeout(() => reparse(text), PARSE_DEBOUNCE_MS);
@@ -136,6 +148,63 @@
 			return;
 		}
 		window.print();
+	}
+
+	/** @param {string} id */
+	function selectTab(id) {
+		if (id === files.activeId) return;
+		files.switchTo(id);
+		cv.switchTo(id);
+	}
+
+	function duplicateTab() {
+		cv.flush(); // capture the latest edits before copying the stored snapshot
+		const id = files.duplicate(/** @type {string} */ (files.activeId));
+		cv.switchTo(id);
+		toast('Tab duplicated');
+	}
+
+	/** @param {string} id */
+	function closeTab(id) {
+		const closingActive = id === files.activeId;
+		const name = files.files.find((f) => f.id === id)?.name ?? 'File';
+		const nextId = files.trash(id);
+		if (closingActive) cv.switchTo(nextId);
+		toast(`Moved “${name}” to trash`);
+	}
+
+	/**
+	 * @param {string} id
+	 * @param {string} name
+	 */
+	function renameTab(id, name) {
+		files.rename(id, name);
+	}
+
+	function toggleTrash() {
+		trashOpen = !trashOpen;
+	}
+
+	/** @param {string} id */
+	function restoreTab(id) {
+		files.restore(id);
+		cv.switchTo(id);
+		toast('Restored from trash');
+	}
+
+	/** @param {string} id */
+	function purgeTab(id) {
+		if (!confirm('Delete this file forever? This cannot be undone.')) return;
+		files.purge(id);
+		toast('File deleted forever');
+	}
+
+	function emptyTrash() {
+		if (!files.trashed.length) return;
+		if (!confirm(`Permanently delete ${files.trashed.length} file(s) from trash? This cannot be undone.`))
+			return;
+		for (const f of files.trashed) files.purge(f.id);
+		toast('Trash emptied');
 	}
 
 	/** @param {string} msg */
@@ -209,13 +278,27 @@
 		onExport={exportPDF}
 	/>
 
+	<TabBar
+		{files}
+		onSelect={selectTab}
+		onDuplicate={duplicateTab}
+		onClose={closeTab}
+		onRename={renameTab}
+		{trashOpen}
+		onToggleTrash={toggleTrash}
+	/>
+
+	{#if trashOpen}
+		<TrashPanel {files} onRestore={restoreTab} onPurge={purgeTab} onEmpty={emptyTrash} onClose={toggleTrash} />
+	{/if}
+
 	<div id="split" bind:this={split}>
 		<div id="editor-pane" class:hidden={sourceHidden} style:width={sourceHidden ? undefined : editorWidth}>
 			<div id="editor-header">
 				<span class="editor-badge" class:readonly={cv.isViewingHistory}>
 					{cv.isViewingHistory ? 'Read only' : 'YAML'}
 				</span>
-				<span class="editor-file">cv.yaml</span>
+				<span class="editor-file">{files.active?.name ?? 'cv.yaml'}</span>
 			</div>
 			{#if cv.ready}
 				<!-- Re-keyed when the document is swapped (history cleared, or another

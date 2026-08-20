@@ -169,6 +169,267 @@ body {
 	line-height: 1.5;
 }
 
+/* ── Tab bar ──────────────────────────────────── */
+#tabbar {
+	flex-shrink: 0;
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	height: 34px;
+	padding: 0 10px;
+	background: var(--editor-chrome);
+	border-bottom: 1px solid var(--line);
+	overflow-x: auto;
+	z-index: 9;
+}
+
+#tabs {
+	display: flex;
+	align-items: center;
+	gap: 3px;
+	min-width: 0;
+}
+
+.tab {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	gap: 1px;
+	background: none;
+	border: 1.5px solid transparent;
+	border-radius: 5px;
+	transition:
+		background 0.12s,
+		border-color 0.12s;
+}
+
+.tab:hover {
+	background: var(--accent-wash);
+}
+
+.tab.active {
+	background: var(--paper);
+	border-color: var(--line);
+}
+
+.tab-select {
+	display: block;
+	max-width: 150px;
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-family: var(--mono);
+	font-size: 10.5px;
+	color: var(--muted);
+	padding: 6px 4px 6px 9px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.tab.active .tab-select {
+	color: var(--accent-deep);
+	font-weight: 600;
+}
+
+.tab-rename {
+	max-width: 150px;
+	font-family: var(--mono);
+	font-size: 10.5px;
+	color: var(--ink);
+	background: var(--paper);
+	border: 1px solid var(--accent);
+	border-radius: 3px;
+	margin: 3px 4px 3px 9px;
+	padding: 3px 5px;
+}
+
+.tab-rename:focus {
+	outline: none;
+}
+
+.tab-close {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 16px;
+	height: 16px;
+	margin-right: 6px;
+	background: none;
+	border: none;
+	border-radius: 3px;
+	cursor: pointer;
+	color: var(--faint);
+	font-size: 13px;
+	line-height: 1;
+	padding: 0;
+}
+
+.tab-close:hover {
+	background: var(--line);
+	color: #b91c1c;
+}
+
+#tab-add {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	background: none;
+	border: 1.5px dashed var(--line);
+	border-radius: 5px;
+	cursor: pointer;
+	color: var(--muted);
+	padding: 0;
+	margin-left: 2px;
+	transition:
+		border-color 0.13s,
+		color 0.13s;
+}
+
+#tab-add:hover {
+	border-color: var(--accent);
+	color: var(--accent-deep);
+	border-style: solid;
+}
+
+/* ── Trash panel ──────────────────────────────── */
+#trash-panel {
+	position: fixed;
+	top: 82px;
+	right: 16px;
+	width: 280px;
+	max-height: 60vh;
+	display: flex;
+	flex-direction: column;
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+	z-index: 100;
+	overflow: hidden;
+}
+
+.trash-head {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 12px;
+	border-bottom: 1px solid var(--line);
+	font-family: var(--mono);
+	font-size: 9.5px;
+	font-weight: 600;
+	letter-spacing: 1.8px;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+
+.trash-list {
+	flex: 1;
+	overflow-y: auto;
+	min-height: 0;
+	margin: 0;
+	padding: 4px;
+	list-style: none;
+}
+
+.trash-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 6px 8px;
+	border-radius: 5px;
+}
+
+.trash-row:hover {
+	background: var(--accent-wash);
+}
+
+.trash-info {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.trash-name {
+	font-size: 11.5px;
+	font-weight: 600;
+	color: var(--ink);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.trash-time {
+	font-family: var(--mono);
+	font-size: 9px;
+	color: var(--faint);
+}
+
+.trash-actions {
+	flex-shrink: 0;
+	display: flex;
+	gap: 4px;
+}
+
+.trash-purge {
+	background: none;
+	border: 1.5px solid var(--line);
+	border-radius: 5px;
+	cursor: pointer;
+	font-family: var(--mono);
+	font-size: 10px;
+	font-weight: 600;
+	color: var(--faint);
+	padding: 4px 8px;
+	transition:
+		border-color 0.13s,
+		color 0.13s;
+}
+
+.trash-purge:hover {
+	border-color: #b91c1c;
+	color: #b91c1c;
+}
+
+.trash-empty {
+	font-family: var(--mono);
+	font-size: 10.5px;
+	color: var(--faint);
+	padding: 14px 8px;
+	line-height: 1.6;
+}
+
+.trash-foot {
+	flex-shrink: 0;
+	display: flex;
+	justify-content: flex-end;
+	padding: 6px 10px;
+	border-top: 1px solid var(--line);
+}
+
+.trash-foot button {
+	background: none;
+	border: none;
+	padding: 0;
+	cursor: pointer;
+	font-family: var(--mono);
+	font-size: 9.5px;
+	color: var(--faint);
+	text-decoration: underline;
+}
+
+.trash-foot button:hover {
+	color: #b91c1c;
+}
+
 /* ── Split ────────────────────────────────────── */
 #split {
 	flex: 1;
@@ -685,6 +946,9 @@ body.resizing #preview-pane {
 body,
 .sheet,
 #toolbar,
+#tabbar,
+.tab,
+#trash-panel,
 #editor-pane,
 #editor-header,
 #preview-pane,

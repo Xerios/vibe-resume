@@ -1,14 +1,12 @@
-/**
- * The document the editor starts from on a first visit (and what "Reset" restores).
- *
- * Single-quote only where necessary:
- *   · strings starting with ** or [ (YAML special first chars)
- *   · strings containing ": " (ambiguous key separator)
- *   · strings containing embedded " (e.g. the "Sexy Undo" bullet)
- *   · phone number starting with +
- * Links use standard Markdown: [text](url). Everything else is bare / unquoted.
- */
-export const DEFAULT_YAML = `header:
+# The document the editor starts from on a first visit (and what "Reset" restores).
+#
+# Single-quote only where necessary:
+#   · strings starting with ** or [ (YAML special first chars)
+#   · strings containing ": " (ambiguous key separator)
+#   · strings containing embedded " (e.g. the "Sexy Undo" bullet)
+#   · phone number starting with +
+# Links use standard Markdown: [text](url). Everything else is bare / unquoted.
+header:
   name: John Doe
   role: Senior Full-Stack Engineer · 10+ years
   contact:
@@ -101,4 +99,3 @@ sections:
       - name: "[cli-helper](https://github.com/github/cli-helper)"
         stars: ★ 45
         desc: Command-line tool for scaffolding projects
-`;

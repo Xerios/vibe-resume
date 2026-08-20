@@ -3,8 +3,8 @@ import { LoroDoc, UndoManager } from 'loro-crdt/web';
 // `loro-crdt/web` re-exports everything but the default init function, so pull it
 // straight from the wasm-bindgen module — it is the same instance either way.
 import initWasm from 'loro-crdt/web/loro_wasm.js';
-import { DEFAULT_YAML } from './default-cv.js';
-import { KEYS, base64ToBytes, bytesToBase64, read, remove, write } from './storage.js';
+import DEFAULT_YAML from './default-cv.yaml?raw';
+import { base64ToBytes, bytesToBase64, read, remove, snapshotKey, write } from './storage.js';
 
 const TEXT_ID = 'yaml';
 const TAGS_ID = 'checkpoints';
@@ -101,12 +101,29 @@ export class CvDoc {
 	 * the history, and merging would splice two unrelated documents together.
 	 */
 	#epoch = newEpoch();
+	/** Which file's storage key this instance is currently reading and writing. */
+	#fileId = '';
 
-	async init() {
+	/** @param {string} fileId */
+	async init(fileId) {
 		wasmReady ??= initWasm();
 		await wasmReady;
+		this.#fileId = fileId;
 		this.#adopt(this.#load());
 		this.ready = true;
+	}
+
+	/**
+	 * Save the current file and load a different one. The editor is re-keyed
+	 * (via `docId`) since this swaps in a whole new LoroDoc instance.
+	 * @param {string} fileId
+	 */
+	switchTo(fileId) {
+		if (!this.#doc || fileId === this.#fileId) return;
+		this.flush();
+		this.#unsubscribeAll();
+		this.#fileId = fileId;
+		this.#adopt(this.#load());
 	}
 
 	/**
@@ -202,7 +219,7 @@ export class CvDoc {
 		this.viewLatest();
 		const text = this.#text();
 		this.#unsubscribeAll();
-		remove(KEYS.snapshot);
+		remove(snapshotKey(this.#fileId));
 		this.#epoch = newEpoch();
 		this.#adopt(this.#seed(text));
 	}
@@ -308,7 +325,7 @@ export class CvDoc {
 
 	/** Restore the stored snapshot, or start a fresh document from the template. */
 	#load() {
-		const stored = read(KEYS.snapshot);
+		const stored = read(snapshotKey(this.#fileId));
 		if (stored) {
 			const { epoch, snapshot } = split(stored);
 			try {
@@ -373,7 +390,7 @@ export class CvDoc {
 		// A detached document would serialise the version being previewed as head.
 		if (!this.#doc || this.#doc.isDetached()) return;
 		const bytes = this.#doc.export({ mode: 'snapshot' });
-		if (write(KEYS.snapshot, `${this.#epoch}:${bytesToBase64(bytes)}`)) {
+		if (write(snapshotKey(this.#fileId), `${this.#epoch}:${bytesToBase64(bytes)}`)) {
 			this.snapshotBytes = bytes.length;
 			this.savedAt = new Date();
 			this.saveError = null;
@@ -384,7 +401,7 @@ export class CvDoc {
 
 	/** Another tab wrote a snapshot. Merge it, or take it wholesale after a clear. */
 	#onStorage = (/** @type {StorageEvent} */ e) => {
-		if (e.key !== KEYS.snapshot || !e.newValue || !this.#doc) return;
+		if (e.key !== snapshotKey(this.#fileId) || !e.newValue || !this.#doc) return;
 		const { epoch, snapshot } = split(e.newValue);
 		try {
 			if (epoch === this.#epoch) {
