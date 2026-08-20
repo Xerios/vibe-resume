@@ -5,7 +5,9 @@
 	import { HighlightStyle, indentUnit, syntaxHighlighting } from '@codemirror/language';
 	import { Compartment, EditorState } from '@codemirror/state';
 	import {
+		Decoration,
 		EditorView,
+		WidgetType,
 		drawSelection,
 		highlightActiveLine,
 		highlightActiveLineGutter,
@@ -18,13 +20,51 @@
 	let {
 		/** Extensions from the Loro binding — document sync and undo/redo live here. */
 		loroExtensions,
-		readOnly = false
+		readOnly = false,
+		/** What the version on screen changed, highlighted inline. @type {import('$lib/cv/doc.svelte.js').VersionDiff | null} */
+		diff = null
 	} = $props();
 
 	/** @type {HTMLDivElement} */
 	let host;
 	let view = $state(/** @type {EditorView | null} */ (null));
 	const editable = new Compartment();
+	const diffHighlight = new Compartment();
+
+	class RemovedText extends WidgetType {
+		/** @param {string} text */
+		constructor(text) {
+			super();
+			this.text = text;
+		}
+		/** @param {RemovedText} other */
+		eq(other) {
+			return other.text === this.text;
+		}
+		toDOM() {
+			const span = document.createElement('span');
+			span.className = 'cm-diff-removed';
+			span.textContent = this.text;
+			return span;
+		}
+		ignoreEvent() {
+			return true;
+		}
+	}
+
+	/** @param {import('$lib/cv/doc.svelte.js').VersionDiff | null} d */
+	function diffDecorations(d) {
+		if (!d || (d.added.length === 0 && d.removed.length === 0)) return Decoration.none;
+		const ranges = [
+			...d.added
+				.filter((r) => r.to > r.from)
+				.map((r) => Decoration.mark({ class: 'cm-diff-added' }).range(r.from, r.to)),
+			...d.removed.map((r) =>
+				Decoration.widget({ widget: new RemovedText(r.text), side: -1 }).range(r.at)
+			)
+		];
+		return Decoration.set(ranges, true);
+	}
 
 	/**
 	 * Colours come from CSS custom properties so the one highlight style serves
@@ -62,6 +102,7 @@
 					// high precedence, and two undo stacks would fight over it.
 					keymap.of([...standardKeymap, indentWithTab]),
 					editable.of(editableExtensions(readOnly)),
+					diffHighlight.of(EditorView.decorations.of(diffDecorations(diff))),
 					loroExtensions
 				]
 			})
@@ -76,6 +117,12 @@
 
 	$effect(() => {
 		view?.dispatch({ effects: editable.reconfigure(editableExtensions(readOnly)) });
+	});
+
+	$effect(() => {
+		view?.dispatch({
+			effects: diffHighlight.reconfigure(EditorView.decorations.of(diffDecorations(diff)))
+		});
 	});
 
 	/** @param {boolean} locked */

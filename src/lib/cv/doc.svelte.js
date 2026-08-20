@@ -38,6 +38,15 @@ const cvText = (doc) => doc.getText(TEXT_ID);
  * @property {number} timestamp      unix seconds, 0 when not recorded
  * @property {string} message
  * @property {number} length         number of ops in the change
+ * @property {import('loro-crdt/web').OpId[]} deps  causal parents — the version just before this change
+ */
+
+/**
+ * What a change added or removed, in terms of the text as displayed while
+ * previewing it (see `CvDoc#diff`).
+ * @typedef {object} VersionDiff
+ * @property {{from: number, to: number}[]} added      ranges, in the viewed text, that this change inserted
+ * @property {{at: number, text: string}[]} removed     text this change deleted, positioned where it used to sit
  */
 
 /**
@@ -56,6 +65,8 @@ export class CvDoc {
 	history = $state([]);
 	/** Key of the entry being previewed, or null when we're on the latest version. */
 	viewingKey = $state(/** @type {string | null} */ (null));
+	/** What the previewed entry changed, for highlighting in the editor. @type {VersionDiff | null} */
+	diff = $state(null);
 	/** @type {Date | null} */
 	savedAt = $state(null);
 	/** @type {string | null} */
@@ -158,6 +169,7 @@ export class CvDoc {
 		this.#doc.checkout([frontier(entry)]);
 		this.viewingKey = entry.key;
 		this.yaml = this.#text();
+		this.diff = this.#diffFor(entry);
 	}
 
 	/** Return to the newest version and re-enable editing. */
@@ -165,6 +177,7 @@ export class CvDoc {
 		if (!this.#doc) return;
 		if (this.#doc.isDetached()) this.#doc.checkoutToLatest();
 		this.viewingKey = null;
+		this.diff = null;
 		this.yaml = this.#text();
 	}
 
@@ -198,6 +211,42 @@ export class CvDoc {
 
 	#text() {
 		return this.#doc ? cvText(this.#doc).toString() : '';
+	}
+
+	/**
+	 * What a change did to the text, expressed as positions in the text as it
+	 * reads *after* the change (which is what's on screen while previewing it).
+	 * Deleted text no longer has a position of its own, so it's anchored to the
+	 * point it once sat at and carries its own content along.
+	 * @param {HistoryEntry} entry
+	 * @returns {VersionDiff}
+	 */
+	#diffFor(entry) {
+		const empty = { added: [], removed: [] };
+		if (!this.#doc) return empty;
+		const before = this.#doc.forkAt(entry.deps).getText(TEXT_ID).toString();
+		const found = this.#doc
+			.diff(entry.deps, [frontier(entry)], false)
+			.find(([, d]) => d.type === 'text');
+		if (!found) return empty;
+		const textDiff = /** @type {import('loro-crdt/web').TextDiff} */ (found[1]);
+		/** @type {VersionDiff} */
+		const result = { added: [], removed: [] };
+		let fromPos = 0;
+		let toPos = 0;
+		for (const op of textDiff.diff) {
+			if (op.retain != null) {
+				fromPos += op.retain;
+				toPos += op.retain;
+			} else if (op.insert) {
+				result.added.push({ from: toPos, to: toPos + op.insert.length });
+				toPos += op.insert.length;
+			} else if (op.delete != null) {
+				result.removed.push({ at: toPos, text: before.slice(fromPos, fromPos + op.delete) });
+				fromPos += op.delete;
+			}
+		}
+		return result;
 	}
 
 	/**
@@ -243,6 +292,7 @@ export class CvDoc {
 
 		this.extensions = LoroExtensions(doc, undefined, this.#undo, cvText);
 		this.viewingKey = null;
+		this.diff = null;
 		this.yaml = this.#text();
 		this.#refreshHistory();
 		this.docId++;
@@ -301,7 +351,8 @@ export class CvDoc {
 					lamport: c.lamport + c.length - 1,
 					timestamp: c.timestamp ?? 0,
 					message: c.message || 'Edit',
-					length: c.length
+					length: c.length,
+					deps: c.deps
 				});
 			}
 		}

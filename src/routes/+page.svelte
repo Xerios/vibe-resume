@@ -217,6 +217,7 @@
 						bind:this={editor}
 						loroExtensions={cv.extensions}
 						readOnly={cv.isViewingHistory}
+						diff={cv.diff}
 					/>
 				{/key}
 			{:else}

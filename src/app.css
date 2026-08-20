@@ -28,6 +28,9 @@
 	--cm-punct: #5f6f6c;
 	--cm-anchor: #9a5b00;
 	--cm-invalid: #b91c1c;
+	--cm-diff-add-bg: #cdedd3;
+	--cm-diff-del-bg: #f6d3d3;
+	--cm-diff-del-text: #7a2b2b;
 	--mono: 'SFMono-Regular', ui-monospace, 'JetBrains Mono', 'Menlo', monospace;
 	--sans: 'Inter', 'Segoe UI', -apple-system, system-ui, Roboto, Helvetica, Arial, sans-serif;
 }
@@ -297,6 +300,20 @@ body {
 /* The editor is read-only while a past version is on screen. */
 .cm-editor:not(.cm-focused) .cm-activeLine {
 	background: transparent;
+}
+
+/* Highlights what a previewed version changed, relative to just before it. */
+.cm-diff-added {
+	background: var(--cm-diff-add-bg);
+	border-radius: 2px;
+}
+
+.cm-diff-removed {
+	background: var(--cm-diff-del-bg);
+	color: var(--cm-diff-del-text);
+	text-decoration: line-through;
+	border-radius: 2px;
+	white-space: pre-wrap;
 }
 
 /* ── Divider ──────────────────────────────────── */
@@ -609,6 +626,9 @@ body.resizing #preview-pane {
 	--cm-punct: #7a9491;
 	--cm-anchor: #e8a84a;
 	--cm-invalid: #f87171;
+	--cm-diff-add-bg: #163a24;
+	--cm-diff-del-bg: #3a1616;
+	--cm-diff-del-text: #e89a9a;
 }
 
 /* Hardcoded colours that don't inherit from vars */
