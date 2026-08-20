@@ -1,0 +1,104 @@
+/**
+ * The document the editor starts from on a first visit (and what "Reset" restores).
+ *
+ * Single-quote only where necessary:
+ *   · strings starting with ** or [ (YAML special first chars)
+ *   · strings containing ": " (ambiguous key separator)
+ *   · strings containing embedded " (e.g. the "Sexy Undo" bullet)
+ *   · phone number starting with +
+ * Links use standard Markdown: [text](url). Everything else is bare / unquoted.
+ */
+export const DEFAULT_YAML = `header:
+  name: John Doe
+  role: Senior Full-Stack Engineer · 10+ years
+  contact:
+    - Springfield, USA
+    - '+1 555 010 1234'
+    - "[github.com/example](https://github.com/example)"
+    - "[linkedin.com/in/example](https://linkedin.com/in/example)"
+    - "[example.dev](https://example.dev)"
+sections:
+  - type: summary
+    title: Summary
+    paragraphs:
+      - Full-stack engineer with **10+ years** of experience building web applications end to end. Comfortable across frontend, backend, and infrastructure, with a track record of shipping products from prototype to production. I care about clean, maintainable code and enjoy mentoring other developers.
+
+  - type: skills
+    title: Core Skills
+    blocks:
+      - title: Full-Stack Core
+        rows:
+          - tier: Expert
+            text: TypeScript/JavaScript (10+ yrs), Node.js, HTML5, CSS/Sass
+          - text: React, Svelte/SvelteKit; Express, Fastify, NestJS
+          - text: REST, GraphQL, WebSockets; SPA, SSR
+      - title: Infra & DevOps
+        rows:
+          - text: Docker, Kubernetes, Linux, AWS, GCP
+          - text: GitHub Actions, CI/CD pipelines, Terraform
+      - title: Databases & Data
+        rows:
+          - text: PostgreSQL, MongoDB, Redis, ElasticSearch
+          - text: 'ORM: Prisma, TypeORM · Message queues: RabbitMQ, Kafka'
+      - title: Testing & Tooling
+        rows:
+          - text: Jest, Vitest, Playwright, Cypress
+          - text: Vite, Webpack, ESLint, Prettier
+      - title: Other
+        rows:
+          - text: 'Analytics: Google Analytics, Mixpanel · Python, Go'
+          - text: English C2 · Spanish B2
+
+  - type: experience
+    title: Experience
+    items:
+      - subtype: job
+        title: Senior Full-Stack Engineer
+        company: Acme Corp
+        dates: 03/2020 – Present
+        sub: B2B SaaS platform — Springfield (remote)
+        bullets:
+          - Led the development of a customer-facing dashboard used by **thousands of businesses**, from initial design through production rollout.
+          - Migrated a legacy monolith to a **modular service architecture**, improving deploy frequency and reducing incident response time.
+          - Mentored a team of **4 junior engineers**, establishing code review practices and onboarding documentation.
+          - Built and maintained CI/CD pipelines with GitHub Actions, cutting release time from days to hours.
+        stack: React, Node.js, TypeScript, PostgreSQL, Docker, AWS
+
+      - subtype: job
+        title: Full-Stack Developer
+        company: Globex Inc
+        dates: 06/2016 – 02/2020
+        sub: E-commerce platform — Shelbyville
+        bullets:
+          - Built and shipped new features for a high-traffic e-commerce site serving **millions of monthly visitors**.
+          - Optimized checkout flow, improving conversion rate through incremental A/B tested changes.
+          - Worked closely with design and product teams to deliver a **responsive redesign** across web and mobile.
+        stack: Vue.js, Node.js, MySQL, Redis
+
+      - subtype: job
+        title: Junior Developer
+        company: Initech
+        dates: 07/2014 – 05/2016
+        sub: Internal tools team — Capital City
+        bullets:
+          - Developed internal reporting tools used across multiple departments.
+          - Automated manual data-entry workflows, saving the team several hours per week.
+        stack: PHP, jQuery, MySQL
+
+      - subtype: earlier
+        title: Earlier Roles
+        items:
+          - '**Umbrella Startups** — Freelance developer; built small business websites and internal tools. _WordPress, PHP._'
+          - '**University Tech Club** — Volunteer developer; maintained club website and event registration system. _HTML, CSS, JavaScript._'
+
+  - type: oss
+    title: Open Source
+    hasHeader: false
+    projects:
+      - name: "[example-toolkit](https://github.com/github/example-toolkit)"
+        stars: ★ 120
+        desc: Utility library for common frontend patterns
+      - name: "[cli-helper](https://github.com/github/cli-helper)"
+        stars: ★ 45
+        desc: Command-line tool for scaffolding projects
+`;

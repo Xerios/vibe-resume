@@ -1,0 +1,29 @@
+diff --git a/dist/undo.js b/dist/undo.js
+index e29854abbaaccc0457a06f9fa959b559e4b20918..4f5f713320fc86e783c45facdd2cc083fbbf038b 100644
+--- a/dist/undo.js
++++ b/dist/undo.js
+@@ -11,14 +11,18 @@ export const undoManagerStateField = StateField.define({
+     update(value, transaction) {
+         for (const effect of transaction.effects) {
+             if (effect.is(undoEffect)) {
+-                if (value && value.canUndo()) {
+-                    value.undo();
+-                }
++                queueMicrotask(() => {
++                    if (value?.canUndo()) {
++                        value.undo();
++                    }
++                });
+             }
+             else if (effect.is(redoEffect)) {
+-                if (value && value.canRedo()) {
+-                    value.redo();
+-                }
++                queueMicrotask(() => {
++                    if (value?.canRedo()) {
++                        value.redo();
++                    }
++                });
+             }
+         }
+         return value;

@@ -1,2 +1,4 @@
 allowBuilds:
   esbuild: true
+patchedDependencies:
+  loro-codemirror: patches/loro-codemirror.patch
