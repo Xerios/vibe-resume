@@ -53,6 +53,13 @@
 		return new Date(entry.timestamp * 1000).toLocaleString();
 	}
 
+	/** @param {import('$lib/cv/doc.svelte.js').HistoryEntry} entry */
+	function tooltip(entry) {
+		const when = exactTime(entry);
+		const ops = entry.key === latestKey ? 'latest' : `${entry.length} ops`;
+		return when ? `${when} — ${ops}` : ops;
+	}
+
 	function clearHistory() {
 		if (!confirm('Delete every past version? The current text is kept, the rest is gone.')) return;
 		doc.clearHistory();
@@ -86,14 +93,11 @@
 					class="hist-item"
 					class:active={isActive}
 					class:latest={isLatest}
-					title={exactTime(entry)}
+					title={tooltip(entry)}
 					onclick={() => select(entry)}
 				>
-					<div class="hist-msg">{entry.message}</div>
-					<div class="hist-meta">
-						<span>{ago(entry)}</span>
-						<span>{isLatest ? 'latest' : `${entry.length} ops`}</span>
-					</div>
+					<span class="hist-msg">{entry.message}</span>
+					<span class="hist-time">{ago(entry)}</span>
 				</button>
 				{#if isActive && !isLatest}
 					<button class="hist-restore" onclick={() => doc.restore(entry)}>

@@ -16,6 +16,7 @@
 	let parseError = $state(/** @type {string | null} */ (null));
 
 	let historyOpen = $state(read(KEYS.historyOpen) !== 'false');
+	let sourceHidden = $state(read(KEYS.sourceHidden) === 'true');
 	let editorWidth = $state(read(KEYS.editorWidth));
 	let toastMsg = $state('');
 	let toastOn = $state(false);
@@ -112,6 +113,11 @@
 		await tick();
 	}
 
+	function toggleSource() {
+		sourceHidden = !sourceHidden;
+		write(KEYS.sourceHidden, String(sourceHidden));
+	}
+
 	function resetYaml() {
 		cv.reset();
 		toast('Reset to template');
@@ -194,15 +200,17 @@
 		{saveLabel}
 		{historyOpen}
 		historyCount={cv.history.length}
+		{sourceHidden}
 		onToggleTheme={toggleTheme}
 		onToggleHistory={toggleHistory}
+		onToggleSource={toggleSource}
 		onReset={resetYaml}
 		onCopy={copyYaml}
 		onExport={exportPDF}
 	/>
 
 	<div id="split" bind:this={split}>
-		<div id="editor-pane" style:width={editorWidth}>
+		<div id="editor-pane" class:hidden={sourceHidden} style:width={sourceHidden ? undefined : editorWidth}>
 			<div id="editor-header">
 				<span class="editor-badge" class:readonly={cv.isViewingHistory}>
 					{cv.isViewingHistory ? 'Read only' : 'YAML'}
@@ -228,6 +236,7 @@
 		<button
 			type="button"
 			id="divider"
+			class:hidden={sourceHidden}
 			aria-label="Resize editor pane — use the arrow keys"
 			onpointerdown={startDrag}
 			onpointermove={onDrag}

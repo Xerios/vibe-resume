@@ -7,7 +7,8 @@ export const KEYS = {
 	snapshot: 'cv-editor:snapshot:v1',
 	theme: 'cv-theme',
 	editorWidth: 'cv-editor:width',
-	historyOpen: 'cv-editor:history-open'
+	historyOpen: 'cv-editor:history-open',
+	sourceHidden: 'cv-editor:source-hidden'
 };
 
 /** @param {Uint8Array} bytes */

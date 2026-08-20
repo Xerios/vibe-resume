@@ -5,10 +5,13 @@
 		saveLabel = '',
 		historyOpen = false,
 		historyCount = 0,
+		sourceHidden = false,
 		/** @type {() => void} */
 		onToggleTheme,
 		/** @type {() => void} */
 		onToggleHistory,
+		/** @type {() => void} */
+		onToggleSource,
 		/** @type {() => void} */
 		onReset,
 		/** @type {() => void} */
@@ -79,6 +82,47 @@
 		</svg>
 		History
 		{#if historyCount}<span class="t-count">{historyCount}</span>{/if}
+	</button>
+
+	<button
+		class="t-btn"
+		class:on={sourceHidden}
+		onclick={onToggleSource}
+		title={sourceHidden ? 'Show source' : 'Hide source (preview only)'}
+	>
+		{#if sourceHidden}
+			<svg
+				width="12"
+				height="12"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2.5"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
+				<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+				<path
+					d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"
+				/>
+				<path d="M2 2l20 20" />
+			</svg>
+		{:else}
+			<svg
+				width="12"
+				height="12"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2.5"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
+				<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
+				<circle cx="12" cy="12" r="3" />
+			</svg>
+		{/if}
+		{sourceHidden ? 'Preview only' : 'Source'}
 	</button>
 
 	<button class="t-btn" onclick={onReset} title="Restore the shipped template as a new version">
