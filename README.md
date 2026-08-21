@@ -1,6 +1,6 @@
-# CV Editor
+# Resume Editor
 
-A local-first CV editor: YAML on the left, a print-ready CV on the right. Everything
+A local-first Resume Editor: YAML on the left, a print-ready CV on the right. Everything
 runs in the browser — no network calls, no CDN, no account.
 
 Grown out of `template-artifact.html` (kept in the repo for reference), with three

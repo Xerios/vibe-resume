@@ -1,9 +1,9 @@
 <script>
-	import Icon from '@iconify/svelte';
-	import IconDownload from '@iconify-icons/lucide/download';
-	import IconInstall from '@iconify-icons/lucide/arrow-down-to-line';
-	import StylePicker from './StylePicker.svelte';
-	import { withKey } from './access-keys.js';
+	import Icon from "@iconify/svelte";
+	import IconDownload from "@iconify-icons/lucide/download";
+	import IconInstall from "@iconify-icons/lucide/arrow-down-to-line";
+	import StylePicker from "./StylePicker.svelte";
+	import { withKey } from "./access-keys.js";
 
 	let {
 		/** True only while the browser has an install prompt waiting for us. */
@@ -19,12 +19,12 @@
 		/** @type {() => void} */
 		onExport,
 		/** @type {() => void} */
-		onInstall
+		onInstall,
 	} = $props();
 </script>
 
 <div id="toolbar">
-	<span class="t-label">CV</span>
+	<span class="t-label">Resume - Offline-ready & Local editor</span>
 
 	<div class="t-spacer"></div>
 
@@ -34,7 +34,7 @@
 	<button
 		class="t-btn t-btn-pdf"
 		accesskey="x"
-		title={withKey('Export the current CV as PDF', 'x')}
+		title={withKey("Export the current CV as PDF", "x")}
 		onclick={onExport}
 	>
 		<Icon icon={IconDownload} width="12" height="12" />
@@ -49,7 +49,7 @@
 			class="t-btn"
 			onclick={onInstall}
 			accesskey="i"
-			title={withKey('Install as an app — runs offline', 'i')}
+			title={withKey("Install as an app — runs offline", "i")}
 		>
 			<Icon icon={IconInstall} width="12" height="12" />
 			<span class="t-txt"><u>I</u>nstall</span>

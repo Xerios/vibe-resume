@@ -1,4 +1,4 @@
-# CV Editor
+# Resume Editor
 
 Read `README.md` first — it documents the architecture (Loro CRDT doc, CodeMirror
 binding, version history, CSS layering) in depth. Don't duplicate it here.

@@ -222,7 +222,8 @@
 	 * @param {Event} e
 	 */
 	function srcTarget(e) {
-		const el = e.target instanceof Element ? e.target.closest("[data-src]") : null;
+		const el =
+			e.target instanceof Element ? e.target.closest("[data-src]") : null;
 		if (!el || !hasOwnText(el)) return null;
 		return { el, line: lineForPath(el.getAttribute("data-src")) };
 	}
@@ -350,7 +351,8 @@
 	const hushed = (pane) => performance.now() < quiet[pane];
 
 	/** Whether the preview is still moving under the pointer, tail included. */
-	const previewMoving = () => performance.now() < previewMovedAt + POINTER_SETTLE_MS;
+	const previewMoving = () =>
+		performance.now() < previewMovedAt + POINTER_SETTLE_MS;
 
 	/** The user reached for a pane: it drives from here, and stops being hushed. */
 	const takeOver = (/** @type {"editor" | "preview"} */ pane) => {
@@ -375,7 +377,8 @@
 		anchors = [];
 		byLine = [];
 		if (!previewPane || !cvRoot || !srcLines) return;
-		const origin = previewPane.getBoundingClientRect().top - previewPane.scrollTop;
+		const origin =
+			previewPane.getBoundingClientRect().top - previewPane.scrollTop;
 		/** @type {{ y: number, line: number, el: Element }[]} */
 		const found = [];
 		for (const el of cvRoot.querySelectorAll("[data-src]")) {
@@ -421,7 +424,11 @@
 		}
 		/** @type {number[]} */
 		const out = [];
-		for (let i = tails.length ? tails[tails.length - 1] : -1; i >= 0; i = prev[i])
+		for (
+			let i = tails.length ? tails[tails.length - 1] : -1;
+			i >= 0;
+			i = prev[i]
+		)
 			out.push(i);
 		return out.reverse();
 	}
@@ -472,12 +479,16 @@
 	 */
 	function onPreviewScroll() {
 		previewMovedAt = performance.now();
-		if (scrollMaster !== "preview" || hushed("preview") || !ladderReady()) return;
+		if (scrollMaster !== "preview" || hushed("preview") || !ladderReady())
+			return;
 		hush("editor");
 		const max = previewPane.scrollHeight - previewPane.clientHeight;
 		if (previewPane.scrollTop <= 1) editor?.scrollToEdge("start");
 		else if (previewPane.scrollTop >= max - 1) editor?.scrollToEdge("end");
-		else editor?.scrollToLine(lineAtOffset(previewPane.scrollTop + PREVIEW_TOP_MARGIN));
+		else
+			editor?.scrollToLine(
+				lineAtOffset(previewPane.scrollTop + PREVIEW_TOP_MARGIN),
+			);
 	}
 
 	/** The editor moved — bring what its top line renders to the top of the preview. */
@@ -517,7 +528,8 @@
 		if (!el) return;
 		const box = el.getBoundingClientRect();
 		const pane = previewPane.getBoundingClientRect();
-		if (box.top >= pane.top + PREVIEW_TOP_MARGIN && box.bottom <= pane.bottom) return;
+		if (box.top >= pane.top + PREVIEW_TOP_MARGIN && box.bottom <= pane.bottom)
+			return;
 		hush("preview");
 		previewPane.scrollTop += box.top - pane.top - EDIT_REVEAL_MARGIN;
 	}
@@ -777,7 +789,7 @@
 </script>
 
 <svelte:head>
-	<title>CV Editor</title>
+	<title>Resume Editor</title>
 </svelte:head>
 
 <div id="app">
@@ -957,7 +969,7 @@
 
 	/* Widens the grab target without widening the line. */
 	#divider::after {
-		content: '';
+		content: "";
 		position: absolute;
 		inset: 0 -4px;
 	}
@@ -1001,7 +1013,7 @@
 	}
 
 	/* A tint with no token of its own — the red foreground comes from --danger. */
-	:root[data-theme='dark'] #error-banner {
+	:root[data-theme="dark"] #error-banner {
 		background: #2a0808;
 		border-bottom-color: #5a1818;
 	}
