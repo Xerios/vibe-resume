@@ -299,7 +299,7 @@ table.oss .proj a:hover {
 }
 
 .cv-unknown {
-	color: #b91c1c;
+	color: var(--danger);
 	font-family: var(--mono);
 	font-size: 12px;
 }
@@ -380,6 +380,7 @@ table.oss .proj a:hover {
 
 	/* Force light colours when printing regardless of theme */
 	:root[data-theme='dark'] {
+		--danger: #b91c1c;
 		--ink: #15211f;
 		--muted: #5f6f6c;
 		--faint: #8a9794;

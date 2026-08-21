@@ -10,11 +10,14 @@
 	--accent: #157c75;
 	--accent-deep: #0d4f4a;
 	--accent-wash: #eaf4f2;
+	--on-accent: #fff;
+	--danger: #b91c1c;
 	--line: #dbe6e3;
 	--prompt: #9a5b00;
 	--prompt-bg: #fbf2e2;
 	--paper: #fff;
 	--bg: #eef1f0;
+	--shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.18);
 	--editor-bg: #f6f8f7;
 	--editor-chrome: #eef1f0;
 	--cm-active: #e9efed;
@@ -97,7 +100,7 @@ body {
 }
 
 #status.err {
-	color: #b91c1c;
+	color: var(--danger);
 	background: #fee2e2;
 }
 
@@ -156,7 +159,7 @@ body {
 
 .t-btn-pdf:hover:not(:disabled) {
 	background: var(--accent);
-	color: #fff;
+	color: var(--on-accent);
 	border-color: var(--accent);
 }
 
@@ -165,7 +168,7 @@ body {
 	padding: 0 4px;
 	border-radius: 6px;
 	background: var(--accent);
-	color: #fff;
+	color: var(--on-accent);
 	line-height: 1.5;
 }
 
@@ -269,7 +272,7 @@ body {
 
 .tab-close:hover {
 	background: var(--line);
-	color: #b91c1c;
+	color: var(--danger);
 }
 
 #tab-add {
@@ -309,7 +312,7 @@ body {
 	background: var(--paper);
 	border: 1px solid var(--line);
 	border-radius: 8px;
-	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+	box-shadow: var(--shadow-pop);
 	z-index: 100;
 	overflow: hidden;
 }
@@ -395,8 +398,8 @@ body {
 }
 
 .trash-purge:hover {
-	border-color: #b91c1c;
-	color: #b91c1c;
+	border-color: var(--danger);
+	color: var(--danger);
 }
 
 .trash-empty {
@@ -427,7 +430,7 @@ body {
 }
 
 .trash-foot button:hover {
-	color: #b91c1c;
+	color: var(--danger);
 }
 
 /* ── Style picker ─────────────────────────────── */
@@ -448,7 +451,7 @@ body {
 	background: var(--paper);
 	border: 1px solid var(--line);
 	border-radius: 8px;
-	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+	box-shadow: var(--shadow-pop);
 	z-index: 100;
 }
 
@@ -644,8 +647,13 @@ body {
 }
 
 /* ── CodeMirror 6 ─────────────────────────────── */
-/* CodeMirror injects its base styles at the top of <head>, so these win. */
-.cm-editor {
+/* Every rule goes through #cm-wrap on purpose. CodeMirror's base theme scopes
+   its palette under a generated class on the editor root — `&light .cm-gutters`
+   ships as `.cm-lightXYZ .cm-gutters` — so a bare `.cm-gutters` here loses the
+   cascade on specificity however late the stylesheet loads, and the gutter,
+   active line, caret and selection keep their stock light colours in both
+   themes. One id outranks those two-class selectors for good. */
+#cm-wrap .cm-editor {
 	height: 100%;
 	background: var(--editor-bg);
 	color: var(--ink);
@@ -653,68 +661,68 @@ body {
 	font-size: 12.5px;
 }
 
-.cm-editor.cm-focused {
+#cm-wrap .cm-editor.cm-focused {
 	outline: none;
 }
 
-.cm-scroller {
+#cm-wrap .cm-scroller {
 	font-family: inherit;
 	line-height: 1.6;
 	padding-bottom: 60px;
 	overflow: auto; /* required for a fixed-height editor to scroll */
 }
 
-.cm-content {
+#cm-wrap .cm-content {
 	caret-color: var(--accent);
 }
 
-.cm-gutters {
+#cm-wrap .cm-gutters {
 	background: var(--editor-chrome);
 	border-right: 1px solid var(--line);
 	color: var(--faint);
 }
 
-.cm-lineNumbers .cm-gutterElement {
+#cm-wrap .cm-lineNumbers .cm-gutterElement {
 	padding: 0 6px 0 12px;
 	min-width: 28px;
 }
 
-.cm-activeLine {
+#cm-wrap .cm-activeLine {
 	background: var(--cm-active);
 }
 
-.cm-activeLineGutter {
+#cm-wrap .cm-activeLineGutter {
 	background: var(--cm-active);
 	color: var(--accent-deep);
 }
 
-.cm-cursor,
-.cm-dropCursor {
+#cm-wrap .cm-cursor,
+#cm-wrap .cm-dropCursor {
 	border-left-color: var(--accent);
 	border-left-width: 2px;
 }
 
-.cm-selectionBackground,
-.cm-editor .cm-selectionBackground {
+#cm-wrap .cm-selectionBackground {
 	background: var(--cm-selection);
 }
 
-.cm-editor.cm-focused .cm-selectionBackground {
+/* The focused variant of this one is five classes deep in the base theme. */
+#cm-wrap .cm-editor.cm-focused .cm-selectionBackground {
 	background: var(--cm-selection-focus);
 }
 
 /* The editor is read-only while a past version is on screen. */
-.cm-editor:not(.cm-focused) .cm-activeLine {
+#cm-wrap .cm-editor:not(.cm-focused) .cm-activeLine {
 	background: transparent;
 }
 
 /* Highlights what a previewed version changed, relative to just before it. */
-.cm-diff-added {
+#cm-wrap .cm-diff-added {
 	background: var(--cm-diff-add-bg);
 	border-radius: 2px;
 }
 
-.cm-diff-removed {
+#cm-wrap .cm-diff-removed {
 	background: var(--cm-diff-del-bg);
 	color: var(--cm-diff-del-text);
 	text-decoration: line-through;
@@ -762,7 +770,7 @@ body {
 	top: 0;
 	background: #fff0f0;
 	border-bottom: 1px solid #fecaca;
-	color: #b91c1c;
+	color: var(--danger);
 	font-family: var(--mono);
 	font-size: 11px;
 	padding: 7px 24px;
@@ -922,7 +930,7 @@ body {
 	width: 100%;
 	margin: 2px 0 4px;
 	background: var(--accent);
-	color: #fff;
+	color: var(--on-accent);
 	border: none;
 	border-radius: 4px;
 	cursor: pointer;
@@ -969,7 +977,7 @@ body {
 }
 
 .hist-foot button:hover {
-	color: #b91c1c;
+	color: var(--danger);
 }
 
 /* ── Misc ─────────────────────────────────────── */
@@ -988,7 +996,7 @@ body.resizing #preview-pane {
 	left: 50%;
 	transform: translateX(-50%) translateY(10px);
 	background: var(--accent-deep);
-	color: #fff;
+	color: var(--on-accent);
 	font-family: var(--mono);
 	font-size: 11.5px;
 	padding: 7px 16px;
@@ -1020,11 +1028,16 @@ body.resizing #preview-pane {
 	--accent: #1cbdb2;
 	--accent-deep: #6dd9d3;
 	--accent-wash: #0d2926;
+	/* Ink laid over an accent fill: the dark ramp's accents are light, so white
+	   on them is unreadable — the pairing flips with the theme. */
+	--on-accent: #06201e;
+	--danger: #f87171;
 	--line: #1e302e;
 	--prompt: #e8a84a;
 	--prompt-bg: #231800;
 	--paper: #152320;
 	--bg: #0c1917;
+	--shadow-pop: 0 10px 28px rgba(0, 0, 0, 0.5);
 	--editor-bg: #10201e;
 	--editor-chrome: #0c1917;
 	--cm-active: #16302d;
@@ -1043,25 +1056,19 @@ body.resizing #preview-pane {
 	--cm-diff-del-text: #e89a9a;
 }
 
-/* Hardcoded colours that don't inherit from vars */
+/* Tints with no token of their own — the red foregrounds come from --danger. */
 :root[data-theme='dark'] #status.ok {
 	color: #5dcc80;
 	background: #082210;
 }
 
 :root[data-theme='dark'] #status.err {
-	color: #f87171;
 	background: #2a0808;
 }
 
 :root[data-theme='dark'] #error-banner {
 	background: #2a0808;
 	border-bottom-color: #5a1818;
-	color: #f87171;
-}
-
-:root[data-theme='dark'] .hist-restore {
-	color: #06201e;
 }
 
 /* Theme toggle icon visibility */
