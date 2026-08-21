@@ -21,6 +21,8 @@
 	const PREVIEW_TOP_MARGIN = 16;
 	/** Breathing room above an edited element when the preview is pulled to it. */
 	const EDIT_REVEAL_MARGIN = 72;
+	/** How long after the preview last moved it goes back to answering the pointer. */
+	const POINTER_SETTLE_MS = 250;
 
 	const cv = new CvDoc();
 	const files = new FileManager();
@@ -244,6 +246,10 @@
 
 	/** @param {Event} e */
 	function onPreviewOver(e) {
+		// Content sliding under a still pointer fires these as well as real
+		// pointer moves do, and following one would haul the editor off wherever
+		// the scroll just put it.
+		if (previewMoving()) return;
 		const hit = srcTarget(e);
 		if (hit?.el === hoverEl) return;
 		markHover(hit?.el ?? null);
@@ -262,6 +268,9 @@
 	/** @param {MouseEvent} e */
 	function onPreviewClick(e) {
 		if (sourceHidden) return;
+		// A tap that lands while the page is still moving was aimed at whatever
+		// was under the pointer a moment ago — let the scroll finish instead.
+		if (previewMoving()) return;
 		// Leave a link's own click alone, and don't yank focus out of a selection
 		// the user is in the middle of making.
 		if (e.target instanceof Element && e.target.closest("a")) return;
@@ -298,6 +307,8 @@
 	let scrollMaster = /** @type {"editor" | "preview" | null} */ (null);
 	/** Per pane: until when its scroll events are our doing rather than the user's. */
 	const quiet = { editor: 0, preview: 0 };
+	/** When the preview last moved, whichever pane set it off. */
+	let previewMovedAt = 0;
 	/** A line the user just typed on, waiting for the preview to be re-rendered. */
 	let pendingEditLine = 0;
 
@@ -306,6 +317,9 @@
 
 	/** @param {"editor" | "preview"} pane */
 	const hushed = (pane) => performance.now() < quiet[pane];
+
+	/** Whether the preview is still moving under the pointer, tail included. */
+	const previewMoving = () => performance.now() < previewMovedAt + POINTER_SETTLE_MS;
 
 	/** The user reached for a pane: it drives from here, and stops being hushed. */
 	const takeOver = (/** @type {"editor" | "preview"} */ pane) => {
@@ -420,8 +434,13 @@
 		return anchors.length > 1;
 	}
 
-	/** The preview moved — put the line behind its top edge at the top of the editor. */
+	/**
+	 * The preview moved — put the line behind its top edge at the top of the
+	 * editor. The timestamp is taken whoever caused the move, sync included,
+	 * since the pointer has to sit out our scrolls as much as the user's.
+	 */
 	function onPreviewScroll() {
+		previewMovedAt = performance.now();
 		if (scrollMaster !== "preview" || hushed("preview") || !ladderReady()) return;
 		hush("editor");
 		const max = previewPane.scrollHeight - previewPane.clientHeight;
