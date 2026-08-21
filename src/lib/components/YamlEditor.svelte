@@ -188,9 +188,31 @@
 	}
 
 	/**
+	 * Where the content starts on a YAML line: past the indent, any `- ` sequence
+	 * markers, a `key: ` and an opening quote — the character a click in the
+	 * preview means to land on. A line carrying no inline value (`bullets:`, a
+	 * block that continues below) falls back to its first non-space character,
+	 * which still beats the indentation.
+	 *
+	 * Barring a quoted scalar from the key position is what keeps `text: 'ORM:
+	 * Prisma'` — or a bare `- 'Analytics: Mixpanel'` — from reading as a key.
+	 * @param {string} text a single line, without its newline
+	 * @returns {number} column offset into `text`
+	 */
+	function contentColumn(text) {
+		const m = /^(\s*(?:-[ \t]+)*)(?:[^\s#'"][^:]*?:[ \t]+)?/.exec(text);
+		let col = m ? m[0].length : 0;
+		if (col >= text.length) col = m ? m[1].length : 0; // a key with nothing after it
+		if (text[col] === "'" || text[col] === '"') col++; // sit on the text, not the quote
+		return Math.min(col, text.length);
+	}
+
+	/**
 	 * Bring a source line into view for the preview's sake: `focus` puts the
-	 * caret on it and takes focus — what a click asks for — while a plain hover
-	 * only lights it up, and only scrolls when the line isn't already on screen.
+	 * caret on its value and takes focus — what a click asks for — while a plain
+	 * hover only lights it up, and only scrolls when the line isn't already on
+	 * screen. The peek decoration stays pinned to the line start, since a line
+	 * decoration's range has to sit there.
 	 * @param {number} line 1-based
 	 * @param {{ focus?: boolean }} [opts]
 	 */
@@ -198,11 +220,15 @@
 		if (!view) return;
 		const doc = view.state.doc;
 		const info = doc.line(Math.min(Math.max(1, Math.round(line)), doc.lines));
+		const at = info.from + contentColumn(info.text);
 		view.dispatch({
-			selection: focus ? { anchor: info.from } : undefined,
+			selection: focus ? { anchor: at } : undefined,
 			effects: [
 				setPeek.of(focus ? null : info.from),
-				EditorView.scrollIntoView(info.from, focus ? { y: 'center' } : { y: 'nearest', yMargin: 48 })
+				EditorView.scrollIntoView(
+					focus ? at : info.from,
+					focus ? { y: 'center' } : { y: 'nearest', yMargin: 48 }
+				)
 			]
 		});
 		if (focus) view.focus();
