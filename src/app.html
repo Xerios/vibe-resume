@@ -33,11 +33,7 @@
 		<script>
 			// Apply before first paint — prevents flash of wrong theme
 			(function () {
-				var t =
-					localStorage.getItem('cv-theme') ||
-					(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-						? 'dark'
-						: 'light');
+				var t = localStorage.getItem('cv-theme') || 'light';
 				document.documentElement.setAttribute('data-theme', t);
 				// The installed window's titlebar sits directly above the toolbar, so it
 				// takes --paper rather than --bg.
