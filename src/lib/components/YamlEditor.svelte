@@ -1,27 +1,43 @@
 <script>
-	import { onMount } from 'svelte';
-	import { indentWithTab, standardKeymap } from '@codemirror/commands';
-	import { yaml } from '@codemirror/lang-yaml';
-	import { HighlightStyle, indentUnit, syntaxHighlighting } from '@codemirror/language';
+	import { onMount } from "svelte";
+	import { indentWithTab, standardKeymap } from "@codemirror/commands";
+	import { yaml } from "@codemirror/lang-yaml";
+	import {
+		HighlightStyle,
+		codeFolding,
+		foldGutter,
+		foldKeymap,
+		indentUnit,
+		syntaxHighlighting,
+	} from "@codemirror/language";
+	import {
+		forEachDiagnostic,
+		lintGutter,
+		linter,
+		setDiagnosticsEffect,
+	} from "@codemirror/lint";
+	import { highlightSelectionMatches } from "@codemirror/search";
 	import {
 		Compartment,
 		EditorState,
 		StateEffect,
 		StateField,
-		Transaction
-	} from '@codemirror/state';
+		Transaction,
+	} from "@codemirror/state";
 	import {
 		Decoration,
 		EditorView,
+		ViewPlugin,
 		WidgetType,
 		drawSelection,
 		highlightActiveLine,
 		highlightActiveLineGutter,
 		keymap,
-		lineNumbers
-	} from '@codemirror/view';
-	import { tags as t } from '@lezer/highlight';
-	import { wrappedLineIndent } from 'codemirror-wrapped-line-indent';
+		lineNumbers,
+	} from "@codemirror/view";
+	import { tags as t } from "@lezer/highlight";
+	import { wrappedLineIndent } from "codemirror-wrapped-line-indent";
+	import { load } from "js-yaml";
 
 	let {
 		/** Extensions from the Loro binding — document sync and undo/redo live here. */
@@ -32,7 +48,7 @@
 		/** The editor scrolled — the page mirrors the move into the preview. */
 		onScroll = () => {},
 		/** A line the user just typed on, for the preview to follow. @type {(line: number) => void} */
-		onEdit = () => {}
+		onEdit = () => {},
 	} = $props();
 
 	/** @type {HTMLDivElement} */
@@ -47,10 +63,11 @@
 	 * the CV never disturbs where the caret sits or what's selected. Clicking
 	 * does move the caret, and `cm-activeLine` takes the highlight over then.
 	 */
-	const setPeek = /** @type {import('@codemirror/state').StateEffectType<number | null>} */ (
-		StateEffect.define()
-	);
-	const peekMark = Decoration.line({ class: 'cm-peek-line' });
+	const setPeek =
+		/** @type {import('@codemirror/state').StateEffectType<number | null>} */ (
+			StateEffect.define()
+		);
+	const peekMark = Decoration.line({ class: "cm-peek-line" });
 	const peekField = StateField.define({
 		create: () => Decoration.none,
 		/**
@@ -61,11 +78,90 @@
 			deco = deco.map(tr.changes);
 			for (const e of tr.effects)
 				if (e.is(setPeek))
-					deco = e.value === null ? Decoration.none : Decoration.set([peekMark.range(e.value)]);
+					deco =
+						e.value === null
+							? Decoration.none
+							: Decoration.set([peekMark.range(e.value)]);
 			return deco;
 		},
-		provide: (f) => EditorView.decorations.from(f)
+		provide: (f) => EditorView.decorations.from(f),
 	});
+
+	/**
+	 * Where the document stops parsing, as a lint diagnostic. js-yaml gives up at
+	 * the first error, so there's never more than one; its mark carries the offset
+	 * it choked on, and the underline runs from there to the end of that line.
+	 * @param {EditorView} v
+	 * @returns {import('@codemirror/lint').Diagnostic[]}
+	 */
+	function yamlDiagnostics(v) {
+		const doc = v.state.doc;
+		try {
+			load(doc.toString());
+			return [];
+		} catch (e) {
+			const err =
+				/** @type {{ mark?: { position: number }, reason?: string }} */ (e);
+			const at = Math.min(Math.max(err.mark?.position ?? 0, 0), doc.length);
+			const line = doc.lineAt(at);
+			// An error that lands past the last character — an unterminated block,
+			// say — has nothing to its right to underline, so mark the line's own
+			// content instead of leaving a bare caret at the end.
+			const from =
+				at < line.to
+					? at
+					: line.from + (line.text.length - line.text.trimStart().length);
+			return [
+				{
+					from,
+					to: line.to,
+					severity: "error",
+					source: "yaml",
+					message: err.reason || (e instanceof Error ? e.message : String(e)),
+				},
+			];
+		}
+	}
+
+	/**
+	 * The line behind a diagnostic, tinted. The lint extension underlines only the
+	 * failing range; this is what makes the broken line findable while scrolling.
+	 */
+	const errorLineMark = Decoration.line({ class: "cm-error-line" });
+
+	/** @param {import('@codemirror/state').EditorState} state */
+	function errorLines(state) {
+		/** @type {number[]} */
+		const starts = [];
+		forEachDiagnostic(state, (_d, from, to) => {
+			for (let pos = from; ; ) {
+				const line = state.doc.lineAt(pos);
+				if (starts[starts.length - 1] !== line.from) starts.push(line.from);
+				if (line.to >= to) break;
+				pos = line.to + 1;
+			}
+		});
+		return Decoration.set(starts.map((at) => errorLineMark.range(at)));
+	}
+
+	/** Recomputed whenever the linter reports, and remapped as the text moves. */
+	const errorLineHighlight = ViewPlugin.fromClass(
+		class {
+			/** @param {EditorView} view */
+			constructor(view) {
+				this.decorations = errorLines(view.state);
+			}
+			/** @param {import('@codemirror/view').ViewUpdate} update */
+			update(update) {
+				const relinted = update.transactions.some((tr) =>
+					tr.effects.some((e) => e.is(setDiagnosticsEffect)),
+				);
+				if (update.docChanged || relinted)
+					this.decorations = errorLines(update.state);
+			}
+		},
+		{ decorations: (v) => v.decorations },
+	);
 
 	class RemovedText extends WidgetType {
 		/** @param {string} text */
@@ -78,8 +174,8 @@
 			return other.text === this.text;
 		}
 		toDOM() {
-			const span = document.createElement('span');
-			span.className = 'cm-diff-removed';
+			const span = document.createElement("span");
+			span.className = "cm-diff-removed";
 			span.textContent = this.text;
 			return span;
 		}
@@ -90,14 +186,19 @@
 
 	/** @param {import('$lib/cv/doc.svelte.js').VersionDiff | null} d */
 	function diffDecorations(d) {
-		if (!d || (d.added.length === 0 && d.removed.length === 0)) return Decoration.none;
+		if (!d || (d.added.length === 0 && d.removed.length === 0))
+			return Decoration.none;
 		const ranges = [
 			...d.added
 				.filter((r) => r.to > r.from)
-				.map((r) => Decoration.mark({ class: 'cm-diff-added' }).range(r.from, r.to)),
+				.map((r) =>
+					Decoration.mark({ class: "cm-diff-added" }).range(r.from, r.to),
+				),
 			...d.removed.map((r) =>
-				Decoration.widget({ widget: new RemovedText(r.text), side: -1 }).range(r.at)
-			)
+				Decoration.widget({ widget: new RemovedText(r.text), side: -1 }).range(
+					r.at,
+				),
+			),
 		];
 		return Decoration.set(ranges, true);
 	}
@@ -107,16 +208,23 @@
 	 * both themes — see the `--cm-*` tokens in src/app.css.
 	 */
 	const highlight = HighlightStyle.define([
-		{ tag: t.definition(t.propertyName), color: 'var(--cm-key)', fontWeight: '600' },
-		{ tag: t.string, color: 'var(--cm-string)' },
-		{ tag: t.special(t.string), color: 'var(--cm-block)' },
-		{ tag: t.content, color: 'var(--cm-text)' },
-		{ tag: t.lineComment, color: 'var(--cm-comment)', fontStyle: 'italic' },
-		{ tag: t.meta, color: 'var(--cm-key)' },
-		{ tag: [t.separator, t.punctuation, t.squareBracket, t.brace], color: 'var(--cm-punct)' },
-		{ tag: [t.labelName, t.typeName], color: 'var(--cm-anchor)' },
-		{ tag: t.keyword, color: 'var(--cm-key)' },
-		{ tag: t.invalid, color: 'var(--cm-invalid)' }
+		{
+			tag: t.definition(t.propertyName),
+			color: "var(--cm-key)",
+			fontWeight: "600",
+		},
+		{ tag: t.string, color: "var(--cm-string)" },
+		{ tag: t.special(t.string), color: "var(--cm-block)" },
+		{ tag: t.content, color: "var(--cm-text)" },
+		{ tag: t.lineComment, color: "var(--cm-comment)", fontStyle: "italic" },
+		{ tag: t.meta, color: "var(--cm-key)" },
+		{
+			tag: [t.separator, t.punctuation, t.squareBracket, t.brace],
+			color: "var(--cm-punct)",
+		},
+		{ tag: [t.labelName, t.typeName], color: "var(--cm-anchor)" },
+		{ tag: t.keyword, color: "var(--cm-key)" },
+		{ tag: t.invalid, color: "var(--cm-invalid)" },
 	]);
 
 	onMount(() => {
@@ -124,32 +232,41 @@
 			parent: host,
 			state: EditorState.create({
 				extensions: [
-					lineNumbers(),
+					lintGutter(),
+					// lineNumbers(),
 					highlightActiveLine(),
 					highlightActiveLineGutter(),
+					codeFolding(),
+					foldGutter({
+						closedText: "▶",
+						openText: "▼",
+					}),
 					drawSelection(),
+					highlightSelectionMatches(),
 					EditorView.lineWrapping,
 					wrappedLineIndent,
-					indentUnit.of('  '),
+					indentUnit.of("  "),
 					EditorState.tabSize.of(2),
 					yaml(),
 					syntaxHighlighting(highlight),
 					// No history() here on purpose: the Loro undo plugin binds Mod-Z at
 					// high precedence, and two undo stacks would fight over it.
-					keymap.of([...standardKeymap, indentWithTab]),
+					keymap.of([...standardKeymap, ...foldKeymap, indentWithTab]),
+					linter(yamlDiagnostics, { delay: 300 }),
+					errorLineHighlight,
 					editable.of(editableExtensions(readOnly)),
 					diffHighlight.of(EditorView.decorations.of(diffDecorations(diff))),
 					peekField,
 					EditorView.updateListener.of(onUpdate),
-					loroExtensions
-				]
-			})
+					loroExtensions,
+				],
+			}),
 		});
 		next.focus();
 		view = next;
-		next.scrollDOM.addEventListener('scroll', fireScroll, { passive: true });
+		next.scrollDOM.addEventListener("scroll", fireScroll, { passive: true });
 		return () => {
-			next.scrollDOM.removeEventListener('scroll', fireScroll);
+			next.scrollDOM.removeEventListener("scroll", fireScroll);
 			next.destroy();
 			view = null;
 		};
@@ -166,19 +283,24 @@
 	 */
 	function onUpdate(update) {
 		if (!update.docChanged) return;
-		if (!update.transactions.some((tr) => tr.annotation(Transaction.userEvent))) return;
+		if (!update.transactions.some((tr) => tr.annotation(Transaction.userEvent)))
+			return;
 		let head = -1;
 		update.changes.iterChanges((_fromA, _toA, _fromB, toB) => (head = toB));
 		if (head >= 0) onEdit(update.state.doc.lineAt(head).number);
 	}
 
 	$effect(() => {
-		view?.dispatch({ effects: editable.reconfigure(editableExtensions(readOnly)) });
+		view?.dispatch({
+			effects: editable.reconfigure(editableExtensions(readOnly)),
+		});
 	});
 
 	$effect(() => {
 		view?.dispatch({
-			effects: diffHighlight.reconfigure(EditorView.decorations.of(diffDecorations(diff)))
+			effects: diffHighlight.reconfigure(
+				EditorView.decorations.of(diffDecorations(diff)),
+			),
 		});
 	});
 
@@ -227,9 +349,9 @@
 				setPeek.of(focus ? null : info.from),
 				EditorView.scrollIntoView(
 					focus ? at : info.from,
-					focus ? { y: 'center' } : { y: 'nearest', yMargin: 48 }
-				)
-			]
+					focus ? { y: "center" } : { y: "nearest", yMargin: 48 },
+				),
+			],
 		});
 		if (focus) view.focus();
 	}
@@ -246,7 +368,9 @@
 	 */
 	export function replaceAll(text) {
 		if (!view || view.state.doc.toString() === text) return;
-		view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: text } });
+		view.dispatch({
+			changes: { from: 0, to: view.state.doc.length, insert: text },
+		});
 	}
 
 	/**
@@ -256,7 +380,11 @@
 	 * @param {EditorView} v
 	 */
 	function docOffset(v) {
-		return v.documentTop - v.scrollDOM.getBoundingClientRect().top + v.scrollDOM.scrollTop;
+		return (
+			v.documentTop -
+			v.scrollDOM.getBoundingClientRect().top +
+			v.scrollDOM.scrollTop
+		);
 	}
 
 	/**
@@ -284,7 +412,8 @@
 		const n = Math.min(Math.max(1, Math.floor(line)), doc.lines);
 		const block = view.lineBlockAt(doc.line(n).from);
 		const frac = Math.min(1, Math.max(0, line - n));
-		view.scrollDOM.scrollTop = block.top + frac * block.height + docOffset(view);
+		view.scrollDOM.scrollTop =
+			block.top + frac * block.height + docOffset(view);
 	}
 
 	/**
@@ -296,20 +425,20 @@
 	export function scrollEdge() {
 		if (!view) return null;
 		const el = view.scrollDOM;
-		if (el.scrollTop <= 1) return 'start';
-		return el.scrollTop >= el.scrollHeight - el.clientHeight - 1 ? 'end' : null;
+		if (el.scrollTop <= 1) return "start";
+		return el.scrollTop >= el.scrollHeight - el.clientHeight - 1 ? "end" : null;
 	}
 
 	/** @param {'start' | 'end'} edge */
 	export function scrollToEdge(edge) {
 		if (!view) return;
 		const el = view.scrollDOM;
-		el.scrollTop = edge === 'start' ? 0 : el.scrollHeight - el.clientHeight;
+		el.scrollTop = edge === "start" ? 0 : el.scrollHeight - el.clientHeight;
 	}
 
 	/** The editor's current text. */
 	export function getText() {
-		return view ? view.state.doc.toString() : '';
+		return view ? view.state.doc.toString() : "";
 	}
 </script>
 

@@ -35,6 +35,9 @@
 	--cm-diff-del-bg: #f6d3d3;
 	--cm-diff-del-text: #7a2b2b;
 	--cm-peek: #157c751f;
+	--cm-match: #d9b96b52;
+	--cm-error: #c73434;
+	--cm-error-bg: #c7343414;
 	--stat-add: #1a6b3a;
 	--stat-del: #a83a3a;
 	--mono: 'SFMono-Regular', ui-monospace, 'JetBrains Mono', 'Menlo', monospace;
@@ -729,6 +732,110 @@ body {
 	box-shadow: inset 2px 0 0 var(--accent);
 }
 
+/* Every other run of whatever's selected — renaming a key shows its twins. */
+#cm-wrap .cm-selectionMatch {
+	background: var(--cm-match);
+	border-radius: 2px;
+}
+
+/* ── Folding ──────────────────────────────────── */
+#cm-wrap .cm-foldGutter .cm-gutterElement {
+	padding: 0 5px 0 1px;
+	color: var(--faint);
+	opacity: 0.5;
+	transition:
+		opacity 0.12s ease,
+		color 0.12s ease;
+}
+
+#cm-wrap .cm-foldGutter .cm-gutterElement:hover {
+	opacity: 1;
+	color: var(--accent-deep);
+}
+
+#cm-wrap .cm-foldPlaceholder {
+	background: var(--editor-chrome);
+	border: 1px solid var(--line);
+	color: var(--faint);
+	border-radius: 3px;
+	margin: 0 2px;
+	padding: 0 5px;
+}
+
+/* ── YAML errors ──────────────────────────────── */
+/* The stock underline is a fixed-colour SVG tile; a wavy text-decoration takes
+   the theme's red instead. */
+#cm-wrap .cm-lintRange-error {
+	background: none;
+	text-decoration: underline wavy var(--cm-error);
+	text-decoration-skip-ink: none;
+	text-underline-offset: 3px;
+}
+
+/* An error with nothing left on the line to underline — an unterminated block,
+   say — renders as a caret at that spot rather than a range. */
+#cm-wrap .cm-lintPoint::after {
+	border-bottom-color: var(--cm-error);
+}
+
+/* Comes after .cm-activeLine and .cm-peek-line on purpose: a line that doesn't
+   parse outranks both of those tints while it's broken. */
+#cm-wrap .cm-error-line {
+	background: var(--cm-error-bg);
+	box-shadow: inset 2px 0 0 var(--cm-error);
+}
+
+#cm-wrap .cm-gutter-lint {
+	width: 14px;
+}
+
+#cm-wrap .cm-gutter-lint .cm-gutterElement {
+	padding: 0;
+}
+
+/* Stock markers are SVG images set through `content`, in colours of their own. */
+#cm-wrap .cm-lint-marker {
+	content: normal;
+	display: grid;
+	place-items: center;
+	width: 100%;
+	height: 100%;
+}
+
+#cm-wrap .cm-lint-marker-error::after {
+	content: '';
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: var(--cm-error);
+}
+
+#cm-wrap .cm-tooltip.cm-tooltip-lint {
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 4px;
+	box-shadow: var(--shadow-pop);
+	overflow: hidden;
+}
+
+#cm-wrap .cm-diagnostic {
+	font-family: var(--mono);
+	font-size: 11px;
+	line-height: 1.5;
+	color: var(--ink);
+	padding: 5px 8px;
+	margin: 0;
+	max-width: 320px;
+}
+
+#cm-wrap .cm-diagnostic-error {
+	border-left: 3px solid var(--cm-error);
+}
+
+#cm-wrap .cm-diagnosticSource {
+	color: var(--faint);
+}
+
 /* ── Divider ──────────────────────────────────── */
 #divider {
 	flex-shrink: 0;
@@ -1183,6 +1290,9 @@ body.resizing #preview-pane {
 	--cm-diff-del-bg: #3a1616;
 	--cm-diff-del-text: #e89a9a;
 	--cm-peek: #1cbdb229;
+	--cm-match: #c9922e4d;
+	--cm-error: #f06a6a;
+	--cm-error-bg: #f06a6a1c;
 	--stat-add: #5dcc80;
 	--stat-del: #e08a8a;
 }
