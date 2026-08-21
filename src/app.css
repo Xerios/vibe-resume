@@ -1359,6 +1359,20 @@ body.resizing #preview-pane {
 	border-bottom-color: #5a1818;
 }
 
+/* Iconify ships the lucide set at stroke-width 2; at 11-13px these buttons
+   read better a touch bolder, as the hand-rolled SVGs they replaced did. */
+.t-btn [stroke-width],
+#tab-add [stroke-width],
+.hist-mark [stroke-width] {
+	stroke-width: 2.5;
+}
+
+/* The theme toggle is the exception: moon and sun are denser shapes and were
+   always drawn lighter than the rest of the bar. */
+.t-btn-icon [stroke-width] {
+	stroke-width: 2;
+}
+
 /* Theme toggle icon visibility */
 .icon-moon {
 	display: block;

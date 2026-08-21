@@ -1,4 +1,6 @@
 <script>
+	import Icon from '@iconify/svelte';
+	import IconLayout from '@iconify-icons/lucide/layout-panel-left';
 	import { LAYOUTS, THEMES } from '$lib/cv/presets.js';
 
 	let {
@@ -93,20 +95,7 @@
 		title="Layout and theme"
 		aria-expanded={open}
 	>
-		<svg
-			width="12"
-			height="12"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			stroke-width="2.5"
-			stroke-linecap="round"
-			stroke-linejoin="round"
-		>
-			<rect x="3" y="3" width="18" height="18" rx="2" />
-			<line x1="9" y1="3" x2="9" y2="21" />
-			<line x1="9" y1="11" x2="21" y2="11" />
-		</svg>
+		<Icon icon={IconLayout} width="12" height="12" />
 		Style
 	</button>
 

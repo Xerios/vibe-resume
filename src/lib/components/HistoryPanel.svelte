@@ -1,4 +1,10 @@
 <script>
+	import Icon from "@iconify/svelte";
+	import IconDownload from "@iconify-icons/lucide/download";
+	import IconBookmark from "@iconify-icons/lucide/bookmark";
+	import IconRestore from "@iconify-icons/lucide/rotate-ccw";
+	import IconInitial from "@iconify-icons/lucide/circle-dot";
+	import IconEdit from "@iconify-icons/lucide/dot";
 	import { formatBytes } from "$lib/cv/storage.js";
 
 	let {
@@ -87,33 +93,23 @@
 <!-- One glyph per kind of moment, so the list can be read down the left edge:
      a dot is a plain edit, everything else is something the user asked for. -->
 {#snippet mark(/** @type {import('$lib/cv/doc.svelte.js').ChangeKind} */ kind)}
-	<svg
+	{@const icon =
+		kind === "export"
+			? IconDownload
+			: kind === "checkpoint"
+				? IconBookmark
+				: kind === "restore"
+					? IconRestore
+					: kind === "initial"
+						? IconInitial
+						: IconEdit}
+	<Icon
+		{icon}
 		class="hist-mark"
 		width="11"
 		height="11"
-		viewBox="0 0 24 24"
-		fill="none"
-		stroke="currentColor"
-		stroke-width="2.5"
-		stroke-linecap="round"
-		stroke-linejoin="round"
 		aria-hidden="true"
-	>
-		{#if kind === "export"}
-			<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-			<path d="M7 10l5 5 5-5M12 15V3" />
-		{:else if kind === "checkpoint"}
-			<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-		{:else if kind === "restore"}
-			<path d="M3 3v5h5" />
-			<path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" />
-		{:else if kind === "initial"}
-			<circle cx="12" cy="12" r="8" />
-			<circle cx="12" cy="12" r="2.5" fill="currentColor" />
-		{:else}
-			<circle cx="12" cy="12" r="3.5" fill="currentColor" stroke="none" />
-		{/if}
-	</svg>
+	/>
 {/snippet}
 
 <aside id="history-pane">

@@ -1,4 +1,11 @@
 <script>
+	import Icon from '@iconify/svelte';
+	import IconHistory from '@iconify-icons/lucide/history';
+	import IconEye from '@iconify-icons/lucide/eye';
+	import IconEyeOff from '@iconify-icons/lucide/eye-off';
+	import IconInstall from '@iconify-icons/lucide/arrow-down-to-line';
+	import IconMoon from '@iconify-icons/lucide/moon';
+	import IconSun from '@iconify-icons/lucide/sun';
 	import StylePicker from './StylePicker.svelte';
 
 	let {
@@ -45,20 +52,7 @@
 		onclick={onToggleHistory}
 		title="Show version history"
 	>
-		<svg
-			width="12"
-			height="12"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			stroke-width="2.5"
-			stroke-linecap="round"
-			stroke-linejoin="round"
-		>
-			<path d="M3 3v5h5" />
-			<path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" />
-			<path d="M12 7v5l4 2" />
-		</svg>
+		<Icon icon={IconHistory} width="12" height="12" />
 		<span class="t-txt">History</span>
 		{#if historyCount}<span class="t-count">{historyCount}</span>{/if}
 	</button>
@@ -70,36 +64,9 @@
 		title={sourceHidden ? 'Show source' : 'Hide source (preview only)'}
 	>
 		{#if sourceHidden}
-			<svg
-				width="12"
-				height="12"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2.5"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-				<path
-					d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"
-				/>
-				<path d="M2 2l20 20" />
-			</svg>
+			<Icon icon={IconEyeOff} width="12" height="12" />
 		{:else}
-			<svg
-				width="12"
-				height="12"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2.5"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
-				<circle cx="12" cy="12" r="3" />
-			</svg>
+			<Icon icon={IconEye} width="12" height="12" />
 		{/if}
 		<span class="t-txt">{sourceHidden ? 'Preview only' : 'Source'}</span>
 	</button>
@@ -108,20 +75,7 @@
 	     and only until the app is installed. Elsewhere the bar looks as it always did. -->
 	{#if canInstall}
 		<button class="t-btn" onclick={onInstall} title="Install as an app — runs offline">
-			<svg
-				width="12"
-				height="12"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2.5"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<path d="M12 3v12" />
-				<path d="M7 10l5 5 5-5" />
-				<path d="M4 21h16" />
-			</svg>
+			<Icon icon={IconInstall} width="12" height="12" />
 			<span class="t-txt">Install</span>
 		</button>
 	{/if}
@@ -129,34 +83,7 @@
 	<!-- Last in the bar on purpose: the app-chrome theme is a setting, not an
 	     editing action, so it sits apart from the buttons that change the CV. -->
 	<button class="t-btn t-btn-icon" onclick={onToggleTheme} title="Toggle dark mode">
-		<svg
-			class="icon-moon"
-			width="13"
-			height="13"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			stroke-width="2"
-			stroke-linecap="round"
-			stroke-linejoin="round"
-		>
-			<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-		</svg>
-		<svg
-			class="icon-sun"
-			width="13"
-			height="13"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			stroke-width="2"
-			stroke-linecap="round"
-			stroke-linejoin="round"
-		>
-			<circle cx="12" cy="12" r="4" />
-			<path
-				d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
-			/>
-		</svg>
+		<Icon icon={IconMoon} class="icon-moon" width="13" height="13" />
+		<Icon icon={IconSun} class="icon-sun" width="13" height="13" />
 	</button>
 </div>

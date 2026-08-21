@@ -1,4 +1,10 @@
 <script>
+	import Icon from "@iconify/svelte";
+	import IconCopy from "@iconify-icons/lucide/copy";
+	import IconFilePlus from "@iconify-icons/lucide/file-plus";
+	import IconTrash from "@iconify-icons/lucide/trash";
+	import IconDownload from "@iconify-icons/lucide/download";
+
 	let {
 		/** @type {import('$lib/cv/files.svelte.js').FileManager} */
 		files,
@@ -86,19 +92,7 @@
 			onclick={onDuplicate}
 			title="Duplicate the current file into a new tab"
 		>
-			<svg
-				width="12"
-				height="12"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2.5"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<rect x="9" y="9" width="12" height="12" rx="2" />
-				<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-			</svg>
+			<Icon icon={IconCopy} width="12" height="12" />
 		</button>
 	</div>
 
@@ -108,21 +102,7 @@
 			onclick={onNew}
 			title="Start a new CV from the shipped template"
 		>
-			<svg
-				width="12"
-				height="12"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2.5"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-				<polyline points="14 2 14 8 20 8" />
-				<line x1="12" y1="18" x2="12" y2="12" />
-				<line x1="9" y1="15" x2="15" y2="15" />
-			</svg>
+			<Icon icon={IconFilePlus} width="12" height="12" />
 			<span class="t-txt">Add new</span>
 		</button>
 
@@ -133,21 +113,7 @@
 			onclick={onToggleTrash}
 			title="Trash"
 		>
-			<svg
-				width="12"
-				height="12"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2.5"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<polyline points="3 6 5 6 21 6" />
-				<path
-					d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3-2a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2H8V4z"
-				/>
-			</svg>
+			<Icon icon={IconTrash} width="12" height="12" />
 			<span class="t-txt">Trash</span>
 			{#if files.trashed.length}<span class="t-count"
 					>{files.trashed.length}</span
@@ -158,20 +124,7 @@
 			onclick={onExport}
 			title="Export current CV as PDF"
 		>
-			<svg
-				width="12"
-				height="12"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2.5"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-				<polyline points="7 10 12 15 17 10" />
-				<line x1="12" y1="15" x2="12" y2="3" />
-			</svg>
+			<Icon icon={IconDownload} width="12" height="12" />
 			<span class="t-txt">Export PDF</span>
 		</button>
 	</div>
