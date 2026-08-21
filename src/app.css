@@ -34,6 +34,8 @@
 	--cm-diff-add-bg: #cdedd3;
 	--cm-diff-del-bg: #f6d3d3;
 	--cm-diff-del-text: #7a2b2b;
+	--stat-add: #1a6b3a;
+	--stat-del: #a83a3a;
 	--mono: 'SFMono-Regular', ui-monospace, 'JetBrains Mono', 'Menlo', monospace;
 	--sans: 'Inter', 'Segoe UI', -apple-system, system-ui, Roboto, Helvetica, Arial, sans-serif;
 }
@@ -865,7 +867,7 @@ body {
 .hist-item {
 	display: flex;
 	align-items: baseline;
-	gap: 8px;
+	gap: 7px;
 	width: 100%;
 	text-align: left;
 	background: none;
@@ -890,8 +892,69 @@ body {
 	background: var(--accent-wash);
 }
 
+.hist-mark {
+	flex-shrink: 0;
+	align-self: center;
+	color: var(--faint);
+}
+
+/* Kinds, quietest first: an ordinary edit is background noise, a named version
+   is a marker, and an export is the CV leaving the app — the loudest of the
+   three, so its rule comes last and wins over `.latest` on the same row. */
+.hist-item.kind-edit .hist-msg {
+	font-weight: 500;
+	color: var(--muted);
+}
+
+.hist-item.kind-checkpoint .hist-mark,
+.hist-item.kind-initial .hist-mark,
+.hist-item.kind-restore .hist-mark {
+	color: var(--accent);
+}
+
 .hist-item.latest .hist-msg {
 	color: var(--accent-deep);
+}
+
+.hist-item.kind-export {
+	background: var(--prompt-bg);
+	border-color: color-mix(in srgb, var(--prompt) 28%, transparent);
+}
+
+.hist-item.kind-export:hover {
+	border-color: var(--prompt);
+}
+
+.hist-item.kind-export.active {
+	border-color: var(--accent);
+}
+
+.hist-item.kind-export .hist-mark,
+.hist-item.kind-export .hist-msg {
+	color: var(--prompt);
+}
+
+.hist-item.kind-export .hist-msg {
+	font-weight: 700;
+	letter-spacing: 0.2px;
+}
+
+.hist-stats {
+	flex-shrink: 0;
+	display: flex;
+	gap: 5px;
+	font-family: var(--mono);
+	font-size: 9px;
+	font-weight: 600;
+	letter-spacing: -0.2px;
+}
+
+.stat-add {
+	color: var(--stat-add);
+}
+
+.stat-del {
+	color: var(--stat-del);
 }
 
 .hist-msg {
@@ -1110,6 +1173,8 @@ body.resizing #preview-pane {
 	--cm-diff-add-bg: #163a24;
 	--cm-diff-del-bg: #3a1616;
 	--cm-diff-del-text: #e89a9a;
+	--stat-add: #5dcc80;
+	--stat-del: #e08a8a;
 }
 
 /* Tints with no token of their own — the red foregrounds come from --danger. */

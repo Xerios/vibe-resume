@@ -13,6 +13,23 @@ const TAGS_ID = 'checkpoints';
 const TAG_ORIGIN = 'cv-tag';
 
 /**
+ * What a change was: an ordinary edit, a named save, a PDF export, a restore, or
+ * the template the file started from. A commit message is the only per-change
+ * metadata Loro carries, so the kind rides along inside it, separated by a
+ * control character no one can type into the "name this version" box.
+ */
+const KINDS = /** @type {const} */ (['edit', 'checkpoint', 'export', 'restore', 'initial']);
+const KIND_SEP = '\u0001';
+
+/** @typedef {(typeof KINDS)[number]} ChangeKind */
+
+/**
+ * Diffing every change costs a pass over the oplog each, so counts are worked
+ * out for the newest changes only. Older entries simply show no count.
+ */
+const STATS_LIMIT = 200;
+
+/**
  * Consecutive *unnamed* commits from the same peer inside this window (seconds)
  * are folded into a single change. loro-codemirror commits on every editor
  * transaction, so without this a burst of typing would be one history entry per
@@ -37,8 +54,17 @@ const cvText = (doc) => doc.getText(TEXT_ID);
  * @property {number} lamport
  * @property {number} timestamp      unix seconds, 0 when not recorded
  * @property {string} message
+ * @property {ChangeKind} kind      what the change was — see `KINDS`
  * @property {number} length         number of ops in the change
+ * @property {ChangeStats | null} stats  characters added and removed, null past `STATS_LIMIT`
  * @property {import('loro-crdt/web').OpId[]} deps  causal parents — the version just before this change
+ */
+
+/**
+ * How much text a change touched, in characters.
+ * @typedef {object} ChangeStats
+ * @property {number} added
+ * @property {number} removed
  */
 
 /**
@@ -103,6 +129,8 @@ export class CvDoc {
 	#epoch = newEpoch();
 	/** Which file's storage key this instance is currently reading and writing. */
 	#fileId = '';
+	/** Change counts, keyed by entry key. @type {Map<string, ChangeStats>} */
+	#statsCache = new Map();
 
 	/** @param {string} fileId */
 	async init(fileId) {
@@ -154,17 +182,58 @@ export class CvDoc {
 	// ── Versions ───────────────────────────────────────────────────────────────
 
 	/**
-	 * Mark the current state as a named version. The name is stored in a map
-	 * container, which gives the commit a real operation to carry — so unlike a
-	 * bare commit this always produces a history entry, even with nothing edited.
+	 * Mark the current state as a named version.
 	 * @param {string} name
 	 */
 	checkpoint(name) {
+		this.#tag('checkpoint', name.trim() || 'Checkpoint');
+	}
+
+	/**
+	 * Mark the current state as the one that went out as a PDF. Called when the
+	 * print dialog opens — the browser never reports whether the user went through
+	 * with it, so this records the attempt, which is the point in the history worth
+	 * finding again either way.
+	 *
+	 * Exporting the same text twice adds nothing to the history, so the mark is
+	 * skipped when the last export already carried this exact text — whether the
+	 * user pressed the button twice or edited and came back to where they were.
+	 */
+	markExport() {
 		if (!this.#doc || this.isViewingHistory) return;
-		const label = name.trim() || 'Checkpoint';
+		// An export can land inside the settle debounce, before the last keystrokes
+		// have been committed and picked up — so do both now, or the comparison
+		// below would run against a stale head.
+		this.#doc.commit();
+		this.#refreshHistory();
+		const previous = this.#lastExport();
+		if (previous && previous === this.#text()) return;
+		this.#tag('export', 'Exported PDF');
+	}
+
+	/** The text as it stood at the most recent export, or null if there wasn't one. */
+	#lastExport() {
+		if (!this.#doc) return null;
+		for (let i = this.history.length - 1; i >= 0; i--) {
+			const entry = this.history[i];
+			if (entry.kind !== 'export') continue;
+			return this.#doc.forkAt([frontier(entry)]).getText(TEXT_ID).toString();
+		}
+		return null;
+	}
+
+	/**
+	 * Stamp the current state with a kind and a label. The label is stored in a map
+	 * container, which gives the commit a real operation to carry — so unlike a
+	 * bare commit this always produces a history entry, even with nothing edited.
+	 * @param {ChangeKind} kind
+	 * @param {string} label
+	 */
+	#tag(kind, label) {
+		if (!this.#doc || this.isViewingHistory) return;
 		this.#doc.getMap(TAGS_ID).set(new Date().toISOString(), label);
 		this.#doc.setChangeMergeInterval(0);
-		this.#doc.commit({ message: label, origin: TAG_ORIGIN });
+		this.#doc.commit({ message: stampKind(kind, label), origin: TAG_ORIGIN });
 		this.#doc.setChangeMergeInterval(MERGE_WINDOW_SECONDS);
 		this.#refreshHistory();
 		this.#scheduleSettle();
@@ -201,7 +270,7 @@ export class CvDoc {
 		if (!this.#doc) return;
 		const text = this.#doc.forkAt([frontier(entry)]).getText(TEXT_ID).toString();
 		this.viewLatest();
-		this.#applyNamed(`Restored ${describe(entry)}`, text);
+		this.#applyNamed(stampKind('restore', `Restored ${describe(entry)}`), text);
 	}
 
 	/**
@@ -225,6 +294,40 @@ export class CvDoc {
 	}
 
 	/**
+	 * What a change did to the text, as a delta against the version just before it.
+	 * Empty when the change touched no text at all — a tag carries only its label.
+	 * @param {HistoryEntry} entry
+	 * @returns {import('loro-crdt/web').TextDiff['diff']}
+	 */
+	#textOps(entry) {
+		if (!this.#doc) return [];
+		const found = this.#doc
+			.diff(entry.deps, [frontier(entry)], false)
+			.find(([, d]) => d.type === 'text');
+		if (!found) return [];
+		return /** @type {import('loro-crdt/web').TextDiff} */ (found[1]).diff;
+	}
+
+	/**
+	 * How many characters a change added and removed. Cached: a change's content is
+	 * fixed once its key exists, since a change that grows by merging a later edit
+	 * ends on a new counter and so takes a new key.
+	 * @param {HistoryEntry} entry
+	 * @returns {ChangeStats}
+	 */
+	#statsFor(entry) {
+		const cached = this.#statsCache.get(entry.key);
+		if (cached) return cached;
+		const stats = { added: 0, removed: 0 };
+		for (const op of this.#textOps(entry)) {
+			if (op.insert) stats.added += op.insert.length;
+			else if (op.delete != null) stats.removed += op.delete;
+		}
+		this.#statsCache.set(entry.key, stats);
+		return stats;
+	}
+
+	/**
 	 * What a change did to the text, expressed as positions in the text as it
 	 * reads *after* the change (which is what's on screen while previewing it).
 	 * Deleted text no longer has a position of its own, so it's anchored to the
@@ -233,19 +336,14 @@ export class CvDoc {
 	 * @returns {VersionDiff}
 	 */
 	#diffFor(entry) {
-		const empty = { added: [], removed: [] };
-		if (!this.#doc) return empty;
-		const before = this.#doc.forkAt(entry.deps).getText(TEXT_ID).toString();
-		const found = this.#doc
-			.diff(entry.deps, [frontier(entry)], false)
-			.find(([, d]) => d.type === 'text');
-		if (!found) return empty;
-		const textDiff = /** @type {import('loro-crdt/web').TextDiff} */ (found[1]);
 		/** @type {VersionDiff} */
 		const result = { added: [], removed: [] };
+		const ops = this.#textOps(entry);
+		if (!ops.length || !this.#doc) return result;
+		const before = this.#doc.forkAt(entry.deps).getText(TEXT_ID).toString();
 		let fromPos = 0;
 		let toPos = 0;
-		for (const op of textDiff.diff) {
+		for (const op of ops) {
 			if (op.retain != null) {
 				fromPos += op.retain;
 				toPos += op.retain;
@@ -277,6 +375,7 @@ export class CvDoc {
 	/** Install a document, wire up its subscriptions, and save it. */
 	#adopt(/** @type {LoroDoc} */ doc) {
 		this.#doc = doc;
+		this.#statsCache.clear();
 		doc.setChangeMergeInterval(MERGE_WINDOW_SECONDS);
 
 		// Built after the snapshot is imported, so it can only undo what happens
@@ -345,7 +444,7 @@ export class CvDoc {
 		doc.setRecordTimestamp(true); // history entries are worthless without a time
 		cvText(doc).update(text);
 		doc.setChangeMergeInterval(0);
-		doc.commit({ message: 'Initial version' });
+		doc.commit({ message: stampKind('initial', 'Initial version') });
 		return doc;
 	}
 
@@ -363,13 +462,15 @@ export class CvDoc {
 					counter,
 					lamport: c.lamport + c.length - 1,
 					timestamp: c.timestamp ?? 0,
-					message: c.message || 'Edit',
+					...readKind(c.message ?? ''),
 					length: c.length,
+					stats: null,
 					deps: c.deps
 				});
 			}
 		}
 		list.sort((a, b) => a.lamport - b.lamport || a.peer.localeCompare(b.peer));
+		for (const entry of list.slice(-STATS_LIMIT)) entry.stats = this.#statsFor(entry);
 		this.history = list;
 	}
 
@@ -419,6 +520,28 @@ export class CvDoc {
 }
 
 const newEpoch = () => Math.random().toString(36).slice(2, 10);
+
+/**
+ * @param {ChangeKind} kind
+ * @param {string} label
+ */
+const stampKind = (kind, label) => `${kind}${KIND_SEP}${label}`;
+
+/**
+ * Read a commit message back into its kind and the label to show. Messages
+ * written before kinds existed carry no stamp: a labelled one was a named
+ * version, an empty one was the editor committing a burst of typing.
+ * @param {string} raw
+ * @returns {{kind: ChangeKind, message: string}}
+ */
+function readKind(raw) {
+	const at = raw.indexOf(KIND_SEP);
+	if (at !== -1) {
+		const kind = /** @type {ChangeKind} */ (raw.slice(0, at));
+		if (KINDS.includes(kind)) return { kind, message: raw.slice(at + 1) };
+	}
+	return raw ? { kind: 'checkpoint', message: raw } : { kind: 'edit', message: 'Edit' };
+}
 
 /** @param {HistoryEntry} entry */
 const frontier = (entry) => ({ peer: /** @type {any} */ (entry.peer), counter: entry.counter });

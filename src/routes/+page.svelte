@@ -155,6 +155,9 @@
 			toast('Fix YAML errors before exporting');
 			return;
 		}
+		// Tagged before printing, so the mark in the history sits on exactly the
+		// version that goes to the printer.
+		cv.markExport();
 		window.print();
 	}
 
