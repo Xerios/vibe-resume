@@ -86,7 +86,7 @@
 			{@render secHead(sec, path)}
 			{#each list(sec.items) as item, i}
 				{#if item.subtype === "earlier"}
-					<div class="earlier" data-src="{path}.items.{i}">
+					<div class="job earlier" data-src="{path}.items.{i}">
 						<h3 data-src="{path}.items.{i}.title">{@html md(item.title)}</h3>
 						<ul class="bullets">
 							{#each list(item.items) as line, j}
@@ -169,8 +169,8 @@
 			<p class="role" data-src="header.role">{@html md(cv.header?.role)}</p>
 		</div>
 		<div class="contact">
-			{#each list(cv.header?.contact) as line, i}{#if i > 0}<br
-					/>{/if}<span data-src="header.contact.{i}">{@html md(line)}</span
+			{#each list(cv.header?.contact) as line, i}{#if i > 0}<br />{/if}<span
+					data-src="header.contact.{i}">{@html md(line)}</span
 				>{/each}
 		</div>
 	</header>
