@@ -408,7 +408,8 @@
 			position: fixed;
 			top: 82px;
 			right: 8px;
-			bottom: 8px;
+			/* Clear of the status bar, which is fixed to the foot of the shell. */
+			bottom: 32px;
 			width: min(288px, calc(100vw - 16px));
 			border: 1px solid var(--line);
 			border-radius: 8px;

@@ -365,6 +365,15 @@
 	}
 
 	/**
+	 * Take the geometry again. The pane is kept mounted while the source is
+	 * hidden, and CodeMirror measures nothing it can't see — so everything it
+	 * knows about line heights is stale by the time the pane comes back.
+	 */
+	export function remeasure() {
+		view?.requestMeasure();
+	}
+
+	/**
 	 * Replace the whole document as a user-level edit, so the Loro binding records
 	 * it the same way it records typing. This is how Reset and Restore apply text.
 	 * @param {string} text

@@ -5,8 +5,9 @@
    Everything that belongs to one piece of UI is styled where that piece is
    written, in the component's own <style> block:
 
-     Toolbar.svelte      #toolbar, #status, #save-state, the theme toggle
-     TabBar.svelte       #tabbar, .tab*, #tab-add, the export button
+     Toolbar.svelte      #toolbar, the theme toggle
+     StatusBar.svelte    #status-bar, #status, #save-state
+     TabBar.svelte       #tabbar, .tab*, .tab-new*, .new-*, the export button
      TrashPanel.svelte   #trash-panel, .trash-*
      StylePicker.svelte  .style-*, .layout-*, .theme-*
      HistoryPanel.svelte #history-pane, .hist-*, .stat-*

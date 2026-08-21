@@ -1,6 +1,7 @@
 <script>
 	import { onMount, tick } from "svelte";
 	import HistoryPanel from "$lib/components/HistoryPanel.svelte";
+	import StatusBar from "$lib/components/StatusBar.svelte";
 	import TabBar from "$lib/components/TabBar.svelte";
 	import Toolbar from "$lib/components/Toolbar.svelte";
 	import TrashPanel from "$lib/components/TrashPanel.svelte";
@@ -288,8 +289,7 @@
 	}
 
 	/** @param {MouseEvent} e */
-	function onPreviewClick(e) {
-		if (sourceHidden) return;
+	async function onPreviewClick(e) {
 		// A tap that lands while the page is still moving was aimed at whatever
 		// was under the pointer a moment ago — let the scroll finish instead.
 		if (previewMoving()) return;
@@ -299,6 +299,15 @@
 		if (window.getSelection()?.isCollapsed === false) return;
 		const hit = srcTarget(e);
 		if (!hit?.line) return;
+		if (sourceHidden) {
+			// Asking for the line behind a value is asking to edit it: bring the
+			// source back first. The pane is kept mounted but `display: none`, so
+			// CodeMirror has measured nothing since it went away and has to be told
+			// to look again before it can scroll anywhere.
+			setSourceHidden(false);
+			await tick();
+			editor?.remeasure();
+		}
 		editor?.revealLine(hit.line, { focus: true });
 		// `revealLine` takes focus, which would otherwise hand the editor the wheel.
 		takeOver("preview");
@@ -597,9 +606,14 @@
 		await tick();
 	}
 
+	/** @param {boolean} hidden */
+	function setSourceHidden(hidden) {
+		sourceHidden = hidden;
+		write(KEYS.sourceHidden, String(hidden));
+	}
+
 	function toggleSource() {
-		sourceHidden = !sourceHidden;
-		write(KEYS.sourceHidden, String(sourceHidden));
+		setSourceHidden(!sourceHidden);
 	}
 
 	/** Open a fresh tab holding the shipped template — no snapshot yet, so `CvDoc` seeds one. */
@@ -756,8 +770,6 @@
 
 <div id="app">
 	<Toolbar
-		valid={!parseError}
-		{saveLabel}
 		{historyOpen}
 		historyCount={cv.history.length}
 		{sourceHidden}
@@ -874,6 +886,8 @@
 			<HistoryPanel doc={cv} {toast} />
 		{/if}
 	</div>
+
+	<StatusBar valid={!parseError} {saveLabel} />
 </div>
 
 <div id="toast" class:show={toastOn}>{toastMsg}</div>
@@ -1007,7 +1021,7 @@
 	/* ── Toast ────────────────────────────────────── */
 	#toast {
 		position: fixed;
-		bottom: 20px;
+		bottom: 36px;
 		left: 50%;
 		transform: translateX(-50%) translateY(10px);
 		background: var(--accent-deep);

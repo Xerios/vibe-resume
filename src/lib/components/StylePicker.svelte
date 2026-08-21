@@ -2,6 +2,7 @@
 	import Icon from '@iconify/svelte';
 	import IconLayout from '@iconify-icons/lucide/layout-panel-left';
 	import { LAYOUTS, THEMES } from '$lib/cv/presets.js';
+	import { withKey } from './access-keys.js';
 
 	let {
 		/** @type {string} */
@@ -17,6 +18,7 @@
 	let open = $state(false);
 	/** @type {HTMLDivElement} */
 	let root;
+	let toggle = $state(/** @type {HTMLButtonElement | undefined} */ (undefined));
 
 	// Picking is not a commitment — the popover stays up so layouts and themes
 	// can be tried against each other, and closes on Escape or a click elsewhere.
@@ -29,7 +31,11 @@
 		};
 		/** @param {KeyboardEvent} e */
 		const onKeydown = (e) => {
-			if (e.key === 'Escape') open = false;
+			if (e.key !== 'Escape') return;
+			open = false;
+			// Dismissing by keyboard has to leave focus somewhere; the button that
+			// opened the popover is where it came from.
+			toggle?.focus();
 		};
 
 		document.addEventListener('pointerdown', onPointerDown);
@@ -88,15 +94,18 @@
 {/snippet}
 
 <div class="style-picker" bind:this={root}>
+	<!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
 	<button
 		class="t-btn"
 		class:on={open}
+		bind:this={toggle}
 		onclick={() => (open = !open)}
-		title="Layout and theme"
+		accesskey="s"
+		title={withKey('Layout and theme', 's')}
 		aria-expanded={open}
 	>
 		<Icon icon={IconLayout} width="12" height="12" />
-		Style
+		<span><u>S</u>tyle</span>
 	</button>
 
 	{#if open}

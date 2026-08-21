@@ -23,6 +23,7 @@ pnpm check      # svelte-check
 | ------------------ | -------------------------------------------------------------------------------------------- |
 | Document + history | [src/lib/cv/doc.svelte.js](src/lib/cv/doc.svelte.js) — Loro doc, persistence, cross-tab merge |
 | Editor             | [src/lib/components/YamlEditor.svelte](src/lib/components/YamlEditor.svelte) — CodeMirror 6   |
+| Chrome             | `components/{Toolbar,TabBar,StatusBar}.svelte` — the buttons, the tabs, the readouts          |
 | YAML to HTML       | [src/lib/cv/render.js](src/lib/cv/render.js)                                                 |
 | Starting text      | [src/lib/cv/default-cv.yaml](src/lib/cv/default-cv.yaml)                                     |
 | Layout & theme     | [src/lib/cv/presets.js](src/lib/cv/presets.js) — the presets, and the CSS beside it           |
@@ -61,6 +62,21 @@ Layouts are CSS alone, with one exception: the sidebar needs two real columns,
 so `CvSheet` renders a rail and a main column for that layout only. Skills go
 to the rail; any section can opt in or out with `rail: true` / `rail: false`.
 Every other layout renders exactly the markup it did before.
+
+### Keyboard
+
+Every control in the chrome carries an `accesskey` and underlines the letter it
+answers to — `H` on History, `X` on Export, `N` on the button that opens a tab.
+Which chord unlocks them is the browser's to decide rather than ours: Chromium
+takes plain Alt, Firefox insists on Alt+Shift, and a Mac uses Ctrl+Alt
+throughout. [access-keys.js](src/lib/components/access-keys.js) reads which one
+applies, once, and every tooltip spells it out — so the same underlined `H`
+reads as `(Alt+H)` or `(Alt+Shift+H)` depending on where it is being read.
+
+The rest is what a file list trains you to try: `Ctrl+S` names a version, `F2`
+renames the tab holding focus, `Escape` dismisses the style popover, the trash
+panel and the new-tab menu — handing focus back to whatever opened them — and
+the divider between the panes moves with the arrow keys.
 
 ### Where the CSS lives
 

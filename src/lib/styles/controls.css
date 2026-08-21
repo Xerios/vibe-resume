@@ -73,6 +73,14 @@
 	stroke-width: 2;
 }
 
+/* The access-key letter. A control that has one underlines it, so the chord is
+   readable off the button rather than memorised; access-keys.js knows which
+   chord the browser at hand wants, and spells it out in the tooltip. */
+.t-btn u {
+	text-decoration-thickness: 1px;
+	text-underline-offset: 2px;
+}
+
 /* The count on History and Trash. */
 .t-count {
 	font-size: 9.5px;
