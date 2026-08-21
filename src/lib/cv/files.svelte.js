@@ -80,10 +80,14 @@ export class FileManager {
 		return id;
 	}
 
-	/** @param {string} [name] */
-	create(name = this.#uniqueName('CV')) {
+	/**
+	 * A given name is de-duplicated like a generated one — importing the same
+	 * `cv.yaml` twice should give two distinguishable tabs, not two called "cv".
+	 * @param {string} [name]
+	 */
+	create(name) {
 		const id = newId();
-		this.files = [...this.files, { id, name, deletedAt: null }];
+		this.files = [...this.files, { id, name: this.#uniqueName(name || 'CV'), deletedAt: null }];
 		this.#saveList();
 		this.activeId = id;
 		this.#saveActive();

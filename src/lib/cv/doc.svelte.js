@@ -144,14 +144,22 @@ export class CvDoc {
 	/**
 	 * Save the current file and load a different one. The editor is re-keyed
 	 * (via `docId`) since this swaps in a whole new LoroDoc instance.
+	 *
+	 * `seedText` is for a file arriving with content of its own — an imported
+	 * `.yaml`, say. It only applies to a file with no snapshot yet, and seeding
+	 * with it beats pushing the text in afterwards: the history then starts with
+	 * one "Initial version" holding the real YAML, not the template plus an
+	 * immediate overwrite.
+	 *
 	 * @param {string} fileId
+	 * @param {string} [seedText]
 	 */
-	switchTo(fileId) {
+	switchTo(fileId, seedText) {
 		if (!this.#doc || fileId === this.#fileId) return;
 		this.flush();
 		this.#unsubscribeAll();
 		this.#fileId = fileId;
-		this.#adopt(this.#load());
+		this.#adopt(this.#load(seedText));
 	}
 
 	/**
@@ -418,8 +426,12 @@ export class CvDoc {
 		this.#subscriptions = [];
 	}
 
-	/** Restore the stored snapshot, or start a fresh document from the template. */
-	#load() {
+	/**
+	 * Restore the stored snapshot, or start a fresh document from `seedText` —
+	 * falling back to the shipped template.
+	 * @param {string} [seedText]
+	 */
+	#load(seedText) {
 		const stored = read(snapshotKey(this.#fileId));
 		if (stored) {
 			const { epoch, snapshot } = split(stored);
@@ -435,7 +447,7 @@ export class CvDoc {
 				console.warn('[cv] stored snapshot could not be read, starting fresh', e);
 			}
 		}
-		return this.#seed(DEFAULT_YAML);
+		return this.#seed(seedText ?? DEFAULT_YAML);
 	}
 
 	/** @param {string} text */

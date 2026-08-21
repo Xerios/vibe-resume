@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="CV Editor">
+	<!-- Same mark as icon.svg, but bled to the edges and scaled into the maskable
+	     safe zone: Android crops to a shape inscribed in the middle 80%, so the
+	     sheet has to survive a circle of radius 205 around the centre. -->
+	<rect width="512" height="512" fill="#157c75" />
+	<g transform="translate(256 256) scale(0.72) translate(-256 -256)">
+		<rect x="128" y="96" width="256" height="320" rx="20" fill="#ffffff" />
+		<rect x="156" y="136" width="132" height="22" rx="11" fill="#157c75" />
+		<rect x="156" y="172" width="200" height="10" rx="5" fill="#a8ccc7" />
+		<rect x="156" y="212" width="64" height="12" rx="6" fill="#157c75" />
+		<rect x="156" y="240" width="200" height="10" rx="5" fill="#d9e6e4" />
+		<rect x="156" y="264" width="164" height="10" rx="5" fill="#d9e6e4" />
+		<rect x="156" y="304" width="64" height="12" rx="6" fill="#157c75" />
+		<rect x="156" y="332" width="200" height="10" rx="5" fill="#d9e6e4" />
+		<rect x="156" y="356" width="140" height="10" rx="5" fill="#d9e6e4" />
+	</g>
+</svg>

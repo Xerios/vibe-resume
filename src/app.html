@@ -4,6 +4,11 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
+		<!-- Overwritten below and by toggleTheme(); a media-query pair would not work,
+		     because the theme is a manual toggle and not purely a system preference. -->
+		<meta name="theme-color" content="#ffffff" />
+		<link rel="manifest" href="/manifest.webmanifest" />
+		<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
 		<script>
 			// Apply before first paint — prevents flash of wrong theme
 			(function () {
@@ -13,6 +18,10 @@
 						? 'dark'
 						: 'light');
 				document.documentElement.setAttribute('data-theme', t);
+				// The installed window's titlebar sits directly above the toolbar, so it
+				// takes --paper rather than --bg.
+				var meta = document.querySelector('meta[name="theme-color"]');
+				if (meta) meta.setAttribute('content', t === 'dark' ? '#152320' : '#ffffff');
 			})();
 		</script>
 		%sveltekit.head%

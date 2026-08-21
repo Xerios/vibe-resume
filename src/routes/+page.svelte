@@ -60,6 +60,10 @@
 	/** @type {ReturnType<typeof setTimeout> | undefined} */
 	let toastTimer;
 	let trashOpen = $state(false);
+	/** The browser's deferred install prompt, held until the user asks for it. */
+	let installPrompt = $state(
+		/** @type {BeforeInstallPromptEvent | null} */ (null),
+	);
 
 	/** Presentation of the active file, defaulted here so the rest can assume a valid id. */
 	const layout = $derived(resolveLayout(files.active?.layout));
@@ -86,8 +90,24 @@
 			if (document.visibilityState === "hidden") flush();
 		};
 
+		// Storage that survives eviction pressure: an offline editor that loses the CV
+		// it was holding is not much of one. An installed PWA is usually granted this
+		// silently; elsewhere it may prompt or be refused, and either is fine.
+		void navigator.storage?.persist?.();
+
+		// An installed copy is registered for .yaml/.yml, and files opened from the OS
+		// arrive through here rather than as a navigation.
+		window.launchQueue?.setConsumer(async ({ files: handles }) => {
+			for (const handle of handles) {
+				const file = await handle.getFile();
+				openImported(file.name, await file.text());
+			}
+		});
+
 		window.addEventListener("beforeunload", flush);
 		window.addEventListener("keydown", onKeydown);
+		window.addEventListener("beforeinstallprompt", onInstallPrompt);
+		window.addEventListener("appinstalled", onInstalled);
 		document.addEventListener("visibilitychange", onVisibility);
 		// Listeners rather than markup handlers: the preview is a document, not a
 		// control, and `onclick` on a plain <div> only buys an a11y warning.
@@ -117,6 +137,8 @@
 		return () => {
 			window.removeEventListener("beforeunload", flush);
 			window.removeEventListener("keydown", onKeydown);
+			window.removeEventListener("beforeinstallprompt", onInstallPrompt);
+			window.removeEventListener("appinstalled", onInstalled);
 			document.removeEventListener("visibilitychange", onVisibility);
 			cvRoot.removeEventListener("mouseover", onPreviewOver);
 			cvRoot.removeEventListener("mouseleave", onPreviewLeave);
@@ -533,7 +555,40 @@
 				? "light"
 				: "dark";
 		document.documentElement.setAttribute("data-theme", next);
+		syncThemeColor();
 		write(KEYS.theme, next);
+	}
+
+	/**
+	 * Keep an installed window's titlebar on the colour of the toolbar beneath it.
+	 * Read from the token rather than repeated as a literal — app.html has to spell
+	 * the two values out only because it runs before the stylesheet lands.
+	 */
+	function syncThemeColor() {
+		const paper = getComputedStyle(document.documentElement)
+			.getPropertyValue("--paper")
+			.trim();
+		if (!paper) return;
+		document
+			.querySelector('meta[name="theme-color"]')
+			?.setAttribute("content", paper);
+	}
+
+	/** @param {BeforeInstallPromptEvent} e */
+	function onInstallPrompt(e) {
+		e.preventDefault(); // hold it back; the toolbar button decides when to ask
+		installPrompt = e;
+	}
+
+	function onInstalled() {
+		installPrompt = null;
+	}
+
+	async function installApp() {
+		const prompt = installPrompt;
+		if (!prompt) return;
+		installPrompt = null; // single use, accepted or dismissed
+		await prompt.prompt();
 	}
 
 	async function toggleHistory() {
@@ -552,6 +607,19 @@
 		const id = files.create();
 		cv.switchTo(id);
 		toast("New CV from template");
+	}
+
+	/**
+	 * Open YAML that came from outside the editor — an OS file association today — as
+	 * its own tab. Seeded through `switchTo` so the tab's history starts with the
+	 * imported text rather than the template plus an overwrite.
+	 * @param {string} filename
+	 * @param {string} text
+	 */
+	function openImported(filename, text) {
+		const id = files.create(filename.replace(/\.(ya?ml)$/i, ""));
+		cv.switchTo(id, text);
+		toast(`Opened ${files.active?.name ?? filename}`);
 	}
 
 	function copyYaml() {
@@ -700,6 +768,8 @@
 		onToggleTheme={toggleTheme}
 		onToggleHistory={toggleHistory}
 		onToggleSource={toggleSource}
+		canInstall={!!installPrompt}
+		onInstall={installApp}
 	/>
 
 	<TabBar

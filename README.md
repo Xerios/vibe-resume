@@ -28,6 +28,7 @@ pnpm check      # svelte-check
 | Layout & theme     | [src/lib/cv/presets.js](src/lib/cv/presets.js) — the presets, and the CSS beside it           |
 | App chrome CSS     | [src/app.css](src/app.css)                                                                   |
 | CV document CSS    | [src/lib/cv/cv.css](src/lib/cv/cv.css) — global, since the sheet is injected as raw HTML     |
+| Offline            | [src/service-worker.js](src/service-worker.js) — precache; manifest and icons in `static/`    |
 
 ### Editor and document
 
@@ -90,6 +91,36 @@ editor in two tabs and they merge through the `storage` event — that is the CR
 earning its keep rather than decorating. The stored value carries a lineage marker so
 that "Clear history" in one tab replaces the document in the others instead of
 merging two unrelated ones.
+
+### Offline
+
+Nothing here ever talked to the network, but until there was a service worker the
+browser still could not *load* the app without a server. `src/service-worker.js`
+precaches the Vite bundle, everything in `static/`, and the prerendered shell, so a
+single visit is enough; after that it runs with the network off. SvelteKit registers it
+automatically in a production build and leaves it out of `vite dev`, so development
+never serves stale bytes.
+
+The one asset that makes this sharper than a usual PWA is Loro's `.wasm`, fetched
+lazily on first document load rather than inlined. Uncached, the app would paint its
+shell and then hang forever on `await wasmReady`. It is precached with everything else,
+and the fetch handler also keeps any same-origin response it sees, so the first online
+visit would capture it even if it ever fell out of the build manifest.
+
+Updates are deliberately quiet: no `skipWaiting`, so a new worker takes over only once
+every tab of the old one has closed. That keeps an editing session from being swapped
+out mid-edit, and it means the cache purge on activation cannot delete a lazily-loaded
+chunk that a live page still wants.
+
+Installed, it registers as a handler for `.yaml` / `.yml`. A file opened from the OS
+arrives through `launchQueue` and becomes its own tab, seeded so its version history
+starts with the imported text instead of the template plus an overwrite. The manifest
+asks for `focus-existing` because the whole state of this app is `localStorage` — a
+second window would be a second writer racing the first.
+
+Startup also asks for `navigator.storage.persist()`. An installed PWA is usually granted
+it silently, and an offline editor that loses the CV it was holding to storage pressure
+is not much of one.
 
 ## Dependencies
 

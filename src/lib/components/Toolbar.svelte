@@ -8,6 +8,8 @@
 		historyOpen = false,
 		historyCount = 0,
 		sourceHidden = false,
+		/** True only while the browser has an install prompt waiting for us. */
+		canInstall = false,
 		/** @type {string} */
 		layout,
 		/** @type {string} */
@@ -21,7 +23,9 @@
 		/** @type {() => void} */
 		onToggleHistory,
 		/** @type {() => void} */
-		onToggleSource
+		onToggleSource,
+		/** @type {() => void} */
+		onInstall
 	} = $props();
 </script>
 
@@ -99,6 +103,28 @@
 		{/if}
 		<span class="t-txt">{sourceHidden ? 'Preview only' : 'Source'}</span>
 	</button>
+
+	<!-- Only ever shown when the browser has offered us a prompt, which is Chromium
+	     and only until the app is installed. Elsewhere the bar looks as it always did. -->
+	{#if canInstall}
+		<button class="t-btn" onclick={onInstall} title="Install as an app — runs offline">
+			<svg
+				width="12"
+				height="12"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2.5"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
+				<path d="M12 3v12" />
+				<path d="M7 10l5 5 5-5" />
+				<path d="M4 21h16" />
+			</svg>
+			<span class="t-txt">Install</span>
+		</button>
+	{/if}
 
 	<!-- Last in the bar on purpose: the app-chrome theme is a setting, not an
 	     editing action, so it sits apart from the buttons that change the CV. -->
