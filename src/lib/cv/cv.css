@@ -1,9 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   The CV document itself.
+   The CV document itself, rendered by CvSheet.svelte.
 
-   These rules are deliberately global: the sheet is injected with {@html} from
-   render.js, so Svelte's scoped styles would never reach it. Tokens come from
-   src/app.css.
+   These rules are deliberately global rather than scoped to that component,
+   since markdown fields are injected via {@html} and wouldn't be reached by
+   scoped styles anyway. Tokens come from src/app.css.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .sheet {

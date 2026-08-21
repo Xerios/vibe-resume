@@ -5,9 +5,10 @@
 	import Toolbar from '$lib/components/Toolbar.svelte';
 	import TrashPanel from '$lib/components/TrashPanel.svelte';
 	import YamlEditor from '$lib/components/YamlEditor.svelte';
+	import CvSheet from '$lib/cv/CvSheet.svelte';
 	import { CvDoc } from '$lib/cv/doc.svelte.js';
 	import { FileManager } from '$lib/cv/files.svelte.js';
-	import { buildCV, parseCv } from '$lib/cv/render.js';
+	import { parseCv } from '$lib/cv/render.js';
 	import { KEYS, read, write } from '$lib/cv/storage.js';
 
 	const PARSE_DEBOUNCE_MS = 250;
@@ -34,16 +35,6 @@
 	/** @type {ReturnType<typeof setTimeout> | undefined} */
 	let toastTimer;
 	let trashOpen = $state(false);
-
-	const previewHtml = $derived.by(() => {
-		if (!parsed) return '';
-		try {
-			return buildCV(parsed);
-		} catch (e) {
-			const msg = e instanceof Error ? e.message : String(e);
-			return `<div class="sheet"><p class="cv-unknown">Could not render: ${escapeHtml(msg)}</p></div>`;
-		}
-	});
 
 	const saveLabel = $derived.by(() => {
 		if (cv.saveError) return '⚠ not saved';
@@ -252,11 +243,6 @@
 		setWidth(current * 100 + step);
 		if (editorWidth) write(KEYS.editorWidth, editorWidth);
 	}
-
-	/** @param {string} s */
-	function escapeHtml(s) {
-		return s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c] ?? c);
-	}
 </script>
 
 <svelte:head>
@@ -342,7 +328,20 @@
 			{:else if parseError}
 				<div id="error-banner">⚠ {parseError}</div>
 			{/if}
-			<div id="cv-root">{@html previewHtml}</div>
+			<div id="cv-root">
+				<svelte:boundary>
+					{#if parsed}
+						<CvSheet cv={parsed} />
+					{/if}
+					{#snippet failed(error)}
+						<div class="sheet">
+							<p class="cv-unknown">
+								Could not render: {error instanceof Error ? error.message : String(error)}
+							</p>
+						</div>
+					{/snippet}
+				</svelte:boundary>
+			</div>
 		</div>
 
 		{#if historyOpen && cv.ready}

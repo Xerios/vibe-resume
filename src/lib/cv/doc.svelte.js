@@ -5,6 +5,7 @@ import { LoroDoc, UndoManager } from 'loro-crdt/web';
 import initWasm from 'loro-crdt/web/loro_wasm.js';
 import DEFAULT_YAML from './default-cv.yaml?raw';
 import { base64ToBytes, bytesToBase64, read, remove, snapshotKey, write } from './storage.js';
+import { EphemeralStore } from 'loro-crdt';
 
 const TEXT_ID = 'yaml';
 const TAGS_ID = 'checkpoints';
@@ -307,6 +308,8 @@ export class CvDoc {
 			})
 		];
 
+		// this.user = { name: "User", colorClassName: "user1" }
+		// const ephemeral = { user: this.user, ephemeral: new EphemeralStore() }
 		this.extensions = LoroExtensions(doc, undefined, this.#undo, cvText);
 		this.viewingKey = null;
 		this.diff = null;
