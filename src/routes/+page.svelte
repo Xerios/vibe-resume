@@ -22,6 +22,12 @@
 	/** Last successfully parsed CV. Kept on a parse error so the preview doesn't blank. */
 	let parsed = $state(/** @type {any} */ (null));
 	let parseError = $state(/** @type {string | null} */ (null));
+	/**
+	 * Where each value in `parsed` came from — `data-src` path → source line.
+	 * Only read from event handlers, so it stays off the reactive graph.
+	 * @type {Map<string, number> | null}
+	 */
+	let srcLines = null;
 
 	let historyOpen = $state(read(KEYS.historyOpen) !== "false");
 	let sourceHidden = $state(read(KEYS.sourceHidden) === "true");
@@ -32,6 +38,10 @@
 	let editor = $state(/** @type {YamlEditor | undefined} */ (undefined));
 	/** @type {HTMLDivElement} */
 	let split;
+	/** @type {HTMLDivElement} */
+	let cvRoot;
+	/** The preview element the pointer is on, outlined while the editor shows its line. */
+	let hoverEl = /** @type {Element | null} */ (null);
 	let dragging = false;
 	/** @type {ReturnType<typeof setTimeout> | undefined} */
 	let toastTimer;
@@ -65,11 +75,19 @@
 		window.addEventListener("beforeunload", flush);
 		window.addEventListener("keydown", onKeydown);
 		document.addEventListener("visibilitychange", onVisibility);
+		// Listeners rather than markup handlers: the preview is a document, not a
+		// control, and `onclick` on a plain <div> only buys an a11y warning.
+		cvRoot.addEventListener("mouseover", onPreviewOver);
+		cvRoot.addEventListener("mouseleave", onPreviewLeave);
+		cvRoot.addEventListener("click", onPreviewClick);
 
 		return () => {
 			window.removeEventListener("beforeunload", flush);
 			window.removeEventListener("keydown", onKeydown);
 			document.removeEventListener("visibilitychange", onVisibility);
+			cvRoot.removeEventListener("mouseover", onPreviewOver);
+			cvRoot.removeEventListener("mouseleave", onPreviewLeave);
+			cvRoot.removeEventListener("click", onPreviewClick);
 			clearTimeout(toastTimer);
 			cv.destroy();
 		};
@@ -94,9 +112,70 @@
 
 	/** @param {string} text */
 	function reparse(text) {
-		const { cv: doc, error } = parseCv(text);
+		const { cv: doc, lines, error } = parseCv(text);
 		parseError = error;
-		if (doc) parsed = doc;
+		// Both or neither: the map has to describe the CV that's on screen, so a
+		// broken document leaves the last good pair in place.
+		if (doc) {
+			parsed = doc;
+			srcLines = lines;
+		}
+	}
+
+	/* ── Preview → source ──────────────────────────────────────────────────────
+	   Every element CvSheet renders carries the `data-src` path of the YAML value
+	   behind it. Hovering lights that line up in the editor, clicking puts the
+	   caret on it. */
+
+	/**
+	 * The `data-src` element under the pointer and the line it maps to. Paths the
+	 * map doesn't know — a value added since the last good parse — fall back to
+	 * the nearest ancestor that it does, so the jump lands close rather than
+	 * nowhere.
+	 * @param {Event} e
+	 */
+	function srcTarget(e) {
+		const el = e.target instanceof Element ? e.target.closest("[data-src]") : null;
+		if (!el) return null;
+		let path = /** @type {string | null} */ (el.getAttribute("data-src"));
+		while (path) {
+			const line = srcLines?.get(path);
+			if (line) return { el, line };
+			const cut = path.lastIndexOf(".");
+			path = cut < 0 ? null : path.slice(0, cut);
+		}
+		return { el, line: 0 };
+	}
+
+	/** @param {Event} e */
+	function onPreviewOver(e) {
+		const hit = srcTarget(e);
+		if (hit?.el === hoverEl) return;
+		markHover(hit?.el ?? null);
+		if (hit?.line && !sourceHidden) editor?.revealLine(hit.line);
+	}
+
+	function onPreviewLeave() {
+		markHover(null);
+		editor?.clearPeek();
+	}
+
+	/** @param {MouseEvent} e */
+	function onPreviewClick(e) {
+		if (sourceHidden) return;
+		// Leave a link's own click alone, and don't yank focus out of a selection
+		// the user is in the middle of making.
+		if (e.target instanceof Element && e.target.closest("a")) return;
+		if (window.getSelection()?.isCollapsed === false) return;
+		const hit = srcTarget(e);
+		if (hit?.line) editor?.revealLine(hit.line, { focus: true });
+	}
+
+	/** @param {Element | null} el */
+	function markHover(el) {
+		hoverEl?.classList.remove("src-hover");
+		hoverEl = el;
+		hoverEl?.classList.add("src-hover");
 	}
 
 	/** @param {KeyboardEvent} e */
@@ -370,7 +449,12 @@
 			{:else if parseError}
 				<div id="error-banner">⚠ {parseError}</div>
 			{/if}
-			<div id="cv-root" data-cv-layout={layout} data-cv-theme={theme}>
+			<div
+				id="cv-root"
+				bind:this={cvRoot}
+				data-cv-layout={layout}
+				data-cv-theme={theme}
+			>
 				<svelte:boundary>
 					{#if parsed}
 						<CvSheet cv={parsed} {layout} />

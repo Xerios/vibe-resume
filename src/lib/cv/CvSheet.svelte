@@ -24,8 +24,16 @@
 	 */
 	const list = (v) => (Array.isArray(v) ? v : []);
 
+	/**
+	 * Sections paired with their path into the YAML — `data-src` on the rendered
+	 * elements is what lets the page scroll the editor to the matching line (see
+	 * `buildLineMap` in render.js). The index has to be taken before filtering,
+	 * or every path past a dropped section would point one entry too far.
+	 */
 	const sections = $derived(
-		list(cv.sections).filter((s) => s && typeof s === "object"),
+		list(cv.sections)
+			.map((sec, i) => ({ sec, path: `sections.${i}` }))
+			.filter((e) => e.sec && typeof e.sec === "object"),
 	);
 
 	/**
@@ -35,36 +43,36 @@
 	 */
 	const rail = $derived(
 		layout === "sidebar"
-			? sections.filter((s) => s.rail ?? s.type === "skills")
+			? sections.filter((e) => e.sec.rail ?? e.sec.type === "skills")
 			: [],
 	);
-	const main = $derived(sections.filter((s) => !rail.includes(s)));
+	const main = $derived(sections.filter((e) => !rail.includes(e)));
 </script>
 
-{#snippet secHead(/** @type {unknown} */ title)}
+{#snippet secHead(/** @type {any} */ sec, /** @type {string} */ path)}
 	<div class="sec-head">
-		<h2>{@html md(title)}</h2>
+		<h2 data-src="{path}.title">{@html md(sec.title)}</h2>
 		<div class="bar"></div>
 	</div>
 {/snippet}
 
-{#snippet block(/** @type {any} */ sec)}
+{#snippet block(/** @type {any} */ sec, /** @type {string} */ path)}
 	{#if sec.type === "summary"}
-		<section class="sec-summary">
-			{@render secHead(sec.title)}
-			{#each list(sec.paragraphs) as p}
-				<p>{@html md(p)}</p>
+		<section class="sec-summary" data-src={path}>
+			{@render secHead(sec, path)}
+			{#each list(sec.paragraphs) as p, i}
+				<p data-src="{path}.paragraphs.{i}">{@html md(p)}</p>
 			{/each}
 		</section>
 	{:else if sec.type === "skills"}
-		<section class="sec-skills">
-			{@render secHead(sec.title)}
+		<section class="sec-skills" data-src={path}>
+			{@render secHead(sec, path)}
 			<div class="skill-grid">
-				{#each list(sec.blocks) as b}
-					<div class="skill-block">
-						<h3>{@html md(b.title)}</h3>
-						{#each list(b.rows) as r}
-							<div class="skill-row">
+				{#each list(sec.blocks) as b, i}
+					<div class="skill-block" data-src="{path}.blocks.{i}">
+						<h3 data-src="{path}.blocks.{i}.title">{@html md(b.title)}</h3>
+						{#each list(b.rows) as r, j}
+							<div class="skill-row" data-src="{path}.blocks.{i}.rows.{j}">
 								{#if r.tier}<span class="tier">{@html md(r.tier)}</span> ·
 								{/if}{@html md(r.text)}
 							</div>
@@ -74,45 +82,54 @@
 			</div>
 		</section>
 	{:else if sec.type === "experience"}
-		<section class="sec-experience">
-			{@render secHead(sec.title)}
-			{#each list(sec.items) as item}
+		<section class="sec-experience" data-src={path}>
+			{@render secHead(sec, path)}
+			{#each list(sec.items) as item, i}
 				{#if item.subtype === "earlier"}
-					<div class="earlier">
-						<h3>{@html md(item.title)}</h3>
+					<div class="earlier" data-src="{path}.items.{i}">
+						<h3 data-src="{path}.items.{i}.title">{@html md(item.title)}</h3>
 						<ul class="bullets">
-							{#each list(item.items) as line}
-								<li>{@html md(line)}</li>
+							{#each list(item.items) as line, j}
+								<li data-src="{path}.items.{i}.items.{j}">{@html md(line)}</li>
 							{/each}
 						</ul>
 					</div>
 				{:else}
-					<div class="job">
+					<div class="job" data-src="{path}.items.{i}">
 						<div class="job-head">
-							<p class="job-title">
+							<p class="job-title" data-src="{path}.items.{i}.title">
 								{@html md(item.title)}
-								<span class="co">| {@html md(item.company)}</span
+								<span class="co" data-src="{path}.items.{i}.company"
+									>| {@html md(item.company)}</span
 								>{#if item.sideNote}
-									<span class="side-note">{@html md(item.sideNote)}</span>{/if}
+									<span class="side-note" data-src="{path}.items.{i}.sideNote"
+										>{@html md(item.sideNote)}</span
+									>{/if}
 							</p>
-							<span class="job-dates">{@html md(item.dates)}</span>
+							<span class="job-dates" data-src="{path}.items.{i}.dates"
+								>{@html md(item.dates)}</span
+							>
 						</div>
-						<p class="job-sub">{@html md(item.sub)}</p>
+						<p class="job-sub" data-src="{path}.items.{i}.sub">
+							{@html md(item.sub)}
+						</p>
 						<ul class="bullets">
-							{#each list(item.bullets) as b}
-								<li>{@html md(b)}</li>
+							{#each list(item.bullets) as b, j}
+								<li data-src="{path}.items.{i}.bullets.{j}">{@html md(b)}</li>
 							{/each}
 						</ul>
 						{#if item.stack}
-							<p class="stack"><b>STACK</b> · {@html md(item.stack)}</p>
+							<p class="stack" data-src="{path}.items.{i}.stack">
+								<b>STACK</b> · {@html md(item.stack)}
+							</p>
 						{/if}
 					</div>
 				{/if}
 			{/each}
 		</section>
 	{:else if sec.type === "oss"}
-		<section class="sec-oss">
-			{@render secHead(sec.title)}
+		<section class="sec-oss" data-src={path}>
+			{@render secHead(sec, path)}
 			<table class="oss">
 				{#if sec.hasHeader}
 					<thead>
@@ -124,43 +141,50 @@
 					</thead>
 				{/if}
 				<tbody>
-					{#each list(sec.projects) as p}
-						<tr>
-							<td class="proj">{@html md(p.name)}</td>
-							<td class="stars">{@html md(p.stars)}</td>
-							<td>{@html md(p.desc)}</td>
+					{#each list(sec.projects) as p, i}
+						<tr data-src="{path}.projects.{i}">
+							<td class="proj" data-src="{path}.projects.{i}.name"
+								>{@html md(p.name)}</td
+							>
+							<td class="stars" data-src="{path}.projects.{i}.stars"
+								>{@html md(p.stars)}</td
+							>
+							<td data-src="{path}.projects.{i}.desc">{@html md(p.desc)}</td>
 						</tr>
 					{/each}
 				</tbody>
 			</table>
 		</section>
 	{:else}
-		<p class="cv-unknown">Unknown section type: {@html md(sec.type)}</p>
+		<p class="cv-unknown" data-src="{path}.type">
+			Unknown section type: {@html md(sec.type)}
+		</p>
 	{/if}
 {/snippet}
 
 <div class="sheet">
-	<header>
+	<header data-src="header">
 		<div>
-			<h1 class="name">{@html md(cv.header?.name)}</h1>
-			<p class="role">{@html md(cv.header?.role)}</p>
+			<h1 class="name" data-src="header.name">{@html md(cv.header?.name)}</h1>
+			<p class="role" data-src="header.role">{@html md(cv.header?.role)}</p>
 		</div>
 		<div class="contact">
 			{#each list(cv.header?.contact) as line, i}{#if i > 0}<br
-					/>{/if}{@html md(line)}{/each}
+					/>{/if}<span data-src="header.contact.{i}">{@html md(line)}</span
+				>{/each}
 		</div>
 	</header>
 
 	{#if layout === "sidebar"}
 		<div class="cv-cols">
 			<aside class="cv-rail">
-				{#each rail as sec}{@render block(sec)}{/each}
+				{#each rail as e}{@render block(e.sec, e.path)}{/each}
 			</aside>
 			<div class="cv-main">
-				{#each main as sec}{@render block(sec)}{/each}
+				{#each main as e}{@render block(e.sec, e.path)}{/each}
 			</div>
 		</div>
 	{:else}
-		{#each sections as sec}{@render block(sec)}{/each}
+		{#each sections as e}{@render block(e.sec, e.path)}{/each}
 	{/if}
 </div>

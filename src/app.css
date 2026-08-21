@@ -34,6 +34,7 @@
 	--cm-diff-add-bg: #cdedd3;
 	--cm-diff-del-bg: #f6d3d3;
 	--cm-diff-del-text: #7a2b2b;
+	--cm-peek: #157c751f;
 	--stat-add: #1a6b3a;
 	--stat-del: #a83a3a;
 	--mono: 'SFMono-Regular', ui-monospace, 'JetBrains Mono', 'Menlo', monospace;
@@ -720,6 +721,14 @@ body {
 	white-space: pre-wrap;
 }
 
+/* The line behind whatever the pointer is on in the preview. Unlike
+   .cm-activeLine this shows while the editor is unfocused — that's the whole
+   point of it, since the pointer is over on the other pane. */
+#cm-wrap .cm-peek-line {
+	background: var(--cm-peek);
+	box-shadow: inset 2px 0 0 var(--accent);
+}
+
 /* ── Divider ──────────────────────────────────── */
 #divider {
 	flex-shrink: 0;
@@ -1173,6 +1182,7 @@ body.resizing #preview-pane {
 	--cm-diff-add-bg: #163a24;
 	--cm-diff-del-bg: #3a1616;
 	--cm-diff-del-text: #e89a9a;
+	--cm-peek: #1cbdb229;
 	--stat-add: #5dcc80;
 	--stat-del: #e08a8a;
 }

@@ -19,6 +19,16 @@
 	line-height: 1.46;
 }
 
+/* Set by the page on whatever the pointer is over, while the editor scrolls to
+   the line behind it. An outline is drawn outside the box, so the highlight can
+   move from element to element without reflowing a thing. */
+.src-hover {
+	outline: 1.5px solid color-mix(in srgb, var(--accent) 50%, transparent);
+	outline-offset: 3px;
+	border-radius: 2px;
+	background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
 .sheet header {
 	display: flex;
 	justify-content: space-between;
@@ -422,6 +432,13 @@ table.oss .proj a:hover {
 	.skill-row .tier {
 		-webkit-print-color-adjust: exact;
 		print-color-adjust: exact;
+	}
+
+	/* Never print the pointer's trail — the mouse can be sitting on the CV when
+	   the print dialog opens. */
+	.src-hover {
+		outline: none;
+		background: none;
 	}
 
 	/* Force light colours when printing regardless of theme */

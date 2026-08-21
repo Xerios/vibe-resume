@@ -3,7 +3,7 @@
 	import { indentWithTab, standardKeymap } from '@codemirror/commands';
 	import { yaml } from '@codemirror/lang-yaml';
 	import { HighlightStyle, indentUnit, syntaxHighlighting } from '@codemirror/language';
-	import { Compartment, EditorState } from '@codemirror/state';
+	import { Compartment, EditorState, StateEffect, StateField } from '@codemirror/state';
 	import {
 		Decoration,
 		EditorView,
@@ -30,6 +30,32 @@
 	let view = $state(/** @type {EditorView | null} */ (null));
 	const editable = new Compartment();
 	const diffHighlight = new Compartment();
+
+	/**
+	 * "Peek" line — the line behind whatever the pointer is on in the preview.
+	 * It carries its own decoration rather than moving the cursor, so hovering
+	 * the CV never disturbs where the caret sits or what's selected. Clicking
+	 * does move the caret, and `cm-activeLine` takes the highlight over then.
+	 */
+	const setPeek = /** @type {import('@codemirror/state').StateEffectType<number | null>} */ (
+		StateEffect.define()
+	);
+	const peekMark = Decoration.line({ class: 'cm-peek-line' });
+	const peekField = StateField.define({
+		create: () => Decoration.none,
+		/**
+		 * @param {import('@codemirror/view').DecorationSet} deco
+		 * @param {import('@codemirror/state').Transaction} tr
+		 */
+		update(deco, tr) {
+			deco = deco.map(tr.changes);
+			for (const e of tr.effects)
+				if (e.is(setPeek))
+					deco = e.value === null ? Decoration.none : Decoration.set([peekMark.range(e.value)]);
+			return deco;
+		},
+		provide: (f) => EditorView.decorations.from(f)
+	});
 
 	class RemovedText extends WidgetType {
 		/** @param {string} text */
@@ -103,6 +129,7 @@
 					keymap.of([...standardKeymap, indentWithTab]),
 					editable.of(editableExtensions(readOnly)),
 					diffHighlight.of(EditorView.decorations.of(diffDecorations(diff))),
+					peekField,
 					loroExtensions
 				]
 			})
@@ -128,6 +155,32 @@
 	/** @param {boolean} locked */
 	function editableExtensions(locked) {
 		return [EditorState.readOnly.of(locked), EditorView.editable.of(!locked)];
+	}
+
+	/**
+	 * Bring a source line into view for the preview's sake: `focus` puts the
+	 * caret on it and takes focus — what a click asks for — while a plain hover
+	 * only lights it up, and only scrolls when the line isn't already on screen.
+	 * @param {number} line 1-based
+	 * @param {{ focus?: boolean }} [opts]
+	 */
+	export function revealLine(line, { focus = false } = {}) {
+		if (!view) return;
+		const doc = view.state.doc;
+		const info = doc.line(Math.min(Math.max(1, Math.round(line)), doc.lines));
+		view.dispatch({
+			selection: focus ? { anchor: info.from } : undefined,
+			effects: [
+				setPeek.of(focus ? null : info.from),
+				EditorView.scrollIntoView(info.from, focus ? { y: 'center' } : { y: 'nearest', yMargin: 48 })
+			]
+		});
+		if (focus) view.focus();
+	}
+
+	/** Drop the peek highlight — the pointer has left the preview. */
+	export function clearPeek() {
+		view?.dispatch({ effects: setPeek.of(null) });
 	}
 
 	/**
