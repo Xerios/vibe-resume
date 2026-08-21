@@ -198,7 +198,33 @@
 	 */
 	function srcTarget(e) {
 		const el = e.target instanceof Element ? e.target.closest("[data-src]") : null;
-		return el ? { el, line: lineForPath(el.getAttribute("data-src")) } : null;
+		if (!el || !hasOwnText(el)) return null;
+		return { el, line: lineForPath(el.getAttribute("data-src")) };
+	}
+
+	/**
+	 * Whether an element carries text of its own — text inside a nested
+	 * `data-src` element belongs to that one, not to this. Only those are worth
+	 * pointing at: a wrapper like a whole job block is what the pointer lands on
+	 * every time it crosses the seam between two children, and outlining one of
+	 * those — or pulling the editor to its opening line — over a 1px gap makes
+	 * both panes jump for nothing.
+	 * @param {Element} el
+	 */
+	function hasOwnText(el) {
+		const walk = document.createTreeWalker(
+			el,
+			NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
+			(node) =>
+				node.nodeType === Node.TEXT_NODE
+					? node.nodeValue?.trim()
+						? NodeFilter.FILTER_ACCEPT
+						: NodeFilter.FILTER_SKIP
+					: /** @type {Element} */ (node).hasAttribute("data-src")
+						? NodeFilter.FILTER_REJECT // that element's text, not this one's
+						: NodeFilter.FILTER_SKIP,
+		);
+		return walk.nextNode() !== null;
 	}
 
 	/**
