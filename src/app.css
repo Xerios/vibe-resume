@@ -129,10 +129,17 @@ body {
 	font-weight: 600;
 	color: var(--muted);
 	padding: 4px 11px;
+	flex-shrink: 0;
+	white-space: nowrap;
 	transition:
 		border-color 0.13s,
 		color 0.13s,
 		background 0.13s;
+}
+
+/* Icon-only by design, at every width — not a label that happens to be hidden. */
+.t-btn-icon {
+	padding: 4px 9px;
 }
 
 .t-btn:hover:not(:disabled) {
@@ -178,20 +185,35 @@ body {
 	position: relative;
 	display: flex;
 	align-items: center;
-	gap: 4px;
+	gap: 8px;
 	height: 34px;
 	padding: 0 10px;
 	background: var(--editor-chrome);
 	border-bottom: 1px solid var(--line);
-	overflow-x: auto;
 	z-index: 9;
 }
 
+/* The scroller, so a long row of tabs never pushes #tab-actions out of reach.
+   Its scrollbar is hidden: 34px leaves no room for one that isn't overlaid. */
 #tabs {
+	flex: 1;
 	display: flex;
 	align-items: center;
 	gap: 3px;
 	min-width: 0;
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+#tabs::-webkit-scrollbar {
+	display: none;
+}
+
+#tab-actions {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	gap: 4px;
 }
 
 .tab {
@@ -581,7 +603,7 @@ body {
 }
 
 #editor-pane {
-	width: 42%;
+	width: var(--editor-w, 42%);
 	min-width: 180px;
 	display: flex;
 	flex-direction: column;
@@ -593,41 +615,6 @@ body {
    Reset and Restore apply text through it even while it's out of view. */
 #editor-pane.hidden {
 	display: none;
-}
-
-#editor-header {
-	flex-shrink: 0;
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	padding: 0 12px;
-	height: 32px;
-	background: var(--editor-chrome);
-	border-bottom: 1px solid var(--line);
-}
-
-.editor-badge {
-	font-family: var(--mono);
-	font-size: 9px;
-	font-weight: 700;
-	letter-spacing: 2px;
-	text-transform: uppercase;
-	color: var(--accent-deep);
-	background: var(--accent-wash);
-	border: 1px solid var(--line);
-	padding: 2px 7px;
-	border-radius: 3px;
-}
-
-.editor-badge.readonly {
-	color: var(--prompt);
-	background: var(--prompt-bg);
-}
-
-.editor-file {
-	font-family: var(--mono);
-	font-size: 11px;
-	color: var(--faint);
 }
 
 #cm-wrap {
@@ -1014,9 +1001,78 @@ body.resizing #preview-pane {
 	transform: translateX(-50%) translateY(0);
 }
 
+/* ── Narrow screens ───────────────────────────── */
+/* Below roughly an 820px sheet plus a usable editor, the split stops paying
+   for itself side by side and stacks instead: editor over preview, with the
+   history panel lifted out of the flow as an overlay like the trash panel. */
 @media (max-width: 900px) {
+	#split {
+		flex-direction: column;
+	}
+
+	/* The dragged width is a horizontal measure — meaningless once stacked. */
 	#editor-pane {
-		width: 50%;
+		width: auto;
+		min-width: 0;
+		height: 45%;
+		min-height: 120px;
+	}
+
+	#preview-pane {
+		min-height: 0;
+	}
+
+	/* Resizing is pointer-drag along the wrong axis here; the proportions are fixed. */
+	#divider {
+		display: none;
+	}
+
+	#history-pane {
+		position: fixed;
+		top: 82px;
+		right: 8px;
+		bottom: 8px;
+		width: min(288px, calc(100vw - 16px));
+		border: 1px solid var(--line);
+		border-radius: 8px;
+		box-shadow: var(--shadow-pop);
+		z-index: 100;
+	}
+}
+
+/* Phone-width chrome: buttons drop to their icons, and the labels that only
+   restate what's already on screen drop out entirely. */
+@media (max-width: 640px) {
+	#toolbar {
+		gap: 8px;
+		padding: 0 10px;
+	}
+
+	#tabbar {
+		gap: 6px;
+		padding: 0 6px;
+	}
+
+	.t-label,
+	#save-state {
+		display: none;
+	}
+
+	.t-btn {
+		padding: 4px 8px;
+	}
+
+	.t-btn .t-txt {
+		display: none;
+	}
+
+	.tab-select,
+	.tab-rename {
+		max-width: 104px;
+	}
+
+	#editor-pane {
+		height: 50%;
 	}
 }
 
@@ -1096,7 +1152,6 @@ body,
 .tab,
 #trash-panel,
 #editor-pane,
-#editor-header,
 #preview-pane,
 #error-banner,
 #history-pane,

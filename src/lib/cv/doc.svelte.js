@@ -5,7 +5,6 @@ import { LoroDoc, UndoManager } from 'loro-crdt/web';
 import initWasm from 'loro-crdt/web/loro_wasm.js';
 import DEFAULT_YAML from './default-cv.yaml?raw';
 import { base64ToBytes, bytesToBase64, read, remove, snapshotKey, write } from './storage.js';
-import { EphemeralStore } from 'loro-crdt';
 
 const TEXT_ID = 'yaml';
 const TAGS_ID = 'checkpoints';
@@ -128,9 +127,9 @@ export class CvDoc {
 	}
 
 	/**
-	 * Let the document push text into the editor. Reset and Restore go through
-	 * here so that they land as ordinary editor transactions, which is what the
-	 * Loro binding knows how to record.
+	 * Let the document push text into the editor. Restore goes through here so
+	 * that it lands as an ordinary editor transaction, which is what the Loro
+	 * binding knows how to record.
 	 * @param {(text: string) => void} applyText
 	 */
 	bindEditor(applyText) {
@@ -169,12 +168,6 @@ export class CvDoc {
 		this.#doc.setChangeMergeInterval(MERGE_WINDOW_SECONDS);
 		this.#refreshHistory();
 		this.#scheduleSettle();
-	}
-
-	/** Replace the document with the shipped template, as a new version. */
-	reset() {
-		this.viewLatest();
-		this.#applyNamed('Reset to template', DEFAULT_YAML);
 	}
 
 	/**

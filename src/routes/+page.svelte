@@ -79,7 +79,7 @@
 		const docId = cv.docId;
 		if (!text) return;
 		if (!parsed || docId !== lastParsedDocId) {
-			// First paint, and switching to a different document (tab switch, reset,
+			// First paint, and switching to a different document (tab switch, new file,
 			// clear history) shouldn't wait on the debounce meant for keystrokes.
 			lastParsedDocId = docId;
 			reparse(text);
@@ -136,9 +136,11 @@
 		write(KEYS.sourceHidden, String(sourceHidden));
 	}
 
-	function resetYaml() {
-		cv.reset();
-		toast('Reset to template');
+	/** Open a fresh tab holding the shipped template — no snapshot yet, so `CvDoc` seeds one. */
+	function newFile() {
+		const id = files.create();
+		cv.switchTo(id);
+		toast('New CV from template');
 	}
 
 	function copyYaml() {
@@ -278,9 +280,6 @@
 		onToggleTheme={toggleTheme}
 		onToggleHistory={toggleHistory}
 		onToggleSource={toggleSource}
-		onReset={resetYaml}
-		onCopy={copyYaml}
-		onExport={exportPDF}
 	/>
 
 	<TabBar
@@ -291,20 +290,19 @@
 		onRename={renameTab}
 		{trashOpen}
 		onToggleTrash={toggleTrash}
+		onNew={newFile}
+		onCopy={copyYaml}
+		onExport={exportPDF}
 	/>
 
 	{#if trashOpen}
 		<TrashPanel {files} onRestore={restoreTab} onPurge={purgeTab} onEmpty={emptyTrash} onClose={toggleTrash} />
 	{/if}
 
-	<div id="split" bind:this={split}>
-		<div id="editor-pane" class:hidden={sourceHidden} style:width={sourceHidden ? undefined : editorWidth}>
-			<div id="editor-header">
-				<span class="editor-badge" class:readonly={cv.isViewingHistory}>
-					{cv.isViewingHistory ? 'Read only' : 'YAML'}
-				</span>
-				<span class="editor-file">{files.active?.name ?? 'cv.yaml'}</span>
-			</div>
+	<!-- The drag width rides on a custom property rather than the pane's own
+	     `width`, so the stacked (narrow-screen) layout can ignore it in CSS. -->
+	<div id="split" bind:this={split} style:--editor-w={editorWidth}>
+		<div id="editor-pane" class:hidden={sourceHidden}>
 			{#if cv.ready}
 				<!-- Re-keyed when the document is swapped (history cleared, or another
 				     tab's document taken over): the binding is tied to one LoroDoc. -->
