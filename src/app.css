@@ -4,6 +4,10 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
+	/* Tells the browser which ramp its own chrome should use — the bits no
+	   stylesheet reaches, like the scrollbars inside a native popup. */
+	color-scheme: light;
+
 	--ink: #15211f;
 	--muted: #5f6f6c;
 	--faint: #8a9794;
@@ -40,6 +44,10 @@
 	--cm-error-bg: #c7343414;
 	--stat-add: #1a6b3a;
 	--stat-del: #a83a3a;
+	/* Derived rather than fixed, so a scrollbar follows the ramp it sits in:
+	   both halves resolve against the --muted/--accent in force on :root. */
+	--scroll-thumb: color-mix(in srgb, var(--muted) 36%, transparent);
+	--scroll-thumb-hover: color-mix(in srgb, var(--accent) 62%, transparent);
 	--mono: 'SFMono-Regular', ui-monospace, 'JetBrains Mono', 'Menlo', monospace;
 	--sans: 'Inter', 'Segoe UI', -apple-system, system-ui, Roboto, Helvetica, Arial, sans-serif;
 }
@@ -61,6 +69,43 @@ body {
 	color: var(--ink);
 	background: var(--bg);
 	-webkit-font-smoothing: antialiased;
+}
+
+/* ── Scrollbars ───────────────────────────────── */
+/* The same scrollbar written twice: Firefox and Chrome 121+ read the standard
+   `scrollbar-*` properties, older WebKit/Blink only the ::-webkit- pseudos.
+   Both draw from the same two tokens so the pair can't drift apart.
+
+   The track is left transparent throughout. A scrollbar then reads as sitting
+   *on* the pane it scrolls — editor, sheet, history list — instead of cutting
+   a strip of some third colour down the side of it. */
+* {
+	scrollbar-width: thin;
+	scrollbar-color: var(--scroll-thumb) transparent;
+}
+
+::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+	background: transparent;
+}
+
+/* The transparent border is the inset: padding-box clipping keeps the fill
+   inside it, which is what makes a 10px-wide track carry a 6px thumb. */
+::-webkit-scrollbar-thumb {
+	background: var(--scroll-thumb);
+	background-clip: padding-box;
+	border: 2px solid transparent;
+	border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: var(--scroll-thumb-hover);
+	background-clip: padding-box;
 }
 
 #app {
@@ -1258,6 +1303,8 @@ body.resizing #preview-pane {
 
 /* ── Dark mode ────────────────────────────────── */
 :root[data-theme='dark'] {
+	color-scheme: dark;
+
 	--ink: #cde0dd;
 	--muted: #7a9491;
 	--faint: #5c7e7a;
