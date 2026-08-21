@@ -13,6 +13,14 @@
 	import { KEYS, read, write } from "$lib/cv/storage.js";
 
 	const PARSE_DEBOUNCE_MS = 250;
+	/** How long a pane's own scroll events stay ours after we move it ourselves. */
+	const SYNC_QUIET_MS = 250;
+	/** A tab switch or version preview scrolls things about; sync sits out this long. */
+	const SYNC_HOLD_MS = 400;
+	/** Where the top of the preview viewport is read from — clear of the sticky banner. */
+	const PREVIEW_TOP_MARGIN = 16;
+	/** Breathing room above an edited element when the preview is pulled to it. */
+	const EDIT_REVEAL_MARGIN = 72;
 
 	const cv = new CvDoc();
 	const files = new FileManager();
@@ -40,6 +48,10 @@
 	let split;
 	/** @type {HTMLDivElement} */
 	let cvRoot;
+	/** @type {HTMLDivElement} */
+	let previewPane;
+	/** @type {HTMLDivElement} */
+	let editorPane;
 	/** The preview element the pointer is on, outlined while the editor shows its line. */
 	let hoverEl = /** @type {Element | null} */ (null);
 	let dragging = false;
@@ -81,6 +93,25 @@
 		cvRoot.addEventListener("mouseleave", onPreviewLeave);
 		cvRoot.addEventListener("click", onPreviewClick);
 
+		// Whichever pane the user reaches for drives the other. Hovering doesn't
+		// count, so a preview resting under the pointer can't take the wheel away
+		// mid-keystroke.
+		const claimEditor = () => takeOver("editor");
+		const claimPreview = () => takeOver("preview");
+		editorPane.addEventListener("wheel", claimEditor, { passive: true });
+		editorPane.addEventListener("pointerdown", claimEditor);
+		editorPane.addEventListener("keydown", claimEditor);
+		editorPane.addEventListener("focusin", claimEditor);
+		previewPane.addEventListener("wheel", claimPreview, { passive: true });
+		previewPane.addEventListener("pointerdown", claimPreview);
+		previewPane.addEventListener("touchstart", claimPreview, { passive: true });
+		previewPane.addEventListener("scroll", onPreviewScroll, { passive: true });
+
+		// Anything that reflows the sheet moves the rungs of the ladder.
+		const resize = new ResizeObserver(() => (anchorsStale = true));
+		resize.observe(cvRoot);
+		resize.observe(previewPane);
+
 		return () => {
 			window.removeEventListener("beforeunload", flush);
 			window.removeEventListener("keydown", onKeydown);
@@ -88,6 +119,15 @@
 			cvRoot.removeEventListener("mouseover", onPreviewOver);
 			cvRoot.removeEventListener("mouseleave", onPreviewLeave);
 			cvRoot.removeEventListener("click", onPreviewClick);
+			editorPane.removeEventListener("wheel", claimEditor);
+			editorPane.removeEventListener("pointerdown", claimEditor);
+			editorPane.removeEventListener("keydown", claimEditor);
+			editorPane.removeEventListener("focusin", claimEditor);
+			previewPane.removeEventListener("wheel", claimPreview);
+			previewPane.removeEventListener("pointerdown", claimPreview);
+			previewPane.removeEventListener("touchstart", claimPreview);
+			previewPane.removeEventListener("scroll", onPreviewScroll);
+			resize.disconnect();
 			clearTimeout(toastTimer);
 			cv.destroy();
 		};
@@ -110,6 +150,26 @@
 		return () => clearTimeout(id);
 	});
 
+	// Presentation changes reflow the sheet without going through the parser.
+	$effect(() => {
+		void layout;
+		void theme;
+		void editorWidth;
+		void sourceHidden;
+		anchorsStale = true;
+	});
+
+	// A tab switch or a version preview swaps the document out and scrolls both
+	// panes on its own. That motion is the app's, not the user's, so sync stays
+	// out of it — browsing history never drags the preview to a change.
+	$effect(() => {
+		void cv.docId;
+		void cv.viewingKey;
+		anchorsStale = true;
+		pendingEditLine = 0;
+		holdSync();
+	});
+
 	/** @param {string} text */
 	function reparse(text) {
 		const { cv: doc, lines, error } = parseCv(text);
@@ -119,6 +179,8 @@
 		if (doc) {
 			parsed = doc;
 			srcLines = lines;
+			anchorsStale = true;
+			if (pendingEditLine) revealEdit(pendingEditLine);
 		}
 	}
 
@@ -136,15 +198,22 @@
 	 */
 	function srcTarget(e) {
 		const el = e.target instanceof Element ? e.target.closest("[data-src]") : null;
-		if (!el) return null;
-		let path = /** @type {string | null} */ (el.getAttribute("data-src"));
+		return el ? { el, line: lineForPath(el.getAttribute("data-src")) } : null;
+	}
+
+	/**
+	 * The source line behind a `data-src` path, or 0 when nothing in the map
+	 * covers it.
+	 * @param {string | null} path
+	 */
+	function lineForPath(path) {
 		while (path) {
 			const line = srcLines?.get(path);
-			if (line) return { el, line };
+			if (line) return line;
 			const cut = path.lastIndexOf(".");
 			path = cut < 0 ? null : path.slice(0, cut);
 		}
-		return { el, line: 0 };
+		return 0;
 	}
 
 	/** @param {Event} e */
@@ -152,7 +221,11 @@
 		const hit = srcTarget(e);
 		if (hit?.el === hoverEl) return;
 		markHover(hit?.el ?? null);
-		if (hit?.line && !sourceHidden) editor?.revealLine(hit.line);
+		if (hit?.line && !sourceHidden) {
+			// Its own scroll, not one to mirror back into the preview.
+			editor?.revealLine(hit.line);
+			hush("editor");
+		}
 	}
 
 	function onPreviewLeave() {
@@ -168,7 +241,11 @@
 		if (e.target instanceof Element && e.target.closest("a")) return;
 		if (window.getSelection()?.isCollapsed === false) return;
 		const hit = srcTarget(e);
-		if (hit?.line) editor?.revealLine(hit.line, { focus: true });
+		if (!hit?.line) return;
+		editor?.revealLine(hit.line, { focus: true });
+		// `revealLine` takes focus, which would otherwise hand the editor the wheel.
+		takeOver("preview");
+		hush("editor");
 	}
 
 	/** @param {Element | null} el */
@@ -176,6 +253,210 @@
 		hoverEl?.classList.remove("src-hover");
 		hoverEl = el;
 		hoverEl?.classList.add("src-hover");
+	}
+
+	/* ── Scroll sync ───────────────────────────────────────────────────────────
+	   The two panes show one document at wildly different densities, so nothing
+	   as simple as a shared percentage lines them up. The `data-src` map is the
+	   converter: every element that carries one pairs a preview offset with a
+	   source line, and a position in either pane is read off that ladder by
+	   interpolating between the two rungs it falls between. */
+
+	/** Rungs of the ladder — preview offset ↔ source line, ascending in both. */
+	let anchors = /** @type {{ y: number, line: number }[]} */ ([]);
+	/** Every `data-src` element by source line, for pulling one thing into view. */
+	let byLine = /** @type {{ line: number, el: Element }[]} */ ([]);
+	/** The ladder is measured from the DOM, so a reflow invalidates it. */
+	let anchorsStale = true;
+	/** The pane the user is driving. The other one follows and never drives back. */
+	let scrollMaster = /** @type {"editor" | "preview" | null} */ (null);
+	/** Per pane: until when its scroll events are our doing rather than the user's. */
+	const quiet = { editor: 0, preview: 0 };
+	/** A line the user just typed on, waiting for the preview to be re-rendered. */
+	let pendingEditLine = 0;
+
+	/** @param {"editor" | "preview"} pane */
+	const hush = (pane) => (quiet[pane] = performance.now() + SYNC_QUIET_MS);
+
+	/** @param {"editor" | "preview"} pane */
+	const hushed = (pane) => performance.now() < quiet[pane];
+
+	/** The user reached for a pane: it drives from here, and stops being hushed. */
+	const takeOver = (/** @type {"editor" | "preview"} */ pane) => {
+		scrollMaster = pane;
+		quiet[pane] = 0;
+	};
+
+	/** Both panes are about to be rearranged by the app — sit the move out. */
+	function holdSync() {
+		quiet.editor = quiet.preview = performance.now() + SYNC_HOLD_MS;
+	}
+
+	/**
+	 * Re-measure the ladder. Sorting by offset gives the order the reader sees;
+	 * the sidebar layout then breaks the line order, since its rail column sits
+	 * beside the main one rather than after it. Keeping the longest increasing
+	 * run drops the shorter column, rather than letting one stray rail heading
+	 * swallow everything below it.
+	 */
+	function buildAnchors() {
+		anchorsStale = false;
+		anchors = [];
+		byLine = [];
+		if (!previewPane || !cvRoot || !srcLines) return;
+		const origin = previewPane.getBoundingClientRect().top - previewPane.scrollTop;
+		/** @type {{ y: number, line: number, el: Element }[]} */
+		const found = [];
+		for (const el of cvRoot.querySelectorAll("[data-src]")) {
+			const line = lineForPath(el.getAttribute("data-src"));
+			if (!line) continue;
+			const box = el.getBoundingClientRect();
+			if (!box.height) continue; // not laid out — a print-only or empty node
+			found.push({ y: box.top - origin, line, el });
+		}
+		found.sort((a, b) => a.y - b.y || a.line - b.line);
+		// Sorted by offset first, so ties keep the outermost element and the
+		// binary search below lands on the innermost — the one worth scrolling to.
+		byLine = found
+			.map(({ line, el }) => ({ line, el }))
+			.sort((a, b) => a.line - b.line);
+
+		// One rung per offset: interpolation needs both axes strictly increasing.
+		const rungs = found.filter((a, i) => i === 0 || a.y > found[i - 1].y);
+		for (const i of longestRun(rungs.map((a) => a.line)))
+			anchors.push({ y: rungs[i].y, line: rungs[i].line });
+	}
+
+	/**
+	 * Indices of the longest strictly increasing run in `values`, by patience
+	 * sorting — so an out-of-order stretch costs its own length and no more.
+	 * @param {number[]} values
+	 * @returns {number[]}
+	 */
+	function longestRun(values) {
+		/** Index of the smallest tail seen for a run of each length. */
+		const tails = /** @type {number[]} */ ([]);
+		const prev = /** @type {number[]} */ (new Array(values.length).fill(-1));
+		for (let i = 0; i < values.length; i++) {
+			let lo = 0;
+			let hi = tails.length;
+			while (lo < hi) {
+				const mid = (lo + hi) >> 1;
+				if (values[tails[mid]] < values[i]) lo = mid + 1;
+				else hi = mid;
+			}
+			if (lo > 0) prev[i] = tails[lo - 1];
+			tails[lo] = i;
+		}
+		/** @type {number[]} */
+		const out = [];
+		for (let i = tails.length ? tails[tails.length - 1] : -1; i >= 0; i = prev[i])
+			out.push(i);
+		return out.reverse();
+	}
+
+	/**
+	 * Index of the last rung at or before `value` on the given axis.
+	 * @param {"y" | "line"} axis
+	 * @param {number} value
+	 */
+	function rungBefore(axis, value) {
+		let lo = 0;
+		let hi = anchors.length - 1;
+		while (lo < hi) {
+			const mid = (lo + hi + 1) >> 1;
+			if (anchors[mid][axis] <= value) lo = mid;
+			else hi = mid - 1;
+		}
+		return lo;
+	}
+
+	/** Preview offset → source line. Past either end the nearest rung pair carries on. */
+	function lineAtOffset(/** @type {number} */ y) {
+		const i = Math.min(rungBefore("y", y), anchors.length - 2);
+		const a = anchors[i];
+		const b = anchors[i + 1];
+		return a.line + ((y - a.y) / (b.y - a.y)) * (b.line - a.line);
+	}
+
+	/** Source line → preview offset — the same ladder read the other way. */
+	function offsetAtLine(/** @type {number} */ line) {
+		const i = Math.min(rungBefore("line", line), anchors.length - 2);
+		const a = anchors[i];
+		const b = anchors[i + 1];
+		return a.y + ((line - a.line) / (b.line - a.line)) * (b.y - a.y);
+	}
+
+	/** Whether there is a usable ladder to read, measuring it first if it went stale. */
+	function ladderReady() {
+		if (sourceHidden || !previewPane) return false;
+		if (anchorsStale) buildAnchors();
+		return anchors.length > 1;
+	}
+
+	/** The preview moved — put the line behind its top edge at the top of the editor. */
+	function onPreviewScroll() {
+		if (scrollMaster !== "preview" || hushed("preview") || !ladderReady()) return;
+		hush("editor");
+		const max = previewPane.scrollHeight - previewPane.clientHeight;
+		if (previewPane.scrollTop <= 1) editor?.scrollToEdge("start");
+		else if (previewPane.scrollTop >= max - 1) editor?.scrollToEdge("end");
+		else editor?.scrollToLine(lineAtOffset(previewPane.scrollTop + PREVIEW_TOP_MARGIN));
+	}
+
+	/** The editor moved — bring what its top line renders to the top of the preview. */
+	function onEditorScroll() {
+		if (scrollMaster !== "editor" || hushed("editor") || !ladderReady()) return;
+		const line = editor?.topLine();
+		if (line == null) return;
+		const edge = editor?.scrollEdge();
+		hush("preview");
+		if (edge === "start") previewPane.scrollTop = 0;
+		else if (edge === "end") previewPane.scrollTop = previewPane.scrollHeight;
+		else previewPane.scrollTop = offsetAtLine(line) - PREVIEW_TOP_MARGIN;
+	}
+
+	/**
+	 * The user typed. The preview is a debounced re-render behind, so the line is
+	 * only remembered here; `revealEdit` acts on it once the new DOM is up.
+	 * @param {number} line
+	 */
+	function noteEdit(line) {
+		pendingEditLine = line;
+		takeOver("editor");
+	}
+
+	/**
+	 * Pull the part of the CV a fresh edit produced into view. Only when it isn't
+	 * already comfortably on screen — typing in the middle of a visible paragraph
+	 * shouldn't shunt the page about.
+	 * @param {number} line
+	 */
+	async function revealEdit(line) {
+		pendingEditLine = 0;
+		await tick();
+		if (sourceHidden || cv.isViewingHistory || !previewPane) return;
+		buildAnchors();
+		const el = elementForLine(line);
+		if (!el) return;
+		const box = el.getBoundingClientRect();
+		const pane = previewPane.getBoundingClientRect();
+		if (box.top >= pane.top + PREVIEW_TOP_MARGIN && box.bottom <= pane.bottom) return;
+		hush("preview");
+		previewPane.scrollTop += box.top - pane.top - EDIT_REVEAL_MARGIN;
+	}
+
+	/** The rendered element for a source line — the innermost one at or before it. */
+	function elementForLine(/** @type {number} */ line) {
+		if (!byLine.length) return null;
+		let lo = 0;
+		let hi = byLine.length - 1;
+		while (lo < hi) {
+			const mid = (lo + hi + 1) >> 1;
+			if (byLine[mid].line <= line) lo = mid;
+			else hi = mid - 1;
+		}
+		return byLine[lo].el;
 	}
 
 	/** @param {KeyboardEvent} e */
@@ -402,7 +683,7 @@
 	<!-- The drag width rides on a custom property rather than the pane's own
 	     `width`, so the stacked (narrow-screen) layout can ignore it in CSS. -->
 	<div id="split" bind:this={split} style:--editor-w={editorWidth}>
-		<div id="editor-pane" class:hidden={sourceHidden}>
+		<div id="editor-pane" bind:this={editorPane} class:hidden={sourceHidden}>
 			{#if cv.ready}
 				<!-- Re-keyed when the document is swapped (history cleared, or another
 				     tab's document taken over): the binding is tied to one LoroDoc. -->
@@ -412,6 +693,8 @@
 						loroExtensions={cv.extensions}
 						readOnly={cv.isViewingHistory}
 						diff={cv.diff}
+						onScroll={onEditorScroll}
+						onEdit={noteEdit}
 					/>
 				{/key}
 			{:else}
@@ -431,7 +714,7 @@
 			onkeydown={onDividerKey}
 		></button>
 
-		<div id="preview-pane">
+		<div id="preview-pane" bind:this={previewPane}>
 			{#if cv.isViewingHistory}
 				{@const entry = cv.viewingEntry}
 				<div id="detached-banner">

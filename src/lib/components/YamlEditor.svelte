@@ -3,7 +3,13 @@
 	import { indentWithTab, standardKeymap } from '@codemirror/commands';
 	import { yaml } from '@codemirror/lang-yaml';
 	import { HighlightStyle, indentUnit, syntaxHighlighting } from '@codemirror/language';
-	import { Compartment, EditorState, StateEffect, StateField } from '@codemirror/state';
+	import {
+		Compartment,
+		EditorState,
+		StateEffect,
+		StateField,
+		Transaction
+	} from '@codemirror/state';
 	import {
 		Decoration,
 		EditorView,
@@ -22,7 +28,11 @@
 		loroExtensions,
 		readOnly = false,
 		/** What the version on screen changed, highlighted inline. @type {import('$lib/cv/doc.svelte.js').VersionDiff | null} */
-		diff = null
+		diff = null,
+		/** The editor scrolled — the page mirrors the move into the preview. */
+		onScroll = () => {},
+		/** A line the user just typed on, for the preview to follow. @type {(line: number) => void} */
+		onEdit = () => {}
 	} = $props();
 
 	/** @type {HTMLDivElement} */
@@ -130,17 +140,37 @@
 					editable.of(editableExtensions(readOnly)),
 					diffHighlight.of(EditorView.decorations.of(diffDecorations(diff))),
 					peekField,
+					EditorView.updateListener.of(onUpdate),
 					loroExtensions
 				]
 			})
 		});
 		next.focus();
 		view = next;
+		next.scrollDOM.addEventListener('scroll', fireScroll, { passive: true });
 		return () => {
+			next.scrollDOM.removeEventListener('scroll', fireScroll);
 			next.destroy();
 			view = null;
 		};
 	});
+
+	const fireScroll = () => onScroll();
+
+	/**
+	 * Report the line the user just typed on, and only that. The Loro binding
+	 * replays imports and version check-outs through plain dispatches that carry
+	 * no user event, so nothing the app does to the document counts as an edit
+	 * here — which is what keeps the preview still while history is browsed.
+	 * @param {import('@codemirror/view').ViewUpdate} update
+	 */
+	function onUpdate(update) {
+		if (!update.docChanged) return;
+		if (!update.transactions.some((tr) => tr.annotation(Transaction.userEvent))) return;
+		let head = -1;
+		update.changes.iterChanges((_fromA, _toA, _fromB, toB) => (head = toB));
+		if (head >= 0) onEdit(update.state.doc.lineAt(head).number);
+	}
 
 	$effect(() => {
 		view?.dispatch({ effects: editable.reconfigure(editableExtensions(readOnly)) });
@@ -191,6 +221,64 @@
 	export function replaceAll(text) {
 		if (!view || view.state.doc.toString() === text) return;
 		view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: text } });
+	}
+
+	/**
+	 * The document's top edge in the scroller's own coordinates. CodeMirror
+	 * measures line blocks from there, while `scrollTop` counts from the top of
+	 * the scrollable content — this is the constant between the two.
+	 * @param {EditorView} v
+	 */
+	function docOffset(v) {
+		return v.documentTop - v.scrollDOM.getBoundingClientRect().top + v.scrollDOM.scrollTop;
+	}
+
+	/**
+	 * The line at the top of the viewport, carried to a fraction through its own
+	 * block so a slow scroll reads as a slow move rather than line-sized jumps.
+	 * @returns {number | null}
+	 */
+	export function topLine() {
+		if (!view) return null;
+		const height = Math.max(0, view.scrollDOM.scrollTop - docOffset(view));
+		const block = view.lineBlockAtHeight(height);
+		const line = view.state.doc.lineAt(block.from).number;
+		const frac = block.height > 0 ? (height - block.top) / block.height : 0;
+		return line + Math.min(1, Math.max(0, frac));
+	}
+
+	/**
+	 * Put `line` at the top of the viewport — `topLine` run backwards, for when
+	 * the preview is the pane being scrolled.
+	 * @param {number} line
+	 */
+	export function scrollToLine(line) {
+		if (!view) return;
+		const doc = view.state.doc;
+		const n = Math.min(Math.max(1, Math.floor(line)), doc.lines);
+		const block = view.lineBlockAt(doc.line(n).from);
+		const frac = Math.min(1, Math.max(0, line - n));
+		view.scrollDOM.scrollTop = block.top + frac * block.height + docOffset(view);
+	}
+
+	/**
+	 * Which end of its scroll the editor is parked against, if either. The page
+	 * pins the preview to the matching end rather than to an interpolated line,
+	 * so running one pane to the bottom always lands the other one there too.
+	 * @returns {'start' | 'end' | null}
+	 */
+	export function scrollEdge() {
+		if (!view) return null;
+		const el = view.scrollDOM;
+		if (el.scrollTop <= 1) return 'start';
+		return el.scrollTop >= el.scrollHeight - el.clientHeight - 1 ? 'end' : null;
+	}
+
+	/** @param {'start' | 'end'} edge */
+	export function scrollToEdge(edge) {
+		if (!view) return;
+		const el = view.scrollDOM;
+		el.scrollTop = edge === 'start' ? 0 : el.scrollHeight - el.clientHeight;
 	}
 
 	/** The editor's current text. */
