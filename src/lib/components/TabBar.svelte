@@ -4,7 +4,8 @@
 	import IconCopy from "@iconify-icons/lucide/copy";
 	import IconFilePlus from "@iconify-icons/lucide/file-plus";
 	import IconTrash from "@iconify-icons/lucide/trash";
-	import IconDownload from "@iconify-icons/lucide/download";
+	import IconHistory from "@iconify-icons/lucide/history";
+	import IconSave from "@iconify-icons/lucide/save";
 	import { withKey } from "./access-keys.js";
 
 	let {
@@ -25,8 +26,12 @@
 		onNew,
 		/** @type {() => void} */
 		onCopy,
+		historyOpen = false,
+		historyCount = 0,
 		/** @type {() => void} */
-		onExport,
+		onToggleHistory,
+		/** @type {() => void} */
+		onSave,
 	} = $props();
 
 	let editingId = $state(/** @type {string | null} */ (null));
@@ -243,13 +248,25 @@
 		</button>
 		<!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
 		<button
-			class="t-btn t-btn-pdf"
-			accesskey="x"
-			title={withKey("Export the current CV as PDF", "x")}
-			onclick={onExport}
+			class="t-btn"
+			class:on={historyOpen}
+			accesskey="h"
+			title={withKey("Show version history", "h")}
+			onclick={onToggleHistory}
 		>
-			<Icon icon={IconDownload} width="12" height="12" />
-			<span class="t-txt">E<u>x</u>port PDF</span>
+			<Icon icon={IconHistory} width="12" height="12" />
+			<span class="t-txt"><u>H</u>istory</span>
+			{#if historyCount}<span class="t-count">{historyCount}</span>{/if}
+		</button>
+		<!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
+		<button
+			class="t-btn"
+			accesskey="s"
+			title={withKey("Save the YAML to a file", "s")}
+			onclick={onSave}
+		>
+			<Icon icon={IconSave} width="12" height="12" />
+			<span class="t-txt"><u>S</u>ave YAML</span>
 		</button>
 	</div>
 </div>

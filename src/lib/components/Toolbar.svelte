@@ -1,13 +1,11 @@
 <script>
 	import Icon from '@iconify/svelte';
-	import IconHistory from '@iconify-icons/lucide/history';
+	import IconDownload from '@iconify-icons/lucide/download';
 	import IconInstall from '@iconify-icons/lucide/arrow-down-to-line';
 	import StylePicker from './StylePicker.svelte';
 	import { withKey } from './access-keys.js';
 
 	let {
-		historyOpen = false,
-		historyCount = 0,
 		/** True only while the browser has an install prompt waiting for us. */
 		canInstall = false,
 		/** @type {string} */
@@ -19,7 +17,7 @@
 		/** @type {(id: string) => void} */
 		onTheme,
 		/** @type {() => void} */
-		onToggleHistory,
+		onExport,
 		/** @type {() => void} */
 		onInstall
 	} = $props();
@@ -34,15 +32,13 @@
 
 	<!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
 	<button
-		class="t-btn"
-		class:on={historyOpen}
-		onclick={onToggleHistory}
-		accesskey="h"
-		title={withKey('Show version history', 'h')}
+		class="t-btn t-btn-pdf"
+		accesskey="x"
+		title={withKey('Export the current CV as PDF', 'x')}
+		onclick={onExport}
 	>
-		<Icon icon={IconHistory} width="12" height="12" />
-		<span class="t-txt"><u>H</u>istory</span>
-		{#if historyCount}<span class="t-count">{historyCount}</span>{/if}
+		<Icon icon={IconDownload} width="12" height="12" />
+		<span class="t-txt">E<u>x</u>port PDF</span>
 	</button>
 
 	<!-- Only ever shown when the browser has offered us a prompt, which is Chromium

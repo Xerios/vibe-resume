@@ -643,6 +643,18 @@
 			.catch(() => toast("Copy failed — try Ctrl+A, Ctrl+C"));
 	}
 
+	/** Downloads the active file's YAML source as a `.yaml` file. */
+	function saveYaml() {
+		const blob = new Blob([cv.yaml], { type: "text/yaml" });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = `${files.active?.name ?? "cv"}.yaml`;
+		a.click();
+		URL.revokeObjectURL(url);
+		toast("YAML saved");
+	}
+
 	function exportPDF() {
 		if (parseError) {
 			toast("Fix YAML errors before exporting");
@@ -770,13 +782,11 @@
 
 <div id="app">
 	<Toolbar
-		{historyOpen}
-		historyCount={cv.history.length}
 		{layout}
 		{theme}
 		onLayout={setLayout}
 		onTheme={setTheme}
-		onToggleHistory={toggleHistory}
+		onExport={exportPDF}
 		canInstall={!!installPrompt}
 		onInstall={installApp}
 	/>
@@ -791,7 +801,10 @@
 		onToggleTrash={toggleTrash}
 		onNew={newFile}
 		onCopy={copyYaml}
-		onExport={exportPDF}
+		{historyOpen}
+		historyCount={cv.history.length}
+		onToggleHistory={toggleHistory}
+		onSave={saveYaml}
 	/>
 
 	{#if trashOpen}
