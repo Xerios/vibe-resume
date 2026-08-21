@@ -24,7 +24,8 @@ pnpm check      # svelte-check
 | Document + history | [src/lib/cv/doc.svelte.js](src/lib/cv/doc.svelte.js) — Loro doc, persistence, cross-tab merge |
 | Editor             | [src/lib/components/YamlEditor.svelte](src/lib/components/YamlEditor.svelte) — CodeMirror 6   |
 | YAML to HTML       | [src/lib/cv/render.js](src/lib/cv/render.js)                                                 |
-| Starting text      | [src/lib/cv/default-cv.js](src/lib/cv/default-cv.js)                                         |
+| Starting text      | [src/lib/cv/default-cv.yaml](src/lib/cv/default-cv.yaml)                                     |
+| Layout & theme     | [src/lib/cv/presets.js](src/lib/cv/presets.js) — the presets, and the CSS beside it           |
 | App chrome CSS     | [src/app.css](src/app.css)                                                                   |
 | CV document CSS    | [src/lib/cv/cv.css](src/lib/cv/cv.css) — global, since the sheet is injected as raw HTML     |
 
@@ -39,6 +40,25 @@ undo at high precedence, and two undo stacks would fight over Ctrl+Z.
 
 Syntax colours are a `HighlightStyle` whose values are CSS custom properties, so one
 style serves both themes; the `--cm-*` tokens live in `src/app.css`.
+
+### Layout and theme
+
+The Style button offers five arrangements of the sheet — classic, compact,
+centered, sidebar, timeline — and seven palettes. Both are per file, stored in
+the file registry next to the name rather than in the CRDT: restyling is not an
+edit, so it leaves the YAML and the version history alone.
+
+The ids land on `#cv-root` as `data-cv-layout` / `data-cv-theme`, and
+[presets.css](src/lib/cv/presets.css) does the rest. A theme there is pure
+data — a light ramp (`--t-*-l`) and a dark one (`--t-*-d`), choosing neither.
+One block downstream re-points the app's tokens at whichever ramp applies, and
+that indirection is what lets printing from dark mode fall back to the light
+ramp of *the chosen theme* instead of a hardcoded teal.
+
+Layouts are CSS alone, with one exception: the sidebar needs two real columns,
+so `CvSheet` renders a rail and a main column for that layout only. Skills go
+to the rail; any section can opt in or out with `rail: true` / `rail: false`.
+Every other layout renders exactly the markup it did before.
 
 ### Versions
 

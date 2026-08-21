@@ -5,6 +5,8 @@ import { KEYS, read, remove, snapshotKey, write } from './storage.js';
  * @property {string} id
  * @property {string} name
  * @property {number | null} deletedAt   ms epoch when moved to trash; null while open
+ * @property {string} [layout]           preset id from presets.js; absent means the default
+ * @property {string} [theme]            preset id from presets.js; absent means the default
  */
 
 /**
@@ -15,6 +17,10 @@ import { KEYS, read, remove, snapshotKey, write } from './storage.js';
  * Deleting a file is a soft delete: it drops off the tab bar but its snapshot
  * key is left untouched, so restoring it from the trash brings back the full
  * history exactly as it was.
+ *
+ * Layout and theme ride along here too. They describe how a CV is presented
+ * rather than what it says, so they belong beside the file's name and not in
+ * the CRDT — restyling is not an edit and leaves version history alone.
  */
 export class FileManager {
 	/** @type {FileMeta[]} */
@@ -58,7 +64,16 @@ export class FileManager {
 		const id = newId();
 		if (raw) write(snapshotKey(id), raw);
 
-		this.files = [...this.files, { id, name: this.#uniqueName(`${source.name} copy`), deletedAt: null }];
+		this.files = [
+			...this.files,
+			{
+				id,
+				name: this.#uniqueName(`${source.name} copy`),
+				deletedAt: null,
+				layout: source.layout,
+				theme: source.theme
+			}
+		];
 		this.#saveList();
 		this.activeId = id;
 		this.#saveActive();
@@ -118,6 +133,18 @@ export class FileManager {
 		const trimmed = name.trim();
 		if (!trimmed) return;
 		this.files = this.files.map((f) => (f.id === id ? { ...f, name: trimmed } : f));
+		this.#saveList();
+	}
+
+	/**
+	 * Restyle a file. Ids are stored as given and validated on the way out
+	 * (`resolveLayout` / `resolveTheme`), so a preset that later disappears
+	 * degrades to the default instead of rendering nothing.
+	 * @param {string} id
+	 * @param {{ layout?: string, theme?: string }} style
+	 */
+	setStyle(id, style) {
+		this.files = this.files.map((f) => (f.id === id ? { ...f, ...style } : f));
 		this.#saveList();
 	}
 

@@ -8,6 +8,7 @@
 	import CvSheet from '$lib/cv/CvSheet.svelte';
 	import { CvDoc } from '$lib/cv/doc.svelte.js';
 	import { FileManager } from '$lib/cv/files.svelte.js';
+	import { resolveLayout, resolveTheme } from '$lib/cv/presets.js';
 	import { parseCv } from '$lib/cv/render.js';
 	import { KEYS, read, write } from '$lib/cv/storage.js';
 
@@ -35,6 +36,10 @@
 	/** @type {ReturnType<typeof setTimeout> | undefined} */
 	let toastTimer;
 	let trashOpen = $state(false);
+
+	/** Presentation of the active file, defaulted here so the rest can assume a valid id. */
+	const layout = $derived(resolveLayout(files.active?.layout));
+	const theme = $derived(resolveTheme(files.active?.theme));
 
 	const saveLabel = $derived.by(() => {
 		if (cv.saveError) return '⚠ not saved';
@@ -102,6 +107,16 @@
 			cv.checkpoint('');
 			toast('Version saved');
 		}
+	}
+
+	/** @param {string} id */
+	function setLayout(id) {
+		if (files.activeId) files.setStyle(files.activeId, { layout: id });
+	}
+
+	/** @param {string} id */
+	function setTheme(id) {
+		if (files.activeId) files.setStyle(files.activeId, { theme: id });
 	}
 
 	function toggleTheme() {
@@ -256,6 +271,10 @@
 		{historyOpen}
 		historyCount={cv.history.length}
 		{sourceHidden}
+		{layout}
+		{theme}
+		onLayout={setLayout}
+		onTheme={setTheme}
 		onToggleTheme={toggleTheme}
 		onToggleHistory={toggleHistory}
 		onToggleSource={toggleSource}
@@ -328,10 +347,10 @@
 			{:else if parseError}
 				<div id="error-banner">⚠ {parseError}</div>
 			{/if}
-			<div id="cv-root">
+			<div id="cv-root" data-cv-layout={layout} data-cv-theme={theme}>
 				<svelte:boundary>
 					{#if parsed}
-						<CvSheet cv={parsed} />
+						<CvSheet cv={parsed} {layout} />
 					{/if}
 					{#snippet failed(error)}
 						<div class="sheet">

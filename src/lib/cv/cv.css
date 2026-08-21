@@ -13,7 +13,7 @@
 	padding: 42px 50px 36px;
 	box-shadow:
 		0 1px 3px rgba(0, 0, 0, 0.06),
-		0 12px 40px rgba(13, 79, 74, 0.1);
+		0 12px 40px color-mix(in srgb, var(--accent-deep) 14%, transparent);
 	border-radius: 3px;
 	font-size: 13.5px;
 	line-height: 1.46;
@@ -89,16 +89,16 @@
 	flex: 1;
 }
 
-.summary p {
+.sec-summary p {
 	margin: 0 0 8px;
 }
 
-.summary p:last-child {
+.sec-summary p:last-child {
 	margin-bottom: 0;
 	color: var(--muted);
 }
 
-.summary strong {
+.sec-summary strong {
 	color: var(--ink);
 	font-weight: 700;
 }

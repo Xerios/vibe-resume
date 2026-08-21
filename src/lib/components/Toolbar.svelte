@@ -1,4 +1,6 @@
 <script>
+	import StylePicker from './StylePicker.svelte';
+
 	let {
 		valid = true,
 		/** @type {string} */
@@ -6,6 +8,14 @@
 		historyOpen = false,
 		historyCount = 0,
 		sourceHidden = false,
+		/** @type {string} */
+		layout,
+		/** @type {string} */
+		theme,
+		/** @type {(id: string) => void} */
+		onLayout,
+		/** @type {(id: string) => void} */
+		onTheme,
 		/** @type {() => void} */
 		onToggleTheme,
 		/** @type {() => void} */
@@ -59,6 +69,8 @@
 	<div class="t-spacer"></div>
 
 	<span id="save-state">{saveLabel}</span>
+
+	<StylePicker {layout} {theme} {onLayout} {onTheme} />
 
 	<button
 		class="t-btn"
