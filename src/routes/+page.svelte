@@ -1,16 +1,16 @@
 <script>
-	import { onMount, tick } from 'svelte';
-	import HistoryPanel from '$lib/components/HistoryPanel.svelte';
-	import TabBar from '$lib/components/TabBar.svelte';
-	import Toolbar from '$lib/components/Toolbar.svelte';
-	import TrashPanel from '$lib/components/TrashPanel.svelte';
-	import YamlEditor from '$lib/components/YamlEditor.svelte';
-	import CvSheet from '$lib/cv/CvSheet.svelte';
-	import { CvDoc } from '$lib/cv/doc.svelte.js';
-	import { FileManager } from '$lib/cv/files.svelte.js';
-	import { resolveLayout, resolveTheme } from '$lib/cv/presets.js';
-	import { parseCv } from '$lib/cv/render.js';
-	import { KEYS, read, write } from '$lib/cv/storage.js';
+	import { onMount, tick } from "svelte";
+	import HistoryPanel from "$lib/components/HistoryPanel.svelte";
+	import TabBar from "$lib/components/TabBar.svelte";
+	import Toolbar from "$lib/components/Toolbar.svelte";
+	import TrashPanel from "$lib/components/TrashPanel.svelte";
+	import YamlEditor from "$lib/components/YamlEditor.svelte";
+	import CvSheet from "$lib/cv/CvSheet.svelte";
+	import { CvDoc } from "$lib/cv/doc.svelte.js";
+	import { FileManager } from "$lib/cv/files.svelte.js";
+	import { resolveLayout, resolveTheme } from "$lib/cv/presets.js";
+	import { parseCv } from "$lib/cv/render.js";
+	import { KEYS, read, write } from "$lib/cv/storage.js";
 
 	const PARSE_DEBOUNCE_MS = 250;
 
@@ -23,10 +23,10 @@
 	let parsed = $state(/** @type {any} */ (null));
 	let parseError = $state(/** @type {string | null} */ (null));
 
-	let historyOpen = $state(read(KEYS.historyOpen) !== 'false');
-	let sourceHidden = $state(read(KEYS.sourceHidden) === 'true');
+	let historyOpen = $state(read(KEYS.historyOpen) !== "false");
+	let sourceHidden = $state(read(KEYS.sourceHidden) === "true");
 	let editorWidth = $state(read(KEYS.editorWidth));
-	let toastMsg = $state('');
+	let toastMsg = $state("");
 	let toastOn = $state(false);
 
 	let editor = $state(/** @type {YamlEditor | undefined} */ (undefined));
@@ -42,10 +42,13 @@
 	const theme = $derived(resolveTheme(files.active?.theme));
 
 	const saveLabel = $derived.by(() => {
-		if (cv.saveError) return '⚠ not saved';
-		if (cv.isViewingHistory) return 'viewing history';
-		if (!cv.savedAt) return '';
-		const at = cv.savedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+		if (cv.saveError) return "⚠ not saved";
+		if (cv.isViewingHistory) return "viewing history";
+		if (!cv.savedAt) return "";
+		const at = cv.savedAt.toLocaleTimeString([], {
+			hour: "2-digit",
+			minute: "2-digit",
+		});
 		return `saved ${at}`;
 	});
 
@@ -56,17 +59,17 @@
 
 		const flush = () => cv.flush();
 		const onVisibility = () => {
-			if (document.visibilityState === 'hidden') flush();
+			if (document.visibilityState === "hidden") flush();
 		};
 
-		window.addEventListener('beforeunload', flush);
-		window.addEventListener('keydown', onKeydown);
-		document.addEventListener('visibilitychange', onVisibility);
+		window.addEventListener("beforeunload", flush);
+		window.addEventListener("keydown", onKeydown);
+		document.addEventListener("visibilitychange", onVisibility);
 
 		return () => {
-			window.removeEventListener('beforeunload', flush);
-			window.removeEventListener('keydown', onKeydown);
-			document.removeEventListener('visibilitychange', onVisibility);
+			window.removeEventListener("beforeunload", flush);
+			window.removeEventListener("keydown", onKeydown);
+			document.removeEventListener("visibilitychange", onVisibility);
 			clearTimeout(toastTimer);
 			cv.destroy();
 		};
@@ -98,14 +101,14 @@
 
 	/** @param {KeyboardEvent} e */
 	function onKeydown(e) {
-		if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+		if ((e.ctrlKey || e.metaKey) && e.key === "s") {
 			e.preventDefault();
 			if (cv.isViewingHistory) {
-				toast('Editing is paused while viewing history');
+				toast("Editing is paused while viewing history");
 				return;
 			}
-			cv.checkpoint('');
-			toast('Version saved');
+			cv.checkpoint("");
+			toast("Version saved");
 		}
 	}
 
@@ -120,8 +123,11 @@
 	}
 
 	function toggleTheme() {
-		const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-		document.documentElement.setAttribute('data-theme', next);
+		const next =
+			document.documentElement.getAttribute("data-theme") === "dark"
+				? "light"
+				: "dark";
+		document.documentElement.setAttribute("data-theme", next);
 		write(KEYS.theme, next);
 	}
 
@@ -140,19 +146,19 @@
 	function newFile() {
 		const id = files.create();
 		cv.switchTo(id);
-		toast('New CV from template');
+		toast("New CV from template");
 	}
 
 	function copyYaml() {
 		navigator.clipboard
 			.writeText(cv.yaml)
-			.then(() => toast('YAML copied to clipboard'))
-			.catch(() => toast('Copy failed — try Ctrl+A, Ctrl+C'));
+			.then(() => toast("YAML copied to clipboard"))
+			.catch(() => toast("Copy failed — try Ctrl+A, Ctrl+C"));
 	}
 
 	function exportPDF() {
 		if (parseError) {
-			toast('Fix YAML errors before exporting');
+			toast("Fix YAML errors before exporting");
 			return;
 		}
 		// Tagged before printing, so the mark in the history sits on exactly the
@@ -172,13 +178,13 @@
 		cv.flush(); // capture the latest edits before copying the stored snapshot
 		const id = files.duplicate(/** @type {string} */ (files.activeId));
 		cv.switchTo(id);
-		toast('Tab duplicated');
+		toast("Tab duplicated");
 	}
 
 	/** @param {string} id */
 	function closeTab(id) {
 		const closingActive = id === files.activeId;
-		const name = files.files.find((f) => f.id === id)?.name ?? 'File';
+		const name = files.files.find((f) => f.id === id)?.name ?? "File";
 		const nextId = files.trash(id);
 		if (closingActive) cv.switchTo(nextId);
 		toast(`Moved “${name}” to trash`);
@@ -200,22 +206,26 @@
 	function restoreTab(id) {
 		files.restore(id);
 		cv.switchTo(id);
-		toast('Restored from trash');
+		toast("Restored from trash");
 	}
 
 	/** @param {string} id */
 	function purgeTab(id) {
-		if (!confirm('Delete this file forever? This cannot be undone.')) return;
+		if (!confirm("Delete this file forever? This cannot be undone.")) return;
 		files.purge(id);
-		toast('File deleted forever');
+		toast("File deleted forever");
 	}
 
 	function emptyTrash() {
 		if (!files.trashed.length) return;
-		if (!confirm(`Permanently delete ${files.trashed.length} file(s) from trash? This cannot be undone.`))
+		if (
+			!confirm(
+				`Permanently delete ${files.trashed.length} file(s) from trash? This cannot be undone.`,
+			)
+		)
 			return;
 		for (const f of files.trashed) files.purge(f.id);
-		toast('Trash emptied');
+		toast("Trash emptied");
 	}
 
 	/** @param {string} msg */
@@ -235,7 +245,7 @@
 	function startDrag(e) {
 		dragging = true;
 		e.currentTarget.setPointerCapture(e.pointerId);
-		document.body.classList.add('resizing');
+		document.body.classList.add("resizing");
 	}
 
 	/** @param {PointerEvent} e */
@@ -250,23 +260,25 @@
 		if (!dragging) return;
 		dragging = false;
 		e.currentTarget.releasePointerCapture(e.pointerId);
-		document.body.classList.remove('resizing');
+		document.body.classList.remove("resizing");
 		if (editorWidth) write(KEYS.editorWidth, editorWidth);
 	}
 
 	/** @param {KeyboardEvent} e */
 	function onDividerKey(e) {
-		const step = e.key === 'ArrowLeft' ? -2 : e.key === 'ArrowRight' ? 2 : 0;
+		const step = e.key === "ArrowLeft" ? -2 : e.key === "ArrowRight" ? 2 : 0;
 		if (!step) return;
 		e.preventDefault();
-		const current = (split.querySelector('#editor-pane')?.clientWidth ?? 0) / split.clientWidth;
+		const current =
+			(split.querySelector("#editor-pane")?.clientWidth ?? 0) /
+			split.clientWidth;
 		setWidth(current * 100 + step);
 		if (editorWidth) write(KEYS.editorWidth, editorWidth);
 	}
 </script>
 
 <svelte:head>
-	<title>Sam M. — CV Editor</title>
+	<title>CV Editor</title>
 </svelte:head>
 
 <div id="app">
@@ -299,7 +311,13 @@
 	/>
 
 	{#if trashOpen}
-		<TrashPanel {files} onRestore={restoreTab} onPurge={purgeTab} onEmpty={emptyTrash} onClose={toggleTrash} />
+		<TrashPanel
+			{files}
+			onRestore={restoreTab}
+			onPurge={purgeTab}
+			onEmpty={emptyTrash}
+			onClose={toggleTrash}
+		/>
 	{/if}
 
 	<!-- The drag width rides on a custom property rather than the pane's own
@@ -341,9 +359,13 @@
 					<span>Viewing “{entry?.message}” — editing is paused</span>
 					<div class="t-spacer"></div>
 					{#if entry}
-						<button class="t-btn" onclick={() => cv.restore(entry)}>Restore</button>
+						<button class="t-btn" onclick={() => cv.restore(entry)}
+							>Restore</button
+						>
 					{/if}
-					<button class="t-btn" onclick={() => cv.viewLatest()}>Back to latest</button>
+					<button class="t-btn" onclick={() => cv.viewLatest()}
+						>Back to latest</button
+					>
 				</div>
 			{:else if parseError}
 				<div id="error-banner">⚠ {parseError}</div>
@@ -356,7 +378,9 @@
 					{#snippet failed(error)}
 						<div class="sheet">
 							<p class="cv-unknown">
-								Could not render: {error instanceof Error ? error.message : String(error)}
+								Could not render: {error instanceof Error
+									? error.message
+									: String(error)}
 							</p>
 						</div>
 					{/snippet}
