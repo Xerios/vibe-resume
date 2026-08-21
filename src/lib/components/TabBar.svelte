@@ -473,12 +473,6 @@
 		padding: 5px 9px 5px 7px;
 	}
 
-	/* The same underlined access letter .t-btn carries, on a menu row. */
-	.new-item u {
-		text-decoration-thickness: 1px;
-		text-underline-offset: 2px;
-	}
-
 	.new-item:hover,
 	.new-item:focus-visible {
 		background: var(--accent-wash);

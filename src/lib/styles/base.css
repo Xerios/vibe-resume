@@ -24,6 +24,14 @@ body {
 	transition: var(--theme-fade);
 }
 
+/* The access-key letter every control underlines — see access-keys.js for the
+   chord that fires it. Document-level because three different bars draw one,
+   and no one of them owns the treatment. */
+u {
+	text-decoration-thickness: 1px;
+	text-underline-offset: 2px;
+}
+
 /* ── Scrollbars ───────────────────────────────── */
 /* The same scrollbar written twice: Firefox and Chrome 121+ read the standard
    `scrollbar-*` properties, older WebKit/Blink only the ::-webkit- pseudos.

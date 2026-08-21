@@ -2,7 +2,8 @@
    The shared chrome vocabulary: one button, its variants, and the two spans
    that travel with it. These are global because they are used from five
    different components — Toolbar, TabBar, TrashPanel, HistoryPanel,
-   StylePicker — and from the detached-version banner in +page.svelte.
+   StylePicker — and from the detached-version banner in +page.svelte. The
+   status bar's own slimmer buttons are not these; they live in StatusBar.
 
    A class that only ever appears in one component does *not* belong here;
    it belongs in that component's <style> block.
@@ -42,11 +43,6 @@
 	background: var(--accent-wash);
 }
 
-/* Icon-only by design, at every width — not a label that happens to be hidden. */
-.t-btn-icon {
-	padding: 4px 9px;
-}
-
 /* The one button that leaves the app: filled rather than outlined, so Export
    reads as the end of the workflow instead of another toggle. */
 .t-btn-pdf {
@@ -65,20 +61,6 @@
    read better a touch bolder, as the hand-rolled SVGs they replaced did. */
 .t-btn [stroke-width] {
 	stroke-width: 2.5;
-}
-
-/* The theme toggle is the exception: moon and sun are denser shapes and were
-   always drawn lighter than the rest of the bar. */
-.t-btn-icon [stroke-width] {
-	stroke-width: 2;
-}
-
-/* The access-key letter. A control that has one underlines it, so the chord is
-   readable off the button rather than memorised; access-keys.js knows which
-   chord the browser at hand wants, and spells it out in the tooltip. */
-.t-btn u {
-	text-decoration-thickness: 1px;
-	text-underline-offset: 2px;
 }
 
 /* The count on History and Trash. */

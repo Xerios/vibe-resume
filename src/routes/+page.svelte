@@ -772,14 +772,11 @@
 	<Toolbar
 		{historyOpen}
 		historyCount={cv.history.length}
-		{sourceHidden}
 		{layout}
 		{theme}
 		onLayout={setLayout}
 		onTheme={setTheme}
-		onToggleTheme={toggleTheme}
 		onToggleHistory={toggleHistory}
-		onToggleSource={toggleSource}
 		canInstall={!!installPrompt}
 		onInstall={installApp}
 	/>
@@ -887,7 +884,13 @@
 		{/if}
 	</div>
 
-	<StatusBar valid={!parseError} {saveLabel} />
+	<StatusBar
+		valid={!parseError}
+		{saveLabel}
+		{sourceHidden}
+		onToggleSource={toggleSource}
+		onToggleTheme={toggleTheme}
+	/>
 </div>
 
 <div id="toast" class:show={toastOn}>{toastMsg}</div>
@@ -1021,7 +1024,7 @@
 	/* ── Toast ────────────────────────────────────── */
 	#toast {
 		position: fixed;
-		bottom: 36px;
+		bottom: 38px;
 		left: 50%;
 		transform: translateX(-50%) translateY(10px);
 		background: var(--accent-deep);
