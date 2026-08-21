@@ -877,3 +877,188 @@
 </div>
 
 <div id="toast" class:show={toastOn}>{toastMsg}</div>
+
+<style>
+	/* ── Split ────────────────────────────────────── */
+	#split {
+		flex: 1;
+		display: flex;
+		overflow: hidden;
+		min-height: 0;
+	}
+
+	#editor-pane {
+		width: var(--editor-w, 42%);
+		min-width: 180px;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		background: var(--editor-bg);
+		transition: var(--theme-fade);
+	}
+
+	/* Kept mounted (not removed) so the Loro/CodeMirror binding stays alive —
+	   Reset and Restore apply text through it even while it's out of view. */
+	#editor-pane.hidden {
+		display: none;
+	}
+
+	#boot {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		height: 100%;
+		font-family: var(--mono);
+		font-size: 11px;
+		color: var(--faint);
+	}
+
+	/* ── Divider ──────────────────────────────────── */
+	#divider {
+		flex-shrink: 0;
+		width: 5px;
+		background: var(--line);
+		cursor: col-resize;
+		transition: background 0.12s;
+		position: relative;
+		border: none;
+		padding: 0;
+	}
+
+	/* Widens the grab target without widening the line. */
+	#divider::after {
+		content: '';
+		position: absolute;
+		inset: 0 -4px;
+	}
+
+	#divider:hover {
+		background: var(--accent);
+	}
+
+	#divider.hidden {
+		display: none;
+	}
+
+	/* ── Preview ──────────────────────────────────── */
+	#preview-pane {
+		flex: 1;
+		overflow: auto;
+		background: var(--bg);
+		min-width: 0;
+		transition: var(--theme-fade);
+	}
+
+	/* Mid-drag the pointer is the divider's, wherever it happens to be. The
+	   class is put on <body>, which the compiler can't see from in here. */
+	:global(body.resizing) #preview-pane {
+		pointer-events: none;
+	}
+
+	#error-banner {
+		position: sticky;
+		top: 0;
+		background: #fff0f0;
+		border-bottom: 1px solid #fecaca;
+		color: var(--danger);
+		font-family: var(--mono);
+		font-size: 11px;
+		padding: 7px 24px;
+		white-space: pre-wrap;
+		word-break: break-all;
+		z-index: 5;
+		transition: var(--theme-fade);
+	}
+
+	/* A tint with no token of its own — the red foreground comes from --danger. */
+	:root[data-theme='dark'] #error-banner {
+		background: #2a0808;
+		border-bottom-color: #5a1818;
+	}
+
+	#detached-banner {
+		position: sticky;
+		top: 0;
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		background: var(--prompt-bg);
+		border-bottom: 1px solid var(--prompt);
+		color: var(--prompt);
+		font-family: var(--mono);
+		font-size: 11px;
+		font-weight: 600;
+		padding: 7px 24px;
+		z-index: 6;
+	}
+
+	/* The shared button, restated in the banner's own colour. */
+	#detached-banner .t-btn {
+		border-color: var(--prompt);
+		color: var(--prompt);
+		padding: 3px 9px;
+	}
+
+	#detached-banner .t-btn:hover {
+		background: var(--prompt);
+		color: var(--prompt-bg);
+	}
+
+	/* ── Toast ────────────────────────────────────── */
+	#toast {
+		position: fixed;
+		bottom: 20px;
+		left: 50%;
+		transform: translateX(-50%) translateY(10px);
+		background: var(--accent-deep);
+		color: var(--on-accent);
+		font-family: var(--mono);
+		font-size: 11.5px;
+		padding: 7px 16px;
+		border-radius: 5px;
+		opacity: 0;
+		transition:
+			opacity 0.2s,
+			transform 0.2s;
+		pointer-events: none;
+		z-index: 999;
+	}
+
+	#toast.show {
+		opacity: 1;
+		transform: translateX(-50%) translateY(0);
+	}
+
+	/* ── Narrow screens ───────────────────────────── */
+	/* Below roughly an 820px sheet plus a usable editor, the split stops paying
+	   for itself side by side and stacks instead: editor over preview, with the
+	   history panel lifted out of the flow as an overlay (see HistoryPanel). */
+	@media (max-width: 900px) {
+		#split {
+			flex-direction: column;
+		}
+
+		/* The dragged width is a horizontal measure — meaningless once stacked. */
+		#editor-pane {
+			width: auto;
+			min-width: 0;
+			height: 45%;
+			min-height: 120px;
+		}
+
+		#preview-pane {
+			min-height: 0;
+		}
+
+		/* Resizing is pointer-drag along the wrong axis here; the proportions are fixed. */
+		#divider {
+			display: none;
+		}
+	}
+
+	@media (max-width: 640px) {
+		#editor-pane {
+			height: 50%;
+		}
+	}
+</style>

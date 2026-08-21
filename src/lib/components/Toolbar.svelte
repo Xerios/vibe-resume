@@ -87,3 +87,97 @@
 		<Icon icon={IconSun} class="icon-sun" width="13" height="13" />
 	</button>
 </div>
+
+<style>
+	#toolbar {
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		height: 46px;
+		padding: 0 16px;
+		background: var(--paper);
+		border-bottom: 1px solid var(--line);
+		z-index: 10;
+		transition: var(--theme-fade);
+	}
+
+	.t-label {
+		font-family: var(--mono);
+		font-size: 9.5px;
+		font-weight: 600;
+		letter-spacing: 1.8px;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+
+	#status {
+		font-family: var(--mono);
+		font-size: 11px;
+		font-weight: 600;
+		padding: 3px 9px;
+		border-radius: 4px;
+		transition: var(--theme-fade);
+	}
+
+	#status.ok {
+		color: #1a6b3a;
+		background: #e8f5ee;
+	}
+
+	#status.err {
+		color: var(--danger);
+		background: #fee2e2;
+	}
+
+	/* Tints with no token of their own — the red foreground comes from --danger. */
+	:root[data-theme='dark'] #status.ok {
+		color: #5dcc80;
+		background: #082210;
+	}
+
+	:root[data-theme='dark'] #status.err {
+		background: #2a0808;
+	}
+
+	#save-state {
+		font-family: var(--mono);
+		font-size: 10px;
+		letter-spacing: 0.3px;
+		color: var(--faint);
+		white-space: nowrap;
+	}
+
+	/* One toggle, two glyphs: the ramp in force decides which is drawn. Both
+	   are rendered by <Icon>, so the classes land on SVG the compiler never
+	   sees — hence :global. */
+	:global(.icon-moon) {
+		display: block;
+	}
+
+	:global(.icon-sun) {
+		display: none;
+	}
+
+	:root[data-theme='dark'] :global(.icon-moon) {
+		display: none;
+	}
+
+	:root[data-theme='dark'] :global(.icon-sun) {
+		display: block;
+	}
+
+	/* At phone width the bar keeps only what can't be inferred: the label is
+	   the page title again, and the save state is a reassurance, not news. */
+	@media (max-width: 640px) {
+		#toolbar {
+			gap: 8px;
+			padding: 0 10px;
+		}
+
+		.t-label,
+		#save-state {
+			display: none;
+		}
+	}
+</style>

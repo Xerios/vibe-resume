@@ -1,0 +1,76 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Document-level rules: the reset, the page background, the scrollbar every
+   pane inherits, and the app shell that holds the toolbar/tab bar/split.
+   Anything narrower than "the whole document" belongs to a component.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+	height: 100%;
+	overflow: hidden;
+}
+
+body {
+	font-family: var(--sans);
+	color: var(--ink);
+	background: var(--bg);
+	-webkit-font-smoothing: antialiased;
+	transition: var(--theme-fade);
+}
+
+/* ── Scrollbars ───────────────────────────────── */
+/* The same scrollbar written twice: Firefox and Chrome 121+ read the standard
+   `scrollbar-*` properties, older WebKit/Blink only the ::-webkit- pseudos.
+   Both draw from the same two tokens so the pair can't drift apart.
+
+   The track is left transparent throughout. A scrollbar then reads as sitting
+   *on* the pane it scrolls — editor, sheet, history list — instead of cutting
+   a strip of some third colour down the side of it. */
+* {
+	scrollbar-width: thin;
+	scrollbar-color: var(--scroll-thumb) transparent;
+}
+
+::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+	background: transparent;
+}
+
+/* The transparent border is the inset: padding-box clipping keeps the fill
+   inside it, which is what makes a 10px-wide track carry a 6px thumb. */
+::-webkit-scrollbar-thumb {
+	background: var(--scroll-thumb);
+	background-clip: padding-box;
+	border: 2px solid transparent;
+	border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: var(--scroll-thumb-hover);
+	background-clip: padding-box;
+}
+
+#app {
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+}
+
+/* Drag-to-resize is a whole-document mode, not the divider's own: the cursor
+   has to hold while the pointer travels across other panes. The pane that
+   must stop answering the pointer opts out in +page.svelte. */
+body.resizing {
+	cursor: col-resize !important;
+	user-select: none;
+}

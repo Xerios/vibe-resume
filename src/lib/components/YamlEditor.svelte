@@ -38,6 +38,9 @@
 	import { tags as t } from "@lezer/highlight";
 	import { wrappedLineIndent } from "codemirror-wrapped-line-indent";
 	import { load } from "js-yaml";
+	// CodeMirror builds its own DOM, so scoped styles can't reach it — its theme
+	// ships as a plain stylesheet imported alongside the component instead.
+	import "./codemirror.css";
 
 	let {
 		/** Extensions from the Loro binding — document sync and undo/redo live here. */
@@ -443,3 +446,13 @@
 </script>
 
 <div id="cm-wrap" bind:this={host}></div>
+
+<style>
+	/* The editor's host. Everything CodeMirror renders inside it is themed by
+	   codemirror.css, next to this file. */
+	#cm-wrap {
+		flex: 1;
+		overflow: hidden;
+		min-height: 0;
+	}
+</style>

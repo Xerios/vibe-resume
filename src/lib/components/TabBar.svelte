@@ -129,3 +129,164 @@
 		</button>
 	</div>
 </div>
+
+<style>
+	#tabbar {
+		flex-shrink: 0;
+		position: relative;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		height: 34px;
+		padding: 0 10px;
+		background: var(--editor-chrome);
+		border-bottom: 1px solid var(--line);
+		z-index: 9;
+		transition: var(--theme-fade);
+	}
+
+	/* The scroller, so a long row of tabs never pushes #tab-actions out of reach.
+	   Its scrollbar is hidden: 34px leaves no room for one that isn't overlaid. */
+	#tabs {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		gap: 3px;
+		min-width: 0;
+		overflow-x: auto;
+		scrollbar-width: none;
+	}
+
+	#tabs::-webkit-scrollbar {
+		display: none;
+	}
+
+	#tab-actions {
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.tab {
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		gap: 1px;
+		background: none;
+		border: 1.5px solid transparent;
+		border-radius: 5px;
+		transition: var(--theme-fade);
+	}
+
+	.tab:hover {
+		background: var(--accent-wash);
+	}
+
+	.tab.active {
+		background: var(--paper);
+		border-color: var(--line);
+	}
+
+	.tab-select {
+		display: block;
+		max-width: 150px;
+		background: none;
+		border: none;
+		cursor: pointer;
+		font-family: var(--mono);
+		font-size: 10.5px;
+		color: var(--muted);
+		padding: 6px 4px 6px 9px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.tab.active .tab-select {
+		color: var(--accent-deep);
+		font-weight: 600;
+	}
+
+	.tab-rename {
+		max-width: 150px;
+		font-family: var(--mono);
+		font-size: 10.5px;
+		color: var(--ink);
+		background: var(--paper);
+		border: 1px solid var(--accent);
+		border-radius: 3px;
+		margin: 3px 4px 3px 9px;
+		padding: 3px 5px;
+	}
+
+	.tab-rename:focus {
+		outline: none;
+	}
+
+	.tab-close {
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 16px;
+		height: 16px;
+		margin-right: 6px;
+		background: none;
+		border: none;
+		border-radius: 3px;
+		cursor: pointer;
+		color: var(--faint);
+		font-size: 13px;
+		line-height: 1;
+		padding: 0;
+	}
+
+	.tab-close:hover {
+		background: var(--line);
+		color: var(--danger);
+	}
+
+	#tab-add {
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 22px;
+		height: 22px;
+		background: none;
+		border: 1.5px dashed var(--line);
+		border-radius: 5px;
+		cursor: pointer;
+		color: var(--muted);
+		padding: 0;
+		margin-left: 2px;
+		transition:
+			border-color 0.13s,
+			color 0.13s;
+	}
+
+	#tab-add:hover {
+		border-color: var(--accent);
+		color: var(--accent-deep);
+		border-style: solid;
+	}
+
+	/* Matches the weight .t-btn gives its icons; the glyph is drawn by <Icon>,
+	   so the compiler never sees the element to scope it. */
+	#tab-add :global([stroke-width]) {
+		stroke-width: 2.5;
+	}
+
+	@media (max-width: 640px) {
+		#tabbar {
+			gap: 6px;
+			padding: 0 6px;
+		}
+
+		.tab-select,
+		.tab-rename {
+			max-width: 104px;
+		}
+	}
+</style>

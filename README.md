@@ -26,8 +26,7 @@ pnpm check      # svelte-check
 | YAML to HTML       | [src/lib/cv/render.js](src/lib/cv/render.js)                                                 |
 | Starting text      | [src/lib/cv/default-cv.yaml](src/lib/cv/default-cv.yaml)                                     |
 | Layout & theme     | [src/lib/cv/presets.js](src/lib/cv/presets.js) — the presets, and the CSS beside it           |
-| App chrome CSS     | [src/app.css](src/app.css)                                                                   |
-| CV document CSS    | [src/lib/cv/cv.css](src/lib/cv/cv.css) — global, since the sheet is injected as raw HTML     |
+| CSS                | [src/app.css](src/app.css) — the index; see *Where the CSS lives* below                      |
 | Offline            | [src/service-worker.js](src/service-worker.js) — precache; manifest and icons in `static/`    |
 
 ### Editor and document
@@ -40,7 +39,9 @@ CodeMirror's own `history()` is deliberately left out — the binding installs L
 undo at high precedence, and two undo stacks would fight over Ctrl+Z.
 
 Syntax colours are a `HighlightStyle` whose values are CSS custom properties, so one
-style serves both themes; the `--cm-*` tokens live in `src/app.css`.
+style serves both themes; the `--cm-*` tokens live in
+[tokens.css](src/lib/styles/tokens.css) and the rules that spend them in
+[codemirror.css](src/lib/components/codemirror.css).
 
 ### Layout and theme
 
@@ -60,6 +61,28 @@ Layouts are CSS alone, with one exception: the sidebar needs two real columns,
 so `CvSheet` renders a rail and a main column for that layout only. Skills go
 to the rail; any section can opt in or out with `rail: true` / `rail: false`.
 Every other layout renders exactly the markup it did before.
+
+### Where the CSS lives
+
+Everything that belongs to one piece of UI is styled where that piece is
+written, in the component's own `<style>` block — `#toolbar` in `Toolbar.svelte`,
+`.hist-*` in `HistoryPanel.svelte`, and so on. A rule only becomes global when
+it genuinely has no single owner:
+
+| File                                                              | Holds                                                        |
+| ----------------------------------------------------------------- | ------------------------------------------------------------ |
+| [app.css](src/app.css)                                            | the index — imports the three below, and nothing else         |
+| [styles/tokens.css](src/lib/styles/tokens.css)                    | both colour ramps, the type stack, `--theme-fade`             |
+| [styles/base.css](src/lib/styles/base.css)                        | reset, page background, scrollbars, the `#app` shell          |
+| [styles/controls.css](src/lib/styles/controls.css)                | `.t-btn` and friends — used from six different places         |
+| [styles/print.css](src/lib/styles/print.css)                      | the page box, and the chrome that has no business on paper    |
+| [components/codemirror.css](src/lib/components/codemirror.css)    | the CodeMirror theme, imported by `YamlEditor.svelte`         |
+| [cv/cv.css](src/lib/cv/cv.css)                                    | the sheet itself, plus how it paginates                       |
+| [cv/presets.css](src/lib/cv/presets.css)                          | the layouts and themes selected on `#cv-root`                 |
+
+The last three are global for the same underlying reason: they style DOM the
+Svelte compiler never sees. CodeMirror builds its own; the sheet's markdown
+fields are injected with `{@html}`. Scoped selectors would reach neither.
 
 ### Versions
 

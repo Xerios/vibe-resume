@@ -140,3 +140,143 @@
 		</div>
 	{/if}
 </div>
+
+<style>
+	.style-picker {
+		position: relative;
+		display: flex;
+	}
+
+	.style-pop {
+		position: absolute;
+		top: calc(100% + 8px);
+		right: 0;
+		width: 268px;
+		padding: 10px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		background: var(--paper);
+		border: 1px solid var(--line);
+		border-radius: 8px;
+		box-shadow: var(--shadow-pop);
+		z-index: 100;
+	}
+
+	.style-label {
+		display: block;
+		margin-bottom: 6px;
+		font-family: var(--mono);
+		font-size: 9.5px;
+		font-weight: 600;
+		letter-spacing: 1.8px;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+
+	.layout-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 5px;
+	}
+
+	.layout-opt {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 3px;
+		padding: 5px 3px 4px;
+		background: none;
+		border: 1.5px solid var(--line);
+		border-radius: 6px;
+		cursor: pointer;
+		font-family: var(--mono);
+		font-size: 9px;
+		font-weight: 600;
+		letter-spacing: 0.3px;
+		color: var(--muted);
+		transition:
+			border-color 0.13s,
+			color 0.13s,
+			background 0.13s;
+	}
+
+	.layout-opt:hover {
+		border-color: var(--accent);
+		color: var(--accent-deep);
+	}
+
+	.layout-opt.on {
+		border-color: var(--accent);
+		color: var(--accent-deep);
+		background: var(--accent-wash);
+	}
+
+	.layout-thumb {
+		width: 100%;
+		height: auto;
+		fill: currentColor;
+	}
+
+	/* The accent parts of a thumbnail — rules and timeline dots. */
+	.layout-thumb .rule {
+		fill: var(--accent);
+	}
+
+	.theme-grid {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 4px;
+	}
+
+	.theme-opt {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 4px 7px;
+		background: none;
+		border: 1.5px solid var(--line);
+		border-radius: 6px;
+		cursor: pointer;
+		font-family: var(--mono);
+		font-size: 10px;
+		font-weight: 600;
+		color: var(--muted);
+		transition:
+			border-color 0.13s,
+			color 0.13s,
+			background 0.13s;
+	}
+
+	.theme-opt:hover {
+		border-color: var(--accent);
+		color: var(--accent-deep);
+	}
+
+	.theme-opt.on {
+		border-color: var(--accent);
+		color: var(--accent-deep);
+		background: var(--accent-wash);
+	}
+
+	/* Accent over the sheet colour it sits on, so a swatch previews the pairing.
+	   The tokens come from the `data-cv-theme` on the option itself (presets.css),
+	   which is also what makes the swatch follow dark mode. */
+	.theme-dot {
+		flex-shrink: 0;
+		width: 13px;
+		height: 13px;
+		border-radius: 50%;
+		background: var(--t-accent-l);
+		box-shadow:
+			inset 0 0 0 3px var(--t-paper-l),
+			inset 0 0 0 4px var(--t-accent-l);
+	}
+
+	:root[data-theme='dark'] .theme-dot {
+		background: var(--t-accent-d);
+		box-shadow:
+			inset 0 0 0 3px var(--t-paper-d),
+			inset 0 0 0 4px var(--t-accent-d);
+	}
+</style>

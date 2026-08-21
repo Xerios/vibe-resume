@@ -1,0 +1,68 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   What printing does to the *app*: the page box, and the chrome that has no
+   business on paper. How the sheet itself paginates is cv.css's job, and how
+   a chosen CV theme prints is presets.css's.
+
+   Loaded last, so the token flip below outranks the dark ramp in tokens.css.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media print {
+	@page {
+		size: A4;
+		margin: 12mm 13mm;
+	}
+
+	/* On screen the app is a fixed-height, non-scrolling shell; on paper it is
+	   one long document again. */
+	html,
+	body {
+		height: auto !important;
+		overflow: visible !important;
+		background: #fff !important;
+	}
+
+	#app {
+		height: auto !important;
+	}
+
+	#toolbar,
+	#tabbar,
+	#trash-panel,
+	#editor-pane,
+	#divider,
+	#history-pane,
+	#error-banner,
+	#detached-banner,
+	#toast {
+		display: none !important;
+	}
+
+	#split {
+		display: block !important;
+		height: auto !important;
+		overflow: visible !important;
+	}
+
+	#preview-pane {
+		width: 100% !important;
+		height: auto !important;
+		overflow: visible !important;
+		background: #fff !important;
+	}
+
+	/* Paper is white whatever the screen was showing. Anything still visible
+	   past this point draws from the light ramp; presets.css does the same for
+	   the sheet's own tokens, from the chosen CV theme. */
+	:root[data-theme='dark'] {
+		--danger: #b91c1c;
+		--ink: #15211f;
+		--muted: #5f6f6c;
+		--faint: #8a9794;
+		--accent: #157c75;
+		--accent-deep: #0d4f4a;
+		--accent-wash: #eaf4f2;
+		--line: #dbe6e3;
+		--paper: #fff;
+		--bg: #fff;
+	}
+}

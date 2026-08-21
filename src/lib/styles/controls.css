@@ -1,0 +1,101 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   The shared chrome vocabulary: one button, its variants, and the two spans
+   that travel with it. These are global because they are used from five
+   different components — Toolbar, TabBar, TrashPanel, HistoryPanel,
+   StylePicker — and from the detached-version banner in +page.svelte.
+
+   A class that only ever appears in one component does *not* belong here;
+   it belongs in that component's <style> block.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.t-btn {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	background: none;
+	border: 1.5px solid var(--line);
+	border-radius: 5px;
+	cursor: pointer;
+	font-family: var(--mono);
+	font-size: 10.5px;
+	font-weight: 600;
+	color: var(--muted);
+	padding: 4px 11px;
+	flex-shrink: 0;
+	white-space: nowrap;
+	transition: var(--theme-fade);
+}
+
+.t-btn:hover:not(:disabled) {
+	border-color: var(--accent);
+	color: var(--accent-deep);
+}
+
+.t-btn:disabled {
+	opacity: 0.45;
+	cursor: default;
+}
+
+.t-btn.on {
+	border-color: var(--accent);
+	color: var(--accent-deep);
+	background: var(--accent-wash);
+}
+
+/* Icon-only by design, at every width — not a label that happens to be hidden. */
+.t-btn-icon {
+	padding: 4px 9px;
+}
+
+/* The one button that leaves the app: filled rather than outlined, so Export
+   reads as the end of the workflow instead of another toggle. */
+.t-btn-pdf {
+	border-color: var(--accent);
+	color: var(--accent-deep);
+	background: var(--accent-wash);
+}
+
+.t-btn-pdf:hover:not(:disabled) {
+	background: var(--accent);
+	color: var(--on-accent);
+	border-color: var(--accent);
+}
+
+/* Iconify ships the lucide set at stroke-width 2; at 11-13px these buttons
+   read better a touch bolder, as the hand-rolled SVGs they replaced did. */
+.t-btn [stroke-width] {
+	stroke-width: 2.5;
+}
+
+/* The theme toggle is the exception: moon and sun are denser shapes and were
+   always drawn lighter than the rest of the bar. */
+.t-btn-icon [stroke-width] {
+	stroke-width: 2;
+}
+
+/* The count on History and Trash. */
+.t-count {
+	font-size: 9.5px;
+	padding: 0 4px;
+	border-radius: 6px;
+	background: var(--accent);
+	color: var(--on-accent);
+	line-height: 1.5;
+}
+
+/* Pushes whatever follows to the far end of a bar. */
+.t-spacer {
+	flex: 1;
+}
+
+/* Phone-width chrome: buttons drop to their icons. `.t-txt` marks the word
+   that the icon beside it already says. */
+@media (max-width: 640px) {
+	.t-btn {
+		padding: 4px 8px;
+	}
+
+	.t-btn .t-txt {
+		display: none;
+	}
+}

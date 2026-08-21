@@ -3,7 +3,12 @@
 
    These rules are deliberately global rather than scoped to that component,
    since markdown fields are injected via {@html} and wouldn't be reached by
-   scoped styles anyway. Tokens come from src/app.css.
+   scoped styles anyway. Tokens come from src/lib/styles/tokens.css; the
+   presets that re-point them are in presets.css, next door.
+
+   The app chrome around the sheet is not styled here — see src/app.css. The
+   print block at the foot of this file covers the sheet alone; hiding the
+   chrome for printing is src/lib/styles/print.css's job.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .sheet {
@@ -17,6 +22,7 @@
 	border-radius: 3px;
 	font-size: 13.5px;
 	line-height: 1.46;
+	transition: var(--theme-fade);
 }
 
 /* Set by the page on whatever the pointer is over, while the editor scrolls to
@@ -326,47 +332,6 @@ table.oss .proj a:hover {
 
 /* ── Print / Export PDF ───────────────────────── */
 @media print {
-	@page {
-		size: A4;
-		margin: 12mm 13mm;
-	}
-
-	html,
-	body {
-		height: auto !important;
-		overflow: visible !important;
-		background: #fff !important;
-	}
-
-	#app {
-		height: auto !important;
-	}
-
-	#toolbar,
-	#tabbar,
-	#trash-panel,
-	#editor-pane,
-	#divider,
-	#history-pane,
-	#error-banner,
-	#detached-banner,
-	#toast {
-		display: none !important;
-	}
-
-	#split {
-		display: block !important;
-		height: auto !important;
-		overflow: visible !important;
-	}
-
-	#preview-pane {
-		width: 100% !important;
-		height: auto !important;
-		overflow: visible !important;
-		background: #fff !important;
-	}
-
 	.sheet {
 		box-shadow: none !important;
 		margin: 0 !important;
@@ -439,19 +404,5 @@ table.oss .proj a:hover {
 	.src-hover {
 		outline: none;
 		background: none;
-	}
-
-	/* Force light colours when printing regardless of theme */
-	:root[data-theme='dark'] {
-		--danger: #b91c1c;
-		--ink: #15211f;
-		--muted: #5f6f6c;
-		--faint: #8a9794;
-		--accent: #157c75;
-		--accent-deep: #0d4f4a;
-		--accent-wash: #eaf4f2;
-		--line: #dbe6e3;
-		--paper: #fff;
-		--bg: #fff;
 	}
 }

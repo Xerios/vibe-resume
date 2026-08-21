@@ -78,3 +78,140 @@
 		</div>
 	{/if}
 </div>
+
+<style>
+	#trash-panel {
+		position: fixed;
+		top: 82px;
+		right: 16px;
+		width: 280px;
+		max-height: 60vh;
+		display: flex;
+		flex-direction: column;
+		background: var(--paper);
+		border: 1px solid var(--line);
+		border-radius: 8px;
+		box-shadow: var(--shadow-pop);
+		z-index: 100;
+		overflow: hidden;
+		transition: var(--theme-fade);
+	}
+
+	.trash-head {
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 8px 12px;
+		border-bottom: 1px solid var(--line);
+		font-family: var(--mono);
+		font-size: 9.5px;
+		font-weight: 600;
+		letter-spacing: 1.8px;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+
+	.trash-list {
+		flex: 1;
+		overflow-y: auto;
+		min-height: 0;
+		margin: 0;
+		padding: 4px;
+		list-style: none;
+	}
+
+	.trash-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		padding: 6px 8px;
+		border-radius: 5px;
+	}
+
+	.trash-row:hover {
+		background: var(--accent-wash);
+	}
+
+	.trash-info {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+	}
+
+	.trash-name {
+		font-size: 11.5px;
+		font-weight: 600;
+		color: var(--ink);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.trash-time {
+		font-family: var(--mono);
+		font-size: 9px;
+		color: var(--faint);
+	}
+
+	.trash-actions {
+		flex-shrink: 0;
+		display: flex;
+		gap: 4px;
+	}
+
+	/* Not a .t-btn: deleting forever should not look like the Restore button
+	   sitting next to it, and turns red only on approach. */
+	.trash-purge {
+		background: none;
+		border: 1.5px solid var(--line);
+		border-radius: 5px;
+		cursor: pointer;
+		font-family: var(--mono);
+		font-size: 10px;
+		font-weight: 600;
+		color: var(--faint);
+		padding: 4px 8px;
+		transition:
+			border-color 0.13s,
+			color 0.13s;
+	}
+
+	.trash-purge:hover {
+		border-color: var(--danger);
+		color: var(--danger);
+	}
+
+	.trash-empty {
+		font-family: var(--mono);
+		font-size: 10.5px;
+		color: var(--faint);
+		padding: 14px 8px;
+		line-height: 1.6;
+	}
+
+	.trash-foot {
+		flex-shrink: 0;
+		display: flex;
+		justify-content: flex-end;
+		padding: 6px 10px;
+		border-top: 1px solid var(--line);
+	}
+
+	.trash-foot button {
+		background: none;
+		border: none;
+		padding: 0;
+		cursor: pointer;
+		font-family: var(--mono);
+		font-size: 9.5px;
+		color: var(--faint);
+		text-decoration: underline;
+	}
+
+	.trash-foot button:hover {
+		color: var(--danger);
+	}
+</style>

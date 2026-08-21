@@ -1,0 +1,210 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   CodeMirror 6 theme, for the editor hosted by YamlEditor.svelte.
+
+   A plain stylesheet rather than that component's <style> block: CodeMirror
+   builds its own DOM outside the Svelte template, so scoped selectors would
+   never reach a single one of these elements. The component imports this file,
+   so the theme still ships with the editor and nothing else.
+
+   Every rule goes through #cm-wrap on purpose. CodeMirror's base theme scopes
+   its palette under a generated class on the editor root — `&light .cm-gutters`
+   ships as `.cm-lightXYZ .cm-gutters` — so a bare `.cm-gutters` here loses the
+   cascade on specificity however late the stylesheet loads, and the gutter,
+   active line, caret and selection keep their stock light colours in both
+   themes. One id outranks those two-class selectors for good.
+
+   Colours come from the --cm-* tokens in src/lib/styles/tokens.css.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+#cm-wrap .cm-editor {
+	height: 100%;
+	background: var(--editor-bg);
+	color: var(--ink);
+	font-family: var(--mono);
+	font-size: 12.5px;
+	transition: var(--theme-fade);
+}
+
+#cm-wrap .cm-editor.cm-focused {
+	outline: none;
+}
+
+#cm-wrap .cm-scroller {
+	font-family: inherit;
+	line-height: 1.6;
+	padding-bottom: 60px;
+	overflow: auto;
+	/* required for a fixed-height editor to scroll */
+}
+
+#cm-wrap .cm-content {
+	caret-color: var(--accent);
+}
+
+#cm-wrap .cm-gutters {
+	transition: var(--theme-fade);
+	background: var(--editor-chrome);
+	border-right: 1px solid var(--line);
+	color: var(--faint);
+}
+
+#cm-wrap .cm-lineNumbers .cm-gutterElement {
+	padding: 0 6px 0 12px;
+	min-width: 28px;
+}
+
+#cm-wrap .cm-activeLine {
+	background: var(--cm-active);
+}
+
+#cm-wrap .cm-activeLineGutter {
+	background: var(--cm-active);
+	color: var(--accent-deep);
+}
+
+#cm-wrap .cm-cursor,
+#cm-wrap .cm-dropCursor {
+	border-left-color: var(--accent);
+	border-left-width: 2px;
+}
+
+#cm-wrap .cm-selectionBackground {
+	background: var(--cm-selection);
+}
+
+/* The focused variant of this one is five classes deep in the base theme. */
+#cm-wrap .cm-editor.cm-focused .cm-selectionBackground {
+	background: var(--cm-selection-focus);
+}
+
+/* The editor is read-only while a past version is on screen. */
+#cm-wrap .cm-editor:not(.cm-focused) .cm-activeLine {
+	background: transparent;
+}
+
+/* Highlights what a previewed version changed, relative to just before it. */
+#cm-wrap .cm-diff-added {
+	background: var(--cm-diff-add-bg);
+	border-radius: 2px;
+}
+
+#cm-wrap .cm-diff-removed {
+	background: var(--cm-diff-del-bg);
+	color: var(--cm-diff-del-text);
+	text-decoration: line-through;
+	border-radius: 2px;
+	white-space: pre-wrap;
+}
+
+/* The line behind whatever the pointer is on in the preview. Unlike
+   .cm-activeLine this shows while the editor is unfocused — that's the whole
+   point of it, since the pointer is over on the other pane. */
+#cm-wrap .cm-peek-line {
+	background: var(--cm-peek);
+	box-shadow: inset 2px 0 0 var(--accent);
+}
+
+/* Every other run of whatever's selected — renaming a key shows its twins. */
+#cm-wrap .cm-selectionMatch {
+	background: var(--cm-match);
+	border-radius: 2px;
+}
+
+/* ── Folding ──────────────────────────────────── */
+#cm-wrap .cm-foldGutter .cm-gutterElement {
+	padding: 0 5px 0 1px;
+	color: var(--faint);
+	opacity: 0.5;
+	transition:
+		opacity 0.12s ease,
+		color 0.12s ease;
+}
+
+#cm-wrap .cm-foldGutter .cm-gutterElement:hover {
+	opacity: 1;
+	color: var(--accent-deep);
+}
+
+#cm-wrap .cm-foldPlaceholder {
+	background: var(--editor-chrome);
+	border: 1px solid var(--line);
+	color: var(--faint);
+	border-radius: 3px;
+	margin: 0 2px;
+	padding: 0 5px;
+}
+
+/* ── YAML errors ──────────────────────────────── */
+/* The stock underline is a fixed-colour SVG tile; a wavy text-decoration takes
+   the theme's red instead. */
+#cm-wrap .cm-lintRange-error {
+	background: none;
+	text-decoration: underline wavy var(--cm-error);
+	text-decoration-skip-ink: none;
+	text-underline-offset: 3px;
+}
+
+/* An error with nothing left on the line to underline — an unterminated block,
+   say — renders as a caret at that spot rather than a range. */
+#cm-wrap .cm-lintPoint::after {
+	border-bottom-color: var(--cm-error);
+}
+
+/* Comes after .cm-activeLine and .cm-peek-line on purpose: a line that doesn't
+   parse outranks both of those tints while it's broken. */
+#cm-wrap .cm-error-line {
+	background: var(--cm-error-bg);
+	box-shadow: inset 2px 0 0 var(--cm-error);
+}
+
+#cm-wrap .cm-gutter-lint {
+	width: 14px;
+}
+
+#cm-wrap .cm-gutter-lint .cm-gutterElement {
+	padding: 0;
+}
+
+/* Stock markers are SVG images set through `content`, in colours of their own. */
+#cm-wrap .cm-lint-marker {
+	content: normal;
+	display: grid;
+	place-items: center;
+	width: 100%;
+	height: 100%;
+}
+
+#cm-wrap .cm-lint-marker-error::after {
+	content: '';
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: var(--cm-error);
+}
+
+#cm-wrap .cm-tooltip.cm-tooltip-lint {
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 4px;
+	box-shadow: var(--shadow-pop);
+	overflow: hidden;
+}
+
+#cm-wrap .cm-diagnostic {
+	font-family: var(--mono);
+	font-size: 11px;
+	line-height: 1.5;
+	color: var(--ink);
+	padding: 5px 8px;
+	margin: 0;
+	max-width: 320px;
+}
+
+#cm-wrap .cm-diagnostic-error {
+	border-left: 3px solid var(--cm-error);
+}
+
+#cm-wrap .cm-diagnosticSource {
+	color: var(--faint);
+}
+
