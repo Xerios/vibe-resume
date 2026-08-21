@@ -257,7 +257,7 @@
 	content: '';
 	height: 1px;
 	flex: 1;
-	background: var(--line);
+	border-top: 1px solid var(--line);
 }
 
 [data-cv-layout='centered'] .sec-summary {
@@ -308,16 +308,20 @@
 
 [data-cv-layout='timeline'] .sec-experience .job {
 	position: relative;
-	margin-left: 3px;
+	/* The dot straddles the rail, overhanging 4.25px to its left. Printing
+	   strips the sheet's padding, so the indent here is what keeps that
+	   overhang off the page edge — it can't go below ~5px. */
+	margin-left: 8px;
 	padding-left: 20px;
 	padding-bottom: 2px;
+	margin-bottom: 0px;
 	border-left: 1.5px solid var(--line);
 }
 
 [data-cv-layout='timeline'] .sec-experience .job::before {
 	content: '';
 	position: absolute;
-	left: -5.75px;
+	left: -7.75px;
 	top: 6px;
 	width: 10px;
 	height: 10px;
@@ -343,6 +347,7 @@
    ramp block above; it has to stay last in this file to win the tie. */
 
 @media print {
+
 	:root #cv-root,
 	:root[data-theme='dark'] #cv-root {
 		--accent: var(--t-accent-l, #157c75);

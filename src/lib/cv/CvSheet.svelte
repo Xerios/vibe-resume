@@ -1,6 +1,6 @@
 <script>
-	import { marked } from 'marked';
-	import { DEFAULT_LAYOUT } from './presets.js';
+	import { marked } from "marked";
+	import { DEFAULT_LAYOUT } from "./presets.js";
 
 	/** @type {{ cv: any, layout?: string }} */
 	let { cv, layout = DEFAULT_LAYOUT } = $props();
@@ -10,9 +10,12 @@
 	 * @param {unknown} text
 	 */
 	function md(text) {
-		if (!text) return '';
+		if (!text) return "";
 		const html = marked.parseInline(String(text).trim());
-		return String(html).replace(/<a href=/g, '<a target="_blank" rel="noopener" href=');
+		return String(html).replace(
+			/<a href=/g,
+			'<a target="_blank" rel="noopener" href=',
+		);
 	}
 
 	/**
@@ -21,7 +24,9 @@
 	 */
 	const list = (v) => (Array.isArray(v) ? v : []);
 
-	const sections = $derived(list(cv.sections).filter((s) => s && typeof s === 'object'));
+	const sections = $derived(
+		list(cv.sections).filter((s) => s && typeof s === "object"),
+	);
 
 	/**
 	 * The sidebar layout is the only one that needs sections split across two
@@ -29,24 +34,29 @@
 	 * with `rail: true` / `rail: false` in the YAML.
 	 */
 	const rail = $derived(
-		layout === 'sidebar' ? sections.filter((s) => s.rail ?? s.type === 'skills') : []
+		layout === "sidebar"
+			? sections.filter((s) => s.rail ?? s.type === "skills")
+			: [],
 	);
 	const main = $derived(sections.filter((s) => !rail.includes(s)));
 </script>
 
 {#snippet secHead(/** @type {unknown} */ title)}
-	<div class="sec-head"><h2>{@html md(title)}</h2><div class="bar"></div></div>
+	<div class="sec-head">
+		<h2>{@html md(title)}</h2>
+		<div class="bar"></div>
+	</div>
 {/snippet}
 
 {#snippet block(/** @type {any} */ sec)}
-	{#if sec.type === 'summary'}
+	{#if sec.type === "summary"}
 		<section class="sec-summary">
 			{@render secHead(sec.title)}
 			{#each list(sec.paragraphs) as p}
 				<p>{@html md(p)}</p>
 			{/each}
 		</section>
-	{:else if sec.type === 'skills'}
+	{:else if sec.type === "skills"}
 		<section class="sec-skills">
 			{@render secHead(sec.title)}
 			<div class="skill-grid">
@@ -54,18 +64,21 @@
 					<div class="skill-block">
 						<h3>{@html md(b.title)}</h3>
 						{#each list(b.rows) as r}
-							<div class="skill-row">{#if r.tier}<span class="tier">{@html md(r.tier)}</span> · {/if}{@html md(r.text)}</div>
+							<div class="skill-row">
+								{#if r.tier}<span class="tier">{@html md(r.tier)}</span> ·
+								{/if}{@html md(r.text)}
+							</div>
 						{/each}
 					</div>
 				{/each}
 			</div>
 		</section>
-	{:else if sec.type === 'experience'}
+	{:else if sec.type === "experience"}
 		<section class="sec-experience">
 			{@render secHead(sec.title)}
 			{#each list(sec.items) as item}
-				{#if item.subtype === 'earlier'}
-					<div class="job earlier">
+				{#if item.subtype === "earlier"}
+					<div class="earlier">
 						<h3>{@html md(item.title)}</h3>
 						<ul class="bullets">
 							{#each list(item.items) as line}
@@ -76,7 +89,12 @@
 				{:else}
 					<div class="job">
 						<div class="job-head">
-							<p class="job-title">{@html md(item.title)} <span class="co">| {@html md(item.company)}</span>{#if item.sideNote} <span class="side-note">{@html md(item.sideNote)}</span>{/if}</p>
+							<p class="job-title">
+								{@html md(item.title)}
+								<span class="co">| {@html md(item.company)}</span
+								>{#if item.sideNote}
+									<span class="side-note">{@html md(item.sideNote)}</span>{/if}
+							</p>
 							<span class="job-dates">{@html md(item.dates)}</span>
 						</div>
 						<p class="job-sub">{@html md(item.sub)}</p>
@@ -92,7 +110,7 @@
 				{/if}
 			{/each}
 		</section>
-	{:else if sec.type === 'oss'}
+	{:else if sec.type === "oss"}
 		<section class="sec-oss">
 			{@render secHead(sec.title)}
 			<table class="oss">
@@ -128,11 +146,12 @@
 			<p class="role">{@html md(cv.header?.role)}</p>
 		</div>
 		<div class="contact">
-			{#each list(cv.header?.contact) as line, i}{#if i > 0}<br />{/if}{@html md(line)}{/each}
+			{#each list(cv.header?.contact) as line, i}{#if i > 0}<br
+					/>{/if}{@html md(line)}{/each}
 		</div>
 	</header>
 
-	{#if layout === 'sidebar'}
+	{#if layout === "sidebar"}
 		<div class="cv-cols">
 			<aside class="cv-rail">
 				{#each rail as sec}{@render block(sec)}{/each}

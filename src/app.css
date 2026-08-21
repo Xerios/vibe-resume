@@ -20,9 +20,9 @@
 	--shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.18);
 	--editor-bg: #f6f8f7;
 	--editor-chrome: #eef1f0;
-	--cm-active: #e9efed;
-	--cm-selection: #d4ede9;
-	--cm-selection-focus: #c2e5df;
+	--cm-active: #c2c2c236;
+	--cm-selection: #96c3bb88;
+	--cm-selection-focus: #9ebfb985;
 	--cm-key: #0d4f4a;
 	--cm-string: #2a6b3f;
 	--cm-block: #7c5200;
@@ -658,7 +658,8 @@ body {
 	font-family: inherit;
 	line-height: 1.6;
 	padding-bottom: 60px;
-	overflow: auto; /* required for a fixed-height editor to scroll */
+	overflow: auto;
+	/* required for a fixed-height editor to scroll */
 }
 
 #cm-wrap .cm-content {
@@ -1159,12 +1160,11 @@ body.resizing #preview-pane {
 	--shadow-pop: 0 10px 28px rgba(0, 0, 0, 0.5);
 	--editor-bg: #10201e;
 	--editor-chrome: #0c1917;
-	--cm-active: #16302d;
-	--cm-selection: #183533;
-	--cm-selection-focus: #1e3e3b;
+	--cm-active: #418d8414;
+	--cm-selection: #3c807b4a;
+	--cm-selection-focus: #5c8a864e;
 	--cm-key: #6dd9d3;
 	--cm-string: #7ac47c;
-	--cm-block: #e0a860;
 	--cm-text: #cde0dd;
 	--cm-comment: #3e5e5a;
 	--cm-punct: #7a9491;
