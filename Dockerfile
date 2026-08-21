@@ -2,7 +2,7 @@
 # client-side (see src/routes/+layout.js), so nothing but static files ships.
 
 FROM node:22-alpine AS build
-RUN corepack enable && corepack prepare pnpm@10 --activate
+RUN corepack enable && corepack prepare pnpm@11 --activate
 WORKDIR /app
 
 # Separate layer so dependency install is cached across source-only changes.
