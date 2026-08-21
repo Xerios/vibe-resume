@@ -1,4 +1,38 @@
 {
+	"permissions": {
+		"allow": [
+			"Bash(pnpm i *)"
+		],
+		"deny": [
+			"Read(./.env)",
+			"Read(./.env.*)",
+			"Read(**/.env)",
+			"Read(./.svelte-kit/**)",
+			"Read(./.vite-hooks/**)",
+			"Read(./content/**)",
+			"Read(./node_modules/**)",
+			"Read(./dist/**)",
+			"Read(./secrets/**)",
+			"Read(./config/credentials.json)",
+			"Read(./build)",
+			"Read(~/.ssh/**)",
+			"Read(./static/**)",
+			"Read(.git/**)",
+			"Bash(rm -rf node_modules*)",
+			"Bash(rm -rf *)",
+			"Bash(rm:*)",
+			"Bash(sudo:*)",
+			"Bash(chmod 777:*)",
+			"Bash(git push --force:*)",
+			"Bash(git push -f:*)",
+			"Bash(git reset --hard:*)",
+			"Bash(git clean:*)",
+			"Bash(git restore:*)",
+			"Bash(dd:*)",
+			"Bash(mkfs:*)",
+			"Bash(* > /dev/sda*)"
+		]
+	},
 	"extraKnownMarketplaces": {
 		"svelte": {
 			"source": {
