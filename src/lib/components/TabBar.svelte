@@ -18,11 +18,11 @@
 		/** @type {() => void} */
 		onCopy,
 		/** @type {() => void} */
-		onExport
+		onExport,
 	} = $props();
 
 	let editingId = $state(/** @type {string | null} */ (null));
-	let editValue = $state('');
+	let editValue = $state("");
 
 	/** @param {import('$lib/cv/files.svelte.js').FileMeta} f */
 	function startRename(f) {
@@ -37,8 +37,8 @@
 
 	/** @param {KeyboardEvent} e */
 	function onRenameKeydown(e) {
-		if (e.key === 'Enter') commitRename();
-		if (e.key === 'Escape') editingId = null;
+		if (e.key === "Enter") commitRename();
+		if (e.key === "Escape") editingId = null;
 	}
 
 	/** @param {HTMLInputElement} node */
@@ -72,12 +72,20 @@
 						{f.name}
 					</button>
 				{/if}
-				<button class="tab-close" title="Close (moves to trash)" onclick={() => onClose(f.id)}>
+				<button
+					class="tab-close"
+					title="Close (moves to trash)"
+					onclick={() => onClose(f.id)}
+				>
 					×
 				</button>
 			</div>
 		{/each}
-		<button id="tab-add" onclick={onDuplicate} title="Duplicate the current file into a new tab">
+		<button
+			id="tab-add"
+			onclick={onDuplicate}
+			title="Duplicate the current file into a new tab"
+		>
 			<svg
 				width="12"
 				height="12"
@@ -95,24 +103,11 @@
 	</div>
 
 	<div id="tab-actions">
-		<button class="t-btn" onclick={onCopy} title="Copy YAML to clipboard">
-			<svg
-				width="12"
-				height="12"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2.5"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<rect width="14" height="14" x="8" y="8" rx="2" />
-				<path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-			</svg>
-			<span class="t-txt">Copy YAML</span>
-		</button>
-
-		<button class="t-btn" onclick={onNew} title="Start a new CV from the shipped template">
+		<button
+			class="t-btn"
+			onclick={onNew}
+			title="Start a new CV from the shipped template"
+		>
 			<svg
 				width="12"
 				height="12"
@@ -129,24 +124,6 @@
 				<line x1="9" y1="15" x2="15" y2="15" />
 			</svg>
 			<span class="t-txt">Add new</span>
-		</button>
-
-		<button class="t-btn t-btn-pdf" onclick={onExport} title="Export current CV as PDF">
-			<svg
-				width="12"
-				height="12"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2.5"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-				<polyline points="7 10 12 15 17 10" />
-				<line x1="12" y1="15" x2="12" y2="3" />
-			</svg>
-			<span class="t-txt">Export PDF</span>
 		</button>
 
 		<button
@@ -172,7 +149,30 @@
 				/>
 			</svg>
 			<span class="t-txt">Trash</span>
-			{#if files.trashed.length}<span class="t-count">{files.trashed.length}</span>{/if}
+			{#if files.trashed.length}<span class="t-count"
+					>{files.trashed.length}</span
+				>{/if}
+		</button>
+		<button
+			class="t-btn t-btn-pdf"
+			onclick={onExport}
+			title="Export current CV as PDF"
+		>
+			<svg
+				width="12"
+				height="12"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2.5"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
+				<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+				<polyline points="7 10 12 15 17 10" />
+				<line x1="12" y1="15" x2="12" y2="3" />
+			</svg>
+			<span class="t-txt">Export PDF</span>
 		</button>
 	</div>
 </div>
