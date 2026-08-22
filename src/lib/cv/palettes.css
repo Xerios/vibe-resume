@@ -1,0 +1,158 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   The CV palettes, and nothing else — one block of pure data per theme id.
+
+   Each theme names a light ramp (`--t-*-l`) and a dark one (`--t-*-d`) and
+   picks neither; presets.css decides which is in force for the sheet.
+
+   Nothing spends the `--t-*-d` half at present: the sheet is paper and stays
+   light whatever the app around it is set to, and the picker's swatches follow
+   it. They are kept because they are the theme's data rather than a rule — the
+   half of each palette that a dark preview would need, still here and still
+   consistent, should one ever want it back.
+
+   Split out from presets.css because these declarations are the only part of
+   the preset system the *app* still needs. The sheet renders inside an iframe
+   (PreviewFrame.svelte) and takes the rest of presets.css in there with it,
+   but StylePicker draws each swatch by putting `data-cv-theme` on the option
+   itself — so there is no second copy of the colours to drift out of step.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-cv-theme='teal'] {
+	--t-accent-l: #157c75;
+	--t-deep-l: #0d4f4a;
+	--t-wash-l: #eaf4f2;
+	--t-line-l: #dbe6e3;
+	--t-paper-l: #ffffff;
+	--t-ink-l: #15211f;
+	--t-muted-l: #5f6f6c;
+	--t-faint-l: #8a9794;
+
+	--t-accent-d: #1cbdb2;
+	--t-deep-d: #6dd9d3;
+	--t-wash-d: #0d2926;
+	--t-line-d: #1e302e;
+	--t-paper-d: #152320;
+	--t-ink-d: #cde0dd;
+	--t-muted-d: #7a9491;
+	--t-faint-d: #5c7e7a;
+}
+
+[data-cv-theme='slate'] {
+	--t-accent-l: #47617f;
+	--t-deep-l: #2b3d52;
+	--t-wash-l: #eef1f5;
+	--t-line-l: #dde3ea;
+	--t-paper-l: #ffffff;
+	--t-ink-l: #1b2330;
+	--t-muted-l: #5c6879;
+	--t-faint-l: #8b95a4;
+
+	--t-accent-d: #7ea3cc;
+	--t-deep-d: #a9c6e6;
+	--t-wash-d: #16202c;
+	--t-line-d: #23303f;
+	--t-paper-d: #161d26;
+	--t-ink-d: #d3dce6;
+	--t-muted-d: #93a2b3;
+	--t-faint-d: #6c7d90;
+}
+
+[data-cv-theme='indigo'] {
+	--t-accent-l: #4338ca;
+	--t-deep-l: #312e81;
+	--t-wash-l: #eef0fd;
+	--t-line-l: #dfe1f2;
+	--t-paper-l: #ffffff;
+	--t-ink-l: #191a2e;
+	--t-muted-l: #5b5f7d;
+	--t-faint-l: #8b8fae;
+
+	--t-accent-d: #8b8cf0;
+	--t-deep-d: #b3b4f8;
+	--t-wash-d: #1a1930;
+	--t-line-d: #2a2947;
+	--t-paper-d: #161628;
+	--t-ink-d: #d8d9ee;
+	--t-muted-d: #9698c0;
+	--t-faint-d: #6d6f96;
+}
+
+[data-cv-theme='plum'] {
+	--t-accent-l: #8e2f6b;
+	--t-deep-l: #5f1c46;
+	--t-wash-l: #fbecf5;
+	--t-line-l: #eeddea;
+	--t-paper-l: #ffffff;
+	--t-ink-l: #26161f;
+	--t-muted-l: #6d5763;
+	--t-faint-l: #9f8794;
+
+	--t-accent-d: #e07ab8;
+	--t-deep-d: #eda6d0;
+	--t-wash-d: #2b1122;
+	--t-line-d: #3d1b31;
+	--t-paper-d: #201422;
+	--t-ink-d: #ecd9e6;
+	--t-muted-d: #ad91a4;
+	--t-faint-d: #806a79;
+}
+
+[data-cv-theme='ember'] {
+	--t-accent-l: #b4531f;
+	--t-deep-l: #7c3512;
+	--t-wash-l: #fdf0e8;
+	--t-line-l: #f0e0d5;
+	--t-paper-l: #fffdfb;
+	--t-ink-l: #26190f;
+	--t-muted-l: #6f5b4b;
+	--t-faint-l: #a08976;
+
+	--t-accent-d: #f0894b;
+	--t-deep-d: #f8ab77;
+	--t-wash-d: #2a1a0e;
+	--t-line-d: #3a2617;
+	--t-paper-d: #21160f;
+	--t-ink-d: #ecdccd;
+	--t-muted-d: #ab9483;
+	--t-faint-d: #7d685a;
+}
+
+[data-cv-theme='sepia'] {
+	--t-accent-l: #8a6a2f;
+	--t-deep-l: #5b451c;
+	--t-wash-l: #f7f0e0;
+	--t-line-l: #e6dcc6;
+	--t-paper-l: #fdf9f0;
+	--t-ink-l: #241d10;
+	--t-muted-l: #6b6047;
+	--t-faint-l: #9a8f74;
+
+	--t-accent-d: #d0ad60;
+	--t-deep-d: #e4c886;
+	--t-wash-d: #241d0e;
+	--t-line-d: #342a17;
+	--t-paper-d: #1d1810;
+	--t-ink-d: #e8ddc7;
+	--t-muted-d: #a89a7e;
+	--t-faint-d: #7a6f58;
+}
+
+[data-cv-theme='mono'] {
+	--t-accent-l: #3a3a3a;
+	--t-deep-l: #111111;
+	--t-wash-l: #f0f0f0;
+	--t-line-l: #dcdcdc;
+	--t-paper-l: #ffffff;
+	--t-ink-l: #141414;
+	--t-muted-l: #565656;
+	--t-faint-l: #8a8a8a;
+
+	--t-accent-d: #c8c8c8;
+	--t-deep-d: #ededed;
+	--t-wash-d: #1e1e1e;
+	--t-line-d: #2e2e2e;
+	--t-paper-d: #181818;
+	--t-ink-d: #e2e2e2;
+	--t-muted-d: #9a9a9a;
+	--t-faint-d: #6f6f6f;
+}

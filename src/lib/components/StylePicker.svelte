@@ -12,10 +12,27 @@
 		/** @type {(id: string) => void} */
 		onLayout,
 		/** @type {(id: string) => void} */
-		onTheme
+		onTheme,
+		/** The active file's own CSS — see the editor at the foot of the popover. */
+		css = '',
+		/** @type {(text: string) => void} */
+		onCss
 	} = $props();
 
+	/**
+	 * Seeded into an empty editor, so the tokens worth overriding are discoverable
+	 * without having to read frame.css to find out what they are called.
+	 */
+	const CSS_TEMPLATE = `#cv-root {
+	--sans: Georgia, 'Times New Roman', serif;
+	--accent: #157c75;
+	--ink: #15211f;
+	--paper: #ffffff;
+}
+`;
+
 	let open = $state(false);
+	let cssOpen = $state(false);
 	/** @type {HTMLDivElement} */
 	let root;
 	let toggle = $state(/** @type {HTMLButtonElement | undefined} */ (undefined));
@@ -146,6 +163,36 @@
 					{/each}
 				</div>
 			</div>
+
+			<!-- Anything at all, applied last inside the preview frame. It can't
+			     reach the editor around it, so there is nothing to validate. -->
+			<div class="style-group">
+				<button
+					class="css-toggle"
+					aria-expanded={cssOpen}
+					onclick={() => (cssOpen = !cssOpen)}
+				>
+					<span class="style-label">Custom CSS</span>
+					<span class="css-caret" class:on={cssOpen}>›</span>
+				</button>
+				{#if cssOpen}
+					<textarea
+						class="css-edit"
+						spellcheck="false"
+						autocapitalize="off"
+						autocomplete="off"
+						value={css}
+						placeholder={CSS_TEMPLATE}
+						aria-label="Custom CSS for this CV"
+						oninput={(e) => onCss(e.currentTarget.value)}
+					></textarea>
+					<p class="css-hint">
+						Applies to this file only. Override the tokens on <code
+							>#cv-root</code
+						>, or style the sheet directly.
+					</p>
+				{/if}
+			</div>
 		</div>
 	{/if}
 </div>
@@ -170,6 +217,81 @@
 		border-radius: 8px;
 		box-shadow: var(--shadow-pop);
 		z-index: 100;
+	}
+
+	/* The disclosure is the label: the whole row is the hit target, so the caret
+	   doesn't need one of its own. */
+	.css-toggle {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		width: 100%;
+		padding: 0;
+		background: none;
+		border: none;
+		cursor: pointer;
+	}
+
+	.css-toggle .style-label {
+		margin-bottom: 0;
+	}
+
+	.css-toggle:hover .style-label {
+		color: var(--accent-deep);
+	}
+
+	.css-caret {
+		font-size: 13px;
+		line-height: 1;
+		color: var(--faint);
+		transition: transform 0.14s;
+	}
+
+	.css-caret.on {
+		transform: rotate(90deg);
+	}
+
+	.css-edit {
+		display: block;
+		width: 100%;
+		height: 132px;
+		margin-top: 7px;
+		padding: 7px 8px;
+		background: var(--editor-bg);
+		border: 1.5px solid var(--line);
+		border-radius: 6px;
+		color: var(--ink);
+		font-family: var(--mono);
+		font-size: 10.5px;
+		line-height: 1.55;
+		tab-size: 2;
+		resize: vertical;
+		white-space: pre;
+		overflow: auto;
+	}
+
+	.css-edit:focus {
+		outline: none;
+		border-color: var(--accent);
+	}
+
+	/* The template shows through as the placeholder, so an empty editor still
+	   says which tokens are worth reaching for. */
+	.css-edit::placeholder {
+		color: var(--faint);
+	}
+
+	.css-hint {
+		margin: 6px 0 0;
+		font-size: 10px;
+		line-height: 1.45;
+		color: var(--faint);
+	}
+
+	.css-hint code {
+		font-family: var(--mono);
+		font-size: 9.5px;
+		color: var(--muted);
 	}
 
 	.style-label {
@@ -269,8 +391,11 @@
 	}
 
 	/* Accent over the sheet colour it sits on, so a swatch previews the pairing.
-	   The tokens come from the `data-cv-theme` on the option itself (presets.css),
-	   which is also what makes the swatch follow dark mode. */
+	   The tokens come from the `data-cv-theme` on the option itself (palettes.css).
+
+	   The light ramp whatever the app is set to, because that is what the sheet
+	   renders from — a swatch that darkened with the chrome would be advertising
+	   a CV the preview can no longer produce. */
 	.theme-dot {
 		flex-shrink: 0;
 		width: 13px;
@@ -280,12 +405,5 @@
 		box-shadow:
 			inset 0 0 0 3px var(--t-paper-l),
 			inset 0 0 0 4px var(--t-accent-l);
-	}
-
-	:root[data-theme='dark'] .theme-dot {
-		background: var(--t-accent-d);
-		box-shadow:
-			inset 0 0 0 3px var(--t-paper-d),
-			inset 0 0 0 4px var(--t-accent-d);
 	}
 </style>

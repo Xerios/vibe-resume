@@ -25,6 +25,7 @@ pnpm check      # svelte-check
 | Editor             | [src/lib/components/YamlEditor.svelte](src/lib/components/YamlEditor.svelte) — CodeMirror 6   |
 | Chrome             | `components/{Toolbar,TabBar,StatusBar}.svelte` — the buttons, the tabs, the status bar        |
 | YAML to HTML       | [src/lib/cv/render.js](src/lib/cv/render.js)                                                 |
+| Preview            | [src/lib/cv/PreviewFrame.svelte](src/lib/cv/PreviewFrame.svelte) — the iframe the sheet renders in |
 | Starting text      | [src/lib/cv/default-cv.yaml](src/lib/cv/default-cv.yaml)                                     |
 | Layout & theme     | [src/lib/cv/presets.js](src/lib/cv/presets.js) — the presets, and the CSS beside it           |
 | CSS                | [src/app.css](src/app.css) — the index; see *Where the CSS lives* below                      |
@@ -52,11 +53,28 @@ the file registry next to the name rather than in the CRDT: restyling is not an
 edit, so it leaves the YAML and the version history alone.
 
 The ids land on `#cv-root` as `data-cv-layout` / `data-cv-theme`, and
-[presets.css](src/lib/cv/presets.css) does the rest. A theme there is pure
-data — a light ramp (`--t-*-l`) and a dark one (`--t-*-d`), choosing neither.
-One block downstream re-points the app's tokens at whichever ramp applies, and
-that indirection is what lets printing from dark mode fall back to the light
-ramp of *the chosen theme* instead of a hardcoded teal.
+[presets.css](src/lib/cv/presets.css) does the rest. A theme is pure data — a
+ramp of eight colours, declared in [palettes.css](src/lib/cv/palettes.css) and
+spent by one block downstream that re-points the frame's tokens at it.
+
+The sheet does not follow the app into dark mode. It is paper: it renders light
+on screen, prints exactly what it showed, and the app's dark toggle dresses only
+the editor around it. That is why the frame is never told which ramp the app is
+in, and why nothing in the print rules has to undo a dark one. Each palette
+still carries the `--t-*-d` half it would need for a dark preview — unspent, but
+kept beside the light ramp so the two can't drift apart.
+
+Palettes sit in their own file because they are the one part of the preset
+system the app still needs: the sheet's CSS all moves into the frame, but
+StylePicker draws each swatch by putting `data-cv-theme` on the option itself,
+so there is no second copy of the colours to drift out of step. The swatches
+read from the light ramp too, for the same reason the sheet does — one that
+darkened with the chrome would advertise a CV the preview can't produce.
+
+Below both is a third layer, per file like the other two: arbitrary CSS, edited
+in the Style popover and applied last inside the frame. It is stored and
+validated exactly as much as it needs to be, which is not at all — the worst a
+broken rule can do is make the sheet look wrong.
 
 Layouts are CSS alone, with one exception: the sidebar needs two real columns,
 so `CvSheet` renders a rail and a main column for that layout only. Skills go
@@ -85,20 +103,54 @@ written, in the component's own `<style>` block — `#toolbar` in `Toolbar.svelt
 `.hist-*` in `HistoryPanel.svelte`, and so on. A rule only becomes global when
 it genuinely has no single owner:
 
+In the app's document:
+
 | File                                                              | Holds                                                        |
 | ----------------------------------------------------------------- | ------------------------------------------------------------ |
 | [app.css](src/app.css)                                            | the index — imports the three below, and nothing else         |
 | [styles/tokens.css](src/lib/styles/tokens.css)                    | both colour ramps, the type stack, `--theme-fade`             |
 | [styles/base.css](src/lib/styles/base.css)                        | reset, page background, scrollbars, the `#app` shell          |
 | [styles/controls.css](src/lib/styles/controls.css)                | `.t-btn` and friends — used from six different places         |
-| [styles/print.css](src/lib/styles/print.css)                      | the page box, and the chrome that has no business on paper    |
+| [styles/print.css](src/lib/styles/print.css)                      | the fallback for a print the app can't intercept              |
 | [components/codemirror.css](src/lib/components/codemirror.css)    | the CodeMirror theme, imported by `YamlEditor.svelte`         |
-| [cv/cv.css](src/lib/cv/cv.css)                                    | the sheet itself, plus how it paginates                       |
-| [cv/presets.css](src/lib/cv/presets.css)                          | the layouts and themes selected on `#cv-root`                 |
+| [cv/palettes.css](src/lib/cv/palettes.css)                        | the seven ramps — here only so StylePicker can draw a swatch  |
 
-The last three are global for the same underlying reason: they style DOM the
-Svelte compiler never sees. CodeMirror builds its own; the sheet's markdown
-fields are injected with `{@html}`. Scoped selectors would reach neither.
+And in the preview frame's, written into it by `PreviewFrame`:
+
+| File                                                              | Holds                                                        |
+| ----------------------------------------------------------------- | ------------------------------------------------------------ |
+| [cv/frame.css](src/lib/cv/frame.css)                              | the frame's reset, tokens and page box — its declared inputs  |
+| [cv/cv.css](src/lib/cv/cv.css)                                    | the sheet itself, plus how it paginates                       |
+| [cv/palettes.css](src/lib/cv/palettes.css)                        | the same seven ramps, this time for the sheet to spend        |
+| [cv/presets.css](src/lib/cv/presets.css)                          | the layouts and themes selected on `#cv-root`                 |
+| the active file's own CSS                                         | whatever you typed into the Style popover, applied last       |
+
+`codemirror.css` and the frame's four are global for the same underlying
+reason: they style DOM the Svelte compiler never sees. CodeMirror builds its
+own; the sheet is mounted into another document, and its markdown fields are
+injected with `{@html}` on top of that. Scoped selectors would reach neither.
+
+### The preview frame
+
+The sheet renders inside a same-origin `srcdoc` iframe rather than in the app's
+own DOM. That is what makes a file's custom CSS safe to allow at all: nothing
+crosses the boundary in either direction, custom properties included, so the
+worst a rule can do is make the CV look wrong. It also means the frame has to
+declare everything the sheet spends — `frame.css` is that list, and the overlap
+with `tokens.css` is the point rather than an oversight.
+
+`CvFrameBody` is `mount()`ed into the frame's `#cv-root` with a `$state` props
+object; mutating it re-renders the sheet in place, so the frame is built once
+and never reloaded.
+
+Two things follow from the move. Printing goes to `iframe.contentWindow.print()`
+— printing the app instead would put the frame on the page as a box and crop the
+CV to it — which is also why `Ctrl+P` is intercepted; `print.css` is now only the
+fallback for a print started from the browser's own menu, which nothing can
+catch. And every listener the two panes need is bound to the frame's document,
+since an iframe's events don't bubble out: `instanceof Element` is no use in
+there either, because the constructor belongs to the app's realm and disowns
+every node in the frame.
 
 ### Versions
 

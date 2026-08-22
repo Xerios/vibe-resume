@@ -7,7 +7,7 @@
 	import TrashPanel from "$lib/components/TrashPanel.svelte";
 	import WelcomeOverlay from "$lib/components/WelcomeOverlay.svelte";
 	import YamlEditor from "$lib/components/YamlEditor.svelte";
-	import CvSheet from "$lib/cv/CvSheet.svelte";
+	import PreviewFrame from "$lib/cv/PreviewFrame.svelte";
 	import { CvDoc } from "$lib/cv/doc.svelte.js";
 	import { FileManager } from "$lib/cv/files.svelte.js";
 	import { resolveLayout, resolveTheme } from "$lib/cv/presets.js";
@@ -19,7 +19,7 @@
 	const SYNC_QUIET_MS = 250;
 	/** A tab switch or version preview scrolls things about; sync sits out this long. */
 	const SYNC_HOLD_MS = 400;
-	/** Where the top of the preview viewport is read from — clear of the sticky banner. */
+	/** Where the top of the preview viewport is read from — a little breathing room. */
 	const PREVIEW_TOP_MARGIN = 16;
 	/** Breathing room above an edited element when the preview is pulled to it. */
 	const EDIT_REVEAL_MARGIN = 72;
@@ -50,14 +50,23 @@
 	let toastOn = $state(false);
 
 	let editor = $state(/** @type {YamlEditor | undefined} */ (undefined));
+	let frame = $state(/** @type {PreviewFrame | undefined} */ (undefined));
 	/** @type {HTMLDivElement} */
 	let split;
-	/** @type {HTMLDivElement} */
-	let cvRoot;
 	/** @type {HTMLDivElement} */
 	let previewPane;
 	/** @type {HTMLDivElement} */
 	let editorPane;
+
+	/* The preview is an iframe, so the DOM it works over is not ours. These are
+	   set from `onFrameReady` and are null until the frame has loaded. */
+	let frameDoc = /** @type {Document | null} */ (null);
+	let frameWin = /** @type {Window | null} */ (null);
+	let cvRoot = /** @type {HTMLElement | null} */ (null);
+	/** Undoes what `onFrameReady` attached inside the frame. */
+	let detachFrame = /** @type {(() => void) | null} */ (null);
+	/** Watches anything that reflows the sheet; both documents feed it. */
+	let reflow = /** @type {ResizeObserver | null} */ (null);
 	/** The preview element the pointer is on, outlined while the editor shows its line. */
 	let hoverEl = /** @type {Element | null} */ (null);
 	let dragging = false;
@@ -72,6 +81,7 @@
 	/** Presentation of the active file, defaulted here so the rest can assume a valid id. */
 	const layout = $derived(resolveLayout(files.active?.layout));
 	const theme = $derived(resolveTheme(files.active?.theme));
+	const css = $derived(files.active?.css ?? "");
 
 	const saveLabel = $derived.by(() => {
 		if (cv.saveError) return "⚠ not saved";
@@ -113,30 +123,22 @@
 		window.addEventListener("beforeinstallprompt", onInstallPrompt);
 		window.addEventListener("appinstalled", onInstalled);
 		document.addEventListener("visibilitychange", onVisibility);
-		// Listeners rather than markup handlers: the preview is a document, not a
-		// control, and `onclick` on a plain <div> only buys an a11y warning.
-		cvRoot.addEventListener("mouseover", onPreviewOver);
-		cvRoot.addEventListener("mouseleave", onPreviewLeave);
-		cvRoot.addEventListener("click", onPreviewClick);
 
 		// Whichever pane the user reaches for drives the other. Hovering doesn't
 		// count, so a preview resting under the pointer can't take the wheel away
-		// mid-keystroke.
+		// mid-keystroke. The preview's half of this is inside the frame — see
+		// `onFrameReady`.
 		const claimEditor = () => takeOver("editor");
-		const claimPreview = () => takeOver("preview");
 		editorPane.addEventListener("wheel", claimEditor, { passive: true });
 		editorPane.addEventListener("pointerdown", claimEditor);
 		editorPane.addEventListener("keydown", claimEditor);
 		editorPane.addEventListener("focusin", claimEditor);
-		previewPane.addEventListener("wheel", claimPreview, { passive: true });
-		previewPane.addEventListener("pointerdown", claimPreview);
-		previewPane.addEventListener("touchstart", claimPreview, { passive: true });
-		previewPane.addEventListener("scroll", onPreviewScroll, { passive: true });
 
-		// Anything that reflows the sheet moves the rungs of the ladder.
+		// Anything that reflows the sheet moves the rungs of the ladder. The pane
+		// itself is watched too: narrowing it reflows the frame from outside.
 		const resize = new ResizeObserver(() => (anchorsStale = true));
-		resize.observe(cvRoot);
 		resize.observe(previewPane);
+		reflow = resize;
 
 		return () => {
 			window.removeEventListener("beforeunload", flush);
@@ -144,22 +146,61 @@
 			window.removeEventListener("beforeinstallprompt", onInstallPrompt);
 			window.removeEventListener("appinstalled", onInstalled);
 			document.removeEventListener("visibilitychange", onVisibility);
-			cvRoot.removeEventListener("mouseover", onPreviewOver);
-			cvRoot.removeEventListener("mouseleave", onPreviewLeave);
-			cvRoot.removeEventListener("click", onPreviewClick);
 			editorPane.removeEventListener("wheel", claimEditor);
 			editorPane.removeEventListener("pointerdown", claimEditor);
 			editorPane.removeEventListener("keydown", claimEditor);
 			editorPane.removeEventListener("focusin", claimEditor);
-			previewPane.removeEventListener("wheel", claimPreview);
-			previewPane.removeEventListener("pointerdown", claimPreview);
-			previewPane.removeEventListener("touchstart", claimPreview);
-			previewPane.removeEventListener("scroll", onPreviewScroll);
+			detachFrame?.();
 			resize.disconnect();
+			reflow = null;
 			clearTimeout(toastTimer);
 			cv.destroy();
 		};
 	});
+
+	/**
+	 * The preview's document has loaded. Everything the page does to the sheet —
+	 * hover, click, scroll sync, even Ctrl+S — has to be bound in there: an
+	 * iframe's events don't bubble out to the app's window, so a listener on
+	 * ours would never hear them.
+	 * @param {{ doc: Document, win: Window, root: HTMLElement }} parts
+	 */
+	function onFrameReady({ doc, win, root }) {
+		detachFrame?.();
+		frameDoc = doc;
+		frameWin = win;
+		cvRoot = root;
+
+		// Listeners rather than markup handlers: the preview is a document, not a
+		// control, and this DOM isn't Svelte's to put handlers on anyway.
+		const claimPreview = () => takeOver("preview");
+		doc.addEventListener("mouseover", onPreviewOver);
+		doc.documentElement.addEventListener("mouseleave", onPreviewLeave);
+		doc.addEventListener("click", onPreviewClick);
+		doc.addEventListener("keydown", onKeydown);
+		win.addEventListener("wheel", claimPreview, { passive: true });
+		win.addEventListener("pointerdown", claimPreview);
+		win.addEventListener("touchstart", claimPreview, { passive: true });
+		win.addEventListener("scroll", onPreviewScroll, { passive: true });
+		reflow?.observe(doc.documentElement);
+		anchorsStale = true;
+
+		detachFrame = () => {
+			doc.removeEventListener("mouseover", onPreviewOver);
+			doc.documentElement.removeEventListener("mouseleave", onPreviewLeave);
+			doc.removeEventListener("click", onPreviewClick);
+			doc.removeEventListener("keydown", onKeydown);
+			win.removeEventListener("wheel", claimPreview);
+			win.removeEventListener("pointerdown", claimPreview);
+			win.removeEventListener("touchstart", claimPreview);
+			win.removeEventListener("scroll", onPreviewScroll);
+			reflow?.unobserve(doc.documentElement);
+			detachFrame = null;
+		};
+	}
+
+	/** The frame's scrolling element — the preview's viewport is the iframe's own. */
+	const scroller = () => frameDoc?.scrollingElement ?? null;
 
 	// The document is the single source of the preview: loro-codemirror keeps it in
 	// step with the editor in both directions, so nothing here watches keystrokes.
@@ -182,6 +223,7 @@
 	$effect(() => {
 		void layout;
 		void theme;
+		void css;
 		void editorWidth;
 		void sourceHidden;
 		anchorsStale = true;
@@ -225,10 +267,23 @@
 	 * @param {Event} e
 	 */
 	function srcTarget(e) {
-		const el =
-			e.target instanceof Element ? e.target.closest("[data-src]") : null;
+		const el = asElement(e.target)?.closest("[data-src]") ?? null;
 		if (!el || !hasOwnText(el)) return null;
 		return { el, line: lineForPath(el.getAttribute("data-src")) };
+	}
+
+	/**
+	 * `instanceof Element` is per-realm, and these events come from the preview
+	 * frame — the app's own `Element` disowns every node in there. The node type
+	 * is the check that crosses a document boundary.
+	 * @param {EventTarget | null} target
+	 * @returns {Element | null}
+	 */
+	function asElement(target) {
+		const node = /** @type {Node | null} */ (target);
+		return node?.nodeType === Node.ELEMENT_NODE
+			? /** @type {Element} */ (node)
+			: null;
 	}
 
 	/**
@@ -241,7 +296,8 @@
 	 * @param {Element} el
 	 */
 	function hasOwnText(el) {
-		const walk = document.createTreeWalker(
+		// The element belongs to the frame, so the walker has to come from there.
+		const walk = (el.ownerDocument ?? document).createTreeWalker(
 			el,
 			NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
 			(node) =>
@@ -299,8 +355,8 @@
 		if (previewMoving()) return;
 		// Leave a link's own click alone, and don't yank focus out of a selection
 		// the user is in the middle of making.
-		if (e.target instanceof Element && e.target.closest("a")) return;
-		if (window.getSelection()?.isCollapsed === false) return;
+		if (asElement(e.target)?.closest("a")) return;
+		if (frameWin?.getSelection()?.isCollapsed === false) return;
 		const hit = srcTarget(e);
 		if (!hit?.line) return;
 		if (sourceHidden) {
@@ -379,9 +435,10 @@
 		anchorsStale = false;
 		anchors = [];
 		byLine = [];
-		if (!previewPane || !cvRoot || !srcLines) return;
-		const origin =
-			previewPane.getBoundingClientRect().top - previewPane.scrollTop;
+		if (!frameWin || !cvRoot || !srcLines) return;
+		// Rects measured inside the frame are already relative to its viewport, so
+		// the offset into the document is the rect plus how far it has scrolled.
+		const scrolled = frameWin.scrollY;
 		/** @type {{ y: number, line: number, el: Element }[]} */
 		const found = [];
 		for (const el of cvRoot.querySelectorAll("[data-src]")) {
@@ -389,7 +446,7 @@
 			if (!line) continue;
 			const box = el.getBoundingClientRect();
 			if (!box.height) continue; // not laid out — a print-only or empty node
-			found.push({ y: box.top - origin, line, el });
+			found.push({ y: box.top + scrolled, line, el });
 		}
 		found.sort((a, b) => a.y - b.y || a.line - b.line);
 		// Sorted by offset first, so ties keep the outermost element and the
@@ -470,7 +527,7 @@
 
 	/** Whether there is a usable ladder to read, measuring it first if it went stale. */
 	function ladderReady() {
-		if (sourceHidden || !previewPane) return false;
+		if (sourceHidden || !frameWin) return false;
 		if (anchorsStale) buildAnchors();
 		return anchors.length > 1;
 	}
@@ -484,26 +541,26 @@
 		previewMovedAt = performance.now();
 		if (scrollMaster !== "preview" || hushed("preview") || !ladderReady())
 			return;
+		const sc = scroller();
+		if (!sc || !frameWin) return;
 		hush("editor");
-		const max = previewPane.scrollHeight - previewPane.clientHeight;
-		if (previewPane.scrollTop <= 1) editor?.scrollToEdge("start");
-		else if (previewPane.scrollTop >= max - 1) editor?.scrollToEdge("end");
-		else
-			editor?.scrollToLine(
-				lineAtOffset(previewPane.scrollTop + PREVIEW_TOP_MARGIN),
-			);
+		const max = sc.scrollHeight - frameWin.innerHeight;
+		if (sc.scrollTop <= 1) editor?.scrollToEdge("start");
+		else if (sc.scrollTop >= max - 1) editor?.scrollToEdge("end");
+		else editor?.scrollToLine(lineAtOffset(sc.scrollTop + PREVIEW_TOP_MARGIN));
 	}
 
 	/** The editor moved — bring what its top line renders to the top of the preview. */
 	function onEditorScroll() {
 		if (scrollMaster !== "editor" || hushed("editor") || !ladderReady()) return;
 		const line = editor?.topLine();
-		if (line == null) return;
+		const sc = scroller();
+		if (line == null || !sc) return;
 		const edge = editor?.scrollEdge();
 		hush("preview");
-		if (edge === "start") previewPane.scrollTop = 0;
-		else if (edge === "end") previewPane.scrollTop = previewPane.scrollHeight;
-		else previewPane.scrollTop = offsetAtLine(line) - PREVIEW_TOP_MARGIN;
+		if (edge === "start") sc.scrollTop = 0;
+		else if (edge === "end") sc.scrollTop = sc.scrollHeight;
+		else sc.scrollTop = offsetAtLine(line) - PREVIEW_TOP_MARGIN;
 	}
 
 	/**
@@ -525,16 +582,17 @@
 	async function revealEdit(line) {
 		pendingEditLine = 0;
 		await tick();
-		if (sourceHidden || cv.isViewingHistory || !previewPane) return;
+		const sc = scroller();
+		if (sourceHidden || cv.isViewingHistory || !sc || !frameWin) return;
 		buildAnchors();
 		const el = elementForLine(line);
 		if (!el) return;
+		// The frame's viewport *is* the preview's, so its top edge is simply zero.
 		const box = el.getBoundingClientRect();
-		const pane = previewPane.getBoundingClientRect();
-		if (box.top >= pane.top + PREVIEW_TOP_MARGIN && box.bottom <= pane.bottom)
+		if (box.top >= PREVIEW_TOP_MARGIN && box.bottom <= frameWin.innerHeight)
 			return;
 		hush("preview");
-		previewPane.scrollTop += box.top - pane.top - EDIT_REVEAL_MARGIN;
+		sc.scrollTop += box.top - EDIT_REVEAL_MARGIN;
 	}
 
 	/** The rendered element for a source line — the innermost one at or before it. */
@@ -561,6 +619,13 @@
 			cv.checkpoint("");
 			toast("Version saved");
 		}
+		// The sheet lives in a frame, and a frame prints clipped to its box on the
+		// page. Ctrl+P has to be taken over so it reaches the same export path as
+		// the button rather than producing one cropped page.
+		if ((e.ctrlKey || e.metaKey) && e.key === "p") {
+			e.preventDefault();
+			exportPDF();
+		}
 	}
 
 	/** @param {string} id */
@@ -573,7 +638,17 @@
 		if (files.activeId) files.setStyle(files.activeId, { theme: id });
 	}
 
+	/**
+	 * The active file's own CSS. Unvalidated by design — it is applied inside the
+	 * preview frame, where nothing it says can reach the editor around it.
+	 * @param {string} text
+	 */
+	function setCss(text) {
+		if (files.activeId) files.setStyle(files.activeId, { css: text });
+	}
+
 	function toggleTheme() {
+		// The preview sits this out: the sheet is paper, and paper is white.
 		const next =
 			document.documentElement.getAttribute("data-theme") === "dark"
 				? "light"
@@ -678,7 +753,9 @@
 		// Tagged before printing, so the mark in the history sits on exactly the
 		// version that goes to the printer.
 		cv.markExport();
-		window.print();
+		// The frame prints itself. Printing the app instead would put the iframe on
+		// the page as a box and crop the CV to it, however many pages it wanted.
+		if (!frame?.print()) toast("Preview isn't ready yet");
 	}
 
 	/** @param {string} id */
@@ -804,8 +881,10 @@
 	<Toolbar
 		{layout}
 		{theme}
+		{css}
 		onLayout={setLayout}
 		onTheme={setTheme}
+		onCss={setCss}
 		onExport={exportPDF}
 		canInstall={!!installPrompt}
 		onInstall={installApp}
@@ -889,27 +968,14 @@
 			{:else if parseError}
 				<div id="error-banner">⚠ {parseError}</div>
 			{/if}
-			<div
-				id="cv-root"
-				bind:this={cvRoot}
-				data-cv-layout={layout}
-				data-cv-theme={theme}
-			>
-				<svelte:boundary>
-					{#if parsed}
-						<CvSheet cv={parsed} {layout} />
-					{/if}
-					{#snippet failed(error)}
-						<div class="sheet">
-							<p class="cv-unknown">
-								Could not render: {error instanceof Error
-									? error.message
-									: String(error)}
-							</p>
-						</div>
-					{/snippet}
-				</svelte:boundary>
-			</div>
+			<PreviewFrame
+				bind:this={frame}
+				cv={parsed}
+				{layout}
+				{theme}
+				{css}
+				onReady={onFrameReady}
+			/>
 		</div>
 
 		{#if historyOpen && cv.ready}
@@ -995,9 +1061,14 @@
 	}
 
 	/* ── Preview ──────────────────────────────────── */
+	/* A column rather than a scroller: the frame does its own scrolling, so all
+	   this pane holds is the banners stacked above it. That also retires the
+	   `position: sticky` they used to need to stay put over a moving sheet. */
 	#preview-pane {
 		flex: 1;
-		overflow: auto;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
 		background: var(--bg);
 		min-width: 0;
 		transition: var(--theme-fade);
@@ -1010,8 +1081,7 @@
 	}
 
 	#error-banner {
-		position: sticky;
-		top: 0;
+		flex-shrink: 0;
 		background: #fff0f0;
 		border-bottom: 1px solid #fecaca;
 		color: var(--danger);
@@ -1031,8 +1101,7 @@
 	}
 
 	#detached-banner {
-		position: sticky;
-		top: 0;
+		flex-shrink: 0;
 		display: flex;
 		align-items: center;
 		gap: 12px;

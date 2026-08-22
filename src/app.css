@@ -18,9 +18,11 @@
      +page.svelte        #split, #editor-pane, #divider, #preview-pane,
                          the banners, #toast
 
-   The CV document is the other exception: cv.css and presets.css are global
-   because the sheet's markdown fields are injected with {@html}, which scoped
-   styles never reach. Both are imported by +layout.svelte, after this file.
+   The CV document is styled nowhere in this document at all. It renders inside
+   an iframe, and cv/{frame,cv,palettes,presets}.css are loaded into that frame
+   by PreviewFrame.svelte rather than imported anywhere here. The one exception
+   is cv/palettes.css, which +layout.svelte does import: StylePicker draws each
+   theme swatch from the ramps in it.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* Order matters: tokens define what the other two spend. */

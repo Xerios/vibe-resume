@@ -26,7 +26,7 @@ export const LAYOUTS = [
 ];
 
 /**
- * The palette itself lives in presets.css; the picker's swatch is drawn by
+ * The palette itself lives in palettes.css; the picker's swatch is drawn by
  * putting `data-cv-theme` on the option, so there is no second copy of the
  * colours here to drift out of step.
  * @typedef {object} Theme

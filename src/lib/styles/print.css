@@ -1,9 +1,15 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   What printing does to the *app*: the page box, and the chrome that has no
-   business on paper. How the sheet itself paginates is cv.css's job, and how
-   a chosen CV theme prints is presets.css's.
+   What printing does to the *app*.
 
-   Loaded last, so the token flip below outranks the dark ramp in tokens.css.
+   Export no longer comes through here: the sheet renders inside an iframe, and
+   `exportPDF` prints that frame directly — an iframe printed from its parent is
+   cropped to the box it occupies on the page, however many pages the CV wants.
+   Ctrl+P is intercepted for the same reason. The page box and the sheet's own
+   print rules live inside the frame, in cv/frame.css and cv/cv.css.
+
+   What is left is the fallback: a print started from the browser's own menu,
+   which nothing can intercept. Hiding the chrome means that at least prints the
+   first page of the CV rather than a screenshot of an editor.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @media print {
@@ -45,25 +51,10 @@
 	}
 
 	#preview-pane {
+		display: block !important;
 		width: 100% !important;
 		height: auto !important;
 		overflow: visible !important;
 		background: #fff !important;
-	}
-
-	/* Paper is white whatever the screen was showing. Anything still visible
-	   past this point draws from the light ramp; presets.css does the same for
-	   the sheet's own tokens, from the chosen CV theme. */
-	:root[data-theme='dark'] {
-		--danger: #b91c1c;
-		--ink: #15211f;
-		--muted: #5f6f6c;
-		--faint: #8a9794;
-		--accent: #157c75;
-		--accent-deep: #0d4f4a;
-		--accent-wash: #eaf4f2;
-		--line: #dbe6e3;
-		--paper: #fff;
-		--bg: #fff;
 	}
 }

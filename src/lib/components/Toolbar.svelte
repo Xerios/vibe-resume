@@ -16,6 +16,10 @@
 		onLayout,
 		/** @type {(id: string) => void} */
 		onTheme,
+		/** The active file's own CSS, and the setter behind the picker's editor. */
+		css = "",
+		/** @type {(text: string) => void} */
+		onCss,
 		/** @type {() => void} */
 		onExport,
 		/** @type {() => void} */
@@ -28,7 +32,7 @@
 
 	<div class="t-spacer"></div>
 
-	<StylePicker {layout} {theme} {onLayout} {onTheme} />
+	<StylePicker {layout} {theme} {css} {onLayout} {onTheme} {onCss} />
 
 	<!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
 	<button

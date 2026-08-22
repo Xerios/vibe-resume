@@ -1,14 +1,16 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    The CV document itself, rendered by CvSheet.svelte.
 
-   These rules are deliberately global rather than scoped to that component,
-   since markdown fields are injected via {@html} and wouldn't be reached by
-   scoped styles anyway. Tokens come from src/lib/styles/tokens.css; the
-   presets that re-point them are in presets.css, next door.
+   Not loaded by the app at all: PreviewFrame.svelte imports this as text and
+   writes it into the iframe the sheet renders in, which is why none of these
+   very ordinary class names can collide with the editor around them. Global
+   rather than scoped for the older reason too — markdown fields are injected
+   via {@html}, which scoped styles never reach.
 
-   The app chrome around the sheet is not styled here — see src/app.css. The
-   print block at the foot of this file covers the sheet alone; hiding the
-   chrome for printing is src/lib/styles/print.css's job.
+   Tokens come from frame.css, and the presets that re-point them from
+   presets.css, both loaded into the same frame. The print block at the foot of
+   this file covers how the sheet paginates; the page box it paginates into is
+   frame.css's.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .sheet {

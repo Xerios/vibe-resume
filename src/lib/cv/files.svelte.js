@@ -7,6 +7,7 @@ import { KEYS, read, remove, snapshotKey, write } from './storage.js';
  * @property {number | null} deletedAt   ms epoch when moved to trash; null while open
  * @property {string} [layout]           preset id from presets.js; absent means the default
  * @property {string} [theme]            preset id from presets.js; absent means the default
+ * @property {string} [css]              the file's own CSS, applied last inside the preview frame
  */
 
 /**
@@ -71,7 +72,8 @@ export class FileManager {
 				name: this.#uniqueName(`${source.name} copy`),
 				deletedAt: null,
 				layout: source.layout,
-				theme: source.theme
+				theme: source.theme,
+				css: source.css
 			}
 		];
 		this.#saveList();
@@ -143,9 +145,11 @@ export class FileManager {
 	/**
 	 * Restyle a file. Ids are stored as given and validated on the way out
 	 * (`resolveLayout` / `resolveTheme`), so a preset that later disappears
-	 * degrades to the default instead of rendering nothing.
+	 * degrades to the default instead of rendering nothing. Custom CSS gets no
+	 * validation at all: it is applied inside the preview frame, where the worst
+	 * a broken rule can do is make the sheet look wrong.
 	 * @param {string} id
-	 * @param {{ layout?: string, theme?: string }} style
+	 * @param {{ layout?: string, theme?: string, css?: string }} style
 	 */
 	setStyle(id, style) {
 		this.files = this.files.map((f) => (f.id === id ? { ...f, ...style } : f));
