@@ -5,6 +5,7 @@
 	import TabBar from "$lib/components/TabBar.svelte";
 	import Toolbar from "$lib/components/Toolbar.svelte";
 	import TrashPanel from "$lib/components/TrashPanel.svelte";
+	import WelcomeOverlay from "$lib/components/WelcomeOverlay.svelte";
 	import YamlEditor from "$lib/components/YamlEditor.svelte";
 	import CvSheet from "$lib/cv/CvSheet.svelte";
 	import { CvDoc } from "$lib/cv/doc.svelte.js";
@@ -40,6 +41,8 @@
 	 */
 	let srcLines = null;
 
+	/** First visit only — dismissing it writes the flag, so it never returns. */
+	let welcomeOpen = $state(read(KEYS.welcomeSeen) !== "true");
 	let historyOpen = $state(read(KEYS.historyOpen) !== "false");
 	let sourceHidden = $state(read(KEYS.sourceHidden) === "true");
 	let editorWidth = $state(read(KEYS.editorWidth));
@@ -739,6 +742,11 @@
 		toast("Trash emptied");
 	}
 
+	function dismissWelcome() {
+		welcomeOpen = false;
+		write(KEYS.welcomeSeen, "true");
+	}
+
 	/** @param {string} msg */
 	function toast(msg) {
 		toastMsg = msg;
@@ -917,6 +925,10 @@
 		onToggleTheme={toggleTheme}
 	/>
 </div>
+
+{#if welcomeOpen}
+	<WelcomeOverlay onStart={dismissWelcome} />
+{/if}
 
 <div id="toast" class:show={toastOn}>{toastMsg}</div>
 

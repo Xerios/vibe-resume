@@ -11,7 +11,9 @@ export const KEYS = {
 	theme: 'cv-theme',
 	editorWidth: 'cv-editor:width',
 	historyOpen: 'cv-editor:history-open',
-	sourceHidden: 'cv-editor:source-hidden'
+	sourceHidden: 'cv-editor:source-hidden',
+	/** Set once the welcome overlay has been dismissed; absent means first visit. */
+	welcomeSeen: 'cv-editor:welcome-seen'
 };
 
 /** @param {string} fileId */

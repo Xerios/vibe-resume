@@ -10,6 +10,7 @@
                          and dark-mode toggles among them
      TabBar.svelte       #tabbar, .tab*, .tab-new*, .new-*, the export button
      TrashPanel.svelte   #trash-panel, .trash-*
+     WelcomeOverlay.svelte  #welcome, .w-*
      StylePicker.svelte  .style-*, .layout-*, .theme-*
      HistoryPanel.svelte #history-pane, .hist-*, .stat-*
      YamlEditor.svelte   #cm-wrap (its CodeMirror theme is codemirror.css,
