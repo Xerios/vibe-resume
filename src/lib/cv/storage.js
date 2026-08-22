@@ -7,6 +7,8 @@ export const KEYS = {
 	/** Pre-multi-file snapshot key; read once at startup to migrate into the file registry. */
 	legacySnapshot: 'cv-editor:snapshot:v1',
 	files: 'cv-editor:files:v1',
+	/** Template edits: overrides of the built-ins, and templates of the user's own. */
+	templates: 'cv-editor:templates:v1',
 	activeFile: 'cv-editor:active-file',
 	theme: 'cv-theme',
 	editorWidth: 'cv-editor:width',

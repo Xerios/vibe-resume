@@ -8,7 +8,9 @@
 	let {
 		/** True only while the browser has an install prompt waiting for us. */
 		canInstall = false,
-		/** @type {string} */
+		/** @type {import('$lib/cv/templates.svelte.js').Template[]} */
+		templates,
+		/** The active file's template id. @type {string} */
 		layout,
 		/** @type {string} */
 		theme,
@@ -16,6 +18,8 @@
 		onLayout,
 		/** @type {(id: string) => void} */
 		onTheme,
+		/** @type {() => void} */
+		onEditTemplate,
 		/** The active file's own CSS, and the setter behind the picker's editor. */
 		css = "",
 		/** @type {(text: string) => void} */
@@ -32,7 +36,16 @@
 
 	<div class="t-spacer"></div>
 
-	<StylePicker {layout} {theme} {css} {onLayout} {onTheme} {onCss} />
+	<StylePicker
+		{templates}
+		{layout}
+		{theme}
+		{css}
+		{onLayout}
+		{onTheme}
+		{onCss}
+		{onEditTemplate}
+	/>
 
 	<!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
 	<button

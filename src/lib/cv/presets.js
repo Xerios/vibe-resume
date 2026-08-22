@@ -1,29 +1,14 @@
 /**
- * How a CV is *shown*: `layout` picks the arrangement of the sheet, `theme` the
- * palette it is painted in. Both are ids that land on `#cv-root` as data
- * attributes — the rules they select live in presets.css, and the sidebar
- * layout additionally rearranges markup in CvSheet.svelte.
+ * How a CV is *painted*: a theme is a palette id that lands on `#cv-root` as a
+ * data attribute, and presets.css re-points the sheet's tokens at the ramp it
+ * names. How a CV is *arranged* used to live here too — those layouts are now
+ * templates, in templates.js, because a component can be edited and a block of
+ * CSS in this repo cannot.
  *
- * These are presentation, not content, so they are stored per file in the
- * registry (see files.svelte.js) rather than in the YAML: switching layout is
- * not an edit and never shows up in version history.
+ * A theme is presentation, not content, so it is stored per file in the
+ * registry (see files.svelte.js) rather than in the YAML: recolouring is not an
+ * edit and never shows up in version history.
  */
-
-/**
- * @typedef {object} Layout
- * @property {string} id
- * @property {string} name
- * @property {string} hint  one line, shown as the option's tooltip
- */
-
-/** @type {Layout[]} */
-export const LAYOUTS = [
-	{ id: 'classic', name: 'Classic', hint: 'One column, a rule trailing every heading' },
-	{ id: 'compact', name: 'Compact', hint: 'Tighter type and three skill columns — fits more on a page' },
-	{ id: 'centered', name: 'Centered', hint: 'Header and section titles centred' },
-	{ id: 'sidebar', name: 'Sidebar', hint: 'Skills in a left rail beside everything else' },
-	{ id: 'timeline', name: 'Timeline', hint: 'Experience on a dated vertical rail' }
-];
 
 /**
  * The palette itself lives in palettes.css; the picker's swatch is drawn by
@@ -45,19 +30,13 @@ export const THEMES = [
 	{ id: 'mono', name: 'Mono' }
 ];
 
-export const DEFAULT_LAYOUT = 'timeline';
 export const DEFAULT_THEME = 'teal';
 
 /**
- * Both resolvers fall back rather than trust what came out of storage — a file
- * saved before this feature has neither, and an id can outlive its preset.
+ * Falls back rather than trusting what came out of storage — a file saved
+ * before this feature has no theme, and an id can outlive its preset.
  * @param {string | undefined | null} id
  */
-export function resolveLayout(id) {
-	return LAYOUTS.some((l) => l.id === id) ? /** @type {string} */ (id) : DEFAULT_LAYOUT;
-}
-
-/** @param {string | undefined | null} id */
 export function resolveTheme(id) {
 	return THEMES.some((t) => t.id === id) ? /** @type {string} */ (id) : DEFAULT_THEME;
 }

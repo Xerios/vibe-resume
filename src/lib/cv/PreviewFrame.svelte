@@ -10,10 +10,11 @@
 	 * without any of it being able to break the editor around it.
 	 *
 	 * The frame's stylesheets are imported as text and written into its head:
-	 * frame.css declares what the sheet spends, then cv.css and the presets,
-	 * then one empty style element the file's own CSS is poured into. Editing
-	 * that is a `textContent` assignment — no rebuild, and no way for a
-	 * half-typed rule to escape.
+	 * frame.css declares what the sheet spends, then cv.css and the theme ramps,
+	 * then two empty style elements — one for whatever the active template's own
+	 * style block compiled to, one for the file's own CSS, in that order.
+	 * Editing either is a `textContent` assignment — no rebuild, and no way for
+	 * a half-typed rule to escape.
 	 *
 	 * The sheet itself is `mount()`ed rather than rendered here, since it has to
 	 * land in the frame's document. Its props are a $state object, so mutating
@@ -21,21 +22,28 @@
 	 */
 	import { mount, onDestroy, unmount } from "svelte";
 	import CvFrameBody from "./CvFrameBody.svelte";
-	import { DEFAULT_LAYOUT, DEFAULT_THEME } from "./presets.js";
+	import { DEFAULT_THEME } from "./presets.js";
+	import { DEFAULT_TEMPLATE } from "./templates.js";
 	import cvCss from "./cv.css?raw";
 	import frameCss from "./frame.css?raw";
 	import palettesCss from "./palettes.css?raw";
 	import presetsCss from "./presets.css?raw";
 
 	/**
-	 * `cv` is null until the first successful parse; `css` is the active file's
-	 * own CSS, applied last in the cascade inside the frame. `onReady` is
-	 * handed the frame's document, window and `#cv-root` once they exist — the
-	 * page binds its preview listeners in there, since nothing inside an iframe
-	 * bubbles out to us, keydown included.
+	 * `cv` is null until the first successful parse and `component` until the
+	 * first successful compile; `templateCss` is what that template's style
+	 * block came to, and `css` the active file's own, applied last in the
+	 * cascade inside the frame. `layout` is only the template's id here — it
+	 * still lands on `#cv-root`, where a file's custom CSS can select on it.
+	 *
+	 * `onReady` is handed the frame's document, window and `#cv-root` once they
+	 * exist — the page binds its preview listeners in there, since nothing
+	 * inside an iframe bubbles out to us, keydown included.
 	 *
 	 * @type {{
 	 *   cv?: any,
+	 *   component?: any,
+	 *   templateCss?: string,
 	 *   layout?: string,
 	 *   theme?: string,
 	 *   css?: string,
@@ -44,7 +52,9 @@
 	 */
 	let {
 		cv = null,
-		layout = DEFAULT_LAYOUT,
+		component = null,
+		templateCss = "",
+		layout = DEFAULT_TEMPLATE,
 		theme = DEFAULT_THEME,
 		css = "",
 		onReady = undefined,
@@ -64,6 +74,7 @@
 	 */
 	let doc = $state(/** @type {Document | null} */ (null));
 	let root = $state(/** @type {HTMLElement | null} */ (null));
+	let templateStyle = $state(/** @type {HTMLStyleElement | null} */ (null));
 	let userStyle = $state(/** @type {HTMLStyleElement | null} */ (null));
 	let sheet = /** @type {Record<string, any> | null} */ (null);
 
@@ -73,14 +84,14 @@
 	 */
 	const sheetProps = $state({
 		cv: /** @type {any} */ (null),
-		layout: DEFAULT_LAYOUT,
+		component: /** @type {any} */ (null),
 	});
 
 	// Ahead of the paint rather than after it, so a `tick()` in the page still
 	// finds the frame's DOM current: the props cross two component boundaries.
 	$effect.pre(() => {
 		sheetProps.cv = cv;
-		sheetProps.layout = layout;
+		sheetProps.component = component;
 	});
 
 	/* Presentation rides on the same attributes it always did — only the element
@@ -98,6 +109,11 @@
 	$effect(() => {
 		const id = theme;
 		if (root) root.dataset.cvTheme = id;
+	});
+
+	$effect(() => {
+		const text = templateCss;
+		if (templateStyle) templateStyle.textContent = text;
 	});
 
 	$effect(() => {
@@ -120,6 +136,10 @@
 		if (!d || !win || doc) return; // built already; the frame is never reloaded
 
 		addStyle(d, [frameCss, cvCss, palettesCss, presetsCss].join("\n"));
+		// Two empty ones, in cascade order: the template's own styles are scoped
+		// by the compiler and outrank cv.css on specificity alone, but the file's
+		// CSS is written by hand and has only its position to win on.
+		templateStyle = addStyle(d, templateCss);
 		userStyle = addStyle(d, css);
 
 		const el = d.createElement("div");

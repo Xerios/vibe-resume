@@ -23,11 +23,15 @@ pnpm check      # svelte-check
 | ------------------ | -------------------------------------------------------------------------------------------- |
 | Document + history | [src/lib/cv/doc.svelte.js](src/lib/cv/doc.svelte.js) — Loro doc, persistence, cross-tab merge |
 | Editor             | [src/lib/components/YamlEditor.svelte](src/lib/components/YamlEditor.svelte) — CodeMirror 6   |
+| Template editor    | [src/lib/components/TemplateEditor.svelte](src/lib/components/TemplateEditor.svelte) — the second CodeMirror |
 | Chrome             | `components/{Toolbar,TabBar,StatusBar}.svelte` — the buttons, the tabs, the status bar        |
 | YAML to HTML       | [src/lib/cv/render.js](src/lib/cv/render.js)                                                 |
 | Preview            | [src/lib/cv/PreviewFrame.svelte](src/lib/cv/PreviewFrame.svelte) — the iframe the sheet renders in |
 | Starting text      | [src/lib/cv/default-cv.yaml](src/lib/cv/default-cv.yaml)                                     |
-| Layout & theme     | [src/lib/cv/presets.js](src/lib/cv/presets.js) — the presets, and the CSS beside it           |
+| Templates          | [src/lib/cv/templates/](src/lib/cv/templates/) — one Svelte component per arrangement        |
+| Template registry  | [src/lib/cv/templates.svelte.js](src/lib/cv/templates.svelte.js) — edits, forks, reverts      |
+| Compiling one      | [src/lib/cv/compile-template.js](src/lib/cv/compile-template.js) — Svelte, in the browser     |
+| Theme              | [src/lib/cv/presets.js](src/lib/cv/presets.js) — the palettes, and the CSS beside it          |
 | CSS                | [src/app.css](src/app.css) — the index; see *Where the CSS lives* below                      |
 | Offline            | [src/service-worker.js](src/service-worker.js) — precache; manifest and icons in `static/`    |
 
@@ -41,21 +45,80 @@ CodeMirror's own `history()` is deliberately left out — the binding installs L
 undo at high precedence, and two undo stacks would fight over Ctrl+Z.
 
 Syntax colours are a `HighlightStyle` whose values are CSS custom properties, so one
-style serves both themes; the `--cm-*` tokens live in
-[tokens.css](src/lib/styles/tokens.css) and the rules that spend them in
-[codemirror.css](src/lib/components/codemirror.css).
+style serves both themes; it lives in
+[cm-highlight.js](src/lib/components/cm-highlight.js) because both editors spend
+it, the `--cm-*` tokens it names live in
+[tokens.css](src/lib/styles/tokens.css), and the rules that spend the rest of
+them in [codemirror.css](src/lib/components/codemirror.css).
 
-### Layout and theme
+The editor pane holds two of these. The second is the template editor — the same
+CodeMirror over `@replit/codemirror-lang-svelte`, and the plain `history()` the
+first one can't have, since nothing but the user writes to a template. Neither is
+unmounted when the other is on top: the YAML editor is holding the Loro binding,
+so both are hidden and re-measured instead.
+
+### Templates
 
 The Style button offers five arrangements of the sheet — classic, compact,
 centered, sidebar, timeline — and seven palettes. Both are per file, stored in
 the file registry next to the name rather than in the CRDT: restyling is not an
 edit, so it leaves the YAML and the version history alone.
 
-The ids land on `#cv-root` as `data-cv-layout` / `data-cv-theme`, and
-[presets.css](src/lib/cv/presets.css) does the rest. A theme is pure data — a
-ramp of eight colours, declared in [palettes.css](src/lib/cv/palettes.css) and
-spent by one block downstream that re-points the frame's tokens at it.
+An arrangement is a *template*: an ordinary Svelte component, handed the parsed
+YAML as `cv`, that renders the sheet. The five that ship are
+[src/lib/cv/templates/](src/lib/cv/templates/) — real `.svelte` files, so
+`pnpm check` compiles and type-checks them, imported as text rather than as
+components because nothing mounts them directly. They used to be five blocks of
+CSS in `presets.css` keyed off a `data-cv-layout` attribute; each one now carries
+its own markup and its own style block, which is what makes it something you can
+open and change.
+
+The Template tab compiles what you type, on a debounce, and mounts the result.
+A file's `layout` is only the id of the template it renders through, and
+templates themselves are shared by every file rather than owned by one — so
+deleting one can't break a CV: the id stops resolving and `resolve` hands back
+the default. Editing a built-in stores an *override* under its own id, which is
+what lets Revert be a delete rather than a copy, and Duplicate is how a template
+of your own starts — from a copy, since a blank component would only mean
+retyping the sheet's markup.
+
+The theme is still pure data — a ramp of eight colours, declared in
+[palettes.css](src/lib/cv/palettes.css) and spent by one block in
+[presets.css](src/lib/cv/presets.css) that re-points the frame's tokens at it.
+`data-cv-layout` is still set on `#cv-root` too, carrying the template's id, but
+nothing shipped selects on it any more: it is there for a file's own CSS to hook.
+
+#### Compiling one
+
+[compile-template.js](src/lib/cv/compile-template.js) is the whole of it.
+Svelte's compiler is an ordinary module that runs in a browser, so a template
+goes through exactly the pass Vite would have given it at build time. What Vite
+also does — resolve the imports that come back — is what has to be replaced:
+compiled client code opens with `import * as $ from 'svelte/internal/client'`,
+and a bare specifier means nothing to the browser.
+
+So every specifier a template is allowed to name (`@cv`, `svelte`, `marked`, and
+the two the compiler emits itself) gets a *shim module*: a blob that re-exports,
+name by name, the module this app already has bundled. The compiled source's
+import lines are rewritten to point at those blobs, the whole thing becomes a
+blob of its own, and `import()` turns it into a component — one Svelte runtime,
+one copy of `marked`, and no network. `@cv` is aliased in `vite.config.js` as
+well, which is the trick that lets the shipped templates import the same module
+through a bundler that has never heard of any of this.
+
+The compiler is loaded on demand, being by far the largest thing this app could
+ship; it is still bundled locally and precached with everything else, so the
+first template compiles offline like everything else here.
+
+Two things follow that are worth being plain about. A compile error keeps the
+last template that worked on screen — the same bargain as a YAML parse error —
+and reports itself twice, in the strip under the template editor and in the
+banner over the preview. And a template is the user's own code running in the
+app's realm rather than the frame's, because `mount()` takes a component and a
+component can only come from the realm that compiled it. That is a real
+difference from the file's custom CSS, which the frame contains completely; the
+alternative is a second Svelte runtime inside the frame, and two runtimes cannot
+share one component.
 
 The sheet does not follow the app into dark mode. It is paper: it renders light
 on screen, prints exactly what it showed, and the app's dark toggle dresses only
@@ -76,10 +139,13 @@ in the Style popover and applied last inside the frame. It is stored and
 validated exactly as much as it needs to be, which is not at all — the worst a
 broken rule can do is make the sheet look wrong.
 
-Layouts are CSS alone, with one exception: the sidebar needs two real columns,
-so `CvSheet` renders a rail and a main column for that layout only. Skills go
-to the rail; any section can opt in or out with `rail: true` / `rail: false`.
-Every other layout renders exactly the markup it did before.
+What every template shares is [cv.css](src/lib/cv/cv.css): the class names the
+sheet is built out of, and how it paginates. A template adds to that and
+overrides parts of it from its own style block, which the compiler scopes — so
+its rules outrank the base on specificity alone, whatever order they land in.
+Only the sidebar needs markup rather than CSS to do its job: it renders a rail
+and a main column, skills going to the rail, and any section can opt in or out
+with `rail: true` / `rail: false`.
 
 ### Keyboard
 
@@ -122,10 +188,11 @@ And in the preview frame's, written into it by `PreviewFrame`:
 | [cv/frame.css](src/lib/cv/frame.css)                              | the frame's reset, tokens and page box — its declared inputs  |
 | [cv/cv.css](src/lib/cv/cv.css)                                    | the sheet itself, plus how it paginates                       |
 | [cv/palettes.css](src/lib/cv/palettes.css)                        | the same seven ramps, this time for the sheet to spend        |
-| [cv/presets.css](src/lib/cv/presets.css)                          | the layouts and themes selected on `#cv-root`                 |
+| [cv/presets.css](src/lib/cv/presets.css)                          | the theme ramp selected on `#cv-root`                         |
+| the active template's compiled style block                        | scoped by the compiler, so it can't reach anything else       |
 | the active file's own CSS                                         | whatever you typed into the Style popover, applied last       |
 
-`codemirror.css` and the frame's four are global for the same underlying
+`codemirror.css` and the frame's own are global for the same underlying
 reason: they style DOM the Svelte compiler never sees. CodeMirror builds its
 own; the sheet is mounted into another document, and its markdown fields are
 injected with `{@html}` on top of that. Scoped selectors would reach neither.
@@ -141,7 +208,10 @@ with `tokens.css` is the point rather than an oversight.
 
 `CvFrameBody` is `mount()`ed into the frame's `#cv-root` with a `$state` props
 object; mutating it re-renders the sheet in place, so the frame is built once
-and never reloaded.
+and never reloaded. The active template is one of those props, so a recompile is
+the same kind of event as a keystroke in the YAML. It is also the one thing that
+does cross the boundary: the component was compiled out here and only renders in
+there — see *Compiling one* above for why it can't be the other way round.
 
 Two things follow from the move. Printing goes to `iframe.contentWindow.print()`
 — printing the app instead would put the frame on the page as a box and crop the
@@ -192,6 +262,12 @@ single visit is enough; after that it runs with the network off. SvelteKit regis
 automatically in a production build and leaves it out of `vite dev`, so development
 never serves stale bytes.
 
+The heaviest single thing in that precache is Svelte's compiler, which the
+template editor needs and nothing else does. It is a lazy chunk, so a session
+that never opens the Template tab never loads it — but it is precached all the
+same, because "compiles templates only when online" would be a strange kind of
+offline editor.
+
 The one asset that makes this sharper than a usual PWA is Loro's `.wasm`, fetched
 lazily on first document load rather than inlined. Uncached, the app would paint its
 shell and then hang forever on `await wasmReady`. It is precached with everything else,
@@ -215,7 +291,11 @@ is not much of one.
 
 ## Dependencies
 
-All bundled locally — the only WASM/asset URL is same-origin.
+All bundled locally — the only WASM/asset URL is same-origin, and the only other
+URLs are the `blob:` ones a compiled template is imported through.
+
+`svelte/compiler` is a runtime dependency here rather than a build-time one, and
+`@replit/codemirror-lang-svelte` is what the template editor highlights with.
 
 `loro-crdt` ships several builds. `loro-codemirror` imports the bare specifier, which
 resolves to a build that loads its WASM with a synchronous main-thread XHR, and would

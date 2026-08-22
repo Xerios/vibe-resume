@@ -3,7 +3,6 @@
 	import { indentWithTab, standardKeymap } from "@codemirror/commands";
 	import { yaml } from "@codemirror/lang-yaml";
 	import {
-		HighlightStyle,
 		codeFolding,
 		foldGutter,
 		foldKeymap,
@@ -35,9 +34,9 @@
 		keymap,
 		lineNumbers,
 	} from "@codemirror/view";
-	import { tags as t } from "@lezer/highlight";
 	import { wrappedLineIndent } from "codemirror-wrapped-line-indent";
 	import { load } from "js-yaml";
+	import { highlight } from "./cm-highlight.js";
 	// CodeMirror builds its own DOM, so scoped styles can't reach it — its theme
 	// ships as a plain stylesheet imported alongside the component instead.
 	import "./codemirror.css";
@@ -205,30 +204,6 @@
 		];
 		return Decoration.set(ranges, true);
 	}
-
-	/**
-	 * Colours come from CSS custom properties so the one highlight style serves
-	 * both themes — see the `--cm-*` tokens in src/app.css.
-	 */
-	const highlight = HighlightStyle.define([
-		{
-			tag: t.definition(t.propertyName),
-			color: "var(--cm-key)",
-			fontWeight: "600",
-		},
-		{ tag: t.string, color: "var(--cm-string)" },
-		{ tag: t.special(t.string), color: "var(--cm-block)" },
-		{ tag: t.content, color: "var(--cm-text)" },
-		{ tag: t.lineComment, color: "var(--cm-comment)", fontStyle: "italic" },
-		{ tag: t.meta, color: "var(--cm-key)" },
-		{
-			tag: [t.separator, t.punctuation, t.squareBracket, t.brace],
-			color: "var(--cm-punct)",
-		},
-		{ tag: [t.labelName, t.typeName], color: "var(--cm-anchor)" },
-		{ tag: t.keyword, color: "var(--cm-key)" },
-		{ tag: t.invalid, color: "var(--cm-invalid)" },
-	]);
 
 	onMount(() => {
 		const next = new EditorView({

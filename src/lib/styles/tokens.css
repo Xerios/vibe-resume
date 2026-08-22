@@ -36,6 +36,13 @@
 	--cm-comment: #8a9794;
 	--cm-punct: #5f6f6c;
 	--cm-anchor: #9a5b00;
+	/* The template editor's half of the palette: markup, JS and CSS, which
+	   YAML has no equivalent of. Same tokens serve both editors. */
+	--cm-tag: #0f6f68;
+	--cm-attr: #9a5b00;
+	--cm-keyword: #8a3ea8;
+	--cm-fn: #1d5fa8;
+	--cm-num: #a8481d;
 	--cm-invalid: #b91c1c;
 	--cm-diff-add-bg: #cdedd3;
 	--cm-diff-del-bg: #f6d3d3;
@@ -94,6 +101,11 @@
 	--cm-comment: #3e5e5a;
 	--cm-punct: #7a9491;
 	--cm-anchor: #e8a84a;
+	--cm-tag: #58c8bf;
+	--cm-attr: #e8a84a;
+	--cm-keyword: #d38ae8;
+	--cm-fn: #79b8f0;
+	--cm-num: #f0a179;
 	--cm-invalid: #f87171;
 	--cm-diff-add-bg: #163a24;
 	--cm-diff-del-bg: #3a1616;

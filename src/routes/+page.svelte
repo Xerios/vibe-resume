@@ -4,17 +4,22 @@
 	import StatusBar from "$lib/components/StatusBar.svelte";
 	import TabBar from "$lib/components/TabBar.svelte";
 	import Toolbar from "$lib/components/Toolbar.svelte";
+	import TemplateEditor from "$lib/components/TemplateEditor.svelte";
 	import TrashPanel from "$lib/components/TrashPanel.svelte";
 	import WelcomeOverlay from "$lib/components/WelcomeOverlay.svelte";
 	import YamlEditor from "$lib/components/YamlEditor.svelte";
 	import PreviewFrame from "$lib/cv/PreviewFrame.svelte";
+	import { compileTemplate } from "$lib/cv/compile-template.js";
 	import { CvDoc } from "$lib/cv/doc.svelte.js";
 	import { FileManager } from "$lib/cv/files.svelte.js";
-	import { resolveLayout, resolveTheme } from "$lib/cv/presets.js";
+	import { resolveTheme } from "$lib/cv/presets.js";
+	import { TemplateManager } from "$lib/cv/templates.svelte.js";
 	import { parseCv } from "$lib/cv/render.js";
 	import { KEYS, read, write } from "$lib/cv/storage.js";
 
 	const PARSE_DEBOUNCE_MS = 250;
+	/** Compiling a template costs more than parsing YAML, so it waits a little longer. */
+	const COMPILE_DEBOUNCE_MS = 350;
 	/** How long a pane's own scroll events stay ours after we move it ourselves. */
 	const SYNC_QUIET_MS = 250;
 	/** A tab switch or version preview scrolls things about; sync sits out this long. */
@@ -28,6 +33,7 @@
 
 	const cv = new CvDoc();
 	const files = new FileManager();
+	const templates = new TemplateManager();
 	/** Which document `parsed` reflects — used to bypass the debounce when a tab switch swaps it out from under us. */
 	let lastParsedDocId = -1;
 
@@ -50,6 +56,9 @@
 	let toastOn = $state(false);
 
 	let editor = $state(/** @type {YamlEditor | undefined} */ (undefined));
+	let templateEditor = $state(
+		/** @type {TemplateEditor | undefined} */ (undefined),
+	);
 	let frame = $state(/** @type {PreviewFrame | undefined} */ (undefined));
 	/** @type {HTMLDivElement} */
 	let split;
@@ -79,9 +88,35 @@
 	);
 
 	/** Presentation of the active file, defaulted here so the rest can assume a valid id. */
-	const layout = $derived(resolveLayout(files.active?.layout));
+	const layout = $derived(templates.resolve(files.active?.layout));
 	const theme = $derived(resolveTheme(files.active?.theme));
 	const css = $derived(files.active?.css ?? "");
+	/** The template that id names — the source the second editor edits. */
+	const template = $derived(templates.get(layout));
+
+	/* The compiled template, and what the last attempt at compiling said. A
+	   failed compile leaves the previous component in place: the preview is
+	   there to be looked at while the template is half-written, exactly as it
+	   stays put while the YAML is. */
+	let tplComponent = $state(/** @type {any} */ (null));
+	let tplCss = $state("");
+	let tplError = $state(
+		/** @type {{ message: string, line?: number } | null} */ (null),
+	);
+	/** Compiles land out of order if one is slower; only the newest may win. */
+	let compileSeq = 0;
+	/** Which template `tplComponent` was compiled from, to spot a switch. */
+	let lastCompiledId = "";
+
+	/** Which editor the source pane is showing. */
+	let editorTab = $state(/** @type {"yaml" | "template"} */ ("yaml"));
+	/** The template editor is built on first use and then kept, like the pane itself. */
+	let templatePaneUsed = $state(false);
+
+	/** One banner over the preview, whichever of the two is broken. */
+	const bannerError = $derived(
+		parseError ?? (tplError ? `Template — ${tplError.message}` : null),
+	);
 
 	const saveLabel = $derived.by(() => {
 		if (cv.saveError) return "⚠ not saved";
@@ -95,11 +130,15 @@
 	});
 
 	onMount(() => {
+		templates.init();
 		files.init();
 		cv.bindEditor((text) => editor?.replaceAll(text));
 		cv.init(/** @type {string} */ (files.activeId));
 
-		const flush = () => cv.flush();
+		const flush = () => {
+			cv.flush();
+			templates.flush();
+		};
 		const onVisibility = () => {
 			if (document.visibilityState === "hidden") flush();
 		};
@@ -219,9 +258,27 @@
 		return () => clearTimeout(id);
 	});
 
+	// The template is the other half of the preview, and the same shape of
+	// problem: text that has to become something renderable, on a debounce,
+	// without a half-typed version blanking what is on screen.
+	$effect(() => {
+		const id = layout;
+		const source = templates.sourceOf(id);
+		if (id !== lastCompiledId) {
+			// A different template altogether — that's a choice, not a keystroke,
+			// so it shouldn't sit out the debounce meant for typing.
+			lastCompiledId = id;
+			recompile(source);
+			return;
+		}
+		const timer = setTimeout(() => recompile(source), COMPILE_DEBOUNCE_MS);
+		return () => clearTimeout(timer);
+	});
+
 	// Presentation changes reflow the sheet without going through the parser.
 	$effect(() => {
-		void layout;
+		void tplComponent;
+		void tplCss;
 		void theme;
 		void css;
 		void editorWidth;
@@ -251,6 +308,28 @@
 			srcLines = lines;
 			anchorsStale = true;
 			if (pendingEditLine) revealEdit(pendingEditLine);
+		}
+	}
+
+	/**
+	 * Compile the template on screen. Like `reparse`, a failure keeps the last
+	 * thing that worked: the error goes to the template editor's own strip and
+	 * to the banner over the preview, and the sheet carries on being the CV.
+	 * @param {string} source
+	 */
+	async function recompile(source) {
+		const seq = ++compileSeq;
+		try {
+			const { component, css: compiled } = await compileTemplate(source);
+			if (seq !== compileSeq) return; // a newer compile has already landed
+			tplComponent = component;
+			tplCss = compiled;
+			tplError = null;
+			anchorsStale = true;
+		} catch (e) {
+			if (seq !== compileSeq) return;
+			const err = /** @type {Error & { line?: number }} */ (e);
+			tplError = { message: err.message, line: err.line };
 		}
 	}
 
@@ -647,6 +726,65 @@
 		if (files.activeId) files.setStyle(files.activeId, { css: text });
 	}
 
+	/**
+	 * Show one of the two editors. The other stays mounted rather than being
+	 * torn down — the YAML editor is holding the Loro binding, and CodeMirror
+	 * measures nothing it can't see, so both need a nudge on the way back in.
+	 * @param {"yaml" | "template"} tab
+	 */
+	async function showTab(tab) {
+		if (tab === editorTab) return;
+		if (tab === "template") templatePaneUsed = true;
+		editorTab = tab;
+		await tick();
+		if (tab === "yaml") editor?.remeasure();
+		else templateEditor?.remeasure();
+	}
+
+	/** The Style popover's way through to the template behind the layout. */
+	function editTemplate() {
+		if (sourceHidden) setSourceHidden(false);
+		showTab("template");
+	}
+
+	/** @param {string} text */
+	function setTemplateSource(text) {
+		templates.setSource(layout, text);
+	}
+
+	/** Fork the active template, and switch the file over to the copy. */
+	function duplicateTemplate() {
+		const id = templates.duplicate(layout);
+		setLayout(id);
+		toast("Template duplicated");
+	}
+
+	/** @param {string} name */
+	function renameTemplate(name) {
+		templates.rename(layout, name);
+	}
+
+	function revertTemplate() {
+		if (!template?.edited) return;
+		if (!confirm("Throw away your changes to this template?")) return;
+		templates.revert(layout);
+		toast("Template reverted");
+	}
+
+	/**
+	 * Delete a template of the user's own. Any file still pointing at it falls
+	 * back to the default the next time it resolves, so nothing else has to be
+	 * cleaned up here.
+	 */
+	function deleteTemplate() {
+		if (!template || template.builtin) return;
+		if (!confirm(`Delete the template “${template.name}” forever?`)) return;
+		const id = template.id;
+		setLayout(templates.resolve(null));
+		templates.remove(id);
+		toast("Template deleted");
+	}
+
 	function toggleTheme() {
 		// The preview sits this out: the sheet is paper, and paper is white.
 		const next =
@@ -879,12 +1017,14 @@
 
 <div id="app">
 	<Toolbar
+		templates={templates.all}
 		{layout}
 		{theme}
 		{css}
 		onLayout={setLayout}
 		onTheme={setTheme}
 		onCss={setCss}
+		onEditTemplate={editTemplate}
 		onExport={exportPDF}
 		canInstall={!!installPrompt}
 		onInstall={installApp}
@@ -920,21 +1060,61 @@
 	     `width`, so the stacked (narrow-screen) layout can ignore it in CSS. -->
 	<div id="split" bind:this={split} style:--editor-w={editorWidth}>
 		<div id="editor-pane" bind:this={editorPane} class:hidden={sourceHidden}>
-			{#if cv.ready}
-				<!-- Re-keyed when the document is swapped (history cleared, or another
-				     tab's document taken over): the binding is tied to one LoroDoc. -->
-				{#key cv.docId}
-					<YamlEditor
-						bind:this={editor}
-						loroExtensions={cv.extensions}
-						readOnly={cv.isViewingHistory}
-						diff={cv.diff}
-						onScroll={onEditorScroll}
-						onEdit={noteEdit}
-					/>
-				{/key}
-			{:else}
-				<div id="boot">Loading editor…</div>
+			<!-- Two editors, one pane: what the CV says, and how it is arranged. -->
+			<div id="editor-tabs">
+				<button
+					class="ed-tab"
+					class:on={editorTab === "yaml"}
+					aria-pressed={editorTab === "yaml"}
+					onclick={() => showTab("yaml")}>Content</button
+				>
+				<button
+					class="ed-tab"
+					class:on={editorTab === "template"}
+					aria-pressed={editorTab === "template"}
+					title="The Svelte component the sheet is rendered by"
+					onclick={() => showTab("template")}>Template</button
+				>
+			</div>
+
+			<div class="ed-slot" class:hidden={editorTab !== "yaml"}>
+				{#if cv.ready}
+					<!-- Re-keyed when the document is swapped (history cleared, or another
+					     tab's document taken over): the binding is tied to one LoroDoc. -->
+					{#key cv.docId}
+						<YamlEditor
+							bind:this={editor}
+							loroExtensions={cv.extensions}
+							readOnly={cv.isViewingHistory}
+							diff={cv.diff}
+							onScroll={onEditorScroll}
+							onEdit={noteEdit}
+						/>
+					{/key}
+				{:else}
+					<div id="boot">Loading editor…</div>
+				{/if}
+			</div>
+
+			<!-- Built the first time it is asked for, then kept: a second CodeMirror
+			     is not worth building for a session that never opens this tab. -->
+			{#if templatePaneUsed && template}
+				<div class="ed-slot" class:hidden={editorTab !== "template"}>
+					<!-- Keyed on the template so switching one out starts a fresh undo
+					     stack rather than one that spans two different files. -->
+					{#key template.id}
+						<TemplateEditor
+							bind:this={templateEditor}
+							{template}
+							error={tplError}
+							onChange={setTemplateSource}
+							onDuplicate={duplicateTemplate}
+							onRename={renameTemplate}
+							onRevert={revertTemplate}
+							onDelete={deleteTemplate}
+						/>
+					{/key}
+				</div>
 			{/if}
 		</div>
 
@@ -965,12 +1145,14 @@
 						>Back to latest</button
 					>
 				</div>
-			{:else if parseError}
-				<div id="error-banner">⚠ {parseError}</div>
+			{:else if bannerError}
+				<div id="error-banner">⚠ {bannerError}</div>
 			{/if}
 			<PreviewFrame
 				bind:this={frame}
 				cv={parsed}
+				component={tplComponent}
+				templateCss={tplCss}
 				{layout}
 				{theme}
 				{css}
@@ -1018,9 +1200,54 @@
 	}
 
 	/* Kept mounted (not removed) so the Loro/CodeMirror binding stays alive —
-	   Reset and Restore apply text through it even while it's out of view. */
-	#editor-pane.hidden {
+	   Reset and Restore apply text through it even while it's out of view. The
+	   editor that isn't on top is hidden for the same reason. */
+	#editor-pane.hidden,
+	.ed-slot.hidden {
 		display: none;
+	}
+
+	.ed-slot {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		min-height: 0;
+	}
+
+	#editor-tabs {
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		gap: 2px;
+		padding: 4px 6px 0;
+		background: var(--editor-chrome);
+		border-bottom: 1px solid var(--line);
+	}
+
+	.ed-tab {
+		padding: 5px 10px;
+		background: none;
+		border: none;
+		border-bottom: 2px solid transparent;
+		cursor: pointer;
+		font-family: var(--mono);
+		font-size: 10px;
+		font-weight: 600;
+		letter-spacing: 0.6px;
+		text-transform: uppercase;
+		color: var(--faint);
+		transition:
+			color 0.13s,
+			border-color 0.13s;
+	}
+
+	.ed-tab:hover {
+		color: var(--accent-deep);
+	}
+
+	.ed-tab.on {
+		color: var(--accent-deep);
+		border-bottom-color: var(--accent);
 	}
 
 	#boot {

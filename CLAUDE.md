@@ -18,6 +18,13 @@ binding, version history, CSS layering) in depth. Don't duplicate it here.
   surface through `pnpm check`. `src/app.d.ts` is the only `.ts` file.
 - Runes are forced on for all non-`node_modules` files (`vite.config.js`). Shared
   reactive state lives in `.svelte.js` classes using `$state` / `$derived`.
+- The five built-in templates in `src/lib/cv/templates/` are `.svelte` files that
+  are only ever imported `?raw`. They are still compiled by `pnpm check`, so a
+  broken one fails the gate; `@cv` is aliased in `vite.config.js` for their sake,
+  and resolved again at runtime by `compile-template.js`.
+- Never write a literal `<style>` or `<script>` tag inside a comment in a Svelte
+  `<script>` block — the parser reads it as the real thing and `pnpm check`
+  fails, even though the app compiles.
 - Style each piece of UI in its own component's `<style>` block. `src/lib/styles/*`,
   `cv/*.css` and `components/codemirror.css` are global only because they style DOM
   Svelte never compiles (CodeMirror's own, and `{@html}` output).

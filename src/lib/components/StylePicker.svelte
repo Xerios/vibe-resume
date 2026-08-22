@@ -1,11 +1,13 @@
 <script>
 	import Icon from '@iconify/svelte';
 	import IconLayout from '@iconify-icons/lucide/layout-panel-left';
-	import { LAYOUTS, THEMES } from '$lib/cv/presets.js';
+	import { THEMES } from '$lib/cv/presets.js';
 	import { withKey } from './access-keys.js';
 
 	let {
-		/** @type {string} */
+		/** Every template there is, built-in and otherwise. @type {import('$lib/cv/templates.svelte.js').Template[]} */
+		templates,
+		/** The active file's template id. @type {string} */
 		layout,
 		/** @type {string} */
 		theme,
@@ -13,6 +15,8 @@
 		onLayout,
 		/** @type {(id: string) => void} */
 		onTheme,
+		/** Open the template pane on the active template. @type {() => void} */
+		onEditTemplate,
 		/** The active file's own CSS — see the editor at the foot of the popover. */
 		css = '',
 		/** @type {(text: string) => void} */
@@ -65,7 +69,9 @@
 </script>
 
 <!-- Wireframes of each arrangement: the names alone don't say much, and a
-     thumbnail reads faster than switching to find out. -->
+     thumbnail reads faster than switching to find out. Only the five that ship
+     have one — a template of your own gets the neutral sheet below, since
+     nothing here can know what its markup does. -->
 {#snippet thumb(/** @type {string} */ id)}
 	<svg class="layout-thumb" viewBox="0 0 36 26" aria-hidden="true">
 		{#if id === 'classic'}
@@ -106,6 +112,11 @@
 				<circle cx="5.5" cy={y + 0.8} r="1.8" class="rule" />
 				<rect x="10" y={y} width="23" height="1.6" opacity="0.4" />
 			{/each}
+		{:else}
+			<rect x="3" y="3" width="30" height="20" rx="2" opacity="0.18" />
+			<rect x="7" y="7" width="13" height="3" />
+			<rect x="7" y="13" width="22" height="1.6" opacity="0.4" />
+			<rect x="7" y="17" width="16" height="1.6" opacity="0.4" />
 		{/if}
 	</svg>
 {/snippet}
@@ -128,21 +139,25 @@
 	{#if open}
 		<div class="style-pop">
 			<div class="style-group">
-				<span class="style-label">Layout</span>
+				<span class="style-label">Template</span>
 				<div class="layout-grid">
-					{#each LAYOUTS as l (l.id)}
+					{#each templates as t (t.id)}
 						<button
 							class="layout-opt"
-							class:on={l.id === layout}
-							title={l.hint}
-							aria-pressed={l.id === layout}
-							onclick={() => onLayout(l.id)}
+							class:on={t.id === layout}
+							title={t.hint ?? (t.builtin ? t.name : 'Your own template')}
+							aria-pressed={t.id === layout}
+							onclick={() => onLayout(t.id)}
 						>
-							{@render thumb(l.id)}
-							<span>{l.name}</span>
+							{@render thumb(t.id)}
+							<span>{t.name}{#if t.edited}*{/if}</span>
 						</button>
 					{/each}
 				</div>
+				<!-- The arrangement is a component now, and this is the way in to it. -->
+				<button class="tpl-edit" onclick={onEditTemplate}>
+					Edit this template <span class="tpl-edit-arrow">→</span>
+				</button>
 			</div>
 
 			<div class="style-group">
@@ -341,6 +356,37 @@
 		border-color: var(--accent);
 		color: var(--accent-deep);
 		background: var(--accent-wash);
+	}
+
+	/* Reads as a link rather than a button: it doesn't change anything, it moves
+	   the editor pane to where changing it happens. */
+	.tpl-edit {
+		display: flex;
+		align-items: center;
+		gap: 5px;
+		width: 100%;
+		margin-top: 6px;
+		padding: 4px 2px 0;
+		background: none;
+		border: none;
+		cursor: pointer;
+		font-family: var(--mono);
+		font-size: 9.5px;
+		font-weight: 600;
+		letter-spacing: 0.3px;
+		color: var(--muted);
+	}
+
+	.tpl-edit:hover {
+		color: var(--accent-deep);
+	}
+
+	.tpl-edit-arrow {
+		transition: transform 0.13s;
+	}
+
+	.tpl-edit:hover .tpl-edit-arrow {
+		transform: translateX(2px);
 	}
 
 	.layout-thumb {

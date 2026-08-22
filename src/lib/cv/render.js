@@ -18,7 +18,7 @@ export function parseCv(yaml) {
 
 /**
  * Map every node in the document to the source line it starts on, keyed by its
- * dotted path — `sections.2.items.0.bullets.1`. CvSheet stamps those same paths
+ * dotted path — `sections.2.items.0.bullets.1`. A template stamps those paths
  * onto the elements it renders as `data-src`, which is what lets the preview
  * point back at the YAML behind whatever the pointer is on.
  *

@@ -1,52 +1,21 @@
+<!--
+	Compact — tighter type and three skill columns, for a CV that has outgrown
+	one page.
+
+	A template is a Svelte component handed the parsed YAML as `cv`. It renders
+	inside the preview frame on top of cv.css, whose class names the markup below
+	spends; this file's own <style> block is where a layout says how it differs.
+
+	Keep the `data-src` paths: they are what ties an element back to the line of
+	YAML behind it, and so what makes the two panes follow each other.
+-->
 <script>
-	import { marked } from "marked";
-	import { DEFAULT_LAYOUT } from "./presets.js";
+	import { list, md, sections } from "@cv";
 
-	/** @type {{ cv: any, layout?: string }} */
-	let { cv, layout = DEFAULT_LAYOUT } = $props();
+	/** @type {{ cv: any }} */
+	let { cv } = $props();
 
-	/**
-	 * Inline Markdown → HTML. Links get target/rel, which marked won't add itself.
-	 * @param {unknown} text
-	 */
-	function md(text) {
-		if (!text) return "";
-		const html = marked.parseInline(String(text).trim());
-		return String(html).replace(
-			/<a href=/g,
-			'<a target="_blank" rel="noopener" href=',
-		);
-	}
-
-	/**
-	 * @param {unknown} v
-	 * @returns {any[]}
-	 */
-	const list = (v) => (Array.isArray(v) ? v : []);
-
-	/**
-	 * Sections paired with their path into the YAML — `data-src` on the rendered
-	 * elements is what lets the page scroll the editor to the matching line (see
-	 * `buildLineMap` in render.js). The index has to be taken before filtering,
-	 * or every path past a dropped section would point one entry too far.
-	 */
-	const sections = $derived(
-		list(cv.sections)
-			.map((sec, i) => ({ sec, path: `sections.${i}` }))
-			.filter((e) => e.sec && typeof e.sec === "object"),
-	);
-
-	/**
-	 * The sidebar layout is the only one that needs sections split across two
-	 * columns. Skills go to the rail by default; any section can opt in or out
-	 * with `rail: true` / `rail: false` in the YAML.
-	 */
-	const rail = $derived(
-		layout === "sidebar"
-			? sections.filter((e) => e.sec.rail ?? e.sec.type === "skills")
-			: [],
-	);
-	const main = $derived(sections.filter((e) => !rail.includes(e)));
+	const secs = $derived(sections(cv));
 </script>
 
 {#snippet secHead(/** @type {any} */ sec, /** @type {string} */ path)}
@@ -162,7 +131,7 @@
 	{/if}
 {/snippet}
 
-<div class="sheet">
+{#snippet head()}
 	<header data-src="header">
 		<div>
 			<h1 class="name" data-src="header.name">{@html md(cv.header?.name)}</h1>
@@ -174,17 +143,71 @@
 				>{/each}
 		</div>
 	</header>
+{/snippet}
 
-	{#if layout === "sidebar"}
-		<div class="cv-cols">
-			<aside class="cv-rail">
-				{#each rail as e}{@render block(e.sec, e.path)}{/each}
-			</aside>
-			<div class="cv-main">
-				{#each main as e}{@render block(e.sec, e.path)}{/each}
-			</div>
-		</div>
-	{:else}
-		{#each sections as e}{@render block(e.sec, e.path)}{/each}
-	{/if}
+<div class="sheet">
+	{@render head()}
+	{#each secs as e}{@render block(e.sec, e.path)}{/each}
 </div>
+
+<style>
+	.sheet {
+		max-width: 780px;
+		padding: 30px 40px 28px;
+		font-size: 12.5px;
+		line-height: 1.38;
+	}
+
+	.sheet header {
+		padding-bottom: 11px;
+	}
+
+	.name {
+		font-size: 26px;
+	}
+
+	.sheet section {
+		margin-top: 14px;
+	}
+
+	.sec-head {
+		margin-bottom: 7px;
+	}
+
+	.skill-grid {
+		grid-template-columns: repeat(3, 1fr);
+		gap: 2px 22px;
+	}
+
+	/* The three-up grid moves the first-row boundary along by one block. */
+	.skill-block:nth-child(3) {
+		border-top: none;
+	}
+
+	.skill-row {
+		font-size: 11px;
+	}
+
+	.job {
+		margin-bottom: 9px;
+	}
+
+	.job-title {
+		font-size: 13px;
+	}
+
+	.job-sub {
+		margin: 1px 0 4px;
+	}
+
+	ul.bullets li {
+		font-size: 11.5px;
+		margin-bottom: 2px;
+	}
+
+	@media print {
+		.sheet {
+			font-size: 9.5pt !important;
+		}
+	}
+</style>

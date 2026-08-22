@@ -1,11 +1,16 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   Layout and theme presets for the CV sheet, selected by the data attributes
-   on `#cv-root` (see src/lib/cv/presets.js for the ids).
+   Theme selection for the CV sheet, by the `data-cv-theme` attribute on
+   `#cv-root` (see src/lib/cv/presets.js for the ids).
 
    Loaded inside the preview frame only (see PreviewFrame.svelte) — none of
    these selectors match anything in the app's own document. The palettes the
    ramp block below spends live in palettes.css, which the app loads too so
    that StylePicker can draw its swatches.
+
+   The layouts that used to sit under this block are gone from here: each is a
+   template now (src/lib/cv/templates/), carrying its own <style> block, which
+   is what makes one editable in the app. What is left is the part a template
+   has no say in — which ramp the sheet is painted from.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── Ramp selection ───────────────────────────────
@@ -15,8 +20,8 @@
    default look.
 
    Always the light ramp. The sheet doesn't follow the app into dark mode, so
-   there is nothing here to choose between and nothing for the print block
-   below to undo — what is on screen is already what goes on paper. */
+   there is nothing here to choose between and nothing for a print rule to
+   undo — what is on screen is already what goes on paper. */
 
 #cv-root {
 	--accent: var(--t-accent-l, #157c75);
@@ -28,191 +33,4 @@
 	--muted: var(--t-muted-l, #5f6f6c);
 	--faint: var(--t-faint-l, #8a9794);
 	color: var(--ink);
-}
-
-/* ── Layout: compact ──────────────────────────────
-   Same structure, less of everything — the variant to reach for when the CV
-   has outgrown one page. */
-
-[data-cv-layout='compact'] .sheet {
-	max-width: 780px;
-	padding: 30px 40px 28px;
-	font-size: 12.5px;
-	line-height: 1.38;
-}
-
-[data-cv-layout='compact'] .sheet header {
-	padding-bottom: 11px;
-}
-
-[data-cv-layout='compact'] .name {
-	font-size: 26px;
-}
-
-[data-cv-layout='compact'] .sheet section {
-	margin-top: 14px;
-}
-
-[data-cv-layout='compact'] .sec-head {
-	margin-bottom: 7px;
-}
-
-[data-cv-layout='compact'] .skill-grid {
-	grid-template-columns: repeat(3, 1fr);
-	gap: 2px 22px;
-}
-
-/* The three-up grid moves the first-row boundary along by one block. */
-[data-cv-layout='compact'] .skill-block:nth-child(3) {
-	border-top: none;
-}
-
-[data-cv-layout='compact'] .skill-row {
-	font-size: 11px;
-}
-
-[data-cv-layout='compact'] .job {
-	margin-bottom: 9px;
-}
-
-[data-cv-layout='compact'] .job-title {
-	font-size: 13px;
-}
-
-[data-cv-layout='compact'] .job-sub {
-	margin: 1px 0 4px;
-}
-
-[data-cv-layout='compact'] ul.bullets li {
-	font-size: 11.5px;
-	margin-bottom: 2px;
-}
-
-/* ── Layout: centered ─────────────────────────────
-   Header stacks and centres; section rules grow a second arm so the title
-   sits between them. */
-
-[data-cv-layout='centered'] .sheet header {
-	display: block;
-	text-align: center;
-}
-
-[data-cv-layout='centered'] .contact {
-	text-align: center;
-	margin-top: 9px;
-	white-space: normal;
-	line-height: 1.7;
-}
-
-[data-cv-layout='centered'] .sec-head::before {
-	content: '';
-	height: 1px;
-	flex: 1;
-	border-top: 1px solid var(--line);
-}
-
-[data-cv-layout='centered'] .sec-summary {
-	text-align: center;
-	max-width: 92%;
-	margin-inline: auto;
-}
-
-/* ── Layout: sidebar ──────────────────────────────
-   The two columns are real elements (CvSheet renders them only for this
-   layout), so nothing here depends on the order sections appear in the YAML. */
-
-[data-cv-layout='sidebar'] .cv-cols {
-	display: flex;
-	align-items: flex-start;
-	gap: 26px;
-	margin-top: 4px;
-}
-
-[data-cv-layout='sidebar'] .cv-rail {
-	flex: 0 0 31%;
-	min-width: 0;
-	padding-right: 24px;
-	border-right: 1px solid var(--line);
-}
-
-[data-cv-layout='sidebar'] .cv-main {
-	flex: 1;
-	min-width: 0;
-}
-
-/* One column of skills is all the rail has room for, so every block after the
-   first needs the divider that the two-up grid suppresses. */
-[data-cv-layout='sidebar'] .cv-rail .skill-grid {
-	grid-template-columns: 1fr;
-}
-
-[data-cv-layout='sidebar'] .cv-rail .skill-block:nth-child(2) {
-	border-top: 1px solid var(--line);
-}
-
-[data-cv-layout='sidebar'] .cv-rail .sec-head h2 {
-	letter-spacing: 1.6px;
-}
-
-/* ── Layout: timeline ─────────────────────────────
-   Experience only: each job hangs off a rail, dated above its title. */
-
-[data-cv-layout='timeline'] .sec-experience .job {
-	position: relative;
-	/* The dot straddles the rail, overhanging 4.25px to its left. Printing
-	   strips the sheet's padding, so the indent here is what keeps that
-	   overhang off the page edge — it can't go below ~5px. */
-	margin-left: 8px;
-	padding-left: 20px;
-	padding-bottom: 2px;
-	margin-bottom: 0px;
-	border-left: 1.5px solid var(--line);
-}
-
-[data-cv-layout='timeline'] .sec-experience .job::before {
-	content: '';
-	position: absolute;
-	left: -7.75px;
-	top: 6px;
-	width: 10px;
-	height: 10px;
-	border-radius: 50%;
-	background: var(--paper);
-	border: 2px solid var(--accent);
-}
-
-
-[data-cv-layout='timeline'] .sec-experience .earlier ul.bullets {
-	margin-left: -14px;
-}
-
-[data-cv-layout='timeline'] .sec-experience .earlier ul.bullets li::before {
-	left: -11px;
-}
-
-[data-cv-layout='timeline'] .sec-experience .job-head {
-	flex-direction: column-reverse;
-	align-items: flex-start;
-	gap: 1px;
-}
-
-[data-cv-layout='timeline'] .sec-experience .job-dates {
-	color: var(--accent);
-	font-weight: 600;
-}
-
-/* ── Print ────────────────────────────────────────
-   Only the differences paper makes. The colours need no correcting here: the
-   sheet renders from the light ramp on screen too. */
-
-@media print {
-	[data-cv-layout='compact'] .sheet {
-		font-size: 9.5pt !important;
-	}
-
-	[data-cv-layout='sidebar'] .cv-rail,
-	[data-cv-layout='timeline'] .sec-experience .job::before {
-		-webkit-print-color-adjust: exact;
-		print-color-adjust: exact;
-	}
 }
