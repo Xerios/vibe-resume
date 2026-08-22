@@ -253,8 +253,13 @@ ul.bullets li::before {
 	color: var(--accent-deep);
 }
 
-.earlier ul.bullets {
-	margin-left: -23px;
+
+.earlier ul.bullets li::before {
+	top: 5px;
+	width: 9px;
+	height: 9px;
+	border-radius: 100px;
+	transform: none;
 }
 
 .earlier li {

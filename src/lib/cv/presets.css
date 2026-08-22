@@ -330,6 +330,15 @@
 	border: 2px solid var(--accent);
 }
 
+
+[data-cv-layout='timeline'] .sec-experience .earlier ul.bullets {
+	margin-left: -14px;
+}
+
+[data-cv-layout='timeline'] .sec-experience .earlier ul.bullets li::before {
+	left: -11px;
+}
+
 [data-cv-layout='timeline'] .sec-experience .job-head {
 	flex-direction: column-reverse;
 	align-items: flex-start;
