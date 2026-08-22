@@ -23,7 +23,7 @@ pnpm check      # svelte-check
 | ------------------ | -------------------------------------------------------------------------------------------- |
 | Document + history | [src/lib/cv/doc.svelte.js](src/lib/cv/doc.svelte.js) — Loro doc, persistence, cross-tab merge |
 | Editor             | [src/lib/components/YamlEditor.svelte](src/lib/components/YamlEditor.svelte) — CodeMirror 6   |
-| Template editor    | [src/lib/components/TemplateEditor.svelte](src/lib/components/TemplateEditor.svelte) — the second CodeMirror |
+| Template editor    | [src/routes/template/+page.svelte](src/routes/template/+page.svelte) — the second page, and its CodeMirror |
 | Chrome             | `components/{Toolbar,TabBar,StatusBar}.svelte` — the buttons, the tabs, the status bar        |
 | YAML to HTML       | [src/lib/cv/render.js](src/lib/cv/render.js)                                                 |
 | Preview            | [src/lib/cv/PreviewFrame.svelte](src/lib/cv/PreviewFrame.svelte) — the iframe the sheet renders in |
@@ -31,6 +31,7 @@ pnpm check      # svelte-check
 | Templates          | [src/lib/cv/templates/](src/lib/cv/templates/) — one Svelte component per arrangement        |
 | Template registry  | [src/lib/cv/templates.svelte.js](src/lib/cv/templates.svelte.js) — edits, forks, reverts      |
 | Compiling one      | [src/lib/cv/compile-template.js](src/lib/cv/compile-template.js) — Svelte, in the browser     |
+| Shared state       | [src/lib/cv/state.svelte.js](src/lib/cv/state.svelte.js) — the document, files and templates both pages hold |
 | Theme              | [src/lib/cv/presets.js](src/lib/cv/presets.js) — the palettes, and the CSS beside it          |
 | CSS                | [src/app.css](src/app.css) — the index; see *Where the CSS lives* below                      |
 | Offline            | [src/service-worker.js](src/service-worker.js) — precache; manifest and icons in `static/`    |
@@ -51,18 +52,45 @@ it, the `--cm-*` tokens it names live in
 [tokens.css](src/lib/styles/tokens.css), and the rules that spend the rest of
 them in [codemirror.css](src/lib/components/codemirror.css).
 
-The editor pane holds two of these. The second is the template editor — the same
-CodeMirror over `@replit/codemirror-lang-svelte`, and the plain `history()` the
-first one can't have, since nothing but the user writes to a template. Neither is
-unmounted when the other is on top: the YAML editor is holding the Loro binding,
-so both are hidden and re-measured instead.
+There are two of these, one per page. The second is the template editor — the
+same CodeMirror over `@replit/codemirror-lang-svelte`, and the plain `history()`
+the first one can't have, since nothing but the user writes to a template. One
+stylesheet themes both: [codemirror.css](src/lib/components/codemirror.css) goes
+through `:is(#cm-wrap, #tpl-cm)`, which keeps the id specificity it needs to
+outrank CodeMirror's own base theme while serving two hosts that can't share an
+id.
+
+### Two pages
+
+`/` is the CV — YAML on the left, sheet on the right. `/template` is the
+component that sheet is rendered by, with the same CV beside it as a live
+preview. The template editor was a second tab in the editor pane first, and the
+pane was the wrong place for it: it is a different job, wants the whole window,
+keeps an undo stack of its own, and belongs to the template rather than to the
+file that happens to be open.
+
+Two pages means the state can no longer be built inside one of them. The
+document, the file registry and the template registry are module-level
+singletons in [state.svelte.js](src/lib/cv/state.svelte.js), and `start()` is
+idempotent because both pages call it — whichever is entered first does the
+work. That is what makes crossing between them carry the CRDT along rather than
+re-reading it out of localStorage, and what keeps two writers off the same
+keys. Client-side navigation is what keeps module scope alive; a hard load of
+either URL simply starts over, which is also why `/template` works as a deep
+link.
+
+Nothing on the template page writes to the document, so there is no editor bound
+to it and no history to keep — the CV over there is read-only, and what is being
+edited is stored per template rather than per file.
 
 ### Templates
 
 The Style button offers five arrangements of the sheet — classic, compact,
 centered, sidebar, timeline — and seven palettes. Both are per file, stored in
 the file registry next to the name rather than in the CRDT: restyling is not an
-edit, so it leaves the YAML and the version history alone.
+edit, so it leaves the YAML and the version history alone. The popover's *Edit
+this template* is an ordinary link to `/template`, and picking a template there
+means the same thing it means in the popover: the CV switches to it.
 
 An arrangement is a *template*: an ordinary Svelte component, handed the parsed
 YAML as `cv`, that renders the sheet. The five that ship are
@@ -73,7 +101,10 @@ CSS in `presets.css` keyed off a `data-cv-layout` attribute; each one now carrie
 its own markup and its own style block, which is what makes it something you can
 open and change.
 
-The Template tab compiles what you type, on a debounce, and mounts the result.
+The template page compiles what you type, on a debounce, and mounts the result;
+so does the editor page, from the same source text through the same
+[liveTemplate](src/lib/cv/live-template.svelte.js) — the debounce, the
+out-of-order guard and the keep-the-last-good-one rule are written once.
 A file's `layout` is only the id of the template it renders through, and
 templates themselves are shared by every file rather than owned by one — so
 deleting one can't break a CV: the id stops resolving and `resolve` hands back
@@ -112,8 +143,10 @@ first template compiles offline like everything else here.
 
 Two things follow that are worth being plain about. A compile error keeps the
 last template that worked on screen — the same bargain as a YAML parse error —
-and reports itself twice, in the strip under the template editor and in the
-banner over the preview. And a template is the user's own code running in the
+and reports itself in the strip under the template editor and in the banner over
+either preview. On a fresh load there *is* no last good one, so a stored
+template that doesn't compile leaves the editor page with nothing to render:
+that banner carries a link to the page where the template can be fixed. And a template is the user's own code running in the
 app's realm rather than the frame's, because `mount()` takes a component and a
 component can only come from the realm that compiled it. That is a real
 difference from the file's custom CSS, which the frame contains completely; the

@@ -18,6 +18,9 @@ binding, version history, CSS layering) in depth. Don't duplicate it here.
   surface through `pnpm check`. `src/app.d.ts` is the only `.ts` file.
 - Runes are forced on for all non-`node_modules` files (`vite.config.js`). Shared
   reactive state lives in `.svelte.js` classes using `$state` / `$derived`.
+- The app has two routes and they share one set of state objects — the
+  singletons in `src/lib/cv/state.svelte.js`. Don't construct a `CvDoc`,
+  `FileManager` or `TemplateManager` in a page; import those and call `start()`.
 - The five built-in templates in `src/lib/cv/templates/` are `.svelte` files that
   are only ever imported `?raw`. They are still compiled by `pnpm check`, so a
   broken one fails the gate; `@cv` is aliased in `vite.config.js` for their sake,

@@ -18,8 +18,6 @@
 		onLayout,
 		/** @type {(id: string) => void} */
 		onTheme,
-		/** @type {() => void} */
-		onEditTemplate,
 		/** The active file's own CSS, and the setter behind the picker's editor. */
 		css = "",
 		/** @type {(text: string) => void} */
@@ -44,7 +42,6 @@
 		{onLayout}
 		{onTheme}
 		{onCss}
-		{onEditTemplate}
 	/>
 
 	<!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
