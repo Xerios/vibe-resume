@@ -1,15 +1,8 @@
 /**
- * The app's state, as three objects both routes share.
+ * The app's state, as three module-level singletons.
  *
- * They used to be built inside the editor page, which was fine while there was
- * one page. There are two now — the CV and the parts behind it — and each
- * would otherwise build its own copy and load it back out of localStorage on
- * every navigation: two writers for the same keys, and a CRDT re-read from disk
- * rather than carried across. Module scope is what keeps them single, and
- * client-side navigation is what keeps module scope alive.
- *
- * `start` is idempotent because both pages call it: whichever is entered first
- * does the work, and the other finds it done.
+ * `start` is idempotent: it's safe to call from a page's `onMount` without
+ * worrying whether something else already did the work.
  */
 
 import { CvDoc } from './doc.svelte.js'
@@ -50,7 +43,6 @@ export function start() {
 /** Write out everything that is sitting on a debounce — the tab is going away. */
 export function flush() {
   doc.flush()
-  parts.flush()
 }
 
 /**

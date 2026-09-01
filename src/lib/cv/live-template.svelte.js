@@ -6,10 +6,8 @@ const COMPILE_DEBOUNCE_MS = 350
 /**
  * A template, kept compiled.
  *
- * Both pages need the same thing from the same source text — the editor page to
- * render its preview, the template page to render the one beside the source
- * being typed — so the debounce, the out-of-order guard and the keep-the-last-
- * good-one rule live here rather than twice.
+ * The debounce, the out-of-order guard and the keep-the-last-good-one rule
+ * live here rather than inline in the page that renders the preview.
  *
  * Call it during component initialisation: it sets up an `$effect`, so it
  * belongs to whichever component asked for it and stops when that unmounts.

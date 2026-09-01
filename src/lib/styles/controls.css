@@ -27,13 +27,6 @@
   transition: var(--theme-fade);
 }
 
-/* Two of these are links rather than buttons — the way between the two pages —
-   and a link brings an underline and a colour of its own to shake off. */
-a.t-btn {
-  text-decoration: none;
-  color: var(--muted);
-}
-
 .t-btn:hover:not(:disabled) {
   border-color: var(--accent);
   color: var(--accent-deep);

@@ -22,9 +22,6 @@ import { KEYS, read, remove, write } from './storage.js'
  * }} Part
  */
 
-/** Source edits are typed, so the write waits for a pause the way the CRDT snapshot does. */
-const SAVE_DEBOUNCE_MS = 400
-
 /**
  * Every part a sheet can be composed out of: the layouts and block variants
  * that ship (slots.js), plus whatever has been written or changed here.
@@ -42,9 +39,6 @@ const SAVE_DEBOUNCE_MS = 400
 export class PartManager {
   /** Overrides and user variants, keyed by part id. @type {Record<string, StoredPart>} */
   stored = $state({})
-
-  /** @type {ReturnType<typeof setTimeout> | undefined} */
-  #saveTimer
 
   /**
    * The slot registry with everything stored here folded in: shipped variants
@@ -117,101 +111,6 @@ export class PartManager {
     })
   }
 
-  /** @param {string} id  a part id, `stack:chips` */
-  get(id) {
-    for (const s of this.slots) {
-      const found = s.variants.find((v) => v.partId === id)
-      if (found) return found
-    }
-    return null
-  }
-
-  /** @param {string} id */
-  sourceOf(id) {
-    const stored = this.stored[id]
-    if (stored) return stored.source
-    const part = this.get(id)
-    return part?.layout ?? part?.svelte ?? part?.css ?? ''
-  }
-
-  /**
-   * Take an edit. Shipped or not, the text lands in the same place; what
-   * differs is only that a shipped part has something to go back to.
-   * @param {string} id
-   * @param {string} source
-   */
-  setSource(id, source) {
-    const part = this.get(id)
-    if (!part) return
-    // Typing the shipped source back in by hand leaves no override behind.
-    if (part.builtin && source === (part.layout ?? part.svelte ?? part.css ?? '')) return this.revert(id)
-    this.stored[id] = { id, slot: part.slot, name: part.name, source, kind: part.kind }
-    this.#saveSoon()
-  }
-
-  /**
-   * Copy a part into a new variant of the same slot. This is how a variant of
-   * your own starts — a blank one would only mean retyping the snippet it is a
-   * variation of.
-   * @param {string} id
-   * @returns {string | null} the new part id
-   */
-  duplicate(id) {
-    const from = this.get(id)
-    if (!from) return null
-    const newId = `${from.slot}:${uniqueSuffix()}`
-    this.stored[newId] = {
-      id: newId,
-      slot: from.slot,
-      name: this.#uniqueName(from.slot, `${from.name} copy`),
-      source: this.sourceOf(id),
-      kind: from.kind,
-    }
-    this.#save()
-    return newId
-  }
-
-  /**
-   * @param {string} id
-   * @param {string} name
-   */
-  rename(id, name) {
-    const trimmed = name.trim()
-    const record = this.stored[id]
-    // A shipped part keeps the name it ships with: the picker refers to it by
-    // that name throughout, and an override is the same variant.
-    if (!trimmed || !record || shipped(id)) return
-    this.stored[id] = { ...record, name: this.#uniqueName(record.slot, trimmed, id) }
-    this.#save()
-  }
-
-  /** Drop a shipped part's override, putting the shipped source back. @param {string} id */
-  revert(id) {
-    if (!shipped(id)) return
-    delete this.stored[id]
-    this.#save()
-  }
-
-  /**
-   * Delete a variant of the user's own. Files still choosing it fall back to
-   * the slot's default the next time they resolve, so nothing has to be
-   * rewritten.
-   * @param {string} id
-   */
-  remove(id) {
-    if (shipped(id)) return
-    delete this.stored[id]
-    this.#save()
-  }
-
-  /** Write out a pending edit now — the tab is going away. */
-  flush() {
-    if (this.#saveTimer === undefined) return
-    clearTimeout(this.#saveTimer)
-    this.#saveTimer = undefined
-    this.#save()
-  }
-
   // ── Internals ──────────────────────────────────────────────────────────────
 
   #load() {
@@ -280,28 +179,6 @@ export class PartManager {
 
   #save() {
     write(KEYS.parts, JSON.stringify(this.stored))
-  }
-
-  #saveSoon() {
-    clearTimeout(this.#saveTimer)
-    this.#saveTimer = setTimeout(() => {
-      this.#saveTimer = undefined
-      this.#save()
-    }, SAVE_DEBOUNCE_MS)
-  }
-
-  /**
-   * @param {string} slotId
-   * @param {string} base
-   * @param {string} [selfId]  the part being renamed, which doesn't clash with itself
-   */
-  #uniqueName(slotId, base, selfId) {
-    const slot = this.slots.find((s) => s.id === slotId)
-    const taken = new Set((slot?.variants ?? []).filter((v) => v.partId !== selfId).map((v) => v.name))
-    if (!taken.has(base)) return base
-    let n = 2
-    while (taken.has(`${base} ${n}`)) n++
-    return `${base} ${n}`
   }
 }
 

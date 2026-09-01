@@ -26,7 +26,6 @@
     "@codemirror/state": "^6.7.1",
     "@codemirror/view": "^6.43.9",
     "@lezer/highlight": "^1.2.3",
-    "@replit/codemirror-lang-svelte": "^6.0.0",
     "codemirror-wrapped-line-indent": "^1.0.9",
     "js-yaml": "^5.3.0",
     "lint-staged": "^16.0.0",

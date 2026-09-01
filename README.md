@@ -19,29 +19,28 @@ pnpm check      # svelte-check
 
 ## How it works
 
-| Concern            | Where                                                                                                        |
-| ------------------ | ------------------------------------------------------------------------------------------------------------ |
-| Document + history | [src/lib/cv/doc.svelte.js](src/lib/cv/doc.svelte.js) — Loro doc, persistence, cross-tab merge                |
-| Editor             | [src/lib/components/YamlEditor.svelte](src/lib/components/YamlEditor.svelte) — CodeMirror 6                  |
-| Parts editor       | [src/routes/template/+page.svelte](src/routes/template/+page.svelte) — the second page; a deep link, unlinked |
-| Chrome             | `components/{Toolbar,TabBar,StatusBar}.svelte` — the buttons, the tabs, the status bar                       |
-| YAML to HTML       | [src/lib/cv/render.js](src/lib/cv/render.js)                                                                 |
-| Preview            | [src/lib/cv/PreviewFrame.svelte](src/lib/cv/PreviewFrame.svelte) — the iframe the sheet renders in           |
-| Starting text      | [src/lib/cv/default-cv.yaml](src/lib/cv/default-cv.yaml)                                                     |
-| Layouts            | [src/lib/cv/layouts/](src/lib/cv/layouts/) — the whole sheet, one file per arrangement                       |
-| Block variants     | [src/lib/cv/blocks/](src/lib/cv/blocks/) — one file per variation of one block                              |
-| The axes           | [src/lib/cv/slots.js](src/lib/cv/slots.js) — every slot, and every variant of each                          |
-| The named looks    | [src/lib/cv/compositions.js](src/lib/cv/compositions.js) — presets, as sets of axis choices                 |
-| Composing          | [src/lib/cv/compose.js](src/lib/cv/compose.js) — layout + variants → one component                          |
-| Part registry      | [src/lib/cv/parts.svelte.js](src/lib/cv/parts.svelte.js) — edits, forks, reverts                            |
-| Compiling it       | [src/lib/cv/compile-template.js](src/lib/cv/compile-template.js) — Svelte, in the browser                    |
-| Picking a variant  | `components/{StylePicker,VariantCycle,BlockPicker}.svelte` — the popover, the row, the card by the sheet     |
-| Shared state       | [src/lib/cv/state.svelte.js](src/lib/cv/state.svelte.js) — the document, files and parts both pages hold     |
-| Theme              | [src/lib/cv/presets.js](src/lib/cv/presets.js) — the palettes, and the CSS beside it                         |
-| Type               | [src/lib/cv/fonts.js](src/lib/cv/fonts.js) — the font stacks, and the CSS beside it                          |
-| Tech logos         | [src/lib/cv/tech-icons.js](src/lib/cv/tech-icons.js) — generated; see _Logos_ below                          |
-| CSS                | [src/app.css](src/app.css) — the index; see _Where the CSS lives_ below                                      |
-| Offline            | [src/service-worker.js](src/service-worker.js) — precache; manifest and icons in `static/`                   |
+| Concern            | Where                                                                                                    |
+| ------------------ | -------------------------------------------------------------------------------------------------------- |
+| Document + history | [src/lib/cv/doc.svelte.js](src/lib/cv/doc.svelte.js) — Loro doc, persistence, cross-tab merge            |
+| Editor             | [src/lib/components/YamlEditor.svelte](src/lib/components/YamlEditor.svelte) — CodeMirror 6              |
+| Chrome             | `components/{Toolbar,TabBar,StatusBar}.svelte` — the buttons, the tabs, the status bar                   |
+| YAML to HTML       | [src/lib/cv/render.js](src/lib/cv/render.js)                                                             |
+| Preview            | [src/lib/cv/PreviewFrame.svelte](src/lib/cv/PreviewFrame.svelte) — the iframe the sheet renders in       |
+| Starting text      | [src/lib/cv/default-cv.yaml](src/lib/cv/default-cv.yaml)                                                 |
+| Layouts            | [src/lib/cv/layouts/](src/lib/cv/layouts/) — the whole sheet, one file per arrangement                   |
+| Block variants     | [src/lib/cv/blocks/](src/lib/cv/blocks/) — one file per variation of one block                           |
+| The axes           | [src/lib/cv/slots.js](src/lib/cv/slots.js) — every slot, and every variant of each                       |
+| The named looks    | [src/lib/cv/compositions.js](src/lib/cv/compositions.js) — presets, as sets of axis choices              |
+| Composing          | [src/lib/cv/compose.js](src/lib/cv/compose.js) — layout + variants → one component                       |
+| Part registry      | [src/lib/cv/parts.svelte.js](src/lib/cv/parts.svelte.js) — overrides and the user's own variants         |
+| Compiling it       | [src/lib/cv/compile-template.js](src/lib/cv/compile-template.js) — Svelte, in the browser                |
+| Picking a variant  | `components/{StylePicker,VariantCycle,BlockPicker}.svelte` — the popover, the row, the card by the sheet |
+| Shared state       | [src/lib/cv/state.svelte.js](src/lib/cv/state.svelte.js) — the document, file registry and part registry |
+| Theme              | [src/lib/cv/presets.js](src/lib/cv/presets.js) — the palettes, and the CSS beside it                     |
+| Type               | [src/lib/cv/fonts.js](src/lib/cv/fonts.js) — the font stacks, and the CSS beside it                      |
+| Tech logos         | [src/lib/cv/tech-icons.js](src/lib/cv/tech-icons.js) — generated; see _Logos_ below                      |
+| CSS                | [src/app.css](src/app.css) — the index; see _Where the CSS lives_ below                                  |
+| Offline            | [src/service-worker.js](src/service-worker.js) — precache; manifest and icons in `static/`               |
 
 ### Editor and document
 
@@ -52,43 +51,15 @@ keystrokes: `LoroExtensions(doc, undefined, undoManager, cvText)` is the whole w
 CodeMirror's own `history()` is deliberately left out — the binding installs Loro's
 undo at high precedence, and two undo stacks would fight over Ctrl+Z.
 
-Syntax colours are a `HighlightStyle` whose values are CSS custom properties, so one
-style serves both themes; it lives in
-[cm-highlight.js](src/lib/components/cm-highlight.js) because both editors spend
-it, the `--cm-*` tokens it names live in
-[tokens.css](src/lib/styles/tokens.css), and the rules that spend the rest of
-them in [codemirror.css](src/lib/components/codemirror.css).
+Syntax colours are a `HighlightStyle` whose values are CSS custom properties, so
+it can serve both themes; it lives in
+[cm-highlight.js](src/lib/components/cm-highlight.js), the `--cm-*` tokens it
+names live in [tokens.css](src/lib/styles/tokens.css), and the rules that spend
+the rest of them are in [codemirror.css](src/lib/components/codemirror.css).
 
-There are two of these, one per page. The second is the parts editor — the
-same CodeMirror over `@replit/codemirror-lang-svelte`, and the plain `history()`
-the first one can't have, since nothing but the user writes to a part. One
-stylesheet themes both: [codemirror.css](src/lib/components/codemirror.css) goes
-through `:is(#cm-wrap, #tpl-cm)`, which keeps the id specificity it needs to
-outrank CodeMirror's own base theme while serving two hosts that can't share an
-id.
-
-### Two pages
-
-`/` is the CV — YAML on the left, sheet on the right. `/template` is the parts
-the sheet is composed out of, with the same CV beside it as a live preview. That
-editor was a second tab in the editor pane first, and the pane was the wrong
-place for it: it is a different job, wants the whole window, keeps an undo stack
-of its own, and belongs to the part rather than to the file that happens to be
-open.
-
-Two pages means the state can no longer be built inside one of them. The
-document, the file registry and the part registry are module-level
-singletons in [state.svelte.js](src/lib/cv/state.svelte.js), and `start()` is
-idempotent because both pages call it — whichever is entered first does the
-work. That is what makes crossing between them carry the CRDT along rather than
-re-reading it out of localStorage, and what keeps two writers off the same
-keys. Client-side navigation is what keeps module scope alive; a hard load of
-either URL simply starts over, which is also why `/template` works as a deep
-link.
-
-Nothing on the parts page writes to the document, so there is no editor bound to
-it and no history to keep — the CV over there is read-only, and what is being
-edited is stored per part rather than per file.
+The document, the file registry and the part registry are module-level
+singletons in [state.svelte.js](src/lib/cv/state.svelte.js), built once by
+`start()` on mount rather than inline in the page component.
 
 ### Layouts, blocks and presets
 
@@ -112,7 +83,7 @@ everything. So a sheet is two things now:
 
 The slots are in [slots.js](src/lib/cv/slots.js): page, header, section title,
 summary, entry, skills, stack, list, languages, certificates and density. The first variant of each is
-its *default*, and it has no file at all, because it is the snippet the layout
+its _default_, and it has no file at all, because it is the snippet the layout
 already renders. That is what makes the whole thing subtractive rather than
 constructive — choose nothing and you get the layout verbatim.
 
@@ -140,7 +111,7 @@ preset holds nothing but a set of axis values. That is deliberate: pick
 Tech and then set the stack back to a plain line, and what you keep is Tech's
 skills and lists as chips, with nothing invisible riding along. A file's `layout`
 is the preset it started from and its `variants` are what it has changed since,
-so the popover can go on saying *Tech · modified* rather than going nameless.
+so the popover can go on saying _Tech · modified_ rather than going nameless.
 
 Each is still a real `.svelte` or `.css` file that `pnpm check` compiles, so a
 broken one can't reach a release. What the type checker can't see is whether a
@@ -185,12 +156,12 @@ for someone typing.
 
 #### Picking one
 
-Three places, one control. [StylePicker](src/lib/components/StylePicker.svelte)
-lists the presets and then every axis; the parts page lists every part there is;
-and hovering the sheet floats [BlockPicker](src/lib/components/BlockPicker.svelte)
-beside it with a row per slot the thing under the pointer belongs to — hover an
-entry's stack line and you get Stack, Entry, Page and Density, innermost first,
-walked up the `data-slot` chain the layouts stamp. All three rows are the same
+Two places, one control. [StylePicker](src/lib/components/StylePicker.svelte)
+lists the presets and then every axis, and hovering the sheet floats
+[BlockPicker](src/lib/components/BlockPicker.svelte) beside it with a row per
+slot the thing under the pointer belongs to — hover an entry's stack line and
+you get Stack, Entry, Page and Density, innermost first, walked up the
+`data-slot` chain the layouts stamp. Both rows are the same
 [VariantCycle](src/lib/components/VariantCycle.svelte), because choosing a
 variant is the same act wherever it is done.
 
@@ -222,30 +193,20 @@ the app's own chrome, or a click on the sheet that isn't a block at all, each le
 it go. The click still does what it always did as well: the editor scrolls to the
 line behind whatever was clicked.
 
-#### Editing one
+There used to be a `/template` deep link here for editing a part's source
+directly — a CodeMirror over the part, the CV beside it as a live preview, and
+Duplicate/Rename/Revert/Delete to manage overrides. It has been removed; the
+rows beside the sheet and in the Style popover only ever chose a variant, so
+nothing else in the app changes. What remains in
+[parts.svelte.js](src/lib/cv/parts.svelte.js) is the read side: an override of
+a shipped part, or a variant of the user's own, left over from before removal
+still folds into `slots` and renders normally — a part id that stops resolving
+just falls back to its slot's default, the way it always has. There is no
+longer a way to create, rename or revert one from the app.
 
-`/template` is the parts page, and **nothing in the app links to it**: it is a
-development tool for now, reachable by typing the URL and no other way. The rows
-beside the sheet and in the Style popover choose a variant; they no longer offer
-to open one.
-
-It is every layout and every variant down the left, one of them open in a
-CodeMirror, and the CV beside it. The preview composes the
-file's own choices with one substitution — the slot of the part being edited is
-set to that part — so opening a variant the file doesn't use still shows you your
-edit. Choosing a part to read is not the same act as choosing it for the CV,
-which is what the Use button is for.
-
-Editing a shipped part stores an *override* under its own id, which is what lets
-Revert be a delete rather than a copy; Duplicate is how a variant of your own
-starts, from a copy, and it joins its slot's list everywhere — including the
-arrows beside the sheet. Parts are shared by every file rather than owned by one,
-so deleting one can't break a CV: the id stops resolving and the slot falls back
-to its default.
-
-Whole templates written before any of this split existed are folded in on first
-load as layouts of the user's own, since a whole template *is* a layout, and the
-files that named one are pointed at it.
+Whole templates written before the layout/variant split existed are folded in
+on first load as layouts of the user's own, since a whole template _is_ a
+layout, and the files that named one are pointed at it.
 
 The theme is still pure data — a ramp of eight colours, declared in
 [palettes.css](src/lib/cv/palettes.css) and spent by one block in
@@ -270,7 +231,7 @@ didn't land in CodeMirror is handled by the page.
 
 Two stores for one fact, and deliberately so: the registry knows the style of
 every file including the ones that aren't open, and the document knows the style
-of *this* one at every point in its history. Neither can do the other's job, so
+of _this_ one at every point in its history. Neither can do the other's job, so
 while a file is open the document is authoritative and writes through — an undo,
 a restore, a version being viewed or a merge from another tab all land in the
 registry through the same callback.
@@ -278,7 +239,7 @@ registry through the same callback.
 The map holds only what has changed since the document was adopted; everything
 else falls through to the registry's copy as it stood then, which is what makes
 undoing the first change of a session land on what was there before it rather
-than on nothing. Two details follow from what a change *is*: the commit carries a
+than on nothing. Two details follow from what a change _is_: the commit carries a
 `style` kind, so the history panel can mark it, and the one style that is typed
 rather than chosen — custom CSS — waits out a debounce before it is recorded,
 because Loro never merges a commit that carries a message and the alternative is
@@ -308,16 +269,17 @@ first sheet compiles offline like everything else here.
 
 Two things follow that are worth being plain about. A compile error keeps the
 last sheet that worked on screen — the same bargain as a YAML parse error — and
-reports itself in the strip under the parts editor and in the banner over either
-preview, traced back through compose.js's line map to the part it came from. On a
-fresh load there _is_ no last good one, so an edited part that doesn't compile
-leaves the editor page with nothing to render: that banner carries a link to the
-page where it can be fixed. And a part is the user's own code running in the
-app's realm rather than the frame's, because `mount()` takes a component and a
-component can only come from the realm that compiled it. That is a real
-difference from the file's custom CSS, which the frame contains completely; the
-alternative is a second Svelte runtime inside the frame, and two runtimes cannot
-share one component.
+reports itself in the banner over the preview, traced back through compose.js's
+line map to the part it came from. On a fresh load there _is_ no last good one,
+so a broken part — a leftover override or a migrated template — leaves the
+editor page with nothing to render, and there is no longer a page in the app to
+fix it from; clearing the `cv-editor:parts:v1` entry in `localStorage` is what
+recovers it. And a part is the user's own code running in the app's realm
+rather than the frame's, because `mount()` takes a component and a component
+can only come from the realm that compiled it. That is a real difference from
+the file's custom CSS, which the frame contains completely; the alternative is
+a second Svelte runtime inside the frame, and two runtimes cannot share one
+component.
 
 The sheet does not follow the app into dark mode. It is paper: it renders light
 on screen, prints exactly what it showed, and the app's dark toggle dresses only
@@ -357,17 +319,17 @@ A document is a header and a list of sections, and a section's `type` is what
 decides how it renders. There are nine, all of them understood by every
 layout, so switching preset can never lose one:
 
-| `type`           | Holds                                                                    |
-| ---------------- | ------------------------------------------------------------------------ |
-| `summary`        | `paragraphs`                                                             |
-| `skills`         | `blocks`, each a `title` and `rows` of `{ tier?, text }`                 |
-| `experience`     | `items` of `{ title, company, dates, sub, bullets, stack }`              |
-| `education`      | `items` of `{ title, school, dates, sub?, bullets? }`                    |
-| `projects`       | `items` of `{ title, dates?, sub?, bullets?, stack? }`                   |
-| `list`           | `items` of plain strings — `inline: true` sets them as pills on one line |
-| `languages`      | `items` of `{ name, level?, note?, rating? }`                            |
+| `type`           | Holds                                                                           |
+| ---------------- | ------------------------------------------------------------------------------- |
+| `summary`        | `paragraphs`                                                                    |
+| `skills`         | `blocks`, each a `title` and `rows` of `{ tier?, text }`                        |
+| `experience`     | `items` of `{ title, company, dates, sub, bullets, stack }`                     |
+| `education`      | `items` of `{ title, school, dates, sub?, bullets? }`                           |
+| `projects`       | `items` of `{ title, dates?, sub?, bullets?, stack? }`                          |
+| `list`           | `items` of plain strings — `inline: true` sets them as pills on one line        |
+| `languages`      | `items` of `{ name, level?, note?, rating? }`                                   |
 | `certifications` | `items` of `{ name, issuer?, dates?, note? }` — certificates, licences, permits |
-| `oss`            | `projects` of `{ name, stars, desc }`, with an optional table header     |
+| `oss`            | `projects` of `{ name, stars, desc }`, with an optional table header            |
 
 The two newest are the two a `list` section used to have to stand in for, and
 both are there because the shape was doing work the strings couldn't. A
@@ -561,9 +523,9 @@ automatically in a production build and leaves it out of `vite dev`, so developm
 never serves stale bytes.
 
 The heaviest single thing in that precache is Svelte's compiler, which the
-template editor needs and nothing else does. It is a lazy chunk, so a session
-that never opens the Template tab never loads it — but it is precached all the
-same, because "compiles templates only when online" would be a strange kind of
+editor page needs to compile the sheet at all. It is a lazy chunk, loaded the
+first time a composition needs compiling — but it is precached all the same,
+because "compiles the sheet only when online" would be a strange kind of
 offline editor.
 
 The one asset that makes this sharper than a usual PWA is Loro's `.wasm`, fetched
@@ -592,8 +554,7 @@ is not much of one.
 All bundled locally — the only WASM/asset URL is same-origin, and the only other
 URLs are the `blob:` ones a compiled template is imported through.
 
-`svelte/compiler` is a runtime dependency here rather than a build-time one, and
-`@replit/codemirror-lang-svelte` is what the parts editor highlights with.
+`svelte/compiler` is a runtime dependency here rather than a build-time one.
 
 `loro-crdt` ships several builds. `loro-codemirror` imports the bare specifier, which
 resolves to a build that loads its WASM with a synchronous main-thread XHR, and would

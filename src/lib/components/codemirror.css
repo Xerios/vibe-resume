@@ -1,30 +1,24 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   CodeMirror 6 theme, for both editors — YamlEditor.svelte and
-   TemplateEditor.svelte, which import it.
+   CodeMirror 6 theme, for YamlEditor.svelte, which imports it.
 
-   A plain stylesheet rather than either component's <style> block: CodeMirror
+   A plain stylesheet rather than the component's <style> block: CodeMirror
    builds its own DOM outside the Svelte template, so scoped selectors would
    never reach a single one of these elements.
 
-   Every rule goes through the two hosts' ids on purpose. CodeMirror's base
-   theme scopes its palette under a generated class on the editor root —
+   Every rule goes through the host's id on purpose. CodeMirror's base theme
+   scopes its palette under a generated class on the editor root —
    `&light .cm-gutters` ships as `.cm-lightXYZ .cm-gutters` — so a bare
    `.cm-gutters` here loses the cascade on specificity however late the
    stylesheet loads, and the gutter, active line, caret and selection keep their
    stock light colours in both themes. An id outranks those two-class selectors
-   for good, and `:is()` takes the specificity of its strongest argument — which
-   is how one list serves two editors without either having to claim the same
-   id. The layout rules ride along with the colours: `height: 100%` on the
+   for good. The layout rules ride along with the colours: `height: 100%` on the
    editor and `overflow: auto` on the scroller are what make a pane-sized editor
    scroll at all.
-
-   The lint rules at the foot only ever match the YAML editor, the only one with
-   a linter; they cost the other nothing.
 
    Colours come from the --cm-* tokens in src/lib/styles/tokens.css.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-:is(#cm-wrap, #tpl-cm) .cm-editor {
+#cm-wrap .cm-editor {
   height: 100%;
   background: var(--editor-bg);
   color: var(--ink);
@@ -33,11 +27,11 @@
   transition: var(--theme-fade);
 }
 
-:is(#cm-wrap, #tpl-cm) .cm-editor.cm-focused {
+#cm-wrap .cm-editor.cm-focused {
   outline: none;
 }
 
-:is(#cm-wrap, #tpl-cm) .cm-scroller {
+#cm-wrap .cm-scroller {
   font-family: inherit;
   line-height: 1.6;
   padding-bottom: 60px;
@@ -45,58 +39,58 @@
   /* required for a fixed-height editor to scroll */
 }
 
-:is(#cm-wrap, #tpl-cm) .cm-content {
+#cm-wrap .cm-content {
   caret-color: var(--accent);
 }
 
-:is(#cm-wrap, #tpl-cm) .cm-gutters {
+#cm-wrap .cm-gutters {
   transition: var(--theme-fade);
   background: var(--editor-chrome);
   border-right: 1px solid var(--line);
   color: var(--faint);
 }
 
-:is(#cm-wrap, #tpl-cm) .cm-lineNumbers .cm-gutterElement {
+#cm-wrap .cm-lineNumbers .cm-gutterElement {
   padding: 0 6px 0 12px;
   min-width: 28px;
 }
 
-:is(#cm-wrap, #tpl-cm) .cm-activeLine {
+#cm-wrap .cm-activeLine {
   background: var(--cm-active);
 }
 
-:is(#cm-wrap, #tpl-cm) .cm-activeLineGutter {
+#cm-wrap .cm-activeLineGutter {
   background: var(--cm-active);
   color: var(--accent-deep);
 }
 
-:is(#cm-wrap, #tpl-cm) .cm-cursor,
-:is(#cm-wrap, #tpl-cm) .cm-dropCursor {
+#cm-wrap .cm-cursor,
+#cm-wrap .cm-dropCursor {
   border-left-color: var(--accent);
   border-left-width: 2px;
 }
 
-:is(#cm-wrap, #tpl-cm) .cm-selectionBackground {
+#cm-wrap .cm-selectionBackground {
   background: var(--cm-selection);
 }
 
 /* The focused variant of this one is five classes deep in the base theme. */
-:is(#cm-wrap, #tpl-cm) .cm-editor.cm-focused .cm-selectionBackground {
+#cm-wrap .cm-editor.cm-focused .cm-selectionBackground {
   background: var(--cm-selection-focus);
 }
 
 /* The editor is read-only while a past version is on screen. */
-:is(#cm-wrap, #tpl-cm) .cm-editor:not(.cm-focused) .cm-activeLine {
+#cm-wrap .cm-editor:not(.cm-focused) .cm-activeLine {
   background: transparent;
 }
 
 /* Highlights what a previewed version changed, relative to just before it. */
-:is(#cm-wrap, #tpl-cm) .cm-diff-added {
+#cm-wrap .cm-diff-added {
   background: var(--cm-diff-add-bg);
   border-radius: 2px;
 }
 
-:is(#cm-wrap, #tpl-cm) .cm-diff-removed {
+#cm-wrap .cm-diff-removed {
   background: var(--cm-diff-del-bg);
   color: var(--cm-diff-del-text);
   text-decoration: line-through;
@@ -107,19 +101,19 @@
 /* The line behind whatever the pointer is on in the preview. Unlike
    .cm-activeLine this shows while the editor is unfocused — that's the whole
    point of it, since the pointer is over on the other pane. */
-:is(#cm-wrap, #tpl-cm) .cm-peek-line {
+#cm-wrap .cm-peek-line {
   background: var(--cm-peek);
   box-shadow: inset 2px 0 0 var(--accent);
 }
 
 /* Every other run of whatever's selected — renaming a key shows its twins. */
-:is(#cm-wrap, #tpl-cm) .cm-selectionMatch {
+#cm-wrap .cm-selectionMatch {
   background: var(--cm-match);
   border-radius: 2px;
 }
 
 /* ── Folding ──────────────────────────────────── */
-:is(#cm-wrap, #tpl-cm) .cm-foldGutter .cm-gutterElement {
+#cm-wrap .cm-foldGutter .cm-gutterElement {
   padding: 0 5px 0 1px;
   color: var(--faint);
   opacity: 0.5;
@@ -128,12 +122,12 @@
     color 0.12s ease;
 }
 
-:is(#cm-wrap, #tpl-cm) .cm-foldGutter .cm-gutterElement:hover {
+#cm-wrap .cm-foldGutter .cm-gutterElement:hover {
   opacity: 1;
   color: var(--accent-deep);
 }
 
-:is(#cm-wrap, #tpl-cm) .cm-foldPlaceholder {
+#cm-wrap .cm-foldPlaceholder {
   background: var(--editor-chrome);
   border: 1px solid var(--line);
   color: var(--faint);
@@ -145,7 +139,7 @@
 /* ── YAML errors ──────────────────────────────── */
 /* The stock underline is a fixed-colour SVG tile; a wavy text-decoration takes
    the theme's red instead. */
-:is(#cm-wrap, #tpl-cm) .cm-lintRange-error {
+#cm-wrap .cm-lintRange-error {
   background: none;
   text-decoration: underline wavy var(--cm-error);
   text-decoration-skip-ink: none;
@@ -154,27 +148,27 @@
 
 /* An error with nothing left on the line to underline — an unterminated block,
    say — renders as a caret at that spot rather than a range. */
-:is(#cm-wrap, #tpl-cm) .cm-lintPoint::after {
+#cm-wrap .cm-lintPoint::after {
   border-bottom-color: var(--cm-error);
 }
 
 /* Comes after .cm-activeLine and .cm-peek-line on purpose: a line that doesn't
    parse outranks both of those tints while it's broken. */
-:is(#cm-wrap, #tpl-cm) .cm-error-line {
+#cm-wrap .cm-error-line {
   background: var(--cm-error-bg);
   box-shadow: inset 2px 0 0 var(--cm-error);
 }
 
-:is(#cm-wrap, #tpl-cm) .cm-gutter-lint {
+#cm-wrap .cm-gutter-lint {
   width: 14px;
 }
 
-:is(#cm-wrap, #tpl-cm) .cm-gutter-lint .cm-gutterElement {
+#cm-wrap .cm-gutter-lint .cm-gutterElement {
   padding: 0;
 }
 
 /* Stock markers are SVG images set through `content`, in colours of their own. */
-:is(#cm-wrap, #tpl-cm) .cm-lint-marker {
+#cm-wrap .cm-lint-marker {
   content: normal;
   display: grid;
   place-items: center;
@@ -182,7 +176,7 @@
   height: 100%;
 }
 
-:is(#cm-wrap, #tpl-cm) .cm-lint-marker-error::after {
+#cm-wrap .cm-lint-marker-error::after {
   content: '';
   width: 6px;
   height: 6px;
@@ -190,7 +184,7 @@
   background: var(--cm-error);
 }
 
-:is(#cm-wrap, #tpl-cm) .cm-tooltip.cm-tooltip-lint {
+#cm-wrap .cm-tooltip.cm-tooltip-lint {
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 4px;
@@ -198,7 +192,7 @@
   overflow: hidden;
 }
 
-:is(#cm-wrap, #tpl-cm) .cm-diagnostic {
+#cm-wrap .cm-diagnostic {
   font-family: var(--mono);
   font-size: 11px;
   line-height: 1.5;
@@ -208,10 +202,10 @@
   max-width: 320px;
 }
 
-:is(#cm-wrap, #tpl-cm) .cm-diagnostic-error {
+#cm-wrap .cm-diagnostic-error {
   border-left: 3px solid var(--cm-error);
 }
 
-:is(#cm-wrap, #tpl-cm) .cm-diagnosticSource {
+#cm-wrap .cm-diagnosticSource {
   color: var(--faint);
 }

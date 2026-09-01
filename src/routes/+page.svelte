@@ -139,7 +139,7 @@
 
   /* The sheet's component, kept compiled. The id is the composition rather than
 	   one template's: changing a variant is a choice and shouldn't sit out the
-	   debounce meant for someone typing a part's source on the other page. */
+	   debounce meant for keystrokes. */
   const tpl = liveTemplate(() => ({
     id: Object.entries(choices)
       .map(([slot, variant]) => `${slot}:${variant}`)
@@ -1174,14 +1174,7 @@
 </svelte:head>
 
 <div id="app">
-  <Toolbar
-    trashCount={files.trashed.length}
-    {trashOpen}
-    onToggleTrash={toggleTrash}
-    onExport={exportPDF}
-    canInstall={!!installPrompt}
-    onInstall={installApp}
-  />
+  <Toolbar trashCount={files.trashed.length} {trashOpen} onToggleTrash={toggleTrash} onExport={exportPDF} canInstall={!!installPrompt} onInstall={installApp} />
 
   <TabBar
     {files}
@@ -1249,9 +1242,7 @@
           <button class="t-btn" onclick={() => cv.viewLatest()}>Back to latest</button>
         </div>
       {:else if bannerError}
-        <!-- A part that doesn't compile leaves nothing to render at all. Where
-				     it is fixed is /template, which nothing in the app links to — it is
-				     a development tool, reachable as a deep link and no other way. -->
+        <!-- A part that doesn't compile leaves nothing to render at all. -->
         <div id="error-banner">
           <span>⚠ {bannerError}</span>
         </div>
