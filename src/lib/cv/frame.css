@@ -18,48 +18,45 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-	color-scheme: light;
+  color-scheme: light;
 
-	/* Re-pointed on #cv-root by presets.css, from the palette the file picked.
+  /* Re-pointed on #cv-root by presets.css, from the palette the file picked.
 	   The values here are what the frame outside the sheet draws with. */
-	--ink: #15211f;
-	--muted: #5f6f6c;
-	--faint: #8a9794;
-	--accent: #157c75;
-	--accent-deep: #0d4f4a;
-	--accent-wash: #eaf4f2;
-	--line: #dbe6e3;
-	--paper: #fff;
+  --ink: #15211f;
+  --muted: #5f6f6c;
+  --faint: #8a9794;
+  --accent: #157c75;
+  --accent-deep: #0d4f4a;
+  --accent-wash: #eaf4f2;
+  --line: #dbe6e3;
+  --paper: #fff;
 
-	/* Not part of any CV palette, and stated once rather than per ramp: the
+  /* Not part of any CV palette, and stated once rather than per ramp: the
 	   frame is always light, whatever the app around it is set to. */
-	--danger: #b91c1c;
-	--prompt: #9a5b00;
-	--prompt-bg: #fbf2e2;
-	--bg: #eef1f0;
-	--scroll-thumb: color-mix(in srgb, var(--muted) 36%, transparent);
-	--scroll-thumb-hover: color-mix(in srgb, var(--accent) 62%, transparent);
+  --danger: #b91c1c;
+  --prompt: #9a5b00;
+  --prompt-bg: #fbf2e2;
+  --bg: #eef1f0;
+  --scroll-thumb: color-mix(in srgb, var(--muted) 36%, transparent);
+  --scroll-thumb-hover: color-mix(in srgb, var(--accent) 62%, transparent);
 
-	--mono: 'SFMono-Regular', ui-monospace, 'JetBrains Mono', 'Menlo', monospace;
-	--sans: 'Inter', 'Segoe UI', -apple-system, system-ui, Roboto, Helvetica, Arial, sans-serif;
+  --mono: 'SFMono-Regular', ui-monospace, 'JetBrains Mono', 'Menlo', monospace;
+  --sans: 'Inter', 'Segoe UI', -apple-system, system-ui, Roboto, Helvetica, Arial, sans-serif;
 
-	--theme-fade:
-		background-color 0.22s ease,
-		color 0.22s ease,
-		border-color 0.22s ease;
+  --theme-fade: background-color 0.22s ease, color 0.22s ease, border-color 0.22s ease;
 }
 
 /* ── Document ─────────────────────────────────── */
 * {
-	box-sizing: border-box;
+  box-sizing: border-box;
 }
 
 html,
 body {
-	margin: 0;
-	padding: 0;
-	background: var(--bg);
-	transition: var(--theme-fade);
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  transition: var(--theme-fade);
 }
 
 /* The sheet's font stack is spent here rather than on `body`, so that pointing
@@ -67,11 +64,11 @@ body {
    actually changes the type. Set on `body` it would resolve against the ramp
    an ancestor saw, and nothing would move. */
 #cv-root {
-	font-family: var(--sans);
-	-webkit-font-smoothing: antialiased;
-	/* A block formatting context, so the sheet's top margin stays inside the
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  /* A block formatting context, so the sheet's top margin stays inside the
 	   frame instead of collapsing through `body` and out of the document. */
-	display: flow-root;
+  display: flow-root;
 }
 
 /* ── Scrollbars ───────────────────────────────── */
@@ -80,30 +77,30 @@ body {
    only the pseudos; the transparent track is what makes the bar read as
    sitting on the sheet rather than beside it. */
 * {
-	scrollbar-width: thin;
-	scrollbar-color: var(--scroll-thumb) transparent;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) transparent;
 }
 
 ::-webkit-scrollbar {
-	width: 10px;
-	height: 10px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track,
 ::-webkit-scrollbar-corner {
-	background: transparent;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-	background: var(--scroll-thumb);
-	background-clip: padding-box;
-	border: 2px solid transparent;
-	border-radius: 8px;
+  background: var(--scroll-thumb);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+  border-radius: 8px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-	background: var(--scroll-thumb-hover);
-	background-clip: padding-box;
+  background: var(--scroll-thumb-hover);
+  background-clip: padding-box;
 }
 
 /* ── Print / Export PDF ───────────────────────────
@@ -111,13 +108,13 @@ body {
    here. How the sheet paginates inside it is cv.css's job, and which ramp it
    falls back to is presets.css's. */
 @page {
-	size: A4;
-	margin: 12mm 13mm;
+  size: A4;
+  margin: 12mm 13mm;
 }
 
 @media print {
-	html,
-	body {
-		background: #fff !important;
-	}
+  html,
+  body {
+    background: #fff !important;
+  }
 }

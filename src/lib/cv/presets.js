@@ -21,16 +21,16 @@
 
 /** @type {Theme[]} */
 export const THEMES = [
-	{ id: 'teal', name: 'Teal' },
-	{ id: 'slate', name: 'Slate' },
-	{ id: 'indigo', name: 'Indigo' },
-	{ id: 'plum', name: 'Plum' },
-	{ id: 'ember', name: 'Ember' },
-	{ id: 'sepia', name: 'Sepia' },
-	{ id: 'mono', name: 'Mono' }
-];
+  { id: 'teal', name: 'Teal' },
+  { id: 'slate', name: 'Slate' },
+  { id: 'indigo', name: 'Indigo' },
+  { id: 'plum', name: 'Plum' },
+  { id: 'ember', name: 'Ember' },
+  { id: 'sepia', name: 'Sepia' },
+  { id: 'mono', name: 'Mono' },
+]
 
-export const DEFAULT_THEME = 'teal';
+export const DEFAULT_THEME = 'teal'
 
 /**
  * Falls back rather than trusting what came out of storage — a file saved
@@ -38,5 +38,5 @@ export const DEFAULT_THEME = 'teal';
  * @param {string | undefined | null} id
  */
 export function resolveTheme(id) {
-	return THEMES.some((t) => t.id === id) ? /** @type {string} */ (id) : DEFAULT_THEME;
+  return THEMES.some((t) => t.id === id) ? /** @type {string} */ (id) : DEFAULT_THEME
 }

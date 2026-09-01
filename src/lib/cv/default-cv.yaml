@@ -12,9 +12,9 @@ header:
   contact:
     - Springfield, USA
     - '+1 555 010 1234'
-    - "[github.com/example](https://github.com/example)"
-    - "[linkedin.com/in/example](https://linkedin.com/in/example)"
-    - "[example.dev](https://example.dev)"
+    - '[github.com/example](https://github.com/example)'
+    - '[linkedin.com/in/example](https://linkedin.com/in/example)'
+    - '[example.dev](https://example.dev)'
 sections:
   - type: summary
     title: Summary
@@ -93,9 +93,9 @@ sections:
     title: Open Source
     hasHeader: false
     projects:
-      - name: "[example-toolkit](https://github.com/github/example-toolkit)"
+      - name: '[example-toolkit](https://github.com/github/example-toolkit)'
         stars: ★ 120
         desc: Utility library for common frontend patterns
-      - name: "[cli-helper](https://github.com/github/cli-helper)"
+      - name: '[cli-helper](https://github.com/github/cli-helper)'
         stars: ★ 45
         desc: Command-line tool for scaffolding projects

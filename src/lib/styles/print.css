@@ -13,48 +13,48 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @media print {
-	@page {
-		size: A4;
-		margin: 12mm 13mm;
-	}
+  @page {
+    size: A4;
+    margin: 12mm 13mm;
+  }
 
-	/* On screen the app is a fixed-height, non-scrolling shell; on paper it is
+  /* On screen the app is a fixed-height, non-scrolling shell; on paper it is
 	   one long document again. */
-	html,
-	body {
-		height: auto !important;
-		overflow: visible !important;
-		background: #fff !important;
-	}
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
 
-	#app {
-		height: auto !important;
-	}
+  #app {
+    height: auto !important;
+  }
 
-	#toolbar,
-	#tabbar,
-	#status-bar,
-	#trash-panel,
-	#editor-pane,
-	#divider,
-	#history-pane,
-	#error-banner,
-	#detached-banner,
-	#toast {
-		display: none !important;
-	}
+  #toolbar,
+  #tabbar,
+  #status-bar,
+  #trash-panel,
+  #editor-pane,
+  #divider,
+  #history-pane,
+  #error-banner,
+  #detached-banner,
+  #toast {
+    display: none !important;
+  }
 
-	#split {
-		display: block !important;
-		height: auto !important;
-		overflow: visible !important;
-	}
+  #split {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
 
-	#preview-pane {
-		display: block !important;
-		width: 100% !important;
-		height: auto !important;
-		overflow: visible !important;
-		background: #fff !important;
-	}
+  #preview-pane {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
 }

@@ -24,13 +24,13 @@
    undo — what is on screen is already what goes on paper. */
 
 #cv-root {
-	--accent: var(--t-accent-l, #157c75);
-	--accent-deep: var(--t-deep-l, #0d4f4a);
-	--accent-wash: var(--t-wash-l, #eaf4f2);
-	--line: var(--t-line-l, #dbe6e3);
-	--paper: var(--t-paper-l, #ffffff);
-	--ink: var(--t-ink-l, #15211f);
-	--muted: var(--t-muted-l, #5f6f6c);
-	--faint: var(--t-faint-l, #8a9794);
-	color: var(--ink);
+  --accent: var(--t-accent-l, #157c75);
+  --accent-deep: var(--t-deep-l, #0d4f4a);
+  --accent-wash: var(--t-wash-l, #eaf4f2);
+  --line: var(--t-line-l, #dbe6e3);
+  --paper: var(--t-paper-l, #ffffff);
+  --ink: var(--t-ink-l, #15211f);
+  --muted: var(--t-muted-l, #5f6f6c);
+  --faint: var(--t-faint-l, #8a9794);
+  color: var(--ink);
 }

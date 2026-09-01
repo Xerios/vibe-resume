@@ -5,31 +5,31 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 * {
-	box-sizing: border-box;
+  box-sizing: border-box;
 }
 
 html,
 body {
-	margin: 0;
-	padding: 0;
-	height: 100%;
-	overflow: hidden;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
-	font-family: var(--sans);
-	color: var(--ink);
-	background: var(--bg);
-	-webkit-font-smoothing: antialiased;
-	transition: var(--theme-fade);
+  font-family: var(--sans);
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  transition: var(--theme-fade);
 }
 
 /* The access-key letter every control underlines — see access-keys.js for the
    chord that fires it. Document-level because three different bars draw one,
    and no one of them owns the treatment. */
 u {
-	text-decoration-thickness: 1px;
-	text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
 }
 
 /* ── Scrollbars ───────────────────────────────── */
@@ -41,44 +41,44 @@ u {
    *on* the pane it scrolls — editor, sheet, history list — instead of cutting
    a strip of some third colour down the side of it. */
 * {
-	scrollbar-width: thin;
-	scrollbar-color: var(--scroll-thumb) transparent;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) transparent;
 }
 
 ::-webkit-scrollbar {
-	width: 10px;
-	height: 10px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track,
 ::-webkit-scrollbar-corner {
-	background: transparent;
+  background: transparent;
 }
 
 /* The transparent border is the inset: padding-box clipping keeps the fill
    inside it, which is what makes a 10px-wide track carry a 6px thumb. */
 ::-webkit-scrollbar-thumb {
-	background: var(--scroll-thumb);
-	background-clip: padding-box;
-	border: 2px solid transparent;
-	border-radius: 8px;
+  background: var(--scroll-thumb);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+  border-radius: 8px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-	background: var(--scroll-thumb-hover);
-	background-clip: padding-box;
+  background: var(--scroll-thumb-hover);
+  background-clip: padding-box;
 }
 
 #app {
-	display: flex;
-	flex-direction: column;
-	height: 100vh;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
 }
 
 /* Drag-to-resize is a whole-document mode, not the divider's own: the cursor
    has to hold while the pointer travels across other panes. The pane that
    must stop answering the pointer opts out in +page.svelte. */
 body.resizing {
-	cursor: col-resize !important;
-	user-select: none;
+  cursor: col-resize !important;
+  user-select: none;
 }

@@ -15,11 +15,11 @@
  * templates.svelte.js, which is what the rest of the app talks to.
  */
 
-import centeredSource from './templates/centered.svelte?raw';
-import classicSource from './templates/classic.svelte?raw';
-import compactSource from './templates/compact.svelte?raw';
-import sidebarSource from './templates/sidebar.svelte?raw';
-import timelineSource from './templates/timeline.svelte?raw';
+import centeredSource from './templates/centered.svelte?raw'
+import classicSource from './templates/classic.svelte?raw'
+import compactSource from './templates/compact.svelte?raw'
+import sidebarSource from './templates/sidebar.svelte?raw'
+import timelineSource from './templates/timeline.svelte?raw'
 
 /**
  * @typedef {object} BuiltinTemplate
@@ -31,41 +31,41 @@ import timelineSource from './templates/timeline.svelte?raw';
 
 /** @type {BuiltinTemplate[]} */
 export const BUILTIN_TEMPLATES = [
-	{
-		id: 'classic',
-		name: 'Classic',
-		hint: 'One column, a rule trailing every heading',
-		source: classicSource
-	},
-	{
-		id: 'compact',
-		name: 'Compact',
-		hint: 'Tighter type and three skill columns — fits more on a page',
-		source: compactSource
-	},
-	{
-		id: 'centered',
-		name: 'Centered',
-		hint: 'Header and section titles centred',
-		source: centeredSource
-	},
-	{
-		id: 'sidebar',
-		name: 'Sidebar',
-		hint: 'Skills in a left rail beside everything else',
-		source: sidebarSource
-	},
-	{
-		id: 'timeline',
-		name: 'Timeline',
-		hint: 'Experience on a dated vertical rail',
-		source: timelineSource
-	}
-];
+  {
+    id: 'classic',
+    name: 'Classic',
+    hint: 'One column, a rule trailing every heading',
+    source: classicSource,
+  },
+  {
+    id: 'compact',
+    name: 'Compact',
+    hint: 'Tighter type and three skill columns — fits more on a page',
+    source: compactSource,
+  },
+  {
+    id: 'centered',
+    name: 'Centered',
+    hint: 'Header and section titles centred',
+    source: centeredSource,
+  },
+  {
+    id: 'sidebar',
+    name: 'Sidebar',
+    hint: 'Skills in a left rail beside everything else',
+    source: sidebarSource,
+  },
+  {
+    id: 'timeline',
+    name: 'Timeline',
+    hint: 'Experience on a dated vertical rail',
+    source: timelineSource,
+  },
+]
 
-export const DEFAULT_TEMPLATE = 'timeline';
+export const DEFAULT_TEMPLATE = 'timeline'
 
 /** @param {string} id */
 export function builtin(id) {
-	return BUILTIN_TEMPLATES.find((t) => t.id === id) ?? null;
+  return BUILTIN_TEMPLATES.find((t) => t.id === id) ?? null
 }

@@ -13,7 +13,7 @@
  * depends on.
  */
 
-import { marked } from 'marked';
+import { marked } from 'marked'
 
 /**
  * Inline Markdown → HTML. Links get target/rel, which marked won't add itself.
@@ -22,9 +22,9 @@ import { marked } from 'marked';
  * @param {unknown} text
  */
 export function md(text) {
-	if (!text) return '';
-	const html = marked.parseInline(String(text).trim());
-	return String(html).replace(/<a href=/g, '<a target="_blank" rel="noopener" href=');
+  if (!text) return ''
+  const html = marked.parseInline(String(text).trim())
+  return String(html).replace(/<a href=/g, '<a target="_blank" rel="noopener" href=')
 }
 
 /**
@@ -34,7 +34,7 @@ export function md(text) {
  * @param {unknown} v
  * @returns {any[]}
  */
-export const list = (v) => (Array.isArray(v) ? v : []);
+export const list = (v) => (Array.isArray(v) ? v : [])
 
 /**
  * The document's sections, each paired with its path into the YAML.
@@ -50,7 +50,7 @@ export const list = (v) => (Array.isArray(v) ? v : []);
  * @returns {{ sec: any, path: string }[]}
  */
 export function sections(cv) {
-	return list(cv?.sections)
-		.map((sec, i) => ({ sec, path: `sections.${i}` }))
-		.filter((e) => e.sec && typeof e.sec === 'object');
+  return list(cv?.sections)
+    .map((sec, i) => ({ sec, path: `sections.${i}` }))
+    .filter((e) => e.sec && typeof e.sec === 'object')
 }

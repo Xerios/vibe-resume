@@ -27,31 +27,31 @@
  * cannot share one component.
  */
 
-import * as cvApi from '@cv';
-import * as marked from 'marked';
-import * as svelte from 'svelte';
+import * as cvApi from '@cv'
+import * as marked from 'marked'
+import * as svelte from 'svelte'
 
 /** Where the shim modules read their exports back out of. */
-const REGISTRY = '__cvTemplateModules';
+const REGISTRY = '__cvTemplateModules'
 
 /** What a template may import. Anything else is a compile error with a list. */
 const ALLOWED = [
-	'@cv',
-	'svelte',
-	'marked',
-	'svelte/internal/client',
-	// Emitted by the compiler itself; it only registers a version, so an empty
-	// module satisfies it and saves pulling the real one into the bundle.
-	'svelte/internal/disclose-version'
-];
+  '@cv',
+  'svelte',
+  'marked',
+  'svelte/internal/client',
+  // Emitted by the compiler itself; it only registers a version, so an empty
+  // module satisfies it and saves pulling the real one into the bundle.
+  'svelte/internal/disclose-version',
+]
 
 /** specifier → blob URL of its shim. Built once and kept: the URLs are stable. */
-const shims = new Map();
+const shims = new Map()
 
 /** @type {Promise<Record<string, any>> | null} */
-let modulesPromise = null;
+let modulesPromise = null
 /** @type {Promise<typeof import('svelte/compiler')> | null} */
-let compilerPromise = null;
+let compilerPromise = null
 
 /**
  * The real modules, behind the specifiers a template names. `svelte/internal/client`
@@ -59,19 +59,19 @@ let compilerPromise = null;
  * compiled template — and by then the compiler has been fetched too.
  */
 function modules() {
-	modulesPromise ??= (async () => ({
-		'@cv': cvApi,
-		svelte,
-		marked,
-		'svelte/internal/client': await import('svelte/internal/client'),
-		'svelte/internal/disclose-version': null
-	}))();
-	return modulesPromise;
+  modulesPromise ??= (async () => ({
+    '@cv': cvApi,
+    svelte,
+    marked,
+    'svelte/internal/client': await import('svelte/internal/client'),
+    'svelte/internal/disclose-version': null,
+  }))()
+  return modulesPromise
 }
 
 function compiler() {
-	compilerPromise ??= import('svelte/compiler');
-	return compilerPromise;
+  compilerPromise ??= import('svelte/compiler')
+  return compilerPromise
 }
 
 /**
@@ -87,35 +87,32 @@ function compiler() {
  * @throws {Error & { line?: number }} on a compile error, with the line if it has one
  */
 export async function compileTemplate(source) {
-	const { compile } = await compiler();
+  const { compile } = await compiler()
 
-	let result;
-	try {
-		result = compile(source, {
-			name: 'Template',
-			filename: 'Template.svelte',
-			generate: 'client',
-			css: 'external',
-			runes: true,
-			dev: false
-		});
-	} catch (e) {
-		throw asTemplateError(e);
-	}
+  let result
+  try {
+    result = compile(source, {
+      name: 'Template',
+      filename: 'Template.svelte',
+      generate: 'client',
+      css: 'external',
+      runes: true,
+      dev: false,
+    })
+  } catch (e) {
+    throw asTemplateError(e)
+  }
 
-	const url = URL.createObjectURL(
-		new Blob([await link(result.js.code)], { type: 'text/javascript' })
-	);
-	try {
-		const mod = await import(/* @vite-ignore */ url);
-		if (typeof mod.default !== 'function')
-			throw new Error('The template exports no component — is the file empty?');
-		return { component: mod.default, css: result.css?.code ?? '' };
-	} finally {
-		// The module has been fetched and instantiated by now, so the URL has done
-		// its job; leaving it live would leak one blob per keystroke.
-		URL.revokeObjectURL(url);
-	}
+  const url = URL.createObjectURL(new Blob([await link(result.js.code)], { type: 'text/javascript' }))
+  try {
+    const mod = await import(/* @vite-ignore */ url)
+    if (typeof mod.default !== 'function') throw new Error('The template exports no component — is the file empty?')
+    return { component: mod.default, css: result.css?.code ?? '' }
+  } finally {
+    // The module has been fetched and instantiated by now, so the URL has done
+    // its job; leaving it live would leak one blob per keystroke.
+    URL.revokeObjectURL(url)
+  }
 }
 
 /**
@@ -131,25 +128,24 @@ export async function compileTemplate(source) {
  * @param {string} code
  */
 async function link(code) {
-	const lines = code.split('\n');
-	const head = [];
-	let i = 0;
-	for (; i < lines.length; i++) {
-		const line = lines[i];
-		if (!line.trim()) {
-			head.push(line);
-			continue;
-		}
-		const m = /^import\s+(?:([\s\S]+?)\s+from\s+)?(['"])(.+?)\2;?\s*$/.exec(line);
-		if (!m) break;
-		head.push(`import ${m[1] ? `${m[1]} from ` : ''}'${await shimUrl(m[3])}';`);
-	}
+  const lines = code.split('\n')
+  const head = []
+  let i = 0
+  for (; i < lines.length; i++) {
+    const line = lines[i]
+    if (!line.trim()) {
+      head.push(line)
+      continue
+    }
+    const m = /^import\s+(?:([\s\S]+?)\s+from\s+)?(['"])(.+?)\2;?\s*$/.exec(line)
+    if (!m) break
+    head.push(`import ${m[1] ? `${m[1]} from ` : ''}'${await shimUrl(m[3])}';`)
+  }
 
-	const rest = lines.slice(i);
-	if (rest.some((line) => /^import[\s{'"*]/.test(line)))
-		throw new Error('Imports have to be single lines at the top of the <script> block');
+  const rest = lines.slice(i)
+  if (rest.some((line) => /^import[\s{'"*]/.test(line))) throw new Error('Imports have to be single lines at the top of the <script> block')
 
-	return [...head, ...rest].join('\n');
+  return [...head, ...rest].join('\n')
 }
 
 /**
@@ -161,32 +157,29 @@ async function link(code) {
  * @param {string} spec
  */
 async function shimUrl(spec) {
-	const cached = shims.get(spec);
-	if (cached) return cached;
+  const cached = shims.get(spec)
+  if (cached) return cached
 
-	if (!ALLOWED.includes(spec))
-		throw new Error(`A template can't import "${spec}" — only ${ALLOWED.slice(0, 3).join(', ')}`);
+  if (!ALLOWED.includes(spec)) throw new Error(`A template can't import "${spec}" — only ${ALLOWED.slice(0, 3).join(', ')}`)
 
-	const mods = await modules();
-	const mod = mods[spec];
-	const names = mod
-		? Object.keys(mod).filter((k) => k !== 'default' && /^[A-Za-z_$][\w$]*$/.test(k))
-		: [];
+  const mods = await modules()
+  const mod = mods[spec]
+  const names = mod ? Object.keys(mod).filter((k) => k !== 'default' && /^[A-Za-z_$][\w$]*$/.test(k)) : []
 
-	const body = [
-		mod ? `const m = globalThis[${JSON.stringify(REGISTRY)}][${JSON.stringify(spec)}];` : '',
-		...names.map((n, i) => `const _${i} = m[${JSON.stringify(n)}];`),
-		names.length ? `export { ${names.map((n, i) => `_${i} as ${n}`).join(', ')} };` : '',
-		mod && 'default' in mod ? 'export default m.default;' : ''
-	].filter(Boolean);
+  const body = [
+    mod ? `const m = globalThis[${JSON.stringify(REGISTRY)}][${JSON.stringify(spec)}];` : '',
+    ...names.map((n, i) => `const _${i} = m[${JSON.stringify(n)}];`),
+    names.length ? `export { ${names.map((n, i) => `_${i} as ${n}`).join(', ')} };` : '',
+    mod && 'default' in mod ? 'export default m.default;' : '',
+  ].filter(Boolean)
 
-	// The blob can't close over anything, so the modules travel by global.
-	const registry = (/** @type {any} */ (globalThis)[REGISTRY] ??= {});
-	registry[spec] = mod;
+  // The blob can't close over anything, so the modules travel by global.
+  const registry = (/** @type {any} */ (globalThis)[REGISTRY] ??= {})
+  registry[spec] = mod
 
-	const url = URL.createObjectURL(new Blob([body.join('\n')], { type: 'text/javascript' }));
-	shims.set(spec, url);
-	return url;
+  const url = URL.createObjectURL(new Blob([body.join('\n')], { type: 'text/javascript' }))
+  shims.set(spec, url)
+  return url
 }
 
 /**
@@ -196,12 +189,10 @@ async function shimUrl(spec) {
  * @returns {Error & { line?: number }}
  */
 function asTemplateError(e) {
-	const err = /** @type {{ message?: string, start?: { line?: number } }} */ (e);
-	// The compiler signs its errors with a docs URL on a second line; the strip
-	// that shows this has one line to work with.
-	const out = /** @type {Error & { line?: number }} */ (
-		new Error((err?.message ?? String(e)).split('\n')[0])
-	);
-	if (err?.start?.line) out.line = err.start.line;
-	return out;
+  const err = /** @type {{ message?: string, start?: { line?: number } }} */ (e)
+  // The compiler signs its errors with a docs URL on a second line; the strip
+  // that shows this has one line to work with.
+  const out = /** @type {Error & { line?: number }} */ (new Error((err?.message ?? String(e)).split('\n')[0]))
+  if (err?.start?.line) out.line = err.start.line
+  return out
 }

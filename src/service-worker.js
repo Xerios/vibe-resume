@@ -12,74 +12,70 @@
  * of `vite dev`, so development never serves stale bytes.
  */
 
-import { base, build, files, prerendered, version } from '$service-worker';
+import { base, build, files, prerendered, version } from '$service-worker'
 
-const sw = /** @type {ServiceWorkerGlobalScope} */ (/** @type {unknown} */ (self));
+const sw = /** @type {ServiceWorkerGlobalScope} */ (/** @type {unknown} */ (self))
 
-const CACHE = `cv-editor-${version}`;
+const CACHE = `cv-editor-${version}`
 
 /** The Vite bundle (hashed, immutable), everything in static/, and the prerendered shell. */
-const PRECACHE = [...build, ...files, ...prerendered];
-const PRECACHED = new Set(PRECACHE);
+const PRECACHE = [...build, ...files, ...prerendered]
+const PRECACHED = new Set(PRECACHE)
 
 sw.addEventListener('install', (event) => {
-	// No `skipWaiting()`, deliberately. A new worker then activates only once every
-	// tab running the old one has closed, which buys two things: an open editing
-	// session is never swapped out mid-edit, and the cache purge below cannot delete
-	// a lazily-loaded chunk that a live page still wants.
-	event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)));
-});
+  // No `skipWaiting()`, deliberately. A new worker then activates only once every
+  // tab running the old one has closed, which buys two things: an open editing
+  // session is never swapped out mid-edit, and the cache purge below cannot delete
+  // a lazily-loaded chunk that a live page still wants.
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)))
+})
 
 sw.addEventListener('activate', (event) => {
-	event.waitUntil(
-		caches
-			.keys()
-			.then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))))
-	);
-});
+  event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)))))
+})
 
 sw.addEventListener('fetch', (event) => {
-	const { request } = event;
-	if (request.method !== 'GET') return;
+  const { request } = event
+  if (request.method !== 'GET') return
 
-	const url = new URL(request.url);
-	if (url.origin !== sw.location.origin) return;
+  const url = new URL(request.url)
+  if (url.origin !== sw.location.origin) return
 
-	event.respondWith(respond(request, url));
-});
+  event.respondWith(respond(request, url))
+})
 
 /**
  * @param {Request} request
  * @param {URL} url
  */
 async function respond(request, url) {
-	const cache = await caches.open(CACHE);
+  const cache = await caches.open(CACHE)
 
-	// Precached URLs are either content-hashed or shipped with the version, so a hit
-	// is always the right answer and never needs revalidating.
-	if (PRECACHED.has(url.pathname)) {
-		const hit = await cache.match(url.pathname);
-		if (hit) return hit;
-	}
+  // Precached URLs are either content-hashed or shipped with the version, so a hit
+  // is always the right answer and never needs revalidating.
+  if (PRECACHED.has(url.pathname)) {
+    const hit = await cache.match(url.pathname)
+    if (hit) return hit
+  }
 
-	// One route exists; adapter-static's `fallback: 'index.html'` covers anything else.
-	// Serving the cached shell rather than the network keeps the HTML and the hashed
-	// assets it points at on the same version.
-	if (request.mode === 'navigate') {
-		const shell = (await cache.match(request)) ?? (await cache.match(`${base}/`));
-		if (shell) return shell;
-	}
+  // One route exists; adapter-static's `fallback: 'index.html'` covers anything else.
+  // Serving the cached shell rather than the network keeps the HTML and the hashed
+  // assets it points at on the same version.
+  if (request.mode === 'navigate') {
+    const shell = (await cache.match(request)) ?? (await cache.match(`${base}/`))
+    if (shell) return shell
+  }
 
-	try {
-		const response = await fetch(request);
-		// Belt and braces for the Loro `.wasm`, which is fetched lazily on first
-		// document load: even if it somehow missed the precache list, the first online
-		// visit puts it here. `basic` excludes opaque cross-origin and error responses.
-		if (response.ok && response.type === 'basic') cache.put(request, response.clone());
-		return response;
-	} catch (err) {
-		const hit = await cache.match(request);
-		if (hit) return hit;
-		throw err;
-	}
+  try {
+    const response = await fetch(request)
+    // Belt and braces for the Loro `.wasm`, which is fetched lazily on first
+    // document load: even if it somehow missed the precache list, the first online
+    // visit puts it here. `basic` excludes opaque cross-origin and error responses.
+    if (response.ok && response.type === 'basic') cache.put(request, response.clone())
+    return response
+  } catch (err) {
+    const hit = await cache.match(request)
+    if (hit) return hit
+    throw err
+  }
 }

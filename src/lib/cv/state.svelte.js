@@ -12,29 +12,29 @@
  * does the work, and the other finds it done.
  */
 
-import { CvDoc } from './doc.svelte.js';
-import { FileManager } from './files.svelte.js';
-import { TemplateManager } from './templates.svelte.js';
+import { CvDoc } from './doc.svelte.js'
+import { FileManager } from './files.svelte.js'
+import { TemplateManager } from './templates.svelte.js'
 
-export const doc = new CvDoc();
-export const files = new FileManager();
-export const templates = new TemplateManager();
+export const doc = new CvDoc()
+export const files = new FileManager()
+export const templates = new TemplateManager()
 
-let started = false;
+let started = false
 
 /** Load everything out of storage, once per page load. */
 export function start() {
-	if (started) return;
-	started = true;
-	templates.init();
-	files.init();
-	// Async only because of the WASM it waits on; `doc.ready` is what the pages
-	// watch, so there is nothing here to await.
-	void doc.init(/** @type {string} */ (files.activeId));
+  if (started) return
+  started = true
+  templates.init()
+  files.init()
+  // Async only because of the WASM it waits on; `doc.ready` is what the pages
+  // watch, so there is nothing here to await.
+  void doc.init(/** @type {string} */ (files.activeId))
 }
 
 /** Write out everything that is sitting on a debounce — the tab is going away. */
 export function flush() {
-	doc.flush();
-	templates.flush();
+  doc.flush()
+  templates.flush()
 }

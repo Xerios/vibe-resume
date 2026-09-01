@@ -1,442 +1,390 @@
 <script>
-	import { onMount } from "svelte";
-	import { indentWithTab, standardKeymap } from "@codemirror/commands";
-	import { yaml } from "@codemirror/lang-yaml";
-	import {
-		codeFolding,
-		foldGutter,
-		foldKeymap,
-		indentUnit,
-		syntaxHighlighting,
-	} from "@codemirror/language";
-	import {
-		forEachDiagnostic,
-		lintGutter,
-		linter,
-		setDiagnosticsEffect,
-	} from "@codemirror/lint";
-	import { highlightSelectionMatches } from "@codemirror/search";
-	import {
-		Compartment,
-		EditorState,
-		StateEffect,
-		StateField,
-		Transaction,
-	} from "@codemirror/state";
-	import {
-		Decoration,
-		EditorView,
-		ViewPlugin,
-		WidgetType,
-		drawSelection,
-		highlightActiveLine,
-		highlightActiveLineGutter,
-		keymap,
-		lineNumbers,
-	} from "@codemirror/view";
-	import { wrappedLineIndent } from "codemirror-wrapped-line-indent";
-	import { load } from "js-yaml";
-	import { highlight } from "./cm-highlight.js";
-	// CodeMirror builds its own DOM, so scoped styles can't reach it — its theme
-	// ships as a plain stylesheet imported alongside the component instead.
-	import "./codemirror.css";
+  import { onMount } from 'svelte'
+  import { indentWithTab, standardKeymap } from '@codemirror/commands'
+  import { yaml } from '@codemirror/lang-yaml'
+  import { codeFolding, foldGutter, foldKeymap, indentUnit, syntaxHighlighting } from '@codemirror/language'
+  import { forEachDiagnostic, lintGutter, linter, setDiagnosticsEffect } from '@codemirror/lint'
+  import { highlightSelectionMatches } from '@codemirror/search'
+  import { Compartment, EditorState, StateEffect, StateField, Transaction } from '@codemirror/state'
+  import {
+    Decoration,
+    EditorView,
+    ViewPlugin,
+    WidgetType,
+    drawSelection,
+    highlightActiveLine,
+    highlightActiveLineGutter,
+    keymap,
+    lineNumbers,
+  } from '@codemirror/view'
+  import { wrappedLineIndent } from 'codemirror-wrapped-line-indent'
+  import { load } from 'js-yaml'
+  import { highlight } from './cm-highlight.js'
+  // CodeMirror builds its own DOM, so scoped styles can't reach it — its theme
+  // ships as a plain stylesheet imported alongside the component instead.
+  import './codemirror.css'
 
-	let {
-		/** Extensions from the Loro binding — document sync and undo/redo live here. */
-		loroExtensions,
-		readOnly = false,
-		/** What the version on screen changed, highlighted inline. @type {import('$lib/cv/doc.svelte.js').VersionDiff | null} */
-		diff = null,
-		/** The editor scrolled — the page mirrors the move into the preview. */
-		onScroll = () => {},
-		/** A line the user just typed on, for the preview to follow. @type {(line: number) => void} */
-		onEdit = () => {},
-	} = $props();
+  let {
+    /** Extensions from the Loro binding — document sync and undo/redo live here. */
+    loroExtensions,
+    readOnly = false,
+    /** What the version on screen changed, highlighted inline. @type {import('$lib/cv/doc.svelte.js').VersionDiff | null} */
+    diff = null,
+    /** The editor scrolled — the page mirrors the move into the preview. */
+    onScroll = () => {},
+    /** A line the user just typed on, for the preview to follow. @type {(line: number) => void} */
+    onEdit = () => {},
+  } = $props()
 
-	/** @type {HTMLDivElement} */
-	let host;
-	let view = $state(/** @type {EditorView | null} */ (null));
-	const editable = new Compartment();
-	const diffHighlight = new Compartment();
+  /** @type {HTMLDivElement} */
+  let host
+  let view = $state(/** @type {EditorView | null} */ (null))
+  const editable = new Compartment()
+  const diffHighlight = new Compartment()
 
-	/**
-	 * "Peek" line — the line behind whatever the pointer is on in the preview.
-	 * It carries its own decoration rather than moving the cursor, so hovering
-	 * the CV never disturbs where the caret sits or what's selected. Clicking
-	 * does move the caret, and `cm-activeLine` takes the highlight over then.
-	 */
-	const setPeek =
-		/** @type {import('@codemirror/state').StateEffectType<number | null>} */ (
-			StateEffect.define()
-		);
-	const peekMark = Decoration.line({ class: "cm-peek-line" });
-	const peekField = StateField.define({
-		create: () => Decoration.none,
-		/**
-		 * @param {import('@codemirror/view').DecorationSet} deco
-		 * @param {import('@codemirror/state').Transaction} tr
-		 */
-		update(deco, tr) {
-			deco = deco.map(tr.changes);
-			for (const e of tr.effects)
-				if (e.is(setPeek))
-					deco =
-						e.value === null
-							? Decoration.none
-							: Decoration.set([peekMark.range(e.value)]);
-			return deco;
-		},
-		provide: (f) => EditorView.decorations.from(f),
-	});
+  /**
+   * "Peek" line — the line behind whatever the pointer is on in the preview.
+   * It carries its own decoration rather than moving the cursor, so hovering
+   * the CV never disturbs where the caret sits or what's selected. Clicking
+   * does move the caret, and `cm-activeLine` takes the highlight over then.
+   */
+  const setPeek = /** @type {import('@codemirror/state').StateEffectType<number | null>} */ (StateEffect.define())
+  const peekMark = Decoration.line({ class: 'cm-peek-line' })
+  const peekField = StateField.define({
+    create: () => Decoration.none,
+    /**
+     * @param {import('@codemirror/view').DecorationSet} deco
+     * @param {import('@codemirror/state').Transaction} tr
+     */
+    update(deco, tr) {
+      deco = deco.map(tr.changes)
+      for (const e of tr.effects) if (e.is(setPeek)) deco = e.value === null ? Decoration.none : Decoration.set([peekMark.range(e.value)])
+      return deco
+    },
+    provide: (f) => EditorView.decorations.from(f),
+  })
 
-	/**
-	 * Where the document stops parsing, as a lint diagnostic. js-yaml gives up at
-	 * the first error, so there's never more than one; its mark carries the offset
-	 * it choked on, and the underline runs from there to the end of that line.
-	 * @param {EditorView} v
-	 * @returns {import('@codemirror/lint').Diagnostic[]}
-	 */
-	function yamlDiagnostics(v) {
-		const doc = v.state.doc;
-		try {
-			load(doc.toString());
-			return [];
-		} catch (e) {
-			const err =
-				/** @type {{ mark?: { position: number }, reason?: string }} */ (e);
-			const at = Math.min(Math.max(err.mark?.position ?? 0, 0), doc.length);
-			const line = doc.lineAt(at);
-			// An error that lands past the last character — an unterminated block,
-			// say — has nothing to its right to underline, so mark the line's own
-			// content instead of leaving a bare caret at the end.
-			const from =
-				at < line.to
-					? at
-					: line.from + (line.text.length - line.text.trimStart().length);
-			return [
-				{
-					from,
-					to: line.to,
-					severity: "error",
-					source: "yaml",
-					message: err.reason || (e instanceof Error ? e.message : String(e)),
-				},
-			];
-		}
-	}
+  /**
+   * Where the document stops parsing, as a lint diagnostic. js-yaml gives up at
+   * the first error, so there's never more than one; its mark carries the offset
+   * it choked on, and the underline runs from there to the end of that line.
+   * @param {EditorView} v
+   * @returns {import('@codemirror/lint').Diagnostic[]}
+   */
+  function yamlDiagnostics(v) {
+    const doc = v.state.doc
+    try {
+      load(doc.toString())
+      return []
+    } catch (e) {
+      const err = /** @type {{ mark?: { position: number }, reason?: string }} */ (e)
+      const at = Math.min(Math.max(err.mark?.position ?? 0, 0), doc.length)
+      const line = doc.lineAt(at)
+      // An error that lands past the last character — an unterminated block,
+      // say — has nothing to its right to underline, so mark the line's own
+      // content instead of leaving a bare caret at the end.
+      const from = at < line.to ? at : line.from + (line.text.length - line.text.trimStart().length)
+      return [
+        {
+          from,
+          to: line.to,
+          severity: 'error',
+          source: 'yaml',
+          message: err.reason || (e instanceof Error ? e.message : String(e)),
+        },
+      ]
+    }
+  }
 
-	/**
-	 * The line behind a diagnostic, tinted. The lint extension underlines only the
-	 * failing range; this is what makes the broken line findable while scrolling.
-	 */
-	const errorLineMark = Decoration.line({ class: "cm-error-line" });
+  /**
+   * The line behind a diagnostic, tinted. The lint extension underlines only the
+   * failing range; this is what makes the broken line findable while scrolling.
+   */
+  const errorLineMark = Decoration.line({ class: 'cm-error-line' })
 
-	/** @param {import('@codemirror/state').EditorState} state */
-	function errorLines(state) {
-		/** @type {number[]} */
-		const starts = [];
-		forEachDiagnostic(state, (_d, from, to) => {
-			for (let pos = from; ; ) {
-				const line = state.doc.lineAt(pos);
-				if (starts[starts.length - 1] !== line.from) starts.push(line.from);
-				if (line.to >= to) break;
-				pos = line.to + 1;
-			}
-		});
-		return Decoration.set(starts.map((at) => errorLineMark.range(at)));
-	}
+  /** @param {import('@codemirror/state').EditorState} state */
+  function errorLines(state) {
+    /** @type {number[]} */
+    const starts = []
+    forEachDiagnostic(state, (_d, from, to) => {
+      for (let pos = from; ;) {
+        const line = state.doc.lineAt(pos)
+        if (starts[starts.length - 1] !== line.from) starts.push(line.from)
+        if (line.to >= to) break
+        pos = line.to + 1
+      }
+    })
+    return Decoration.set(starts.map((at) => errorLineMark.range(at)))
+  }
 
-	/** Recomputed whenever the linter reports, and remapped as the text moves. */
-	const errorLineHighlight = ViewPlugin.fromClass(
-		class {
-			/** @param {EditorView} view */
-			constructor(view) {
-				this.decorations = errorLines(view.state);
-			}
-			/** @param {import('@codemirror/view').ViewUpdate} update */
-			update(update) {
-				const relinted = update.transactions.some((tr) =>
-					tr.effects.some((e) => e.is(setDiagnosticsEffect)),
-				);
-				if (update.docChanged || relinted)
-					this.decorations = errorLines(update.state);
-			}
-		},
-		{ decorations: (v) => v.decorations },
-	);
+  /** Recomputed whenever the linter reports, and remapped as the text moves. */
+  const errorLineHighlight = ViewPlugin.fromClass(
+    class {
+      /** @param {EditorView} view */
+      constructor(view) {
+        this.decorations = errorLines(view.state)
+      }
+      /** @param {import('@codemirror/view').ViewUpdate} update */
+      update(update) {
+        const relinted = update.transactions.some((tr) => tr.effects.some((e) => e.is(setDiagnosticsEffect)))
+        if (update.docChanged || relinted) this.decorations = errorLines(update.state)
+      }
+    },
+    { decorations: (v) => v.decorations },
+  )
 
-	class RemovedText extends WidgetType {
-		/** @param {string} text */
-		constructor(text) {
-			super();
-			this.text = text;
-		}
-		/** @param {RemovedText} other */
-		eq(other) {
-			return other.text === this.text;
-		}
-		toDOM() {
-			const span = document.createElement("span");
-			span.className = "cm-diff-removed";
-			span.textContent = this.text;
-			return span;
-		}
-		ignoreEvent() {
-			return true;
-		}
-	}
+  class RemovedText extends WidgetType {
+    /** @param {string} text */
+    constructor(text) {
+      super()
+      this.text = text
+    }
+    /** @param {RemovedText} other */
+    eq(other) {
+      return other.text === this.text
+    }
+    toDOM() {
+      const span = document.createElement('span')
+      span.className = 'cm-diff-removed'
+      span.textContent = this.text
+      return span
+    }
+    ignoreEvent() {
+      return true
+    }
+  }
 
-	/** @param {import('$lib/cv/doc.svelte.js').VersionDiff | null} d */
-	function diffDecorations(d) {
-		if (!d || (d.added.length === 0 && d.removed.length === 0))
-			return Decoration.none;
-		const ranges = [
-			...d.added
-				.filter((r) => r.to > r.from)
-				.map((r) =>
-					Decoration.mark({ class: "cm-diff-added" }).range(r.from, r.to),
-				),
-			...d.removed.map((r) =>
-				Decoration.widget({ widget: new RemovedText(r.text), side: -1 }).range(
-					r.at,
-				),
-			),
-		];
-		return Decoration.set(ranges, true);
-	}
+  /** @param {import('$lib/cv/doc.svelte.js').VersionDiff | null} d */
+  function diffDecorations(d) {
+    if (!d || (d.added.length === 0 && d.removed.length === 0)) return Decoration.none
+    const ranges = [
+      ...d.added.filter((r) => r.to > r.from).map((r) => Decoration.mark({ class: 'cm-diff-added' }).range(r.from, r.to)),
+      ...d.removed.map((r) => Decoration.widget({ widget: new RemovedText(r.text), side: -1 }).range(r.at)),
+    ]
+    return Decoration.set(ranges, true)
+  }
 
-	onMount(() => {
-		const next = new EditorView({
-			parent: host,
-			state: EditorState.create({
-				extensions: [
-					lintGutter(),
-					// lineNumbers(),
-					highlightActiveLine(),
-					highlightActiveLineGutter(),
-					codeFolding(),
-					foldGutter({
-						closedText: "▶",
-						openText: "▼",
-					}),
-					drawSelection(),
-					highlightSelectionMatches(),
-					EditorView.lineWrapping,
-					wrappedLineIndent,
-					indentUnit.of("  "),
-					EditorState.tabSize.of(2),
-					yaml(),
-					syntaxHighlighting(highlight),
-					// No history() here on purpose: the Loro undo plugin binds Mod-Z at
-					// high precedence, and two undo stacks would fight over it.
-					keymap.of([...standardKeymap, ...foldKeymap, indentWithTab]),
-					linter(yamlDiagnostics, { delay: 300 }),
-					errorLineHighlight,
-					editable.of(editableExtensions(readOnly)),
-					diffHighlight.of(EditorView.decorations.of(diffDecorations(diff))),
-					peekField,
-					EditorView.updateListener.of(onUpdate),
-					loroExtensions,
-				],
-			}),
-		});
-		next.focus();
-		view = next;
-		next.scrollDOM.addEventListener("scroll", fireScroll, { passive: true });
-		return () => {
-			next.scrollDOM.removeEventListener("scroll", fireScroll);
-			next.destroy();
-			view = null;
-		};
-	});
+  onMount(() => {
+    const next = new EditorView({
+      parent: host,
+      state: EditorState.create({
+        extensions: [
+          lintGutter(),
+          // lineNumbers(),
+          highlightActiveLine(),
+          highlightActiveLineGutter(),
+          codeFolding(),
+          foldGutter({
+            closedText: '▶',
+            openText: '▼',
+          }),
+          drawSelection(),
+          highlightSelectionMatches(),
+          EditorView.lineWrapping,
+          wrappedLineIndent,
+          indentUnit.of('  '),
+          EditorState.tabSize.of(2),
+          yaml(),
+          syntaxHighlighting(highlight),
+          // No history() here on purpose: the Loro undo plugin binds Mod-Z at
+          // high precedence, and two undo stacks would fight over it.
+          keymap.of([...standardKeymap, ...foldKeymap, indentWithTab]),
+          linter(yamlDiagnostics, { delay: 300 }),
+          errorLineHighlight,
+          editable.of(editableExtensions(readOnly)),
+          diffHighlight.of(EditorView.decorations.of(diffDecorations(diff))),
+          peekField,
+          EditorView.updateListener.of(onUpdate),
+          loroExtensions,
+        ],
+      }),
+    })
+    next.focus()
+    view = next
+    next.scrollDOM.addEventListener('scroll', fireScroll, { passive: true })
+    return () => {
+      next.scrollDOM.removeEventListener('scroll', fireScroll)
+      next.destroy()
+      view = null
+    }
+  })
 
-	const fireScroll = () => onScroll();
+  const fireScroll = () => onScroll()
 
-	/**
-	 * Report the line the user just typed on, and only that. The Loro binding
-	 * replays imports and version check-outs through plain dispatches that carry
-	 * no user event, so nothing the app does to the document counts as an edit
-	 * here — which is what keeps the preview still while history is browsed.
-	 * @param {import('@codemirror/view').ViewUpdate} update
-	 */
-	function onUpdate(update) {
-		if (!update.docChanged) return;
-		if (!update.transactions.some((tr) => tr.annotation(Transaction.userEvent)))
-			return;
-		let head = -1;
-		update.changes.iterChanges((_fromA, _toA, _fromB, toB) => (head = toB));
-		if (head >= 0) onEdit(update.state.doc.lineAt(head).number);
-	}
+  /**
+   * Report the line the user just typed on, and only that. The Loro binding
+   * replays imports and version check-outs through plain dispatches that carry
+   * no user event, so nothing the app does to the document counts as an edit
+   * here — which is what keeps the preview still while history is browsed.
+   * @param {import('@codemirror/view').ViewUpdate} update
+   */
+  function onUpdate(update) {
+    if (!update.docChanged) return
+    if (!update.transactions.some((tr) => tr.annotation(Transaction.userEvent))) return
+    let head = -1
+    update.changes.iterChanges((_fromA, _toA, _fromB, toB) => (head = toB))
+    if (head >= 0) onEdit(update.state.doc.lineAt(head).number)
+  }
 
-	$effect(() => {
-		view?.dispatch({
-			effects: editable.reconfigure(editableExtensions(readOnly)),
-		});
-	});
+  $effect(() => {
+    view?.dispatch({
+      effects: editable.reconfigure(editableExtensions(readOnly)),
+    })
+  })
 
-	$effect(() => {
-		view?.dispatch({
-			effects: diffHighlight.reconfigure(
-				EditorView.decorations.of(diffDecorations(diff)),
-			),
-		});
-	});
+  $effect(() => {
+    view?.dispatch({
+      effects: diffHighlight.reconfigure(EditorView.decorations.of(diffDecorations(diff))),
+    })
+  })
 
-	/** @param {boolean} locked */
-	function editableExtensions(locked) {
-		return [EditorState.readOnly.of(locked), EditorView.editable.of(!locked)];
-	}
+  /** @param {boolean} locked */
+  function editableExtensions(locked) {
+    return [EditorState.readOnly.of(locked), EditorView.editable.of(!locked)]
+  }
 
-	/**
-	 * Where the content starts on a YAML line: past the indent, any `- ` sequence
-	 * markers, a `key: ` and an opening quote — the character a click in the
-	 * preview means to land on. A line carrying no inline value (`bullets:`, a
-	 * block that continues below) falls back to its first non-space character,
-	 * which still beats the indentation.
-	 *
-	 * Barring a quoted scalar from the key position is what keeps `text: 'ORM:
-	 * Prisma'` — or a bare `- 'Analytics: Mixpanel'` — from reading as a key.
-	 * @param {string} text a single line, without its newline
-	 * @returns {number} column offset into `text`
-	 */
-	function contentColumn(text) {
-		const m = /^(\s*(?:-[ \t]+)*)(?:[^\s#'"][^:]*?:[ \t]+)?/.exec(text);
-		let col = m ? m[0].length : 0;
-		if (col >= text.length) col = m ? m[1].length : 0; // a key with nothing after it
-		if (text[col] === "'" || text[col] === '"') col++; // sit on the text, not the quote
-		return Math.min(col, text.length);
-	}
+  /**
+   * Where the content starts on a YAML line: past the indent, any `- ` sequence
+   * markers, a `key: ` and an opening quote — the character a click in the
+   * preview means to land on. A line carrying no inline value (`bullets:`, a
+   * block that continues below) falls back to its first non-space character,
+   * which still beats the indentation.
+   *
+   * Barring a quoted scalar from the key position is what keeps `text: 'ORM:
+   * Prisma'` — or a bare `- 'Analytics: Mixpanel'` — from reading as a key.
+   * @param {string} text a single line, without its newline
+   * @returns {number} column offset into `text`
+   */
+  function contentColumn(text) {
+    const m = /^(\s*(?:-[ \t]+)*)(?:[^\s#'"][^:]*?:[ \t]+)?/.exec(text)
+    let col = m ? m[0].length : 0
+    if (col >= text.length) col = m ? m[1].length : 0 // a key with nothing after it
+    if (text[col] === "'" || text[col] === '"') col++ // sit on the text, not the quote
+    return Math.min(col, text.length)
+  }
 
-	/**
-	 * Bring a source line into view for the preview's sake: `focus` puts the
-	 * caret on its value and takes focus — what a click asks for — while a plain
-	 * hover only lights it up, and only scrolls when the line isn't already on
-	 * screen. The peek decoration stays pinned to the line start, since a line
-	 * decoration's range has to sit there.
-	 * @param {number} line 1-based
-	 * @param {{ focus?: boolean }} [opts]
-	 */
-	export function revealLine(line, { focus = false } = {}) {
-		if (!view) return;
-		const doc = view.state.doc;
-		const info = doc.line(Math.min(Math.max(1, Math.round(line)), doc.lines));
-		const at = info.from + contentColumn(info.text);
-		view.dispatch({
-			selection: focus ? { anchor: at } : undefined,
-			effects: [
-				setPeek.of(focus ? null : info.from),
-				EditorView.scrollIntoView(
-					focus ? at : info.from,
-					focus ? { y: "center" } : { y: "nearest", yMargin: 48 },
-				),
-			],
-		});
-		if (focus) view.focus();
-	}
+  /**
+   * Bring a source line into view for the preview's sake: `focus` puts the
+   * caret on its value and takes focus — what a click asks for — while a plain
+   * hover only lights it up, and only scrolls when the line isn't already on
+   * screen. The peek decoration stays pinned to the line start, since a line
+   * decoration's range has to sit there.
+   * @param {number} line 1-based
+   * @param {{ focus?: boolean }} [opts]
+   */
+  export function revealLine(line, { focus = false } = {}) {
+    if (!view) return
+    const doc = view.state.doc
+    const info = doc.line(Math.min(Math.max(1, Math.round(line)), doc.lines))
+    const at = info.from + contentColumn(info.text)
+    view.dispatch({
+      selection: focus ? { anchor: at } : undefined,
+      effects: [
+        setPeek.of(focus ? null : info.from),
+        EditorView.scrollIntoView(focus ? at : info.from, focus ? { y: 'center' } : { y: 'nearest', yMargin: 48 }),
+      ],
+    })
+    if (focus) view.focus()
+  }
 
-	/** Drop the peek highlight — the pointer has left the preview. */
-	export function clearPeek() {
-		view?.dispatch({ effects: setPeek.of(null) });
-	}
+  /** Drop the peek highlight — the pointer has left the preview. */
+  export function clearPeek() {
+    view?.dispatch({ effects: setPeek.of(null) })
+  }
 
-	/**
-	 * Take the geometry again. The pane is kept mounted while the source is
-	 * hidden, and CodeMirror measures nothing it can't see — so everything it
-	 * knows about line heights is stale by the time the pane comes back.
-	 */
-	export function remeasure() {
-		view?.requestMeasure();
-	}
+  /**
+   * Take the geometry again. The pane is kept mounted while the source is
+   * hidden, and CodeMirror measures nothing it can't see — so everything it
+   * knows about line heights is stale by the time the pane comes back.
+   */
+  export function remeasure() {
+    view?.requestMeasure()
+  }
 
-	/**
-	 * Replace the whole document as a user-level edit, so the Loro binding records
-	 * it the same way it records typing. This is how Reset and Restore apply text.
-	 * @param {string} text
-	 */
-	export function replaceAll(text) {
-		if (!view || view.state.doc.toString() === text) return;
-		view.dispatch({
-			changes: { from: 0, to: view.state.doc.length, insert: text },
-		});
-	}
+  /**
+   * Replace the whole document as a user-level edit, so the Loro binding records
+   * it the same way it records typing. This is how Reset and Restore apply text.
+   * @param {string} text
+   */
+  export function replaceAll(text) {
+    if (!view || view.state.doc.toString() === text) return
+    view.dispatch({
+      changes: { from: 0, to: view.state.doc.length, insert: text },
+    })
+  }
 
-	/**
-	 * The document's top edge in the scroller's own coordinates. CodeMirror
-	 * measures line blocks from there, while `scrollTop` counts from the top of
-	 * the scrollable content — this is the constant between the two.
-	 * @param {EditorView} v
-	 */
-	function docOffset(v) {
-		return (
-			v.documentTop -
-			v.scrollDOM.getBoundingClientRect().top +
-			v.scrollDOM.scrollTop
-		);
-	}
+  /**
+   * The document's top edge in the scroller's own coordinates. CodeMirror
+   * measures line blocks from there, while `scrollTop` counts from the top of
+   * the scrollable content — this is the constant between the two.
+   * @param {EditorView} v
+   */
+  function docOffset(v) {
+    return v.documentTop - v.scrollDOM.getBoundingClientRect().top + v.scrollDOM.scrollTop
+  }
 
-	/**
-	 * The line at the top of the viewport, carried to a fraction through its own
-	 * block so a slow scroll reads as a slow move rather than line-sized jumps.
-	 * @returns {number | null}
-	 */
-	export function topLine() {
-		if (!view) return null;
-		const height = Math.max(0, view.scrollDOM.scrollTop - docOffset(view));
-		const block = view.lineBlockAtHeight(height);
-		const line = view.state.doc.lineAt(block.from).number;
-		const frac = block.height > 0 ? (height - block.top) / block.height : 0;
-		return line + Math.min(1, Math.max(0, frac));
-	}
+  /**
+   * The line at the top of the viewport, carried to a fraction through its own
+   * block so a slow scroll reads as a slow move rather than line-sized jumps.
+   * @returns {number | null}
+   */
+  export function topLine() {
+    if (!view) return null
+    const height = Math.max(0, view.scrollDOM.scrollTop - docOffset(view))
+    const block = view.lineBlockAtHeight(height)
+    const line = view.state.doc.lineAt(block.from).number
+    const frac = block.height > 0 ? (height - block.top) / block.height : 0
+    return line + Math.min(1, Math.max(0, frac))
+  }
 
-	/**
-	 * Put `line` at the top of the viewport — `topLine` run backwards, for when
-	 * the preview is the pane being scrolled.
-	 * @param {number} line
-	 */
-	export function scrollToLine(line) {
-		if (!view) return;
-		const doc = view.state.doc;
-		const n = Math.min(Math.max(1, Math.floor(line)), doc.lines);
-		const block = view.lineBlockAt(doc.line(n).from);
-		const frac = Math.min(1, Math.max(0, line - n));
-		view.scrollDOM.scrollTop =
-			block.top + frac * block.height + docOffset(view);
-	}
+  /**
+   * Put `line` at the top of the viewport — `topLine` run backwards, for when
+   * the preview is the pane being scrolled.
+   * @param {number} line
+   */
+  export function scrollToLine(line) {
+    if (!view) return
+    const doc = view.state.doc
+    const n = Math.min(Math.max(1, Math.floor(line)), doc.lines)
+    const block = view.lineBlockAt(doc.line(n).from)
+    const frac = Math.min(1, Math.max(0, line - n))
+    view.scrollDOM.scrollTop = block.top + frac * block.height + docOffset(view)
+  }
 
-	/**
-	 * Which end of its scroll the editor is parked against, if either. The page
-	 * pins the preview to the matching end rather than to an interpolated line,
-	 * so running one pane to the bottom always lands the other one there too.
-	 * @returns {'start' | 'end' | null}
-	 */
-	export function scrollEdge() {
-		if (!view) return null;
-		const el = view.scrollDOM;
-		if (el.scrollTop <= 1) return "start";
-		return el.scrollTop >= el.scrollHeight - el.clientHeight - 1 ? "end" : null;
-	}
+  /**
+   * Which end of its scroll the editor is parked against, if either. The page
+   * pins the preview to the matching end rather than to an interpolated line,
+   * so running one pane to the bottom always lands the other one there too.
+   * @returns {'start' | 'end' | null}
+   */
+  export function scrollEdge() {
+    if (!view) return null
+    const el = view.scrollDOM
+    if (el.scrollTop <= 1) return 'start'
+    return el.scrollTop >= el.scrollHeight - el.clientHeight - 1 ? 'end' : null
+  }
 
-	/** @param {'start' | 'end'} edge */
-	export function scrollToEdge(edge) {
-		if (!view) return;
-		const el = view.scrollDOM;
-		el.scrollTop = edge === "start" ? 0 : el.scrollHeight - el.clientHeight;
-	}
+  /** @param {'start' | 'end'} edge */
+  export function scrollToEdge(edge) {
+    if (!view) return
+    const el = view.scrollDOM
+    el.scrollTop = edge === 'start' ? 0 : el.scrollHeight - el.clientHeight
+  }
 
-	/** The editor's current text. */
-	export function getText() {
-		return view ? view.state.doc.toString() : "";
-	}
+  /** The editor's current text. */
+  export function getText() {
+    return view ? view.state.doc.toString() : ''
+  }
 </script>
 
 <div id="cm-wrap" bind:this={host}></div>
 
 <style>
-	/* The editor's host. Everything CodeMirror renders inside it is themed by
+  /* The editor's host. Everything CodeMirror renders inside it is themed by
 	   codemirror.css, next to this file. */
-	#cm-wrap {
-		flex: 1;
-		overflow: hidden;
-		min-height: 0;
-	}
+  #cm-wrap {
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+  }
 </style>

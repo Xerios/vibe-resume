@@ -19,22 +19,22 @@ pnpm check      # svelte-check
 
 ## How it works
 
-| Concern            | Where                                                                                        |
-| ------------------ | -------------------------------------------------------------------------------------------- |
-| Document + history | [src/lib/cv/doc.svelte.js](src/lib/cv/doc.svelte.js) — Loro doc, persistence, cross-tab merge |
-| Editor             | [src/lib/components/YamlEditor.svelte](src/lib/components/YamlEditor.svelte) — CodeMirror 6   |
-| Template editor    | [src/routes/template/+page.svelte](src/routes/template/+page.svelte) — the second page, and its CodeMirror |
-| Chrome             | `components/{Toolbar,TabBar,StatusBar}.svelte` — the buttons, the tabs, the status bar        |
-| YAML to HTML       | [src/lib/cv/render.js](src/lib/cv/render.js)                                                 |
-| Preview            | [src/lib/cv/PreviewFrame.svelte](src/lib/cv/PreviewFrame.svelte) — the iframe the sheet renders in |
-| Starting text      | [src/lib/cv/default-cv.yaml](src/lib/cv/default-cv.yaml)                                     |
-| Templates          | [src/lib/cv/templates/](src/lib/cv/templates/) — one Svelte component per arrangement        |
-| Template registry  | [src/lib/cv/templates.svelte.js](src/lib/cv/templates.svelte.js) — edits, forks, reverts      |
-| Compiling one      | [src/lib/cv/compile-template.js](src/lib/cv/compile-template.js) — Svelte, in the browser     |
+| Concern            | Where                                                                                                        |
+| ------------------ | ------------------------------------------------------------------------------------------------------------ |
+| Document + history | [src/lib/cv/doc.svelte.js](src/lib/cv/doc.svelte.js) — Loro doc, persistence, cross-tab merge                |
+| Editor             | [src/lib/components/YamlEditor.svelte](src/lib/components/YamlEditor.svelte) — CodeMirror 6                  |
+| Template editor    | [src/routes/template/+page.svelte](src/routes/template/+page.svelte) — the second page, and its CodeMirror   |
+| Chrome             | `components/{Toolbar,TabBar,StatusBar}.svelte` — the buttons, the tabs, the status bar                       |
+| YAML to HTML       | [src/lib/cv/render.js](src/lib/cv/render.js)                                                                 |
+| Preview            | [src/lib/cv/PreviewFrame.svelte](src/lib/cv/PreviewFrame.svelte) — the iframe the sheet renders in           |
+| Starting text      | [src/lib/cv/default-cv.yaml](src/lib/cv/default-cv.yaml)                                                     |
+| Templates          | [src/lib/cv/templates/](src/lib/cv/templates/) — one Svelte component per arrangement                        |
+| Template registry  | [src/lib/cv/templates.svelte.js](src/lib/cv/templates.svelte.js) — edits, forks, reverts                     |
+| Compiling one      | [src/lib/cv/compile-template.js](src/lib/cv/compile-template.js) — Svelte, in the browser                    |
 | Shared state       | [src/lib/cv/state.svelte.js](src/lib/cv/state.svelte.js) — the document, files and templates both pages hold |
-| Theme              | [src/lib/cv/presets.js](src/lib/cv/presets.js) — the palettes, and the CSS beside it          |
-| CSS                | [src/app.css](src/app.css) — the index; see *Where the CSS lives* below                      |
-| Offline            | [src/service-worker.js](src/service-worker.js) — precache; manifest and icons in `static/`    |
+| Theme              | [src/lib/cv/presets.js](src/lib/cv/presets.js) — the palettes, and the CSS beside it                         |
+| CSS                | [src/app.css](src/app.css) — the index; see _Where the CSS lives_ below                                      |
+| Offline            | [src/service-worker.js](src/service-worker.js) — precache; manifest and icons in `static/`                   |
 
 ### Editor and document
 
@@ -88,11 +88,11 @@ edited is stored per template rather than per file.
 The Style button offers five arrangements of the sheet — classic, compact,
 centered, sidebar, timeline — and seven palettes. Both are per file, stored in
 the file registry next to the name rather than in the CRDT: restyling is not an
-edit, so it leaves the YAML and the version history alone. The popover's *Edit
-this template* is an ordinary link to `/template`, and picking a template there
+edit, so it leaves the YAML and the version history alone. The popover's _Edit
+this template_ is an ordinary link to `/template`, and picking a template there
 means the same thing it means in the popover: the CV switches to it.
 
-An arrangement is a *template*: an ordinary Svelte component, handed the parsed
+An arrangement is a _template_: an ordinary Svelte component, handed the parsed
 YAML as `cv`, that renders the sheet. The five that ship are
 [src/lib/cv/templates/](src/lib/cv/templates/) — real `.svelte` files, so
 `pnpm check` compiles and type-checks them, imported as text rather than as
@@ -108,7 +108,7 @@ out-of-order guard and the keep-the-last-good-one rule are written once.
 A file's `layout` is only the id of the template it renders through, and
 templates themselves are shared by every file rather than owned by one — so
 deleting one can't break a CV: the id stops resolving and `resolve` hands back
-the default. Editing a built-in stores an *override* under its own id, which is
+the default. Editing a built-in stores an _override_ under its own id, which is
 what lets Revert be a delete rather than a copy, and Duplicate is how a template
 of your own starts — from a copy, since a blank component would only mean
 retyping the sheet's markup.
@@ -129,7 +129,7 @@ compiled client code opens with `import * as $ from 'svelte/internal/client'`,
 and a bare specifier means nothing to the browser.
 
 So every specifier a template is allowed to name (`@cv`, `svelte`, `marked`, and
-the two the compiler emits itself) gets a *shim module*: a blob that re-exports,
+the two the compiler emits itself) gets a _shim module_: a blob that re-exports,
 name by name, the module this app already has bundled. The compiled source's
 import lines are rewritten to point at those blobs, the whole thing becomes a
 blob of its own, and `import()` turns it into a component — one Svelte runtime,
@@ -144,7 +144,7 @@ first template compiles offline like everything else here.
 Two things follow that are worth being plain about. A compile error keeps the
 last template that worked on screen — the same bargain as a YAML parse error —
 and reports itself in the strip under the template editor and in the banner over
-either preview. On a fresh load there *is* no last good one, so a stored
+either preview. On a fresh load there _is_ no last good one, so a stored
 template that doesn't compile leaves the editor page with nothing to render:
 that banner carries a link to the page where the template can be fixed. And a template is the user's own code running in the
 app's realm rather than the frame's, because `mount()` takes a component and a
@@ -204,26 +204,26 @@ it genuinely has no single owner:
 
 In the app's document:
 
-| File                                                              | Holds                                                        |
-| ----------------------------------------------------------------- | ------------------------------------------------------------ |
-| [app.css](src/app.css)                                            | the index — imports the three below, and nothing else         |
-| [styles/tokens.css](src/lib/styles/tokens.css)                    | both colour ramps, the type stack, `--theme-fade`             |
-| [styles/base.css](src/lib/styles/base.css)                        | reset, page background, scrollbars, the `#app` shell          |
-| [styles/controls.css](src/lib/styles/controls.css)                | `.t-btn` and friends — used from six different places         |
-| [styles/print.css](src/lib/styles/print.css)                      | the fallback for a print the app can't intercept              |
-| [components/codemirror.css](src/lib/components/codemirror.css)    | the CodeMirror theme, imported by `YamlEditor.svelte`         |
-| [cv/palettes.css](src/lib/cv/palettes.css)                        | the seven ramps — here only so StylePicker can draw a swatch  |
+| File                                                           | Holds                                                        |
+| -------------------------------------------------------------- | ------------------------------------------------------------ |
+| [app.css](src/app.css)                                         | the index — imports the three below, and nothing else        |
+| [styles/tokens.css](src/lib/styles/tokens.css)                 | both colour ramps, the type stack, `--theme-fade`            |
+| [styles/base.css](src/lib/styles/base.css)                     | reset, page background, scrollbars, the `#app` shell         |
+| [styles/controls.css](src/lib/styles/controls.css)             | `.t-btn` and friends — used from six different places        |
+| [styles/print.css](src/lib/styles/print.css)                   | the fallback for a print the app can't intercept             |
+| [components/codemirror.css](src/lib/components/codemirror.css) | the CodeMirror theme, imported by `YamlEditor.svelte`        |
+| [cv/palettes.css](src/lib/cv/palettes.css)                     | the seven ramps — here only so StylePicker can draw a swatch |
 
 And in the preview frame's, written into it by `PreviewFrame`:
 
-| File                                                              | Holds                                                        |
-| ----------------------------------------------------------------- | ------------------------------------------------------------ |
-| [cv/frame.css](src/lib/cv/frame.css)                              | the frame's reset, tokens and page box — its declared inputs  |
-| [cv/cv.css](src/lib/cv/cv.css)                                    | the sheet itself, plus how it paginates                       |
-| [cv/palettes.css](src/lib/cv/palettes.css)                        | the same seven ramps, this time for the sheet to spend        |
-| [cv/presets.css](src/lib/cv/presets.css)                          | the theme ramp selected on `#cv-root`                         |
-| the active template's compiled style block                        | scoped by the compiler, so it can't reach anything else       |
-| the active file's own CSS                                         | whatever you typed into the Style popover, applied last       |
+| File                                       | Holds                                                        |
+| ------------------------------------------ | ------------------------------------------------------------ |
+| [cv/frame.css](src/lib/cv/frame.css)       | the frame's reset, tokens and page box — its declared inputs |
+| [cv/cv.css](src/lib/cv/cv.css)             | the sheet itself, plus how it paginates                      |
+| [cv/palettes.css](src/lib/cv/palettes.css) | the same seven ramps, this time for the sheet to spend       |
+| [cv/presets.css](src/lib/cv/presets.css)   | the theme ramp selected on `#cv-root`                        |
+| the active template's compiled style block | scoped by the compiler, so it can't reach anything else      |
+| the active file's own CSS                  | whatever you typed into the Style popover, applied last      |
 
 `codemirror.css` and the frame's own are global for the same underlying
 reason: they style DOM the Svelte compiler never sees. CodeMirror builds its
@@ -244,7 +244,7 @@ object; mutating it re-renders the sheet in place, so the frame is built once
 and never reloaded. The active template is one of those props, so a recompile is
 the same kind of event as a keystroke in the YAML. It is also the one thing that
 does cross the boundary: the component was compiled out here and only renders in
-there — see *Compiling one* above for why it can't be the other way round.
+there — see _Compiling one_ above for why it can't be the other way round.
 
 Two things follow from the move. Printing goes to `iframe.contentWindow.print()`
 — printing the app instead would put the frame on the page as a box and crop the
@@ -289,7 +289,7 @@ merging two unrelated ones.
 ### Offline
 
 Nothing here ever talked to the network, but until there was a service worker the
-browser still could not *load* the app without a server. `src/service-worker.js`
+browser still could not _load_ the app without a server. `src/service-worker.js`
 precaches the Vite bundle, everything in `static/`, and the prerendered shell, so a
 single visit is enough; after that it runs with the network off. SvelteKit registers it
 automatically in a production build and leaves it out of `vite dev`, so development
@@ -332,7 +332,7 @@ URLs are the `blob:` ones a compiled template is imported through.
 
 `loro-crdt` ships several builds. `loro-codemirror` imports the bare specifier, which
 resolves to a build that loads its WASM with a synchronous main-thread XHR, and would
-be a *second* WASM instance whose objects the first instance cannot accept. The alias
+be a _second_ WASM instance whose objects the first instance cannot accept. The alias
 in [vite.config.js](vite.config.js) pins every importer to the async `web` build, so
 exactly one `.wasm` is emitted. `optimizeDeps.exclude` is there because pre-bundling
 rewrites the `new URL(..., import.meta.url)` the build uses to find that file.
