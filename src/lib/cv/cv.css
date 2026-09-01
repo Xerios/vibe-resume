@@ -278,6 +278,40 @@ ul.bullets li::before {
   font-style: normal;
 }
 
+/* ── Education, projects and lists ─────────────
+   Education and Projects are built out of the same `.job` block Experience is:
+   a title, something it belongs to, dates, a line of context and bullets. Only
+   the wrapping section differs — `.sec-education`, `.sec-projects` — which is
+   what a template selects on when it wants to tell the three apart. The `.co`
+   span carries a school as readily as a company, and a project's title is
+   often a link, so it keeps the colour rather than taking the browser's. */
+
+.job-title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.job-title a:hover {
+  text-decoration: underline;
+}
+
+/* A `list` section: certifications, awards, languages — one line each, or a
+   run of pills when it says `inline: true`. Bordered rather than filled, so
+   the shape survives a print with background graphics switched off. */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+}
+
+.tag {
+  padding: 1px 8px;
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
 .prompt {
   background: var(--prompt-bg);
   color: var(--prompt);
@@ -368,9 +402,11 @@ table.oss .proj a:hover {
     break-inside: auto;
   }
 
-  /* The atoms: one job, one skill group, one table row. */
+  /* The atoms: one job (or degree, or project), one skill group, one pill,
+	   one table row. */
   .job,
   .skill-block,
+  .tag,
   table.oss tr {
     break-inside: avoid;
   }

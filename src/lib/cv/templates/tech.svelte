@@ -1,7 +1,15 @@
 <!--
-	Sidebar — skills and short lists in a left rail, everything else beside it.
-	The two columns are real elements here rather than a CSS trick, so nothing
-	depends on the order the sections appear in the YAML.
+	Tech — every tool named in a stack line, a skill row or an inline list is
+	drawn as a chip with its logo.
+
+	The logos are `techIcon` from `@cv`: a bundled subset of Simple Icons, looked
+	up by name, monochrome and inheriting the ink around them — so they print
+	with the text rather than as images a PDF exporter might drop. Anything with
+	no logo is still a chip, just a lettered one, which is what keeps a row of
+	prose from falling apart when only half of it is a brand.
+
+	They arrive as markup through `{@html}`, which the compiler never sees and so
+	cannot scope — the rule that sizes one has to reach out through `:global`.
 
 	A template is a Svelte component handed the parsed YAML as `cv`. It renders
 	inside the preview frame on top of cv.css, whose class names the markup below
@@ -11,19 +19,12 @@
 	YAML behind it, and so what makes the two panes follow each other.
 -->
 <script>
-  import { list, md, sections, techs } from '@cv'
+  import { list, md, sections, techIcon, techs } from '@cv'
 
   /** @type {{ cv: any }} */
   let { cv } = $props()
 
   const secs = $derived(sections(cv))
-
-  /**
-   * Skills go to the rail by default; any section can opt in or out with
-   * `rail: true` / `rail: false` in the YAML.
-   */
-  const rail = $derived(secs.filter((e) => e.sec.rail ?? (e.sec.type === 'skills' || e.sec.type === 'list')))
-  const main = $derived(secs.filter((e) => !rail.includes(e)))
 </script>
 
 {#snippet secHead(/** @type {any} */ sec, /** @type {string} */ path)}
@@ -33,11 +34,18 @@
   </div>
 {/snippet}
 
+{#snippet chip(/** @type {string} */ text, /** @type {string | null} */ path)}
+  {@const icon = techIcon(text)}
+  <span class="tech" data-src={path}
+    >{#if icon}<span class="logo">{@html icon}</span>{/if}{@html md(text)}</span
+  >
+{/snippet}
+
 {#snippet stackLine(/** @type {any} */ item, /** @type {string} */ path)}
   {#if item.stack}
-    <p class="stack" data-src="{path}.stack">
-      <b>STACK</b> · {@html md(techs(item.stack).join(' · '))}
-    </p>
+    <div class="stack chips" data-src="{path}.stack">
+      {#each techs(item.stack) as t}{@render chip(t, null)}{/each}
+    </div>
   {/if}
 {/snippet}
 
@@ -99,9 +107,9 @@
           <div class="skill-block" data-src="{path}.blocks.{i}">
             <h3 data-src="{path}.blocks.{i}.title">{@html md(b.title)}</h3>
             {#each list(b.rows) as r, j}
-              <div class="skill-row" data-src="{path}.blocks.{i}.rows.{j}">
-                {#if r.tier}<span class="tier">{@html md(r.tier)}</span> ·
-                {/if}{@html md(r.text)}
+              <div class="skill-row chips" data-src="{path}.blocks.{i}.rows.{j}">
+                {#if r.tier}<span class="tier">{@html md(r.tier)}</span>{/if}
+                {#each techs(r.text) as t}{@render chip(t, null)}{/each}
               </div>
             {/each}
           </div>
@@ -128,9 +136,7 @@
       {@render secHead(sec, path)}
       {#if sec.inline}
         <div class="tags">
-          {#each list(sec.items) as item, i}
-            <span class="tag" data-src="{path}.items.{i}">{@html md(item)}</span>
-          {/each}
+          {#each list(sec.items) as item, i}{@render chip(item, `${path}.items.${i}`)}{/each}
         </div>
       {:else}
         <ul class="bullets">
@@ -185,66 +191,66 @@
 
 <div class="sheet">
   {@render head()}
-  <div class="cv-cols">
-    <aside class="cv-rail">
-      {#each rail as e}{@render block(e.sec, e.path)}{/each}
-    </aside>
-    <div class="cv-main">
-      {#each main as e}{@render block(e.sec, e.path)}{/each}
-    </div>
-  </div>
+  {#each secs as e}{@render block(e.sec, e.path)}{/each}
 </div>
 
 <style>
-  .cv-cols {
+  .sheet {
+    font-size: 13px;
+  }
+
+  .chips {
     display: flex;
-    align-items: flex-start;
-    gap: 26px;
-    margin-top: 4px;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 3px 4px;
   }
 
-  .cv-rail {
-    flex: 0 0 31%;
-    min-width: 0;
-    padding-right: 24px;
-    border-right: 1px solid var(--line);
+  .stack.chips {
+    margin-top: 7px;
   }
 
-  .cv-main {
-    flex: 1;
-    min-width: 0;
+  .skill-row.chips {
+    margin: 3px 0 6px;
   }
 
-  /* One column of skills is all the rail has room for, so every block after
-	   the first needs the divider that cv.css's two-up grid suppresses. */
-  .cv-rail .skill-grid {
-    grid-template-columns: 1fr;
+  .tech {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 8px 1px 6px;
+    border: 1px solid var(--line);
+    border-radius: 100px;
+    font-family: var(--mono);
+    font-size: 10px;
+    line-height: 1.7;
+    color: var(--muted);
+    white-space: nowrap;
   }
 
-  .cv-rail .skill-block:nth-child(2) {
-    border-top: 1px solid var(--line);
+  /* The `<svg>` techIcon hands back is injected rather than written here, so
+	   the compiler puts no scoping class on it; :global is how the rule reaches
+	   it. Its size comes from the 1em it was drawn at, against this font-size. */
+  .tech .logo {
+    display: inline-flex;
+    font-size: 11.5px;
+    color: var(--accent-deep);
   }
 
-  .cv-rail .sec-head h2 {
-    letter-spacing: 1.6px;
-  }
-
-  /* A pill wide enough to wrap in a 31% rail reads worse than a line does, so
-	   an inline list keeps the spacing in here and loses the shape. */
-  .cv-rail .tags {
+  .tech .logo :global(svg) {
     display: block;
   }
 
-  .cv-rail .tag {
-    display: block;
-    padding: 1px 0;
-    border: none;
-    border-radius: 0;
-    font-size: 12px;
+  .tier {
+    margin-right: 2px;
+  }
+
+  .tags {
+    gap: 3px 4px;
   }
 
   @media print {
-    .cv-rail {
+    .tech {
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }

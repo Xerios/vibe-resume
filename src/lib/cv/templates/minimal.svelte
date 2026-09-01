@@ -1,7 +1,10 @@
 <!--
-	Sidebar — skills and short lists in a left rail, everything else beside it.
-	The two columns are real elements here rather than a CSS trick, so nothing
-	depends on the order the sections appear in the YAML.
+	Minimal — no rules, no filled marks, nothing but type and the space around
+	it. Sections are told apart by how far they sit from each other.
+
+	The one thing it keeps from cv.css is the line under the name, and even that
+	is thinned. It is the quietest of the nine on paper, and the cheapest to
+	print: there is almost nothing on it that isn't text.
 
 	A template is a Svelte component handed the parsed YAML as `cv`. It renders
 	inside the preview frame on top of cv.css, whose class names the markup below
@@ -17,13 +20,6 @@
   let { cv } = $props()
 
   const secs = $derived(sections(cv))
-
-  /**
-   * Skills go to the rail by default; any section can opt in or out with
-   * `rail: true` / `rail: false` in the YAML.
-   */
-  const rail = $derived(secs.filter((e) => e.sec.rail ?? (e.sec.type === 'skills' || e.sec.type === 'list')))
-  const main = $derived(secs.filter((e) => !rail.includes(e)))
 </script>
 
 {#snippet secHead(/** @type {any} */ sec, /** @type {string} */ path)}
@@ -185,68 +181,96 @@
 
 <div class="sheet">
   {@render head()}
-  <div class="cv-cols">
-    <aside class="cv-rail">
-      {#each rail as e}{@render block(e.sec, e.path)}{/each}
-    </aside>
-    <div class="cv-main">
-      {#each main as e}{@render block(e.sec, e.path)}{/each}
-    </div>
-  </div>
+  {#each secs as e}{@render block(e.sec, e.path)}{/each}
 </div>
 
 <style>
-  .cv-cols {
-    display: flex;
-    align-items: flex-start;
-    gap: 26px;
-    margin-top: 4px;
+  .sheet {
+    max-width: 760px;
+    padding: 48px 54px 40px;
+    font-size: 13px;
+    line-height: 1.52;
   }
 
-  .cv-rail {
-    flex: 0 0 31%;
-    min-width: 0;
-    padding-right: 24px;
-    border-right: 1px solid var(--line);
+  .sheet header {
+    align-items: baseline;
+    padding-bottom: 4px;
+    border-bottom-width: 1px;
   }
 
-  .cv-main {
-    flex: 1;
-    min-width: 0;
+  .name {
+    font-size: 27px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
   }
 
-  /* One column of skills is all the rail has room for, so every block after
-	   the first needs the divider that cv.css's two-up grid suppresses. */
-  .cv-rail .skill-grid {
-    grid-template-columns: 1fr;
+  .role {
+    color: var(--muted);
+    font-weight: 500;
   }
 
-  .cv-rail .skill-block:nth-child(2) {
-    border-top: 1px solid var(--line);
+  .contact {
+    color: var(--faint);
   }
 
-  .cv-rail .sec-head h2 {
-    letter-spacing: 1.6px;
+  /* Space is the only separator, so there is more of it. */
+  .sheet section {
+    margin-top: 26px;
   }
 
-  /* A pill wide enough to wrap in a 31% rail reads worse than a line does, so
-	   an inline list keeps the spacing in here and loses the shape. */
-  .cv-rail .tags {
-    display: block;
+  .sec-head {
+    margin-bottom: 8px;
   }
 
-  .cv-rail .tag {
-    display: block;
-    padding: 1px 0;
-    border: none;
+  .sec-head h2 {
+    font-size: 9.5px;
+    letter-spacing: 3.2px;
+    color: var(--faint);
+  }
+
+  .sec-head .bar {
+    display: none;
+  }
+
+  .skill-block {
+    padding: 4px 0;
+    border-top: none;
+  }
+
+  .job-title {
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+
+  .job-title .co {
+    color: var(--ink);
+    font-weight: 400;
+  }
+
+  /* A rule rather than a diamond: nothing on this sheet is filled in, which is
+	   also why none of it depends on a printer's background graphics. */
+  ul.bullets li::before {
+    top: 9px;
+    width: 6px;
+    height: 0;
+    background: none;
+    border-top: 1px solid var(--faint);
     border-radius: 0;
-    font-size: 12px;
+    transform: none;
   }
 
-  @media print {
-    .cv-rail {
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
+  .earlier ul.bullets li::before {
+    top: 9px;
+    width: 6px;
+    height: 0;
+    border-radius: 0;
+  }
+
+  .stack {
+    color: var(--faint);
+  }
+
+  table.oss thead th {
+    border-bottom-color: var(--line);
   }
 </style>

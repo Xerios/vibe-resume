@@ -14,10 +14,14 @@
     layout,
     /** @type {string} */
     theme,
+    /** @type {string} */
+    font,
     /** @type {(id: string) => void} */
     onLayout,
     /** @type {(id: string) => void} */
     onTheme,
+    /** @type {(id: string) => void} */
+    onFont,
     /** The active file's own CSS, and the setter behind the picker's editor. */
     css = '',
     /** @type {(text: string) => void} */
@@ -34,7 +38,7 @@
 
   <div class="t-spacer"></div>
 
-  <StylePicker {templates} {layout} {theme} {css} {onLayout} {onTheme} {onCss} />
+  <StylePicker {templates} {layout} {theme} {font} {css} {onLayout} {onTheme} {onFont} {onCss} />
 
   <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
   <button class="t-btn t-btn-pdf" accesskey="x" title={withKey('Export the current CV as PDF', 'x')} onclick={onExport}>

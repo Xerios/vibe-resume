@@ -11,7 +11,7 @@
      TabBar.svelte       #tabbar, .tab*, .tab-new*, .new-*, the export button
      TrashPanel.svelte   #trash-panel, .trash-*
      WelcomeOverlay.svelte  #welcome, .w-*
-     StylePicker.svelte  .style-*, .layout-*, .theme-*
+     StylePicker.svelte  .style-*, .layout-*, .theme-*, .font-*
      HistoryPanel.svelte #history-pane, .hist-*, .stat-*
      YamlEditor.svelte   #cm-wrap (its CodeMirror theme is codemirror.css,
                          beside it — scoped styles can't reach CM's own DOM)
@@ -19,10 +19,11 @@
                          the banners, #toast
 
    The CV document is styled nowhere in this document at all. It renders inside
-   an iframe, and cv/{frame,cv,palettes,presets}.css are loaded into that frame
-   by PreviewFrame.svelte rather than imported anywhere here. The one exception
-   is cv/palettes.css, which +layout.svelte does import: StylePicker draws each
-   theme swatch from the ramps in it.
+   an iframe, and cv/{frame,cv,palettes,fonts,presets}.css are loaded into that
+   frame by PreviewFrame.svelte rather than imported anywhere here. The two
+   exceptions are cv/palettes.css and cv/fonts.css, which +layout.svelte does
+   import: StylePicker draws each theme swatch from the ramps in one, and sets
+   each font option in the face it offers from the stacks in the other.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* Order matters: tokens define what the other two spend. */

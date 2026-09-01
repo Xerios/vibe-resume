@@ -20,6 +20,7 @@
   import TemplateEditor from '$lib/components/TemplateEditor.svelte'
   import TemplateThumb from '$lib/components/TemplateThumb.svelte'
   import PreviewFrame from '$lib/cv/PreviewFrame.svelte'
+  import { resolveFont } from '$lib/cv/fonts.js'
   import { liveTemplate } from '$lib/cv/live-template.svelte.js'
   import { resolveTheme } from '$lib/cv/presets.js'
   import { parseCv } from '$lib/cv/render.js'
@@ -32,6 +33,7 @@
   const layout = $derived(templates.resolve(files.active?.layout))
   const template = $derived(templates.get(layout))
   const theme = $derived(resolveTheme(files.active?.theme))
+  const font = $derived(resolveFont(files.active?.font))
   const css = $derived(files.active?.css ?? '')
 
   const tpl = liveTemplate(() => ({
@@ -148,7 +150,7 @@
       {#if tpl.error}
         <div id="error-banner">⚠ {tpl.error.message}</div>
       {/if}
-      <PreviewFrame cv={parsed} component={tpl.component} templateCss={tpl.css} {layout} {theme} {css} />
+      <PreviewFrame cv={parsed} component={tpl.component} templateCss={tpl.css} {layout} {theme} {font} {css} />
     </div>
   </div>
 </div>

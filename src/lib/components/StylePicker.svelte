@@ -2,6 +2,7 @@
   import Icon from '@iconify/svelte'
   import IconLayout from '@iconify-icons/lucide/layout-panel-left'
   import { base } from '$app/paths'
+  import { FONTS } from '$lib/cv/fonts.js'
   import { THEMES } from '$lib/cv/presets.js'
   import TemplateThumb from './TemplateThumb.svelte'
   import { withKey } from './access-keys.js'
@@ -13,10 +14,14 @@
     layout,
     /** @type {string} */
     theme,
+    /** @type {string} */
+    font,
     /** @type {(id: string) => void} */
     onLayout,
     /** @type {(id: string) => void} */
     onTheme,
+    /** @type {(id: string) => void} */
+    onFont,
     /** The active file's own CSS — see the editor at the foot of the popover. */
     css = '',
     /** @type {(text: string) => void} */
@@ -41,8 +46,9 @@
   let root
   let toggle = $state(/** @type {HTMLButtonElement | undefined} */ (undefined))
 
-  // Picking is not a commitment — the popover stays up so layouts and themes
-  // can be tried against each other, and closes on Escape or a click elsewhere.
+  // Picking is not a commitment — the popover stays up so templates, themes and
+  // fonts can be tried against each other, and closes on Escape or a click
+  // elsewhere.
   $effect(() => {
     if (!open) return
 
@@ -76,7 +82,7 @@
     bind:this={toggle}
     onclick={() => (open = !open)}
     accesskey="s"
-    title={withKey('Layout and theme', 's')}
+    title={withKey('Template, theme and font', 's')}
     aria-expanded={open}
   >
     <Icon icon={IconLayout} width="12" height="12" />
@@ -116,6 +122,21 @@
             <button class="theme-opt" class:on={t.id === theme} title={t.name} aria-pressed={t.id === theme} onclick={() => onTheme(t.id)} data-cv-theme={t.id}>
               <span class="theme-dot"></span>
               <span>{t.name}</span>
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      <!-- Set in the face it offers, from the `data-cv-font` on the option —
+			     the same trick as the swatches above, and the same reason: one table
+			     of stacks (fonts.css), no second copy to drift. -->
+      <div class="style-group">
+        <span class="style-label">Font</span>
+        <div class="font-grid">
+          {#each FONTS as f (f.id)}
+            <button class="font-opt" class:on={f.id === font} title={f.hint} aria-pressed={f.id === font} onclick={() => onFont(f.id)} data-cv-font={f.id}>
+              <span class="font-sample">Aa</span>
+              <span>{f.name}</span>
             </button>
           {/each}
         </div>
@@ -322,13 +343,15 @@
     transform: translateX(2px);
   }
 
-  .theme-grid {
+  .theme-grid,
+  .font-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 4px;
   }
 
-  .theme-opt {
+  .theme-opt,
+  .font-opt {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -347,15 +370,31 @@
       background 0.13s;
   }
 
-  .theme-opt:hover {
+  .theme-opt:hover,
+  .font-opt:hover {
     border-color: var(--accent);
     color: var(--accent-deep);
   }
 
-  .theme-opt.on {
+  .theme-opt.on,
+  .font-opt.on {
     border-color: var(--accent);
     color: var(--accent-deep);
     background: var(--accent-wash);
+  }
+
+  /* The specimen, in the stack the option's own `data-cv-font` declares. The
+	   name beside it stays in the picker's type, so the two read as label and
+	   sample rather than as one mixed line. */
+  .font-sample {
+    flex-shrink: 0;
+    width: 17px;
+    font-family: var(--f-sans);
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1;
+    text-align: center;
+    color: var(--ink);
   }
 
   /* Accent over the sheet colour it sits on, so a swatch previews the pairing.

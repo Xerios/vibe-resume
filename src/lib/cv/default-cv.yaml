@@ -1,5 +1,24 @@
 # The document the editor starts from on a first visit (and what "Reset" restores).
 #
+# A CV is a header and a list of sections. Every template renders these seven
+# section types, so switching template never loses a section:
+#
+#   summary     paragraphs: [...]
+#   skills      blocks: [{ title, rows: [{ tier?, text }] }]
+#   experience  items: [{ title, company, dates, sub, bullets, stack }]
+#               or { subtype: earlier, title, items: [...] } for a run of
+#               older roles with no dates of their own
+#   education   items: [{ title, school, dates, sub?, bullets? }]
+#   projects    items: [{ title, dates?, sub?, bullets?, stack? }]
+#   list        items: [...] — certifications, awards, languages;
+#               `inline: true` sets them as pills on one line
+#   oss         projects: [{ name, stars, desc }], hasHeader: true|false
+#
+# `stack` takes a comma-separated string or a YAML list, whichever reads
+# better; the Tech template draws a logo beside every entry it recognises.
+# The Sidebar template puts skills and lists in its rail — any section can opt
+# in or out with `rail: true` / `rail: false`.
+#
 # Single-quote only where necessary:
 #   · strings starting with ** or [ (YAML special first chars)
 #   · strings containing ": " (ambiguous key separator)
@@ -88,6 +107,38 @@ sections:
         items:
           - '**Umbrella Startups** — Freelance developer; built small business websites and internal tools. _WordPress, PHP._'
           - '**University Tech Club** — Volunteer developer; maintained club website and event registration system. _HTML, CSS, JavaScript._'
+
+  - type: projects
+    title: Projects
+    items:
+      - title: '[dashboard-kit](https://example.dev/dashboard-kit)'
+        dates: 2023 – Present
+        sub: Charting and layout components for internal dashboards, extracted from the work at Acme and released publicly.
+        stack:
+          - TypeScript
+          - Svelte
+          - Vite
+      - title: '[deploy-bot](https://example.dev/deploy-bot)'
+        dates: 2021
+        sub: Chat-driven deployments for small teams — approvals, rollbacks and an audit trail.
+        stack: Go, PostgreSQL, Docker
+
+  - type: education
+    title: Education
+    items:
+      - title: BSc Computer Science
+        school: Springfield University
+        dates: 2010 – 2014
+        sub: Graduated with honours — thesis on distributed systems.
+
+  - type: list
+    title: Certifications & Languages
+    inline: true
+    items:
+      - AWS Certified Solutions Architect
+      - Certified Kubernetes Administrator
+      - English C2
+      - Spanish B2
 
   - type: oss
     title: Open Source

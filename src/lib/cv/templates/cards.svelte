@@ -1,7 +1,11 @@
 <!--
-	Sidebar — skills and short lists in a left rail, everything else beside it.
-	The two columns are real elements here rather than a CSS trick, so nothing
-	depends on the order the sections appear in the YAML.
+	Cards — every role, degree, project and skill group in a box of its own, so
+	a busy CV reads as a set of things rather than as one long column.
+
+	The box is an outline first and a wash second: Chrome drops background
+	painting when "Background graphics" is off in the print dialog, and a card
+	that only existed as a fill would vanish from the PDF. The border is what
+	carries it, and each card is an atom the pagination already keeps whole.
 
 	A template is a Svelte component handed the parsed YAML as `cv`. It renders
 	inside the preview frame on top of cv.css, whose class names the markup below
@@ -17,13 +21,6 @@
   let { cv } = $props()
 
   const secs = $derived(sections(cv))
-
-  /**
-   * Skills go to the rail by default; any section can opt in or out with
-   * `rail: true` / `rail: false` in the YAML.
-   */
-  const rail = $derived(secs.filter((e) => e.sec.rail ?? (e.sec.type === 'skills' || e.sec.type === 'list')))
-  const main = $derived(secs.filter((e) => !rail.includes(e)))
 </script>
 
 {#snippet secHead(/** @type {any} */ sec, /** @type {string} */ path)}
@@ -185,66 +182,59 @@
 
 <div class="sheet">
   {@render head()}
-  <div class="cv-cols">
-    <aside class="cv-rail">
-      {#each rail as e}{@render block(e.sec, e.path)}{/each}
-    </aside>
-    <div class="cv-main">
-      {#each main as e}{@render block(e.sec, e.path)}{/each}
-    </div>
-  </div>
+  {#each secs as e}{@render block(e.sec, e.path)}{/each}
 </div>
 
 <style>
-  .cv-cols {
-    display: flex;
-    align-items: flex-start;
-    gap: 26px;
-    margin-top: 4px;
+  .sheet {
+    padding: 38px 44px 32px;
   }
 
-  .cv-rail {
-    flex: 0 0 31%;
-    min-width: 0;
-    padding-right: 24px;
-    border-right: 1px solid var(--line);
+  .sheet section {
+    margin-top: 18px;
   }
 
-  .cv-main {
-    flex: 1;
-    min-width: 0;
+  .job,
+  .skill-block {
+    padding: 9px 12px 10px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: color-mix(in srgb, var(--accent-wash) 45%, var(--paper));
   }
 
-  /* One column of skills is all the rail has room for, so every block after
-	   the first needs the divider that cv.css's two-up grid suppresses. */
-  .cv-rail .skill-grid {
-    grid-template-columns: 1fr;
+  .job {
+    margin-bottom: 7px;
   }
 
-  .cv-rail .skill-block:nth-child(2) {
+  /* cv.css drops the top border on the first row of the skill grid, which is
+	   the one part of a card it can't be allowed to take. */
+  .skill-block:first-child,
+  .skill-block:nth-child(2) {
     border-top: 1px solid var(--line);
   }
 
-  .cv-rail .sec-head h2 {
-    letter-spacing: 1.6px;
+  .skill-grid {
+    gap: 7px;
   }
 
-  /* A pill wide enough to wrap in a 31% rail reads worse than a line does, so
-	   an inline list keeps the spacing in here and loses the shape. */
-  .cv-rail .tags {
-    display: block;
+  .job-sub {
+    margin-top: 1px;
   }
 
-  .cv-rail .tag {
-    display: block;
-    padding: 1px 0;
-    border: none;
-    border-radius: 0;
-    font-size: 12px;
+  .stack {
+    margin-top: 7px;
+    padding-top: 6px;
+    border-top: 1px solid var(--line);
+  }
+
+  /* A pill inside a card needs to sit on the paper rather than on the wash. */
+  .tag {
+    background: var(--paper);
   }
 
   @media print {
-    .cv-rail {
+    .job,
+    .skill-block {
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }

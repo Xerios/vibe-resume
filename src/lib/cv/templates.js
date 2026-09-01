@@ -4,8 +4,13 @@
  * A template is how the CV is *arranged*: an ordinary Svelte component handed
  * the parsed YAML as `cv`, compiled in the browser and mounted inside the
  * preview frame (see compile-template.js). What used to be five CSS-only
- * "layouts" are these five components — same markup and rules as before, but
- * now readable and editable in the app rather than buried in presets.css.
+ * "layouts" are components now — readable and editable in the app rather than
+ * buried in presets.css, and four more of them since.
+ *
+ * All nine render the same section types out of the same class names, and
+ * differ in their <style> block; Sidebar and Tech are the two that need markup
+ * of their own to do their job. Every one of them has to print, which is what
+ * rules out a look built on filled backgrounds — see the note in cv.css.
  *
  * The sources are imported as text, not as components: nothing here is ever
  * mounted directly. They are still real `.svelte` files so that `pnpm check`
@@ -15,10 +20,14 @@
  * templates.svelte.js, which is what the rest of the app talks to.
  */
 
+import cardsSource from './templates/cards.svelte?raw'
 import centeredSource from './templates/centered.svelte?raw'
 import classicSource from './templates/classic.svelte?raw'
 import compactSource from './templates/compact.svelte?raw'
+import ledgerSource from './templates/ledger.svelte?raw'
+import minimalSource from './templates/minimal.svelte?raw'
 import sidebarSource from './templates/sidebar.svelte?raw'
+import techSource from './templates/tech.svelte?raw'
 import timelineSource from './templates/timeline.svelte?raw'
 
 /**
@@ -60,6 +69,30 @@ export const BUILTIN_TEMPLATES = [
     name: 'Timeline',
     hint: 'Experience on a dated vertical rail',
     source: timelineSource,
+  },
+  {
+    id: 'ledger',
+    name: 'Ledger',
+    hint: 'Titles and dates in a gutter down the left',
+    source: ledgerSource,
+  },
+  {
+    id: 'minimal',
+    name: 'Minimal',
+    hint: 'No rules, no marks — spacing does the separating',
+    source: minimalSource,
+  },
+  {
+    id: 'cards',
+    name: 'Cards',
+    hint: 'Every role and skill group in a box of its own',
+    source: cardsSource,
+  },
+  {
+    id: 'tech',
+    name: 'Tech',
+    hint: 'Stacks and skills as chips, each with its logo',
+    source: techSource,
   },
 ]
 

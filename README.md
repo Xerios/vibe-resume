@@ -33,6 +33,8 @@ pnpm check      # svelte-check
 | Compiling one      | [src/lib/cv/compile-template.js](src/lib/cv/compile-template.js) — Svelte, in the browser                    |
 | Shared state       | [src/lib/cv/state.svelte.js](src/lib/cv/state.svelte.js) — the document, files and templates both pages hold |
 | Theme              | [src/lib/cv/presets.js](src/lib/cv/presets.js) — the palettes, and the CSS beside it                         |
+| Type               | [src/lib/cv/fonts.js](src/lib/cv/fonts.js) — the font stacks, and the CSS beside it                          |
+| Tech logos         | [src/lib/cv/tech-icons.js](src/lib/cv/tech-icons.js) — generated; see _Logos_ below                          |
 | CSS                | [src/app.css](src/app.css) — the index; see _Where the CSS lives_ below                                      |
 | Offline            | [src/service-worker.js](src/service-worker.js) — precache; manifest and icons in `static/`                   |
 
@@ -85,21 +87,29 @@ edited is stored per template rather than per file.
 
 ### Templates
 
-The Style button offers five arrangements of the sheet — classic, compact,
-centered, sidebar, timeline — and seven palettes. Both are per file, stored in
-the file registry next to the name rather than in the CRDT: restyling is not an
-edit, so it leaves the YAML and the version history alone. The popover's _Edit
-this template_ is an ordinary link to `/template`, and picking a template there
-means the same thing it means in the popover: the CV switches to it.
+The Style button offers nine arrangements of the sheet — classic, compact,
+centered, sidebar, timeline, ledger, minimal, cards, tech — seven palettes and
+six fonts. All three are per file, stored in the file registry next to the name
+rather than in the CRDT: restyling is not an edit, so it leaves the YAML and the
+version history alone. The popover's _Edit this template_ is an ordinary link to
+`/template`, and picking a template there means the same thing it means in the
+popover: the CV switches to it.
 
 An arrangement is a _template_: an ordinary Svelte component, handed the parsed
-YAML as `cv`, that renders the sheet. The five that ship are
+YAML as `cv`, that renders the sheet. The nine that ship are
 [src/lib/cv/templates/](src/lib/cv/templates/) — real `.svelte` files, so
 `pnpm check` compiles and type-checks them, imported as text rather than as
-components because nothing mounts them directly. They used to be five blocks of
+components because nothing mounts them directly. They began as five blocks of
 CSS in `presets.css` keyed off a `data-cv-layout` attribute; each one now carries
 its own markup and its own style block, which is what makes it something you can
 open and change.
+
+Every one of them has to print. That is the constraint the four newer ones are
+drawn under and the reason none of them leans on a filled background: Chrome
+drops background painting when _Background graphics_ is off in the print dialog,
+so a card that only existed as a fill would vanish from the PDF. Borders,
+outlines and type always print, and that is what Ledger's gutter, Minimal's
+spacing, Cards' outlines and Tech's chips are built out of.
 
 The template page compiles what you type, on a debounce, and mounts the result;
 so does the editor page, from the same source text through the same
@@ -160,10 +170,10 @@ in, and why nothing in the print rules has to undo a dark one. Each palette
 still carries the `--t-*-d` half it would need for a dark preview — unspent, but
 kept beside the light ramp so the two can't drift apart.
 
-Palettes sit in their own file because they are the one part of the preset
-system the app still needs: the sheet's CSS all moves into the frame, but
-StylePicker draws each swatch by putting `data-cv-theme` on the option itself,
-so there is no second copy of the colours to drift out of step. The swatches
+Palettes and font stacks sit in files of their own because they are the parts of
+the preset system the app still needs: the sheet's CSS all moves into the frame,
+but StylePicker draws each option by putting `data-cv-theme` or `data-cv-font`
+on the option itself, so there is no second copy of either to drift out of step. The swatches
 read from the light ramp too, for the same reason the sheet does — one that
 darkened with the chrome would advertise a CV the preview can't produce.
 
@@ -176,9 +186,82 @@ What every template shares is [cv.css](src/lib/cv/cv.css): the class names the
 sheet is built out of, and how it paginates. A template adds to that and
 overrides parts of it from its own style block, which the compiler scopes — so
 its rules outrank the base on specificity alone, whatever order they land in.
-Only the sidebar needs markup rather than CSS to do its job: it renders a rail
-and a main column, skills going to the rail, and any section can opt in or out
-with `rail: true` / `rail: false`.
+Two of the nine need markup rather than CSS to do their job. Sidebar renders a
+rail and a main column, skills and lists going to the rail, and any section can
+opt in or out with `rail: true` / `rail: false`. Tech renders a chip per tool
+instead of a stack line — see _Logos_ below.
+
+#### What a CV is made of
+
+A document is a header and a list of sections, and a section's `type` is what
+decides how it renders. There are seven, all of them understood by all nine
+templates, so switching template can never lose one:
+
+| `type`       | Holds                                                                    |
+| ------------ | ------------------------------------------------------------------------ |
+| `summary`    | `paragraphs`                                                             |
+| `skills`     | `blocks`, each a `title` and `rows` of `{ tier?, text }`                 |
+| `experience` | `items` of `{ title, company, dates, sub, bullets, stack }`              |
+| `education`  | `items` of `{ title, school, dates, sub?, bullets? }`                    |
+| `projects`   | `items` of `{ title, dates?, sub?, bullets?, stack? }`                   |
+| `list`       | `items` of plain strings — `inline: true` sets them as pills on one line |
+| `oss`        | `projects` of `{ name, stars, desc }`, with an optional table header     |
+
+Experience, education and projects are the same block underneath — `.job` in
+cv.css — because a degree and a role are the same shape: a title, something it
+belongs to, dates, a line of context and some bullets. Only the section around
+them differs, which is what a template selects on when it wants to tell the
+three apart. An `experience` item can also say `subtype: earlier`, which renders
+a run of older roles as one titled list with no dates of its own.
+
+An unknown `type` renders as a red line naming itself rather than as nothing, so
+a typo in the YAML is visible in the preview instead of silently dropping a
+section.
+
+#### Logos
+
+`stack` takes a comma-separated string or a YAML list, whichever reads better;
+`techs` in [template-api.js](src/lib/cv/template-api.js) is what reads either
+into a list, so no template has to care which was written.
+
+The Tech template draws each entry as a chip with its brand logo, from
+`techIcon` beside it. Matching is deliberately forgiving, because a CV is prose
+rather than a manifest: case and punctuation are normalised away and then a few
+reductions are tried in turn, so `Node.js`, `Postgres`, `TypeScript/JavaScript
+(10+ yrs)`, `React 18` and `ORM: Prisma` all land on a logo while `English C2`
+quietly doesn't. Anything unmatched is still a chip, just a lettered one.
+
+The logos are [Simple Icons](https://simpleicons.org) (CC0-1.0), and they are
+_vendored_ rather than depended on: the full set is a few thousand icons and
+several megabytes, so [scripts/gen-tech-icons.mjs](scripts/gen-tech-icons.mjs)
+fetches a curated list from the Iconify API and writes
+[tech-icons.js](src/lib/cv/tech-icons.js), an ordinary module that ships with
+the bundle. Adding one means adding a line to that script and running it again.
+Nothing at runtime touches the network, which is the same rule as everything
+else here — and monochrome paths inheriting the ink around them print with the
+text rather than as images an exporter might drop.
+
+That module is the price of the feature: some 190 kB of path data, in the chunk
+the editor page loads rather than a lazy one, because `techIcon` is called
+during a render and can't wait for a fetch. It sits beside a Svelte compiler
+several times its size, which is the reason it was judged affordable — trimming
+the list in the generator is how to make it smaller.
+
+#### Type
+
+The six fonts work exactly as the palettes do: an id on `#cv-root` as
+`data-cv-font`, a table of stacks in [fonts.css](src/lib/cv/fonts.css), and one
+block in presets.css that re-points `--sans` and `--mono` at whichever is
+named. StylePicker sets each option in the face it is offering by putting the
+same attribute on the option itself, so there is no second copy of the stacks.
+
+None of them is downloaded. A web font would mean either a CDN this app doesn't
+have or a few hundred kilobytes of precache per family, and a CV that renders in
+whatever the reader's machine substituted is worse than one set in a face that
+is certainly installed — so each is a stack of faces that ship with an operating
+system, ending in the generic the browser can always satisfy. A file's own CSS
+still overrides `--sans` by hand: it is applied after presets.css and lands on
+the same element.
 
 ### Keyboard
 
@@ -213,6 +296,7 @@ In the app's document:
 | [styles/print.css](src/lib/styles/print.css)                   | the fallback for a print the app can't intercept             |
 | [components/codemirror.css](src/lib/components/codemirror.css) | the CodeMirror theme, imported by `YamlEditor.svelte`        |
 | [cv/palettes.css](src/lib/cv/palettes.css)                     | the seven ramps — here only so StylePicker can draw a swatch |
+| [cv/fonts.css](src/lib/cv/fonts.css)                           | the six stacks — here for the same reason, one option each   |
 
 And in the preview frame's, written into it by `PreviewFrame`:
 
@@ -221,7 +305,8 @@ And in the preview frame's, written into it by `PreviewFrame`:
 | [cv/frame.css](src/lib/cv/frame.css)       | the frame's reset, tokens and page box — its declared inputs |
 | [cv/cv.css](src/lib/cv/cv.css)             | the sheet itself, plus how it paginates                      |
 | [cv/palettes.css](src/lib/cv/palettes.css) | the same seven ramps, this time for the sheet to spend       |
-| [cv/presets.css](src/lib/cv/presets.css)   | the theme ramp selected on `#cv-root`                        |
+| [cv/fonts.css](src/lib/cv/fonts.css)       | the same six stacks, likewise                                |
+| [cv/presets.css](src/lib/cv/presets.css)   | the ramp and the stack selected on `#cv-root`                |
 | the active template's compiled style block | scoped by the compiler, so it can't reach anything else      |
 | the active file's own CSS                  | whatever you typed into the Style popover, applied last      |
 

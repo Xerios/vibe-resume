@@ -4,7 +4,7 @@
    * template page. The names alone don't say much, and a sketch reads faster
    * than switching to find out.
    *
-   * Only the five that ship have one. A template of your own gets the neutral
+   * Only the nine that ship have one. A template of your own gets the neutral
    * sheet at the foot, since nothing here can know what its markup does.
    */
 
@@ -51,6 +51,40 @@
       <circle cx="5.5" cy={y + 0.8} r="1.8" class="rule" />
       <rect x="10" {y} width="23" height="1.6" opacity="0.4" />
     {/each}
+  {:else if id === 'ledger'}
+    <rect x="3" y="3" width="17" height="4" />
+    <rect x="26" y="4" width="7" height="2" opacity="0.5" />
+    <rect x="3" y="9.5" width="8" height="1" class="rule" />
+    <rect x="13" y="9.5" width="20" height="1" class="rule" />
+    {#each [13, 17, 21] as y}
+      <rect x="3" {y} width="7" height="1.6" class="rule" opacity="0.55" />
+      <rect x="13" {y} width="20" height="1.6" opacity="0.4" />
+    {/each}
+  {:else if id === 'minimal'}
+    <rect x="3" y="3" width="15" height="3.5" />
+    <rect x="27" y="4" width="6" height="1.6" opacity="0.5" />
+    <rect x="3" y="11" width="7" height="1.4" opacity="0.55" />
+    <rect x="3" y="14.5" width="30" height="1.4" opacity="0.35" />
+    <rect x="3" y="19" width="6" height="1.4" opacity="0.55" />
+    <rect x="3" y="22.5" width="24" height="1.4" opacity="0.35" />
+  {:else if id === 'cards'}
+    <rect x="3" y="3" width="15" height="3.5" />
+    <rect x="27" y="4" width="6" height="1.6" opacity="0.5" />
+    <rect x="3" y="9" width="30" height="1" class="rule" />
+    {#each [12, 18.5] as y}
+      <rect x="3" {y} width="30" height="5" rx="1.4" fill="none" class="card" />
+      <rect x="5" y={y + 1.7} width="14" height="1.5" opacity="0.4" />
+    {/each}
+  {:else if id === 'tech'}
+    <rect x="3" y="3" width="15" height="3.5" />
+    <rect x="27" y="4" width="6" height="1.6" opacity="0.5" />
+    <rect x="3" y="9" width="30" height="1" class="rule" />
+    <rect x="3" y="12.5" width="26" height="1.5" opacity="0.4" />
+    {#each [[3, 8], [13, 6], [21, 9]] as [x, w]}
+      <rect {x} y="17" width={w} height="4" rx="2" fill="none" class="card" />
+      <circle cx={x + 2.4} cy="19" r="1" class="rule" />
+    {/each}
+    <rect x="3" y="23" width="18" height="1.5" opacity="0.4" />
   {:else}
     <rect x="3" y="3" width="30" height="20" rx="2" opacity="0.18" />
     <rect x="7" y="7" width="13" height="3" />
@@ -66,8 +100,15 @@
     fill: currentColor;
   }
 
-  /* The accent parts — rules and timeline dots. */
+  /* The accent parts — rules, timeline dots, the logo on a chip. */
   .rule {
     fill: var(--accent);
+  }
+
+  /* Outlined rather than filled, the way the templates they stand for are. */
+  .card {
+    stroke: currentColor;
+    stroke-width: 0.8;
+    opacity: 0.45;
   }
 </style>

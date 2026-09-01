@@ -11,7 +11,7 @@
 	YAML behind it, and so what makes the two panes follow each other.
 -->
 <script>
-  import { list, md, sections } from '@cv'
+  import { list, md, sections, techs } from '@cv'
 
   /** @type {{ cv: any }} */
   let { cv } = $props()
@@ -24,6 +24,56 @@
     <h2 data-src="{path}.title">{@html md(sec.title)}</h2>
     <div class="bar"></div>
   </div>
+{/snippet}
+
+{#snippet stackLine(/** @type {any} */ item, /** @type {string} */ path)}
+  {#if item.stack}
+    <p class="stack" data-src="{path}.stack">
+      <b>STACK</b> · {@html md(techs(item.stack).join(' · '))}
+    </p>
+  {/if}
+{/snippet}
+
+{#snippet entry(/** @type {any} */ item, /** @type {string} */ path)}
+  <div class="job" data-src={path}>
+    <div class="job-head">
+      <p class="job-title" data-src="{path}.title">
+        <!-- The space before each of these is written as `{' '}`: Svelte trims
+             whitespace at the start of a block, and a newline here would be
+             dropped rather than collapsed to the separator it looks like. -->
+        {@html md(item.title)}{#if item.company || item.school}{' '}<span class="co" data-src={item.company ? `${path}.company` : `${path}.school`}
+            >| {@html md(item.company ?? item.school)}</span
+          >{/if}{#if item.sideNote}{' '}<span class="side-note" data-src="{path}.sideNote">{@html md(item.sideNote)}</span>{/if}
+      </p>
+      {#if item.dates}<span class="job-dates" data-src="{path}.dates">{@html md(item.dates)}</span>{/if}
+    </div>
+    {#if item.sub}
+      <p class="job-sub" data-src="{path}.sub">{@html md(item.sub)}</p>
+    {/if}
+    <ul class="bullets">
+      {#each list(item.bullets) as b, j}
+        <li data-src="{path}.bullets.{j}">{@html md(b)}</li>
+      {/each}
+    </ul>
+    {@render stackLine(item, path)}
+  </div>
+{/snippet}
+
+{#snippet entries(/** @type {any} */ sec, /** @type {string} */ path)}
+  {#each list(sec.items) as item, i}
+    {#if item.subtype === 'earlier'}
+      <div class="job earlier" data-src="{path}.items.{i}">
+        <h3 data-src="{path}.items.{i}.title">{@html md(item.title)}</h3>
+        <ul class="bullets">
+          {#each list(item.items) as line, j}
+            <li data-src="{path}.items.{i}.items.{j}">{@html md(line)}</li>
+          {/each}
+        </ul>
+      </div>
+    {:else}
+      {@render entry(item, `${path}.items.${i}`)}
+    {/if}
+  {/each}
 {/snippet}
 
 {#snippet block(/** @type {any} */ sec, /** @type {string} */ path)}
@@ -54,42 +104,34 @@
   {:else if sec.type === 'experience'}
     <section class="sec-experience" data-src={path}>
       {@render secHead(sec, path)}
-      {#each list(sec.items) as item, i}
-        {#if item.subtype === 'earlier'}
-          <div class="job earlier" data-src="{path}.items.{i}">
-            <h3 data-src="{path}.items.{i}.title">{@html md(item.title)}</h3>
-            <ul class="bullets">
-              {#each list(item.items) as line, j}
-                <li data-src="{path}.items.{i}.items.{j}">{@html md(line)}</li>
-              {/each}
-            </ul>
-          </div>
-        {:else}
-          <div class="job" data-src="{path}.items.{i}">
-            <div class="job-head">
-              <p class="job-title" data-src="{path}.items.{i}.title">
-                {@html md(item.title)}
-                <span class="co" data-src="{path}.items.{i}.company">| {@html md(item.company)}</span>{#if item.sideNote}
-                  <span class="side-note" data-src="{path}.items.{i}.sideNote">{@html md(item.sideNote)}</span>{/if}
-              </p>
-              <span class="job-dates" data-src="{path}.items.{i}.dates">{@html md(item.dates)}</span>
-            </div>
-            <p class="job-sub" data-src="{path}.items.{i}.sub">
-              {@html md(item.sub)}
-            </p>
-            <ul class="bullets">
-              {#each list(item.bullets) as b, j}
-                <li data-src="{path}.items.{i}.bullets.{j}">{@html md(b)}</li>
-              {/each}
-            </ul>
-            {#if item.stack}
-              <p class="stack" data-src="{path}.items.{i}.stack">
-                <b>STACK</b> · {@html md(item.stack)}
-              </p>
-            {/if}
-          </div>
-        {/if}
-      {/each}
+      {@render entries(sec, path)}
+    </section>
+  {:else if sec.type === 'education'}
+    <section class="sec-education" data-src={path}>
+      {@render secHead(sec, path)}
+      {@render entries(sec, path)}
+    </section>
+  {:else if sec.type === 'projects'}
+    <section class="sec-projects" data-src={path}>
+      {@render secHead(sec, path)}
+      {@render entries(sec, path)}
+    </section>
+  {:else if sec.type === 'list'}
+    <section class="sec-list" data-src={path}>
+      {@render secHead(sec, path)}
+      {#if sec.inline}
+        <div class="tags">
+          {#each list(sec.items) as item, i}
+            <span class="tag" data-src="{path}.items.{i}">{@html md(item)}</span>
+          {/each}
+        </div>
+      {:else}
+        <ul class="bullets">
+          {#each list(sec.items) as item, i}
+            <li data-src="{path}.items.{i}">{@html md(item)}</li>
+          {/each}
+        </ul>
+      {/if}
     </section>
   {:else if sec.type === 'oss'}
     <section class="sec-oss" data-src={path}>

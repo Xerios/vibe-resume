@@ -1,7 +1,10 @@
 <!--
-	Sidebar — skills and short lists in a left rail, everything else beside it.
-	The two columns are real elements here rather than a CSS trick, so nothing
-	depends on the order the sections appear in the YAML.
+	Ledger — one gutter down the left, and everything hangs off it: the section
+	titles, the dates of every role, the name of every skill group.
+
+	The dates are positioned into that gutter rather than laid out in a column of
+	their own, so a job long enough to break across a page doesn't have to drag a
+	grid track over the boundary with it.
 
 	A template is a Svelte component handed the parsed YAML as `cv`. It renders
 	inside the preview frame on top of cv.css, whose class names the markup below
@@ -17,13 +20,6 @@
   let { cv } = $props()
 
   const secs = $derived(sections(cv))
-
-  /**
-   * Skills go to the rail by default; any section can opt in or out with
-   * `rail: true` / `rail: false` in the YAML.
-   */
-  const rail = $derived(secs.filter((e) => e.sec.rail ?? (e.sec.type === 'skills' || e.sec.type === 'list')))
-  const main = $derived(secs.filter((e) => !rail.includes(e)))
 </script>
 
 {#snippet secHead(/** @type {any} */ sec, /** @type {string} */ path)}
@@ -185,68 +181,81 @@
 
 <div class="sheet">
   {@render head()}
-  <div class="cv-cols">
-    <aside class="cv-rail">
-      {#each rail as e}{@render block(e.sec, e.path)}{/each}
-    </aside>
-    <div class="cv-main">
-      {#each main as e}{@render block(e.sec, e.path)}{/each}
-    </div>
-  </div>
+  {#each secs as e}{@render block(e.sec, e.path)}{/each}
 </div>
 
 <style>
-  .cv-cols {
-    display: flex;
-    align-items: flex-start;
-    gap: 26px;
-    margin-top: 4px;
+  /* One number, reused: the gutter is this wide and everything else starts
+	   after it. Change it here and the whole sheet re-hangs. */
+  .sheet {
+    --gutter: 104px;
+    padding: 40px 50px 34px;
   }
 
-  .cv-rail {
-    flex: 0 0 31%;
-    min-width: 0;
-    padding-right: 24px;
-    border-right: 1px solid var(--line);
+  /* The title sits in the gutter and the rule takes the rest of the line, so
+	   the rule begins exactly where the text below it does. `min-width` rather
+	   than a fixed one: a long title pushes the rule along instead of running
+	   underneath it. */
+  .sec-head {
+    gap: 0;
   }
 
-  .cv-main {
-    flex: 1;
-    min-width: 0;
+  .sec-head h2 {
+    min-width: var(--gutter);
   }
 
-  /* One column of skills is all the rail has room for, so every block after
-	   the first needs the divider that cv.css's two-up grid suppresses. */
-  .cv-rail .skill-grid {
+  .job {
+    position: relative;
+    padding-left: var(--gutter);
+    margin-bottom: 13px;
+  }
+
+  .job-head {
+    display: block;
+  }
+
+  .job-dates {
+    position: absolute;
+    left: 0;
+    top: 3px;
+    width: calc(var(--gutter) - 14px);
+    color: var(--accent);
+    font-weight: 600;
+    white-space: normal;
+  }
+
+  /* Earlier roles have no dates of their own, so the gutter is left empty and
+	   the block simply starts on the same line as everything else. */
+  .earlier h3 {
+    font-size: 13.5px;
+  }
+
+  /* One skill group per row, its name in the gutter beside its rows. */
+  .skill-grid {
     grid-template-columns: 1fr;
+    gap: 0;
   }
 
-  .cv-rail .skill-block:nth-child(2) {
+  .skill-block {
+    position: relative;
+    padding: 6px 0 6px var(--gutter);
+  }
+
+  .skill-block:nth-child(2) {
     border-top: 1px solid var(--line);
   }
 
-  .cv-rail .sec-head h2 {
-    letter-spacing: 1.6px;
+  .skill-block h3 {
+    position: absolute;
+    left: 0;
+    top: 7px;
+    width: calc(var(--gutter) - 14px);
+    margin: 0;
   }
 
-  /* A pill wide enough to wrap in a 31% rail reads worse than a line does, so
-	   an inline list keeps the spacing in here and loses the shape. */
-  .cv-rail .tags {
-    display: block;
-  }
-
-  .cv-rail .tag {
-    display: block;
-    padding: 1px 0;
-    border: none;
-    border-radius: 0;
-    font-size: 12px;
-  }
-
-  @media print {
-    .cv-rail {
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
+  .sec-list ul.bullets,
+  .sec-list .tags,
+  .sec-oss table.oss {
+    margin-left: var(--gutter);
   }
 </style>

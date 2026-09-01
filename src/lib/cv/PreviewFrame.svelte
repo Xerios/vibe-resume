@@ -10,11 +10,11 @@
    * without any of it being able to break the editor around it.
    *
    * The frame's stylesheets are imported as text and written into its head:
-   * frame.css declares what the sheet spends, then cv.css and the theme ramps,
-   * then two empty style elements — one for whatever the active template's own
-   * style block compiled to, one for the file's own CSS, in that order.
-   * Editing either is a `textContent` assignment — no rebuild, and no way for
-   * a half-typed rule to escape.
+   * frame.css declares what the sheet spends, then cv.css, the theme ramps and
+   * the font stacks, then two empty style elements — one for whatever the
+   * active template's own style block compiled to, one for the file's own CSS,
+   * in that order. Editing either is a `textContent` assignment — no rebuild,
+   * and no way for a half-typed rule to escape.
    *
    * The sheet itself is `mount()`ed rather than rendered here, since it has to
    * land in the frame's document. Its props are a $state object, so mutating
@@ -22,9 +22,11 @@
    */
   import { mount, onDestroy, unmount } from 'svelte'
   import CvFrameBody from './CvFrameBody.svelte'
+  import { DEFAULT_FONT } from './fonts.js'
   import { DEFAULT_THEME } from './presets.js'
   import { DEFAULT_TEMPLATE } from './templates.js'
   import cvCss from './cv.css?raw'
+  import fontsCss from './fonts.css?raw'
   import frameCss from './frame.css?raw'
   import palettesCss from './palettes.css?raw'
   import presetsCss from './presets.css?raw'
@@ -33,8 +35,9 @@
    * `cv` is null until the first successful parse and `component` until the
    * first successful compile; `templateCss` is what that template's style
    * block came to, and `css` the active file's own, applied last in the
-   * cascade inside the frame. `layout` is only the template's id here — it
-   * still lands on `#cv-root`, where a file's custom CSS can select on it.
+   * cascade inside the frame. `layout`, `theme` and `font` are only ids: each
+   * lands on `#cv-root` as a data attribute, where the frame's own stylesheets
+   * — and a file's custom CSS — are what give it meaning.
    *
    * `onReady` is handed the frame's document, window and `#cv-root` once they
    * exist — the page binds its preview listeners in there, since nothing
@@ -46,11 +49,21 @@
    *   templateCss?: string,
    *   layout?: string,
    *   theme?: string,
+   *   font?: string,
    *   css?: string,
    *   onReady?: (parts: { doc: Document, win: Window, root: HTMLElement }) => void
    * }}
    */
-  let { cv = null, component = null, templateCss = '', layout = DEFAULT_TEMPLATE, theme = DEFAULT_THEME, css = '', onReady = undefined } = $props()
+  let {
+    cv = null,
+    component = null,
+    templateCss = '',
+    layout = DEFAULT_TEMPLATE,
+    theme = DEFAULT_THEME,
+    font = DEFAULT_FONT,
+    css = '',
+    onReady = undefined,
+  } = $props()
 
   /** An empty same-origin document to build into; `srcdoc` keeps it off the network. */
   const SHELL = "<!doctype html><html><head><meta charset='utf-8'></head><body></body></html>"
@@ -103,6 +116,11 @@
   })
 
   $effect(() => {
+    const id = font
+    if (root) root.dataset.cvFont = id
+  })
+
+  $effect(() => {
     const text = templateCss
     if (templateStyle) templateStyle.textContent = text
   })
@@ -126,7 +144,7 @@
     const win = frameEl.contentWindow
     if (!d || !win || doc) return // built already; the frame is never reloaded
 
-    addStyle(d, [frameCss, cvCss, palettesCss, presetsCss].join('\n'))
+    addStyle(d, [frameCss, cvCss, palettesCss, fontsCss, presetsCss].join('\n'))
     // Two empty ones, in cascade order: the template's own styles are scoped
     // by the compiler and outrank cv.css on specificity alone, but the file's
     // CSS is written by hand and has only its position to win on.
@@ -137,6 +155,7 @@
     el.id = 'cv-root'
     el.dataset.cvLayout = layout
     el.dataset.cvTheme = theme
+    el.dataset.cvFont = font
     d.body.appendChild(el)
 
     doc = d

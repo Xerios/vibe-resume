@@ -5,8 +5,9 @@ import { KEYS, read, remove, snapshotKey, write } from './storage.js'
  * @property {string} id
  * @property {string} name
  * @property {number | null} deletedAt   ms epoch when moved to trash; null while open
- * @property {string} [layout]           preset id from presets.js; absent means the default
- * @property {string} [theme]            preset id from presets.js; absent means the default
+ * @property {string} [layout]           template id from templates.js; absent means the default
+ * @property {string} [theme]            palette id from presets.js; absent means the default
+ * @property {string} [font]             font id from fonts.js; absent means the default
  * @property {string} [css]              the file's own CSS, applied last inside the preview frame
  */
 
@@ -19,9 +20,10 @@ import { KEYS, read, remove, snapshotKey, write } from './storage.js'
  * key is left untouched, so restoring it from the trash brings back the full
  * history exactly as it was.
  *
- * Layout and theme ride along here too. They describe how a CV is presented
- * rather than what it says, so they belong beside the file's name and not in
- * the CRDT — restyling is not an edit and leaves version history alone.
+ * Layout, theme and font ride along here too. They describe how a CV is
+ * presented rather than what it says, so they belong beside the file's name
+ * and not in the CRDT — restyling is not an edit and leaves version history
+ * alone.
  */
 export class FileManager {
   /** @type {FileMeta[]} */
@@ -71,6 +73,7 @@ export class FileManager {
         deletedAt: null,
         layout: source.layout,
         theme: source.theme,
+        font: source.font,
         css: source.css,
       },
     ]
@@ -142,12 +145,12 @@ export class FileManager {
 
   /**
    * Restyle a file. Ids are stored as given and validated on the way out
-   * (`resolveLayout` / `resolveTheme`), so a preset that later disappears
+   * (`templates.resolve` / `resolveTheme` / `resolveFont`), so a preset that later disappears
    * degrades to the default instead of rendering nothing. Custom CSS gets no
    * validation at all: it is applied inside the preview frame, where the worst
    * a broken rule can do is make the sheet look wrong.
    * @param {string} id
-   * @param {{ layout?: string, theme?: string, css?: string }} style
+   * @param {{ layout?: string, theme?: string, font?: string, css?: string }} style
    */
   setStyle(id, style) {
     this.files = this.files.map((f) => (f.id === id ? { ...f, ...style } : f))

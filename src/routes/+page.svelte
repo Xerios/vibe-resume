@@ -9,6 +9,7 @@
   import WelcomeOverlay from '$lib/components/WelcomeOverlay.svelte'
   import YamlEditor from '$lib/components/YamlEditor.svelte'
   import PreviewFrame from '$lib/cv/PreviewFrame.svelte'
+  import { resolveFont } from '$lib/cv/fonts.js'
   import { liveTemplate } from '$lib/cv/live-template.svelte.js'
   import { resolveTheme } from '$lib/cv/presets.js'
   import { parseCv } from '$lib/cv/render.js'
@@ -78,6 +79,7 @@
   /** Presentation of the active file, defaulted here so the rest can assume a valid id. */
   const layout = $derived(templates.resolve(files.active?.layout))
   const theme = $derived(resolveTheme(files.active?.theme))
+  const font = $derived(resolveFont(files.active?.font))
   const css = $derived(files.active?.css ?? '')
   /* The template the sheet is rendered by, kept compiled. It is edited on its
 	   own page now; what reaches here is whatever that page last left in
@@ -628,6 +630,11 @@
     if (files.activeId) files.setStyle(files.activeId, { theme: id })
   }
 
+  /** @param {string} id */
+  function setFont(id) {
+    if (files.activeId) files.setStyle(files.activeId, { font: id })
+  }
+
   /**
    * The active file's own CSS. Unvalidated by design — it is applied inside the
    * preview frame, where nothing it says can reach the editor around it.
@@ -858,9 +865,11 @@
     templates={templates.all}
     {layout}
     {theme}
+    {font}
     {css}
     onLayout={setLayout}
     onTheme={setTheme}
+    onFont={setFont}
     onCss={setCss}
     onExport={exportPDF}
     canInstall={!!installPrompt}
@@ -943,7 +952,7 @@
           {/if}
         </div>
       {/if}
-      <PreviewFrame bind:this={frame} cv={parsed} component={tpl.component} templateCss={tpl.css} {layout} {theme} {css} onReady={onFrameReady} />
+      <PreviewFrame bind:this={frame} cv={parsed} component={tpl.component} templateCss={tpl.css} {layout} {theme} {font} {css} onReady={onFrameReady} />
     </div>
 
     {#if historyOpen && cv.ready}
