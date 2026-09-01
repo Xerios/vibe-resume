@@ -1,0 +1,15 @@
+/* The title in a box of its own instead of on a rule. Reads as a label rather
+   than as a heading with a line trailing off it, which is what makes a sheet of
+   these look filed rather than written. Outlined, never filled — see cards. */
+.sec-head h2 {
+  padding: 2px 9px 3px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  letter-spacing: 1.6px;
+}
+
+/* The rule and the box are two answers to the same question, so taking one
+   means dropping the other. */
+.sec-head .bar {
+  display: none;
+}

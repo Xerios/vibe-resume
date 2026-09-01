@@ -1,18 +1,22 @@
 # The document the editor starts from on a first visit (and what "Reset" restores).
 #
-# A CV is a header and a list of sections. Every template renders these seven
-# section types, so switching template never loses a section:
+# A CV is a header and a list of sections. Every layout renders these nine
+# section types, so switching preset never loses a section:
 #
-#   summary     paragraphs: [...]
-#   skills      blocks: [{ title, rows: [{ tier?, text }] }]
-#   experience  items: [{ title, company, dates, sub, bullets, stack }]
-#               or { subtype: earlier, title, items: [...] } for a run of
-#               older roles with no dates of their own
-#   education   items: [{ title, school, dates, sub?, bullets? }]
-#   projects    items: [{ title, dates?, sub?, bullets?, stack? }]
-#   list        items: [...] — certifications, awards, languages;
-#               `inline: true` sets them as pills on one line
-#   oss         projects: [{ name, stars, desc }], hasHeader: true|false
+#   summary        paragraphs: [...]
+#   skills         blocks: [{ title, rows: [{ tier?, text }] }]
+#   experience     items: [{ title, company, dates, sub, bullets, stack }]
+#                  or { subtype: earlier, title, items: [...] } for a run of
+#                  older roles with no dates of their own
+#   education      items: [{ title, school, dates, sub?, bullets? }]
+#   projects       items: [{ title, dates?, sub?, bullets?, stack? }]
+#   list           items: [...] — awards, interests, anything one-line;
+#                  `inline: true` sets them as pills on one line
+#   languages      items: [{ name, level?, note?, rating? }] — `level` is free
+#                  text; the meter variants read it, or `rating: 1–5` says it
+#   certifications items: [{ name, issuer?, dates?, note? }] — certificates,
+#                  licences, permits
+#   oss            projects: [{ name, stars, desc }], hasHeader: true|false
 #
 # `stack` takes a comma-separated string or a YAML list, whichever reads
 # better; the Tech template draws a logo beside every entry it recognises.
@@ -64,7 +68,7 @@ sections:
       - title: Other
         rows:
           - text: 'Analytics: Google Analytics, Mixpanel · Python, Go'
-          - text: English C2 · Spanish B2
+          - text: 'Accessibility: WCAG 2.2, ARIA'
 
   - type: experience
     title: Experience
@@ -131,14 +135,39 @@ sections:
         dates: 2010 – 2014
         sub: Graduated with honours — thesis on distributed systems.
 
+  - type: certifications
+    title: Certifications & Permits
+    items:
+      - name: AWS Certified Solutions Architect – Associate
+        issuer: Amazon Web Services
+        dates: 2023
+        note: 'ID: AWS-1234-5678'
+      - name: Certified Kubernetes Administrator
+        issuer: The Linux Foundation
+        dates: 2022
+      - name: Full driving licence (category B)
+        issuer: State of Springfield
+        dates: 2012
+
+  - type: languages
+    title: Languages
+    items:
+      - name: English
+        level: Native
+      - name: Spanish
+        level: B2 · professional working
+      - name: German
+        level: A2
+        note: reading
+
   - type: list
-    title: Certifications & Languages
+    title: Interests
     inline: true
     items:
-      - AWS Certified Solutions Architect
-      - Certified Kubernetes Administrator
-      - English C2
-      - Spanish B2
+      - Open source
+      - Mentoring
+      - Trail running
+      - Chess
 
   - type: oss
     title: Open Source

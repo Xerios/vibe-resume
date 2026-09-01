@@ -5,7 +5,18 @@
   import IconRestore from '@iconify-icons/lucide/rotate-ccw'
   import IconInitial from '@iconify-icons/lucide/circle-dot'
   import IconEdit from '@iconify-icons/lucide/dot'
+  import IconStyle from '@iconify-icons/lucide/palette'
   import { formatBytes } from '$lib/cv/storage.js'
+
+  /** The glyph for each kind of change; anything unrecognised reads as an edit. */
+  const MARKS = {
+    export: IconDownload,
+    checkpoint: IconBookmark,
+    restore: IconRestore,
+    initial: IconInitial,
+    style: IconStyle,
+    edit: IconEdit,
+  }
 
   let {
     /** @type {import('$lib/cv/doc.svelte.js').CvDoc} */
@@ -88,9 +99,7 @@
 <!-- One glyph per kind of moment, so the list can be read down the left edge:
      a dot is a plain edit, everything else is something the user asked for. -->
 {#snippet mark(/** @type {import('$lib/cv/doc.svelte.js').ChangeKind} */ kind)}
-  {@const icon =
-    kind === 'export' ? IconDownload : kind === 'checkpoint' ? IconBookmark : kind === 'restore' ? IconRestore : kind === 'initial' ? IconInitial : IconEdit}
-  <Icon {icon} class="hist-mark" width="11" height="11" aria-hidden="true" />
+  <Icon icon={MARKS[kind] ?? IconEdit} class="hist-mark" width="11" height="11" aria-hidden="true" />
 {/snippet}
 
 <aside id="history-pane">
@@ -261,6 +270,17 @@
   .hist-item.kind-checkpoint :global(.hist-mark),
   .hist-item.kind-initial :global(.hist-mark),
   .hist-item.kind-restore :global(.hist-mark) {
+    color: var(--accent);
+  }
+
+  /* A restyle changed no text, so it reads as quietly as an edit does — the
+	   glyph is what says which of the two it was. */
+  .hist-item.kind-style .hist-msg {
+    font-weight: 500;
+    color: var(--muted);
+  }
+
+  .hist-item.kind-style :global(.hist-mark) {
     color: var(--accent);
   }
 

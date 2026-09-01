@@ -1,0 +1,19 @@
+/* The opening paragraph set as a lede: larger, darker, on a shorter measure
+   than the lines under it. A summary is the one part of a CV that is read
+   rather than scanned, and this is the shape that says so.
+
+   Only the first paragraph grows. The rest stay where cv.css put them, which
+   is what keeps the contrast — a whole summary set at 15px is not a lede, it
+   is just a bigger summary. */
+.sec-summary p:first-of-type {
+  max-width: 66ch;
+  margin-bottom: 9px;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.sec-summary p:first-of-type strong {
+  color: var(--accent-deep);
+}

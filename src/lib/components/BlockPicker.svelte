@@ -32,6 +32,11 @@
    * translate does it, so it stays right whatever the card's height turns out
    * to be — which depends on how many slots the block is inside.
    *
+   * `pinned` says the card is being held there by a click rather than by the
+   * pointer, which is the one state it has to advertise: the rows behave
+   * identically, but nothing the pointer does will take it away, so it needs a
+   * way to be put down.
+   *
    * @type {{
    *   rows: string[],
    *   slots: import('$lib/cv/slots.js').Registry,
@@ -39,11 +44,13 @@
    *   y: number,
    *   side: 'left' | 'right',
    *   flip: boolean,
+   *   pinned?: boolean,
    *   onPick: (slotId: string, variantId: string) => void,
    *   onHover: (inside: boolean) => void,
+   *   onClose?: () => void,
    * }}
    */
-  let { rows, slots, choices, y, side, flip, onPick, onHover } = $props()
+  let { rows, slots, choices, y, side, flip, pinned = false, onPick, onHover, onClose } = $props()
 
   const shown = $derived(rows.map((id) => slots.find((s) => s.id === id)).filter((s) => !!s))
 </script>
@@ -56,10 +63,17 @@
   class="block-picker"
   class:left={side === 'left'}
   class:flip
+  class:pinned
   style:--bp-y="{y}px"
   onmouseenter={() => onHover(true)}
   onmouseleave={() => onHover(false)}
 >
+  {#if pinned}
+    <div class="bp-head">
+      <span class="bp-pin">pinned</span>
+      <button class="bp-close" title="Unpin — or press Escape" aria-label="Unpin the block picker" onclick={() => onClose?.()}>×</button>
+    </div>
+  {/if}
   {#each shown as slot (slot.id)}
     <VariantCycle {slot} {choices} {onPick} menuAlign={side === 'left' ? 'left' : 'right'} />
   {/each}
@@ -85,6 +99,46 @@
   .block-picker.left {
     right: auto;
     left: 8px;
+  }
+
+  /* Held by a click rather than by the pointer. The accent edge is the whole
+	   of the difference — the rows are the same rows. */
+  .block-picker.pinned {
+    border-color: var(--accent);
+  }
+
+  .bp-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 0 2px 3px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .bp-pin {
+    font-family: var(--mono);
+    font-size: 8.5px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .bp-close {
+    padding: 0 3px 2px;
+    background: none;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+    color: var(--faint);
+  }
+
+  .bp-close:hover {
+    background: var(--accent-wash);
+    color: var(--accent-deep);
   }
 
   .block-picker.flip {

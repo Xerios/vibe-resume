@@ -1,0 +1,20 @@
+/* Sections numbered as they come — 01 / SUMMARY, 02 / SKILLS. A counter does
+   it, so nothing in the YAML has to carry a number that would go stale the
+   moment a section moved.
+
+   The counter lives on the sheet rather than on the page, so a sidebar layout
+   numbers the rail and the main column in the order they are rendered rather
+   than restarting for each. Generated content is type, so it prints. */
+.sheet {
+  counter-reset: cv-sec;
+}
+
+.sec-head {
+  counter-increment: cv-sec;
+}
+
+.sec-head h2::before {
+  content: counter(cv-sec, decimal-leading-zero) ' / ';
+  color: var(--accent);
+  font-weight: 700;
+}

@@ -1,0 +1,21 @@
+/* Every entry against a thick rule down its left. The timeline variant draws a
+   hairline and a dot per entry, which reads as a sequence; a stripe reads as a
+   block, and doesn't ask the eye to follow anything.
+
+   The rule is a border rather than a filled pseudo-element for the usual
+   reason: borders print whatever the dialog says about background graphics. */
+.job {
+  padding-left: 13px;
+  margin-bottom: 15px;
+  border-left: 3px solid color-mix(in srgb, var(--accent) 40%, var(--paper));
+}
+
+.job-title {
+  font-size: 14px;
+}
+
+/* The run of older roles is a stripe too, so a section of these stays one
+   shape all the way down. */
+.earlier ul.bullets {
+  margin-left: 0;
+}

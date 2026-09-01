@@ -1,7 +1,6 @@
 <script>
   import Icon from '@iconify/svelte'
   import IconLayout from '@iconify-icons/lucide/layout-panel-left'
-  import { base } from '$app/paths'
   import { PRESETS } from '$lib/cv/compositions.js'
   import { FONTS } from '$lib/cv/fonts.js'
   import { THEMES } from '$lib/cv/presets.js'
@@ -132,9 +131,6 @@
             <VariantCycle {slot} {choices} onPick={onVariant} />
           {/each}
         </div>
-        <a class="tpl-edit" href="{base}/template">
-          Edit these parts <span class="tpl-edit-arrow">→</span>
-        </a>
       </div>
 
       <div class="style-group">
@@ -365,35 +361,6 @@
     border-color: var(--accent);
     color: var(--accent-deep);
     background: var(--accent-wash);
-  }
-
-  /* Styled down to the size of the labels around it; it is an ordinary link,
-	   so middle-clicking the template editor into a tab works. */
-  .tpl-edit {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    width: 100%;
-    margin-top: 6px;
-    padding: 4px 2px 0;
-    text-decoration: none;
-    font-family: var(--mono);
-    font-size: 9.5px;
-    font-weight: 600;
-    letter-spacing: 0.3px;
-    color: var(--muted);
-  }
-
-  .tpl-edit:hover {
-    color: var(--accent-deep);
-  }
-
-  .tpl-edit-arrow {
-    transition: transform 0.13s;
-  }
-
-  .tpl-edit:hover .tpl-edit-arrow {
-    transform: translateX(2px);
   }
 
   .theme-grid,

@@ -1,0 +1,25 @@
+/* Name over contact, both hard left. The split header sets the contact against
+   the right margin, which is a column of its own and costs the name the width
+   it wants; stacked gives the name the whole measure and lets the contact run
+   as one line under it. Written for a header with five or six links in it,
+   where the right-hand column would otherwise be taller than the name. */
+.sheet header {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+/* The default sets these as a right-aligned block, one per line. Here they are
+   a single wrapped row, so the `<br>` between them has to stop being a break. */
+.contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px 16px;
+  text-align: left;
+  line-height: 1.5;
+  white-space: normal;
+}
+
+.contact br {
+  display: none;
+}

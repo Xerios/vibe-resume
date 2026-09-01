@@ -1,9 +1,14 @@
 <!--
-	Sidebar — a rail down the left with skills and lists in it, and everything
-	else beside it. The same skeleton as single.svelte in every other respect: a
-	layout owns the section markup, so the two files carry a copy each rather
-	than one importing the other, and a change to what a section *is* touches
-	both. That is the price of a layout being a template you can open and edit.
+	Rail right — the sidebar layout mirrored: the main column first and the rail
+	beside it on the right. A different arrangement rather than a restyling of
+	the other one, which is why it is a layout: a `page` variant that is only CSS
+	layers onto the single-column layout, so there is nowhere for it to reach the
+	rail markup Sidebar renders.
+
+	Reading order is what the mirror is for. Everything set this way puts the
+	name, the summary and the first role hard against the left margin where a
+	reader starts, and lets the skills and languages fall where the eye lands
+	last. The same sheet, weighted the other way round.
 
 	See single.svelte for the slot/snippet contract; it is the same here, and
 	`body` is the one snippet that differs.
@@ -249,12 +254,12 @@
 {#snippet body()}
   {@render head()}
   <div class="cv-cols">
-    <aside class="cv-rail">
-      {#each rail as e}{@render block(e.sec, e.path)}{/each}
-    </aside>
     <div class="cv-main">
       {#each main as e}{@render block(e.sec, e.path)}{/each}
     </div>
+    <aside class="cv-rail">
+      {#each rail as e}{@render block(e.sec, e.path)}{/each}
+    </aside>
   </div>
 {/snippet}
 
@@ -271,10 +276,10 @@
   }
 
   .cv-rail {
-    flex: 0 0 31%;
+    flex: 0 0 30%;
     min-width: 0;
-    padding-right: 24px;
-    border-right: 1px solid var(--line);
+    padding-left: 24px;
+    border-left: 1px solid var(--line);
   }
 
   .cv-main {

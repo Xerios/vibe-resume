@@ -86,6 +86,48 @@
       <circle cx={x + 2.4} cy="19" r="1" class="rule" />
     {/each}
     <rect x="3" y="23" width="18" height="1.5" opacity="0.4" />
+  {:else if id === 'editorial'}
+    <rect x="3" y="2.5" width="30" height="1.6" class="rule" />
+    <rect x="3" y="6" width="17" height="3.5" />
+    <rect x="3" y="11" width="30" height="1" opacity="0.25" />
+    {#each [14.5, 20] as y}
+      <rect x="3" y={y - 0.5} width="3" height="1.4" class="rule" />
+      <rect x="7.5" y={y - 0.5} width="10" height="1.4" opacity="0.45" />
+      <rect x="3" y={y + 2.5} width="1.6" height="3.5" class="rule" opacity="0.55" />
+      <rect x="7" y={y + 2.7} width="26" height="1.4" opacity="0.4" />
+    {/each}
+  {:else if id === 'brief'}
+    <rect x="3" y="3" width="13" height="3" />
+    <rect x="24" y="3.5" width="9" height="2" opacity="0.5" />
+    <rect x="3" y="7.5" width="30" height="1" class="rule" />
+    {#each [9.5, 12, 14.5] as y}
+      <rect x="3" {y} width="7" height="1.3" opacity="0.6" />
+      <rect x="11.5" {y} width="21.5" height="1.3" opacity="0.35" />
+    {/each}
+    {#each [17.5, 20, 22.5] as y}
+      <rect x="3" {y} width="13" height="1.3" opacity="0.35" />
+      <rect x="20" {y} width="13" height="1.3" opacity="0.35" />
+    {/each}
+  {:else if id === 'profile'}
+    <rect x="3" y="3" width="15" height="3.5" />
+    <rect x="3" y="8" width="19" height="1.6" opacity="0.5" />
+    <rect x="3" y="11.5" width="30" height="1" class="rule" />
+    <rect x="3" y="14" width="18" height="1.6" opacity="0.4" />
+    <rect x="3" y="17.5" width="18" height="1.6" opacity="0.4" />
+    <rect x="3" y="21" width="12" height="1.6" opacity="0.4" />
+    <rect x="24" y="14" width="9" height="9" opacity="0.28" />
+    {#each [15.5, 18.5, 21.5] as y}
+      <circle cx="26" cy={y} r="1" class="rule" />
+      <circle cx="29" cy={y} r="1" class="rule" opacity="0.4" />
+    {/each}
+  {:else if id === 'dossier'}
+    <rect x="3" y="3" width="15" height="3.5" />
+    <rect x="27" y="4" width="6" height="1.6" opacity="0.5" />
+    <rect x="3" y="9" width="11" height="4" rx="1.2" fill="none" class="card" />
+    <rect x="3" y="15" width="19" height="1.6" opacity="0.4" />
+    <rect x="25" y="14.8" width="8" height="2.4" rx="1.2" fill="none" class="card" />
+    <rect x="3" y="19" width="14" height="4" rx="1.2" fill="none" class="card" />
+    <rect x="19" y="19" width="14" height="4" rx="1.2" fill="none" class="card" />
   {:else}
     <rect x="3" y="3" width="30" height="20" rx="2" opacity="0.18" />
     <rect x="7" y="7" width="13" height="3" />

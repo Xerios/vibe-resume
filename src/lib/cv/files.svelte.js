@@ -21,10 +21,12 @@ import { KEYS, read, remove, snapshotKey, write } from './storage.js'
  * key is left untouched, so restoring it from the trash brings back the full
  * history exactly as it was.
  *
- * Preset, block variants, theme and font ride along here too. They describe how a CV is
- * presented rather than what it says, so they belong beside the file's name
- * and not in the CRDT — restyling is not an edit and leaves version history
- * alone.
+ * Preset, block variants, theme and font ride along here too, because this is
+ * the only place that knows them for a file that isn't open. For the file that
+ * *is* open they are also in its document, which is what puts a restyle in the
+ * version history and on the undo stack — see `bindStyle` in doc.svelte.js.
+ * Everything that changes a style here goes through `restyle` in
+ * state.svelte.js, which keeps the two in step.
  */
 export class FileManager {
   /** @type {FileMeta[]} */
@@ -152,6 +154,12 @@ export class FileManager {
    * rendering nothing. Custom CSS gets no validation at all: it is applied
    * inside the preview frame, where the worst a broken rule can do is make the
    * sheet look wrong.
+   *
+   * Not the way to restyle the file being edited: that is `restyle` in
+   * state.svelte.js, which writes here *and* records the change in the
+   * document. This is the plain write, which is also what the document calls
+   * back into when an undo or a restore moves the style from that end.
+   *
    * @param {string} id
    * @param {{ layout?: string, variants?: Record<string, string>, theme?: string, font?: string, css?: string }} style
    */
@@ -240,3 +248,20 @@ export class FileManager {
 }
 
 const newId = () => Math.random().toString(36).slice(2, 10)
+
+/**
+ * A file's presentation, as the document's style map holds it — everything in
+ * a file's record except the two things that are the registry's own business,
+ * its name and whether it is in the trash.
+ *
+ * The undefined values are left undefined rather than defaulted: a file that
+ * has never been restyled has nothing to say about any of these, and the
+ * resolvers (`resolvePreset`, `resolveTheme`, `resolveFont`) are what turn
+ * that into the default at the point it is rendered.
+ *
+ * @param {FileMeta | null | undefined} file
+ * @returns {Record<string, any>}
+ */
+export function styleOf(file) {
+  return { layout: file?.layout, variants: file?.variants, theme: file?.theme, font: file?.font, css: file?.css }
+}

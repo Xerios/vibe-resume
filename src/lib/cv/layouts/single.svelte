@@ -1,5 +1,5 @@
 <!--
-	Single column — the skeleton most composed sheets are built from: the markup for all seven
+	Single column — the skeleton most composed sheets are built from: the markup for all nine
 	section types, and one snippet per slot that a block variant can replace.
 
 	This file is a complete, working template on its own — it is what `classic`
@@ -18,6 +18,8 @@
 	  skillsBody(sec, path)  skills        the skill groups
 	  stackLine(item, path)  stack         an entry's tools
 	  listBody(sec, path)    list          a `list` section's items
+	  langBody(sec, path)    languages     a `languages` section's rows
+	  certBody(sec, path)    certifications  a `certifications` section's rows
 	  body()                 page          the arrangement of the whole sheet
 
 	`data-slot` is what the preview's block picker hits-tests against, so a
@@ -112,6 +114,41 @@
   {/if}
 {/snippet}
 
+{#snippet langBody(/** @type {any} */ sec, /** @type {string} */ path)}
+  <div class="lang-list" data-slot="languages">
+    {#each list(sec.items) as item, i}
+      <div class="lang-row" data-src="{path}.items.{i}">
+        <span class="lang-name" data-src="{path}.items.{i}.name">{@html md(item.name)}</span>
+        {#if item.note}<span class="lang-note" data-src="{path}.items.{i}.note">{@html md(item.note)}</span>{/if}
+        {#if item.level}<span class="lang-level" data-src="{path}.items.{i}.level">{@html md(item.level)}</span>{/if}
+      </div>
+    {/each}
+  </div>
+{/snippet}
+
+{#snippet certBody(/** @type {any} */ sec, /** @type {string} */ path)}
+  <div class="cert-list" data-slot="certifications">
+    {#each list(sec.items) as item, i}
+      <div class="cert" data-src="{path}.items.{i}">
+        <div class="cert-body">
+          <p class="cert-name" data-src="{path}.items.{i}.name">{@html md(item.name ?? item.title)}</p>
+          <!-- The separator is written as `{' · '}` for the reason the entry
+               head gives: whitespace at the start of a block is trimmed. -->
+          {#if item.issuer || item.note}
+            <p class="cert-meta">
+              {#if item.issuer}<span class="cert-issuer" data-src="{path}.items.{i}.issuer">{@html md(item.issuer)}</span
+                >{/if}{#if item.issuer && item.note}{' · '}{/if}{#if item.note}<span class="cert-note" data-src="{path}.items.{i}.note"
+                  >{@html md(item.note)}</span
+                >{/if}
+            </p>
+          {/if}
+        </div>
+        {#if item.dates}<span class="cert-dates" data-src="{path}.items.{i}.dates">{@html md(item.dates)}</span>{/if}
+      </div>
+    {/each}
+  </div>
+{/snippet}
+
 <!-- Not a slot: an `earlier` run has no dates and no stack, so there is nothing
      for an entry variant to vary. It still renders through `entry` for the
      ordinary case, which is what keeps a variant's markup reaching both. -->
@@ -162,6 +199,16 @@
     <section class="sec-list" data-src={path}>
       {@render secHead(sec, path)}
       {@render listBody(sec, path)}
+    </section>
+  {:else if sec.type === 'languages'}
+    <section class="sec-languages" data-src={path}>
+      {@render secHead(sec, path)}
+      {@render langBody(sec, path)}
+    </section>
+  {:else if sec.type === 'certifications'}
+    <section class="sec-certifications" data-src={path}>
+      {@render secHead(sec, path)}
+      {@render certBody(sec, path)}
     </section>
   {:else if sec.type === 'oss'}
     <section class="sec-oss" data-src={path}>

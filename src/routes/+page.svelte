@@ -1,6 +1,5 @@
 <script>
   import { onMount, tick } from 'svelte'
-  import { base } from '$app/paths'
   import BlockPicker from '$lib/components/BlockPicker.svelte'
   import HistoryPanel from '$lib/components/HistoryPanel.svelte'
   import StatusBar from '$lib/components/StatusBar.svelte'
@@ -10,12 +9,12 @@
   import WelcomeOverlay from '$lib/components/WelcomeOverlay.svelte'
   import YamlEditor from '$lib/components/YamlEditor.svelte'
   import PreviewFrame from '$lib/cv/PreviewFrame.svelte'
-  import { isModified, resolvePreset } from '$lib/cv/compositions.js'
-  import { resolveFont } from '$lib/cv/fonts.js'
+  import { isModified, preset as presetOf, resolvePreset } from '$lib/cv/compositions.js'
+  import { FONTS, resolveFont } from '$lib/cv/fonts.js'
   import { liveTemplate } from '$lib/cv/live-template.svelte.js'
-  import { resolveTheme } from '$lib/cv/presets.js'
+  import { THEMES, resolveTheme } from '$lib/cv/presets.js'
   import { parseCv } from '$lib/cv/render.js'
-  import { doc as cv, files, flush, parts, start } from '$lib/cv/state.svelte.js'
+  import { doc as cv, files, flush, parts, restyle, restyleVariant, start } from '$lib/cv/state.svelte.js'
   import { KEYS, read, write } from '$lib/cv/storage.js'
 
   const PARSE_DEBOUNCE_MS = 250
@@ -93,6 +92,12 @@
   let pickerEl = /** @type {Element | null} */ (null)
   /** Whether the pointer is on the card itself, which is what keeps it up. */
   let pickerHeld = false
+  /**
+   * Clicking a block pins the card to it: hovering elsewhere stops moving it
+   * and leaving the sheet stops hiding it, so its rows can be worked through
+   * without keeping the pointer on the thing being restyled.
+   */
+  let pickerPinned = $state(false)
   /** The block the card will move to once the pointer settles — see `showPicker`. */
   let pendingEl = /** @type {Element | null} */ (null)
   /** @type {ReturnType<typeof setTimeout> | undefined} */
@@ -175,6 +180,7 @@
 
     window.addEventListener('beforeunload', flush)
     window.addEventListener('keydown', onKeydown)
+    window.addEventListener('pointerdown', onAppPointerDown)
     window.addEventListener('beforeinstallprompt', onInstallPrompt)
     window.addEventListener('appinstalled', onInstalled)
     document.addEventListener('visibilitychange', onVisibility)
@@ -201,6 +207,7 @@
     return () => {
       window.removeEventListener('beforeunload', flush)
       window.removeEventListener('keydown', onKeydown)
+      window.removeEventListener('pointerdown', onAppPointerDown)
       window.removeEventListener('beforeinstallprompt', onInstallPrompt)
       window.removeEventListener('appinstalled', onInstalled)
       document.removeEventListener('visibilitychange', onVisibility)
@@ -415,6 +422,7 @@
     // the user is in the middle of making.
     if (asElement(e.target)?.closest('a')) return
     if (frameWin?.getSelection()?.isCollapsed === false) return
+    pinPicker(asElement(e.target)?.closest('[data-slot]') ?? null)
     const hit = srcTarget(e)
     if (!hit?.line) return
     if (sourceHidden) {
@@ -497,11 +505,50 @@
   }
 
   /**
+   * A click settles the argument the hover rules below are having: the card
+   * pins to what was clicked and stays there. Clicking the block it is already
+   * pinned to takes the pin off again, and clicking anywhere on the sheet that
+   * isn't a block at all — the frame's own margin — dismisses it.
+   * @param {Element | null} el
+   */
+  function pinPicker(el) {
+    if (!el) return unpinPicker()
+    if (pickerPinned && el === pickerEl) return unpinPicker()
+    pickerHeld = false
+    clearTimeout(pickerTimer)
+    // Pinned only if there is something pinned *to*: a block that couldn't be
+    // measured would otherwise leave the pointer locked out with no card up.
+    if (anchorPicker(el)) pickerPinned = true
+  }
+
+  /** Let go of a pinned card. It goes back to following the pointer. */
+  function unpinPicker() {
+    if (!pickerPinned) return
+    pickerPinned = false
+    picker = null
+    pickerEl = null
+    cancelPending()
+  }
+
+  /**
+   * A click in the app's own document — the toolbar, the editor, the sheet's
+   * pane around the frame. Anything but the card itself lets a pinned one go,
+   * which is what every other popover here does.
+   * @param {PointerEvent} e
+   */
+  function onAppPointerDown(e) {
+    if (!pickerPinned) return
+    if (asElement(e.target)?.closest('.block-picker')) return
+    unpinPicker()
+  }
+
+  /**
    * A block wants the card. Whether it gets it is the whole of the problem
    * below.
    * @param {Element | null} el
    */
   function showPicker(el) {
+    if (pickerPinned) return // pinned by a click; the pointer doesn't move it
     if (pickerHeld) return // the pointer is on the card; it isn't in the frame at all
     clearTimeout(pickerTimer)
     if (!el) return hidePickerSoon()
@@ -531,13 +578,17 @@
     anchorPicker(pendingEl)
   }
 
-  /** @param {Element} el */
+  /**
+   * @param {Element} el
+   * @returns {boolean} whether the block could be measured, and so anchored
+   */
   function anchorPicker(el) {
     const at = placePicker(el)
-    if (!at) return
+    if (!at) return false
     cancelPending()
     pickerEl = el
     picker = { rows: slotChain(el), ...at }
+    return true
   }
 
   /**
@@ -558,6 +609,7 @@
 
   /** Long enough to cross the gap onto the card, short enough not to linger. */
   function hidePickerSoon() {
+    if (pickerPinned) return
     clearTimeout(pickerTimer)
     // Whatever the pointer crossed on its way out is not what it was aiming at.
     cancelPending()
@@ -839,6 +891,19 @@
       e.preventDefault()
       exportPDF()
     }
+    // Bound in both documents, so this reaches a pinned card whether the last
+    // click landed in the editor or on the sheet.
+    if (e.key === 'Escape') unpinPicker()
+    // A restyle is a change in the document like an edit is, so Ctrl+Z has to
+    // take one back from anywhere — the toolbar, the sheet, the popover. Inside
+    // the editor it is CodeMirror's binding that pops the same stack, so this
+    // stays out of the way there rather than popping it twice.
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+      if (editorPane?.contains(/** @type {Node | null} */ (e.target))) return
+      e.preventDefault()
+      if (e.shiftKey) cv.redo()
+      else cv.undo()
+    }
   }
 
   /** @param {string} id */
@@ -846,7 +911,7 @@
     // A preset is a whole set of choices, so taking one drops the overrides
     // that were sitting on the last one — otherwise half of the look you just
     // asked for wouldn't arrive.
-    if (files.activeId) files.setStyle(files.activeId, { layout: id, variants: {} })
+    restyle({ layout: id, variants: {} }, `Preset — ${presetOf(id)?.name ?? id}`)
   }
 
   /**
@@ -854,31 +919,36 @@
    * @param {string} variantId
    */
   function setVariant(slotId, variantId) {
-    if (files.activeId) files.setVariant(files.activeId, slotId, variantId)
+    const slot = parts.slots.find((s) => s.id === slotId)
+    const name = slot?.variants.find((v) => v.id === variantId)?.name ?? variantId
+    restyleVariant(slotId, variantId, `${slot?.name ?? slotId} — ${name}`)
   }
 
   /** Back to the preset's own choices, whichever axes have been moved off it. */
   function resetVariants() {
-    if (files.activeId) files.setStyle(files.activeId, { variants: {} })
+    restyle({ variants: {} }, 'Blocks — reset')
   }
 
   /** @param {string} id */
   function setTheme(id) {
-    if (files.activeId) files.setStyle(files.activeId, { theme: id })
+    restyle({ theme: id }, `Theme — ${THEMES.find((t) => t.id === id)?.name ?? id}`)
   }
 
   /** @param {string} id */
   function setFont(id) {
-    if (files.activeId) files.setStyle(files.activeId, { font: id })
+    restyle({ font: id }, `Font — ${FONTS.find((f) => f.id === id)?.name ?? id}`)
   }
 
   /**
    * The active file's own CSS. Unvalidated by design — it is applied inside the
    * preview frame, where nothing it says can reach the editor around it.
+   *
+   * The only style that is typed rather than chosen, so its record in the
+   * history waits for a pause the way an edit does — see `recordStyle`.
    * @param {string} text
    */
   function setCss(text) {
-    if (files.activeId) files.setStyle(files.activeId, { css: text })
+    restyle({ css: text }, 'Custom CSS', true)
   }
 
   function toggleTheme() {
@@ -1183,27 +1253,14 @@
           <button class="t-btn" onclick={() => cv.viewLatest()}>Back to latest</button>
         </div>
       {:else if bannerError}
-        <!-- A template that doesn't compile leaves nothing to render at all,
-				     and it isn't edited on this page — so the banner carries the way
-				     to where it is. -->
+        <!-- A part that doesn't compile leaves nothing to render at all. Where
+				     it is fixed is /template, which nothing in the app links to — it is
+				     a development tool, reachable as a deep link and no other way. -->
         <div id="error-banner">
           <span>⚠ {bannerError}</span>
-          {#if tpl.error && !parseError}
-            <a href="{base}/template">Open template →</a>
-          {/if}
         </div>
       {/if}
-      <PreviewFrame
-        bind:this={frame}
-        cv={parsed}
-        component={tpl.component}
-        templateCss={tpl.css}
-        layout={preset}
-        {theme}
-        {font}
-        {css}
-        onReady={onFrameReady}
-      />
+      <PreviewFrame bind:this={frame} cv={parsed} component={tpl.component} templateCss={tpl.css} layout={preset} {theme} {font} {css} onReady={onFrameReady} />
 
       <!-- Over the frame rather than in it: the sheet is a document of its own,
 			     and one that has to print exactly what it shows. -->
@@ -1215,8 +1272,10 @@
           y={picker.y}
           side={picker.side}
           flip={picker.flip}
+          pinned={pickerPinned}
           onPick={setVariant}
           onHover={onPickerHover}
+          onClose={unpinPicker}
         />
       {/if}
     </div>
@@ -1336,15 +1395,6 @@
   #error-banner span {
     flex: 1;
     min-width: 0;
-  }
-
-  #error-banner a {
-    flex-shrink: 0;
-    color: inherit;
-    font-weight: 600;
-    white-space: nowrap;
-    z-index: 5;
-    transition: var(--theme-fade);
   }
 
   /* A tint with no token of its own — the red foreground comes from --danger. */

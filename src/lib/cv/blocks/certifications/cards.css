@@ -1,0 +1,28 @@
+/* Every certificate in a box of its own, drawn exactly the way an entry card
+   and a skills card are — so the three can be chosen together and come out as
+   one sheet rather than three ideas. Outlined, with the faintest of washes:
+   the border is what carries it when background graphics are off. */
+.cert-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.cert {
+  align-items: flex-start;
+  padding: 8px 11px 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--accent-wash) 45%, var(--paper));
+}
+
+.cert-name {
+  font-size: 12px;
+}
+
+@media print {
+  .cert {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

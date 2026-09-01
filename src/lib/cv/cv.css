@@ -312,6 +312,109 @@ ul.bullets li::before {
   color: var(--muted);
 }
 
+/* ── Languages ─────────────────────────────────
+   A name and how well it is spoken, two to a row — the same two-up grid the
+   skills default uses, since both are short pairs and a CV rarely has room to
+   give either a column of its own. `level` is free text, because "Native",
+   "C2" and "Professional working" are all how somebody writes it; the meter
+   variants read it as a number through `levelRating` and fall back to printing
+   the words when they can't. */
+.lang-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 32px;
+}
+
+.lang-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+  padding: 3px 0;
+  border-top: 1px solid var(--line);
+}
+
+.lang-row:first-child,
+.lang-row:nth-child(2) {
+  border-top: none;
+}
+
+.lang-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.lang-note {
+  font-size: 11px;
+  color: var(--faint);
+}
+
+/* Wrapping rather than `nowrap`: `level` is free text, and "B2 · professional
+   working" is as ordinary a way to write one as "C2" is. A level that refused
+   to wrap would set the row's minimum width, which is how a languages section
+   ends up wider than the rail it was put in. */
+.lang-level {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--accent);
+}
+
+/* ── Certifications, permits, licences ─────────
+   One awarded thing per row: what it is, who issued it, and when. Close to
+   `.job` on purpose — a certificate is a title, an institution and a date, and
+   the difference is that it has no bullets and never needs a column of its
+   own. */
+.cert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.cert {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.cert-body {
+  min-width: 0;
+}
+
+.cert-name {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.cert-name a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.cert-name a:hover {
+  text-decoration: underline;
+}
+
+.cert-meta {
+  margin: 1px 0 0;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.cert-issuer {
+  color: var(--accent);
+}
+
+.cert-dates {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--faint);
+  white-space: nowrap;
+}
+
 .prompt {
   background: var(--prompt-bg);
   color: var(--prompt);
@@ -407,6 +510,8 @@ table.oss .proj a:hover {
   .job,
   .skill-block,
   .tag,
+  .lang-row,
+  .cert,
   table.oss tr {
     break-inside: avoid;
   }

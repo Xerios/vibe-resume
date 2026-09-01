@@ -23,7 +23,7 @@ pnpm check      # svelte-check
 | ------------------ | ------------------------------------------------------------------------------------------------------------ |
 | Document + history | [src/lib/cv/doc.svelte.js](src/lib/cv/doc.svelte.js) — Loro doc, persistence, cross-tab merge                |
 | Editor             | [src/lib/components/YamlEditor.svelte](src/lib/components/YamlEditor.svelte) — CodeMirror 6                  |
-| Parts editor       | [src/routes/template/+page.svelte](src/routes/template/+page.svelte) — the second page, and its CodeMirror   |
+| Parts editor       | [src/routes/template/+page.svelte](src/routes/template/+page.svelte) — the second page; a deep link, unlinked |
 | Chrome             | `components/{Toolbar,TabBar,StatusBar}.svelte` — the buttons, the tabs, the status bar                       |
 | YAML to HTML       | [src/lib/cv/render.js](src/lib/cv/render.js)                                                                 |
 | Preview            | [src/lib/cv/PreviewFrame.svelte](src/lib/cv/PreviewFrame.svelte) — the iframe the sheet renders in           |
@@ -31,7 +31,7 @@ pnpm check      # svelte-check
 | Layouts            | [src/lib/cv/layouts/](src/lib/cv/layouts/) — the whole sheet, one file per arrangement                       |
 | Block variants     | [src/lib/cv/blocks/](src/lib/cv/blocks/) — one file per variation of one block                              |
 | The axes           | [src/lib/cv/slots.js](src/lib/cv/slots.js) — every slot, and every variant of each                          |
-| The nine looks     | [src/lib/cv/compositions.js](src/lib/cv/compositions.js) — presets, as sets of axis choices                 |
+| The named looks    | [src/lib/cv/compositions.js](src/lib/cv/compositions.js) — presets, as sets of axis choices                 |
 | Composing          | [src/lib/cv/compose.js](src/lib/cv/compose.js) — layout + variants → one component                          |
 | Part registry      | [src/lib/cv/parts.svelte.js](src/lib/cv/parts.svelte.js) — edits, forks, reverts                            |
 | Compiling it       | [src/lib/cv/compile-template.js](src/lib/cv/compile-template.js) — Svelte, in the browser                    |
@@ -92,25 +92,26 @@ edited is stored per part rather than per file.
 
 ### Layouts, blocks and presets
 
-The Style button offers nine named looks — classic, compact, centered, sidebar,
-timeline, ledger, minimal, cards, tech — seven palettes and six fonts. All three
-are per file, stored in the file registry next to the name rather than in the
-CRDT: restyling is not an edit, so it leaves the YAML and the version history
-alone.
+The Style button offers thirteen named looks — classic, compact, centered,
+sidebar, timeline, ledger, minimal, cards, tech, editorial, brief, profile,
+dossier — seven palettes and six fonts. All three are per file, stored in the
+file registry next to the name; they are also in the file's own document, which
+is what puts a restyle in the version history and on the undo stack. See
+_Restyling is a change_ below.
 
-Those nine used to be nine whole Svelte components, one per look, and that was
-the wrong seam. Seven of them had markup identical to `classic` and differed
+The first nine used to be nine whole Svelte components, one per look, and that
+was the wrong seam. Seven of them had markup identical to `classic` and differed
 only in their `<style>` block; taking Tech's logo chips meant taking Tech's
 everything. So a sheet is two things now:
 
 - a **layout** — [layouts/](src/lib/cv/layouts/), the arrangement of the page
-  and the markup for all seven section types. There are two: single column and
-  sidebar.
+  and the markup for all nine section types. There are three: single column,
+  sidebar, and the same rail on the right.
 - a **variant** per **slot** — [blocks/](src/lib/cv/blocks/), one decision each
   about how one part of the sheet is drawn.
 
 The slots are in [slots.js](src/lib/cv/slots.js): page, header, section title,
-summary, entry, skills, stack, list and density. The first variant of each is
+summary, entry, skills, stack, list, languages, certificates and density. The first variant of each is
 its *default*, and it has no file at all, because it is the snippet the layout
 already renders. That is what makes the whole thing subtractive rather than
 constructive — choose nothing and you get the layout verbatim.
@@ -133,7 +134,9 @@ type always print, and that is what the gutter, the airy density, the card
 outlines and the chips are built out of.
 
 The nine names survive as **presets** — [compositions.js](src/lib/cv/compositions.js)
-— and a preset holds nothing but a set of axis values. That is deliberate: pick
+— and four more have been added that were never components at all, which is what
+the axes bought: a new look is a handful of choices rather than a new file. A
+preset holds nothing but a set of axis values. That is deliberate: pick
 Tech and then set the stack back to a plain line, and what you keep is Tech's
 skills and lists as chips, with nothing invisible riding along. A file's `layout`
 is the preset it started from and its `variants` are what it has changed since,
@@ -158,8 +161,8 @@ them would be tidier, and it is the wrong shape: Svelte scopes a component's CSS
 to the markup in that same component, so a style-only variant would have to write
 `:global(.job)` — which then loses on specificity to any scoped `.job` rule in
 whichever component owns the markup. Assembled into one, every rule gets the same
-scoping class and plain cascade order decides, which is how the nine templates
-worked against cv.css in the first place. Slot order is that order, and `density`
+scoping class and plain cascade order decides, which is how the templates it
+replaces worked against cv.css in the first place. Slot order is that order, and `density`
 is last so it can quiet anything above it.
 
 A variant contributes its snippets and its style block; its script is there so
@@ -208,10 +211,26 @@ the side the card is on. A pointer that has stopped is not on its way anywhere,
 so settling on a block — including the sheet's own margin, which is one big
 block — still hands the card over. It follows what you meant, not the journey.
 
+Following the pointer is the wrong behaviour once you have found the block you
+meant, though: walking a slot's variants means going back and forth between the
+card and the sheet, and everything above is about a card that moves. So a
+**click pins it**. A pinned card stops answering the pointer entirely — hovering
+elsewhere doesn't move it, leaving the sheet doesn't take it away, and a
+recompile leaves it where it is — and it says so, with an accent edge and a
+close button. Clicking the same block again, the ×, Escape, a click anywhere in
+the app's own chrome, or a click on the sheet that isn't a block at all, each let
+it go. The click still does what it always did as well: the editor scrolls to the
+line behind whatever was clicked.
+
 #### Editing one
 
-`/template` is the parts page: every layout and every variant down the left, one
-of them open in a CodeMirror, and the CV beside it. The preview composes the
+`/template` is the parts page, and **nothing in the app links to it**: it is a
+development tool for now, reachable by typing the URL and no other way. The rows
+beside the sheet and in the Style popover choose a variant; they no longer offer
+to open one.
+
+It is every layout and every variant down the left, one of them open in a
+CodeMirror, and the CV beside it. The preview composes the
 file's own choices with one substitution — the slot of the part being edited is
 set to that part — so opening a variant the file doesn't use still shows you your
 edit. Choosing a part to read is not the same act as choosing it for the CV,
@@ -233,6 +252,37 @@ The theme is still pure data — a ramp of eight colours, declared in
 [presets.css](src/lib/cv/presets.css) that re-points the frame's tokens at it.
 `data-cv-layout` is still set on `#cv-root` too, carrying the preset's id, but
 nothing shipped selects on it any more: it is there for a file's own CSS to hook.
+
+#### Restyling is a change
+
+Preset, block variants, theme, font and a file's own CSS used to live only in
+the file registry, on the grounds that restyling is not an edit. That was the
+wrong reading: changing how a CV looks is a change to the CV, and the things a
+change gets here — a line in the version history, a place on the undo stack, and
+coming back with the version that had it — are exactly what a restyle wanted.
+
+So the same five values are also a `style` map in the file's Loro document, and
+[restyle](src/lib/cv/state.svelte.js) is the one way to move them: it writes the
+registry first, so the sheet follows immediately, then records the result in the
+document with a label — `Entry — Card`, `Theme — Plum`. Ctrl+Z takes one back,
+from the editor as ever and now from anywhere else too, since a keystroke that
+didn't land in CodeMirror is handled by the page.
+
+Two stores for one fact, and deliberately so: the registry knows the style of
+every file including the ones that aren't open, and the document knows the style
+of *this* one at every point in its history. Neither can do the other's job, so
+while a file is open the document is authoritative and writes through — an undo,
+a restore, a version being viewed or a merge from another tab all land in the
+registry through the same callback.
+
+The map holds only what has changed since the document was adopted; everything
+else falls through to the registry's copy as it stood then, which is what makes
+undoing the first change of a session land on what was there before it rather
+than on nothing. Two details follow from what a change *is*: the commit carries a
+`style` kind, so the history panel can mark it, and the one style that is typed
+rather than chosen — custom CSS — waits out a debounce before it is recorded,
+because Loro never merges a commit that carries a message and the alternative is
+one history entry per keystroke.
 
 #### Compiling one
 
@@ -292,25 +342,44 @@ What every sheet shares is [cv.css](src/lib/cv/cv.css): the class names it is
 built out of, and how it paginates. A layout and its variants add to that and
 override parts of it from the composed style block, which the compiler scopes —
 so their rules outrank the base on specificity alone, whatever order they land
-in. Sidebar renders a rail and a main column, skills and lists going to the rail,
-and any section can opt in or out with `rail: true` / `rail: false`. The chip
+in. The two rail layouts render a rail and a main column — Sidebar puts the rail
+on the left, Rail right mirrors it — with skills, lists and languages going to
+the rail, and any section can opt in or out with `rail: true` / `rail: false`. A
+rail is a third of a measure, so those layouts also carry the rules that make
+what lands in one survive it: the two-up grids fold to a single `minmax(0, 1fr)`
+column, headings and chips are allowed to wrap, and the gutter a skills-rows
+title hangs in goes away. The chip
 variants render a chip per tool instead of a line — see _Logos_ below.
 
 #### What a CV is made of
 
 A document is a header and a list of sections, and a section's `type` is what
-decides how it renders. There are seven, all of them understood by both
-layouts, so switching preset can never lose one:
+decides how it renders. There are nine, all of them understood by every
+layout, so switching preset can never lose one:
 
-| `type`       | Holds                                                                    |
-| ------------ | ------------------------------------------------------------------------ |
-| `summary`    | `paragraphs`                                                             |
-| `skills`     | `blocks`, each a `title` and `rows` of `{ tier?, text }`                 |
-| `experience` | `items` of `{ title, company, dates, sub, bullets, stack }`              |
-| `education`  | `items` of `{ title, school, dates, sub?, bullets? }`                    |
-| `projects`   | `items` of `{ title, dates?, sub?, bullets?, stack? }`                   |
-| `list`       | `items` of plain strings — `inline: true` sets them as pills on one line |
-| `oss`        | `projects` of `{ name, stars, desc }`, with an optional table header     |
+| `type`           | Holds                                                                    |
+| ---------------- | ------------------------------------------------------------------------ |
+| `summary`        | `paragraphs`                                                             |
+| `skills`         | `blocks`, each a `title` and `rows` of `{ tier?, text }`                 |
+| `experience`     | `items` of `{ title, company, dates, sub, bullets, stack }`              |
+| `education`      | `items` of `{ title, school, dates, sub?, bullets? }`                    |
+| `projects`       | `items` of `{ title, dates?, sub?, bullets?, stack? }`                   |
+| `list`           | `items` of plain strings — `inline: true` sets them as pills on one line |
+| `languages`      | `items` of `{ name, level?, note?, rating? }`                            |
+| `certifications` | `items` of `{ name, issuer?, dates?, note? }` — certificates, licences, permits |
+| `oss`            | `projects` of `{ name, stars, desc }`, with an optional table header     |
+
+The two newest are the two a `list` section used to have to stand in for, and
+both are there because the shape was doing work the strings couldn't. A
+certificate is a name, an issuer and a date, which is what lets Grid, Cards and
+Compact set the three of them differently. A language is a name and a level, and
+`level` is deliberately free text — `Native`, `C2` and `Professional working` are
+all how somebody writes one — so `levelRating` in
+[template-api.js](src/lib/cv/template-api.js) is what reads any of them as a
+number out of five, which is what the Dots and Bars variants draw. A level it
+can't read comes back as 0, and that is the signal for those variants to print
+the words after all rather than an empty meter. `rating: 1–5` says it outright
+for anything the table doesn't cover.
 
 Experience, education and projects are the same block underneath — `.job` in
 cv.css — because a degree and a role are the same shape: a title, something it
@@ -466,6 +535,12 @@ document untouched.
 Clicking a version checks it out — the document detaches and the editor goes
 read-only until you go back to the latest or restore. Restoring is additive; nothing
 is discarded.
+
+A version carries the file's presentation as well as its text (see _Restyling is
+a change_), so checking one out shows the sheet as it was set, and restoring one
+brings that look back with the words. What a restyle commits is a `style` kind,
+which is what the panel marks it with; it moves no characters, so it shows no
+counts.
 
 ### Persistence
 

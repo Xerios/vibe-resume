@@ -1,0 +1,35 @@
+/* A list in two columns instead of one long run. Certifications, tools and
+   interests are all short lines, and a single column of them wastes half the
+   measure — which is the whole reason a list section ends up as pills in the
+   first place.
+
+   Both shapes a list can take are covered: the pills of an `inline: true` list
+   become lines here too, since a pill is a shape for a row and this isn't one.
+   A sidebar's rail is narrower than two columns can survive, and its own rules
+   are concatenated after these, so the rail keeps its single column. */
+.sec-list ul.bullets,
+.sec-list .tags {
+  display: block;
+  columns: 2;
+  column-gap: 32px;
+}
+
+.sec-list ul.bullets li,
+.sec-list .tag {
+  break-inside: avoid;
+}
+
+.sec-list .tag {
+  display: block;
+  padding: 1px 0 1px 13px;
+  border: none;
+  border-radius: 0;
+  font-size: 12px;
+  text-indent: -13px;
+}
+
+.sec-list .tag::before {
+  content: '· ';
+  color: var(--accent);
+  font-weight: 700;
+}

@@ -2,11 +2,15 @@
  * The named looks: each one a set of choices across the axes in slots.js, and
  * nothing else.
  *
- * These are the nine templates that used to be nine whole components. Keeping
- * the names is the point — a preset is a good starting place, and "Tech" says
- * more than seven dropdowns do — but a preset is now only where you start.
- * Change an axis and the file keeps the preset it came from, marked as
- * modified; it doesn't become nameless.
+ * The first nine are the templates that used to be nine whole components, and
+ * keeping their names is the point — a preset is a good starting place, and
+ * "Tech" says more than a dozen dropdowns do — but a preset is now only where
+ * you start. Change an axis and the file keeps the preset it came from, marked
+ * as modified; it doesn't become nameless.
+ *
+ * The four after them were never components at all, which is what the axes
+ * bought: a new look is now a handful of choices rather than a new file, so
+ * Editorial, Brief, Profile and Dossier cost nothing but this list.
  *
  * They are deliberately pure: a preset holds no CSS of its own, so nothing
  * invisible rides along when an axis is changed. Two of the nine gave up a few
@@ -53,8 +57,42 @@ export const PRESETS = [
     hint: 'No rules, no marks — spacing does the separating',
     slots: { header: 'quiet', sectionHead: 'plain', entry: 'minimal', skills: 'bare', density: 'airy' },
   },
-  { id: 'cards', name: 'Cards', hint: 'Every role and skill group in a box of its own', slots: { entry: 'card', skills: 'cards' } },
-  { id: 'tech', name: 'Tech', hint: 'Stacks and skills as chips, each with its logo', slots: { stack: 'chips', skills: 'chips', list: 'chips' } },
+  {
+    id: 'cards',
+    name: 'Cards',
+    hint: 'Every role and skill group in a box of its own',
+    slots: { entry: 'card', skills: 'cards', certifications: 'cards' },
+  },
+  {
+    id: 'tech',
+    name: 'Tech',
+    hint: 'Stacks and skills as chips, each with its logo',
+    slots: { stack: 'chips', skills: 'chips', list: 'chips', languages: 'inline' },
+  },
+  {
+    id: 'editorial',
+    name: 'Editorial',
+    hint: 'A masthead, numbered sections and a lede — a CV set like a feature',
+    slots: { header: 'banner', sectionHead: 'numbered', summary: 'lede', entry: 'stripe', density: 'airy' },
+  },
+  {
+    id: 'brief',
+    name: 'Brief',
+    hint: 'Everything on one page — inline skills, two-column lists, tight type',
+    slots: { skills: 'inline', list: 'columns', certifications: 'compact', languages: 'inline', stack: 'plain', density: 'compact' },
+  },
+  {
+    id: 'profile',
+    name: 'Profile',
+    hint: 'The rail on the right, with languages as meters in it',
+    slots: { page: 'rail-right', header: 'stacked', summary: 'lede', languages: 'dots', certifications: 'compact' },
+  },
+  {
+    id: 'dossier',
+    name: 'Dossier',
+    hint: 'Boxed titles, dated badges and carded skills — a filed look',
+    slots: { sectionHead: 'boxed', entry: 'badge', skills: 'cards', certifications: 'cards', list: 'columns' },
+  },
 ]
 
 export const DEFAULT_PRESET = 'timeline'

@@ -8,6 +8,23 @@ import { base64ToBytes, bytesToBase64, read, remove, snapshotKey, write } from '
 
 const TEXT_ID = 'yaml'
 const TAGS_ID = 'checkpoints'
+/**
+ * The file's presentation — preset, block variants, theme, font, custom CSS.
+ * It used to live only in the file registry, on the grounds that restyling is
+ * not an edit; it is here as well now, because "not an edit" was the wrong
+ * reading. Changing how a CV looks is a change to the CV, and the things a
+ * change gets — a line in the history, a place on the undo stack, and coming
+ * back with the version that had it — are the things a restyle wanted.
+ *
+ * The map holds only what has been changed since this document was adopted;
+ * everything else falls through to `#baseStyle`, the registry's copy as it
+ * stood then. That is what makes undoing the first change of a session land on
+ * what was there before it rather than on nothing.
+ */
+const STYLE_ID = 'style'
+
+/** @type {readonly ('layout' | 'variants' | 'theme' | 'font' | 'css')[]} */
+const STYLE_KEYS = ['layout', 'variants', 'theme', 'font', 'css']
 
 /** Commits made by naming a version, kept out of the undo stack. */
 const TAG_ORIGIN = 'cv-tag'
@@ -18,7 +35,7 @@ const TAG_ORIGIN = 'cv-tag'
  * metadata Loro carries, so the kind rides along inside it, separated by a
  * control character no one can type into the "name this version" box.
  */
-const KINDS = /** @type {const} */ (['edit', 'checkpoint', 'export', 'restore', 'initial'])
+const KINDS = /** @type {const} */ (['edit', 'checkpoint', 'export', 'restore', 'initial', 'style'])
 const KIND_SEP = '\u0001'
 
 /** @typedef {(typeof KINDS)[number]} ChangeKind */
@@ -41,10 +58,24 @@ const MERGE_WINDOW_SECONDS = 45
 /** Debounce for the work that follows an edit: history rebuild and persistence. */
 const SETTLE_MS = 400
 
+/**
+ * Debounce for a style that is *typed* rather than chosen. Loro never merges
+ * anything into a change that carries a message, so a commit per keystroke in
+ * the custom-CSS box would be a history entry per keystroke.
+ */
+const STYLE_SETTLE_MS = 700
+
 let wasmReady = /** @type {Promise<unknown> | null} */ (null)
 
 /** @param {LoroDoc} doc */
 const cvText = (doc) => doc.getText(TEXT_ID)
+
+/**
+ * Where the style map's other half lives — see `bindStyle`.
+ * @typedef {object} StyleHost
+ * @property {() => Record<string, any>} base   the registry's copy for the file being adopted
+ * @property {(style: Record<string, any>) => void} apply  take a change made in the document
+ */
 
 /**
  * @typedef {object} HistoryEntry
@@ -55,6 +86,7 @@ const cvText = (doc) => doc.getText(TEXT_ID)
  * @property {number} timestamp      unix seconds, 0 when not recorded
  * @property {string} message
  * @property {ChangeKind} kind      what the change was — see `KINDS`
+ * @property {string} axis           for a restyle, which part of the presentation it moved; '' for anything else
  * @property {number} length         number of ops in the change
  * @property {ChangeStats | null} stats  characters added and removed, null past `STATS_LIMIT`
  * @property {import('loro-crdt/web').OpId[]} deps  causal parents — the version just before this change
@@ -87,6 +119,14 @@ export class CvDoc {
   ready = $state(false)
   /** Current text of the document (either the live head, or a checked-out version). */
   yaml = $state('')
+  /**
+   * How this version of the file is presented, as the style map has it over
+   * the registry's copy. Read rather than written by the app: a restyle goes
+   * through `recordStyle`, and what comes back out of here is what an undo, a
+   * restore, a version being viewed or another tab has made of it.
+   * @type {Record<string, any>}
+   */
+  style = $state({})
   /** Oldest first. @type {HistoryEntry[]} */
   history = $state([])
   /** Key of the entry being previewed, or null when we're on the latest version. */
@@ -131,6 +171,14 @@ export class CvDoc {
   #fileId = ''
   /** Change counts, keyed by entry key. @type {Map<string, ChangeStats>} */
   #statsCache = new Map()
+  /** The presentation the file had when this document was adopted; the map layers over it. @type {Record<string, any>} */
+  #baseStyle = {}
+  /** Where that copy comes from, and where a change made in here is mirrored back to. @type {StyleHost | null} */
+  #styleHost = null
+  /** A typed style change waiting out `STYLE_SETTLE_MS`. @type {{ style: Record<string, any>, label: string, axis: string } | null} */
+  #pendingStyle = null
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
+  #styleTimer
 
   /** @param {string} fileId */
   async init(fileId) {
@@ -172,6 +220,25 @@ export class CvDoc {
     this.#applyText = applyText
   }
 
+  /**
+   * Tie the style map to the file registry. `base` is the presentation the
+   * registry holds for the file about to be adopted — what the map's own keys
+   * layer over — and `apply` is how a change that came *out* of the document
+   * reaches the registry the app renders from: an undo, a restore, a version
+   * being viewed, or another tab.
+   *
+   * Two stores for one fact, and deliberately so. The registry knows the style
+   * of every file including the ones that aren't open; the document knows the
+   * style of this one at every point in its history. Neither can do the other's
+   * job, so the document is authoritative while a file is open and writes
+   * through to the registry, which persists it and hands it back at load.
+   *
+   * @param {StyleHost} host
+   */
+  bindStyle(host) {
+    this.#styleHost = host
+  }
+
   destroy() {
     if (this.#settleTimer) clearTimeout(this.#settleTimer)
     this.#unsubscribeAll()
@@ -180,6 +247,7 @@ export class CvDoc {
 
   /** Persist right now, skipping the debounce. Used when the tab is going away. */
   flush() {
+    this.#flushStyle()
     if (this.#settleTimer) {
       clearTimeout(this.#settleTimer)
       this.#settleTimer = null
@@ -251,16 +319,66 @@ export class CvDoc {
   }
 
   /**
+   * Record how the file is presented now. The caller has already applied it —
+   * this is the copy that goes into the document, which is what puts a restyle
+   * in the history and on the undo stack.
+   *
+   * `defer` is for the one style that is typed rather than chosen: custom CSS
+   * arrives a keystroke at a time.
+   *
+   * `axis` is which part of the presentation moved — the preset, the theme, one
+   * slot's variant. Trying presets on is done by trying them on, so a run of
+   * changes to the same axis reads as one line in the history rather than as
+   * one per click; see `mergeStyleRuns`.
+   *
+   * @param {Record<string, any>} style
+   * @param {string} label   what the entry reads as, e.g. `Entry — Card`
+   * @param {string} axis    what it moved, e.g. `theme`
+   * @param {boolean} [defer]
+   */
+  recordStyle(style, label, axis, defer = false) {
+    if (!this.#doc || this.isViewingHistory) return
+    if (defer) {
+      this.#pendingStyle = { style, label, axis }
+      clearTimeout(this.#styleTimer)
+      this.#styleTimer = setTimeout(() => this.#flushStyle(), STYLE_SETTLE_MS)
+      return
+    }
+    // A choice made while a typed one is still waiting commits that one first,
+    // so the two land as the two changes they were rather than as one.
+    this.#flushStyle()
+    this.#commitStyle(style, label, axis)
+  }
+
+  /** Take back the last change, whether it was typed or chosen. */
+  undo() {
+    if (!this.#undo || this.isViewingHistory) return false
+    this.#flushStyle()
+    return this.#undo.undo()
+  }
+
+  /** Put back the last thing `undo` took. */
+  redo() {
+    if (!this.#undo || this.isViewingHistory) return false
+    this.#flushStyle()
+    return this.#undo.redo()
+  }
+
+  /**
    * Check out a past version. The document goes detached: the editor is
    * read-only until `viewLatest` or `restore`.
    * @param {HistoryEntry} entry
    */
   view(entry) {
     if (!this.#doc) return
+    this.#flushStyle() // a typed style still pending belongs to the head, not to this
     this.#doc.checkout([frontier(entry)])
     this.viewingKey = entry.key
     this.yaml = this.#text()
     this.diff = this.#diffFor(entry)
+    // The sheet is shown as it was set, not as it is set now. Going back to
+    // latest puts the current style back the same way.
+    this.#syncStyle()
   }
 
   /** Return to the newest version and re-enable editing. */
@@ -270,6 +388,7 @@ export class CvDoc {
     this.viewingKey = null
     this.diff = null
     this.yaml = this.#text()
+    this.#syncStyle()
   }
 
   /**
@@ -279,12 +398,28 @@ export class CvDoc {
    */
   restore(entry) {
     if (!this.#doc) return
-    const text = this.#doc
-      .forkAt([frontier(entry)])
-      .getText(TEXT_ID)
-      .toString()
+    const fork = this.#doc.forkAt([frontier(entry)])
+    const text = fork.getText(TEXT_ID).toString()
+    const style = fork.getMap(STYLE_ID).toJSON()
     this.viewLatest()
-    this.#applyNamed(stampKind('restore', `Restored ${describe(entry)}`), text)
+
+    const message = stampKind('restore', `Restored ${describe(entry)}`)
+    // The version's presentation comes back with its text: both are what the
+    // file was at that point, and restoring half of it would be a version
+    // nobody ever had. Read the same way `#readStyle` reads the head — the
+    // version's own keys over the registry's copy — so an axis that version
+    // never touched goes back to what it was then rather than staying as it is
+    // now. Written before the text goes in, so the commit the editor binding
+    // makes carries the whole restore as one change.
+    const wanted = { ...this.#baseStyle }
+    for (const key of STYLE_KEYS) if (style[key] != null) wanted[key] = style[key]
+    this.#writeStyle(wanted)
+    this.#applyNamed(message, text)
+    // Restoring a version whose text is the one already on screen produces no
+    // editor transaction, so the map ops above would have nothing to ride on.
+    this.#doc.commit({ message })
+    this.#syncStyle()
+    this.#refreshHistory()
   }
 
   /**
@@ -305,6 +440,67 @@ export class CvDoc {
 
   #text() {
     return this.#doc ? cvText(this.#doc).toString() : ''
+  }
+
+  /**
+   * Put a style into the map, writing only what actually moved — a key set back
+   * to what the map already says is not a change, and neither is one that was
+   * never set and still isn't. `null` stands for "nothing of its own", which
+   * `#readStyle` reads as a fall-through to the registry's copy.
+   * @param {Record<string, any>} style
+   * @returns {boolean} whether anything moved
+   */
+  #writeStyle(style) {
+    const map = /** @type {LoroDoc} */ (this.#doc).getMap(STYLE_ID)
+    const now = map.toJSON()
+    const changed = STYLE_KEYS.filter((key) => !same(now[key], style[key]))
+    for (const key of changed) map.set(key, style[key] ?? null)
+    return changed.length > 0
+  }
+
+  /** Commit a style change now, if it is one. @param {Record<string, any>} style @param {string} label @param {string} axis */
+  #commitStyle(style, label, axis) {
+    if (!this.#doc || this.isViewingHistory) return
+    if (!this.#writeStyle(style)) return
+
+    this.#doc.setChangeMergeInterval(0)
+    this.#doc.commit({ message: stampKind('style', label, axis) })
+    this.#doc.setChangeMergeInterval(MERGE_WINDOW_SECONDS)
+    this.#syncStyle()
+    this.#refreshHistory()
+    this.#scheduleSettle()
+  }
+
+  /** Commit whatever `recordStyle` is holding on a debounce. */
+  #flushStyle() {
+    clearTimeout(this.#styleTimer)
+    this.#styleTimer = undefined
+    const pending = this.#pendingStyle
+    this.#pendingStyle = null
+    if (pending) this.#commitStyle(pending.style, pending.label, pending.axis)
+  }
+
+  /**
+   * Read the map back, and hand it on if it has moved. Called after anything
+   * that can move it: a commit here, an undo, a checkout, a merge from another
+   * tab. The guard is what keeps that from being a loop — the mirror lands in
+   * the registry, the registry hands the same values back, and the second pass
+   * finds nothing to do.
+   */
+  #syncStyle() {
+    const next = this.#readStyle()
+    if (same(next, this.style)) return
+    this.style = next
+    this.#styleHost?.apply(next)
+  }
+
+  /** The map's keys over the registry's copy — see `STYLE_ID`. */
+  #readStyle() {
+    /** @type {Record<string, any>} */
+    const out = { ...this.#baseStyle }
+    const map = this.#doc?.getMap(STYLE_ID).toJSON() ?? {}
+    for (const key of STYLE_KEYS) if (map[key] != null) out[key] = map[key]
+    return out
   }
 
   /**
@@ -388,6 +584,9 @@ export class CvDoc {
   #adopt(/** @type {LoroDoc} */ doc) {
     this.#doc = doc
     this.#statsCache.clear()
+    // Whatever the registry has for this file is what the map layers over, so
+    // it has to be read before anything is read back out of the map.
+    this.#baseStyle = this.#styleHost?.base() ?? {}
     doc.setChangeMergeInterval(MERGE_WINDOW_SECONDS)
 
     // Built after the snapshot is imported, so it can only undo what happens
@@ -408,6 +607,7 @@ export class CvDoc {
       }),
       doc.subscribe(() => {
         this.yaml = this.#text()
+        this.#syncStyle()
         this.#scheduleSettle()
       }),
     ]
@@ -418,6 +618,11 @@ export class CvDoc {
     this.viewingKey = null
     this.diff = null
     this.yaml = this.#text()
+    this.style = this.#readStyle()
+    // The snapshot is the older of the two stores only in the sense that it is
+    // read second: if it carries a style the registry doesn't, the document is
+    // what the file was last left as, so it wins and the registry is told.
+    if (!same(this.style, this.#baseStyle)) this.#styleHost?.apply(this.style)
     this.#refreshHistory()
     this.docId++
 
@@ -486,8 +691,9 @@ export class CvDoc {
       }
     }
     list.sort((a, b) => a.lamport - b.lamport || a.peer.localeCompare(b.peer))
-    for (const entry of list.slice(-STATS_LIMIT)) entry.stats = this.#statsFor(entry)
-    this.history = list
+    const merged = mergeStyleRuns(list)
+    for (const entry of merged.slice(-STATS_LIMIT)) entry.stats = this.#statsFor(entry)
+    this.history = merged
   }
 
   #scheduleSettle() {
@@ -538,25 +744,79 @@ export class CvDoc {
 const newEpoch = () => Math.random().toString(36).slice(2, 10)
 
 /**
- * @param {ChangeKind} kind
- * @param {string} label
+ * Whether two style values are the same thing. Absent and null are one value
+ * here — a key the map never carried and one explicitly cleared both mean the
+ * file has nothing of its own to say — and objects are compared by their
+ * contents rather than by the order their keys happen to be written in, since
+ * `variants` is rebuilt by a spread every time it is touched.
+ * @param {unknown} a
+ * @param {unknown} b
  */
-const stampKind = (kind, label) => `${kind}${KIND_SEP}${label}`
+const same = (a, b) => stable(a) === stable(b)
+
+/** @param {unknown} value */
+const stable = (value) =>
+  JSON.stringify(value ?? null, (_, v) =>
+    v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).sort(([x], [y]) => x.localeCompare(y))) : v,
+  )
 
 /**
- * Read a commit message back into its kind and the label to show. Messages
- * written before kinds existed carry no stamp: a labelled one was a named
- * version, an empty one was the editor committing a burst of typing.
+ * @param {ChangeKind} kind
+ * @param {string} label
+ * @param {string} [axis]  what a restyle moved — see `recordStyle`
+ */
+const stampKind = (kind, label, axis) => `${kind}${KIND_SEP}${label}${axis ? KIND_SEP + axis : ''}`
+
+/**
+ * Read a commit message back into its kind, the label to show, and — for a
+ * restyle — the axis it moved. Messages written before kinds existed carry no
+ * stamp: a labelled one was a named version, an empty one was the editor
+ * committing a burst of typing. Ones written before axes did carry no third
+ * field, which reads as an axis of its own that nothing merges with.
  * @param {string} raw
- * @returns {{kind: ChangeKind, message: string}}
+ * @returns {{kind: ChangeKind, message: string, axis: string}}
  */
 function readKind(raw) {
   const at = raw.indexOf(KIND_SEP)
   if (at !== -1) {
     const kind = /** @type {ChangeKind} */ (raw.slice(0, at))
-    if (KINDS.includes(kind)) return { kind, message: raw.slice(at + 1) }
+    if (KINDS.includes(kind)) {
+      const rest = raw.slice(at + 1)
+      // Only a restyle carries an axis, and it is the last field.
+      const cut = kind === 'style' ? rest.lastIndexOf(KIND_SEP) : -1
+      if (cut === -1) return { kind, message: rest, axis: '' }
+      return { kind, message: rest.slice(0, cut), axis: rest.slice(cut + 1) }
+    }
   }
-  return raw ? { kind: 'checkpoint', message: raw } : { kind: 'edit', message: 'Edit' }
+  return raw ? { kind: 'checkpoint', message: raw, axis: '' } : { kind: 'edit', message: 'Edit', axis: '' }
+}
+
+/**
+ * Fold each run of restyles on the same axis into the last of them. Picking a
+ * preset is how a preset is looked at, so a dozen of them are one decision and
+ * read best as one line — the one that says where the run ended up.
+ *
+ * Done here rather than at commit time because Loro merges only changes that
+ * carry no message, and the kind and label ride in the message. So the oplog
+ * keeps every step — each is still its own undo — and the panel shows the run.
+ *
+ * The entry that stands for the run is the newest: its label, its time and its
+ * frontier, so selecting it shows the CV as the run left it. Its `deps` are the
+ * first one's, so the change it describes spans the whole run.
+ *
+ * @param {HistoryEntry[]} list  oldest first
+ * @returns {HistoryEntry[]}
+ */
+function mergeStyleRuns(list) {
+  /** @type {HistoryEntry[]} */
+  const out = []
+  for (const entry of list) {
+    const prev = out[out.length - 1]
+    const runs = prev && prev.kind === 'style' && entry.kind === 'style' && prev.peer === entry.peer && !!entry.axis && prev.axis === entry.axis
+    if (runs) out[out.length - 1] = { ...entry, deps: prev.deps, length: prev.length + entry.length }
+    else out.push(entry)
+  }
+  return out
 }
 
 /** @param {HistoryEntry} entry */

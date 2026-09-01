@@ -1,0 +1,23 @@
+/* The dates as an outlined badge at the end of the title line. The plain entry
+   sets them as quiet mono type, which disappears on a sheet with a lot of
+   dated blocks; a badge is the same information given an edge to be found by.
+
+   Outlined rather than filled, so it survives a print with background graphics
+   switched off — the constraint every block here is drawn under. */
+.job-head {
+  align-items: center;
+}
+
+.job-dates {
+  flex-shrink: 0;
+  padding: 1px 8px 2px;
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  font-size: 9.5px;
+  letter-spacing: 0.4px;
+  color: var(--accent-deep);
+}
+
+.job {
+  margin-bottom: 15px;
+}

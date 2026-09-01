@@ -9,9 +9,8 @@
    * be kept looking alike.
    *
    * The arrows are the fast path and wrap at both ends; the name opens the full
-   * list, which is also where a part is opened for editing.
+   * list.
    */
-  import { base } from '$app/paths'
 
   /**
    * @type {{
@@ -58,9 +57,6 @@
           {v.name}{#if v.edited}*{/if}
         </button>
       {/each}
-      <!-- A part is a file you can open. This is also how a variant of your own
-           starts: duplicating one over there puts it in this list. -->
-      <a class="vc-edit" href="{base}/template?part={slot.id}:{current.id}">Edit this part →</a>
     </div>
   {/if}
 </div>
@@ -94,8 +90,7 @@
 
   .vc-arrow,
   .vc-name,
-  .vc-opt,
-  .vc-edit {
+  .vc-opt {
     background: none;
     border: none;
     cursor: pointer;
@@ -159,19 +154,6 @@
   .vc-opt:hover,
   .vc-opt.on {
     background: var(--accent-wash);
-    color: var(--accent-deep);
-  }
-
-  .vc-edit {
-    margin-top: 3px;
-    padding: 4px 7px 2px;
-    border-top: 1px solid var(--line);
-    text-decoration: none;
-    font-size: 9px;
-    color: var(--faint);
-  }
-
-  .vc-edit:hover {
     color: var(--accent-deep);
   }
 </style>

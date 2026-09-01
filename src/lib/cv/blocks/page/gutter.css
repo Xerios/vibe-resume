@@ -7,10 +7,17 @@
   padding: 40px 50px 34px;
 }
 
-/* The two bodies that have no gutter part of their own still start where the
-   text above them does. */
+/* The bodies that have no gutter part of their own still start where the text
+   above them does. The table is the one of them with a width of its own, so it
+   gives back what the indent takes rather than running off the page. */
 .sec-list ul.bullets,
 .sec-list .tags,
+.sec-languages .lang-list,
+.sec-certifications .cert-list,
 .sec-oss table.oss {
   margin-left: var(--gutter);
+}
+
+.sec-oss table.oss {
+  width: calc(100% - var(--gutter));
 }

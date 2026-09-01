@@ -9,8 +9,9 @@
  *
  * Everything here is deliberately small: a template's job is markup, and what
  * it can't reasonably write itself is inline Markdown, a defensive list, the
- * section/path pairing the preview's line mapping depends on, and — for the
- * Tech template — the stack line read as a list of tools and the logo for one.
+ * section/path pairing the preview's line mapping depends on, the stack line
+ * read as a list of tools and the logo for one, and a language's level read as
+ * a number the meter variants can draw.
  */
 
 import { marked } from 'marked'
@@ -95,6 +96,45 @@ export function techIcon(name) {
   const slug = iconSlug(name)
   return slug ? `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true">${ICON_BODIES[slug]}</svg>` : ''
 }
+
+/**
+ * How strong a language is, on a scale of five, or 0 when nothing said.
+ *
+ * A CV writes this either as a number (`rating: 4`) or as a word, and the words
+ * are two vocabularies at once — the CEFR letters and the ones people actually
+ * write. Both are read here rather than in each meter variant, so `Native`,
+ * `C2`, `Fluent` and `5` all fill the same five dots and an unrecognised level
+ * quietly fills none, which is the signal a variant needs to fall back to
+ * printing the words instead.
+ *
+ * @param {any} item  a `languages` entry — `{ name, level?, rating? }`
+ * @returns {number} 0–5
+ */
+export function levelRating(item) {
+  const rating = Number(item?.rating)
+  if (Number.isFinite(rating) && rating > 0) return Math.min(5, Math.round(rating))
+
+  const level = normalise(String(item?.level ?? ''))
+  if (!level) return 0
+  for (const [score, words] of LEVELS) {
+    if (words.some((w) => level.startsWith(w))) return score
+  }
+  return 0
+}
+
+/**
+ * Strongest first, so that `nativeorbilingual` is read as native rather than
+ * stopping at the `b` levels, and matched on the start of the level so that
+ * `C1 — professional` lands with `C1`.
+ * @type {[number, string[]][]}
+ */
+const LEVELS = [
+  [5, ['native', 'bilingual', 'mothertongue', 'c2', 'fluent', 'expert', '5']],
+  [4, ['c1', 'advanced', 'professional', 'proficient', 'business', '4']],
+  [3, ['b2', 'upperintermediate', 'intermediate', 'conversational', 'working', '3']],
+  [2, ['b1', 'preintermediate', 'limited', 'basic', 'elementary', '2']],
+  [1, ['a2', 'a1', 'beginner', 'novice', 'starter', '1']],
+]
 
 /**
  * The same shape the generator keys its tables by: lower case, no punctuation

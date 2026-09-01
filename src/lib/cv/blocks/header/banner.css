@@ -1,0 +1,45 @@
+/* A band across the top: rules above and below, the name tracked out in caps
+   and the contact running under it. The loudest of the headers, and the only
+   one that reads as a masthead rather than as the first line of the document.
+
+   Drawn entirely in borders and type. A band is the obvious thing to fill, and
+   a filled one would come out of the print dialog blank whenever "Background
+   graphics" is off — so the weight comes from a 3px rule instead. */
+.sheet header {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+  padding: 13px 0 12px;
+  border-top: 3px solid var(--accent);
+  border-bottom: 1px solid var(--line);
+}
+
+.name {
+  font-size: 27px;
+  font-weight: 800;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+}
+
+.role {
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px 18px;
+  text-align: left;
+  line-height: 1.5;
+  white-space: normal;
+}
+
+.contact br {
+  display: none;
+}
