@@ -94,7 +94,7 @@ export class FileManager {
    */
   create(name) {
     const id = newId()
-    this.files = [...this.files, { id, name: this.#uniqueName(name || 'CV'), deletedAt: null }]
+    this.files = [...this.files, { id, name: this.#uniqueName(name || 'Untitled'), deletedAt: null }]
     this.#saveList()
     this.activeId = id
     this.#saveActive()
@@ -233,7 +233,7 @@ export class FileManager {
       write(snapshotKey(id), legacy)
       remove(KEYS.legacySnapshot)
     }
-    this.files = [{ id, name: 'CV', deletedAt: null }]
+    this.files = [{ id, name: 'Untitled', deletedAt: null }]
     this.#saveList()
   }
 

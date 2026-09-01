@@ -2,11 +2,12 @@
   import Icon from '@iconify/svelte'
   import IconChevron from '@iconify-icons/lucide/chevron-down'
   import IconCopy from '@iconify-icons/lucide/copy'
+  import IconDownload from '@iconify-icons/lucide/download'
   import IconFilePlus from '@iconify-icons/lucide/file-plus'
+  import IconPencil from '@iconify-icons/lucide/pencil'
   import IconTrash from '@iconify-icons/lucide/trash'
   import IconLayout from '@iconify-icons/lucide/layout-panel-left'
   import IconHistory from '@iconify-icons/lucide/history'
-  import IconSave from '@iconify-icons/lucide/save'
   import { withKey } from './access-keys.js'
 
   let {
@@ -38,11 +39,16 @@
 
   let editingId = $state(/** @type {string | null} */ (null))
   let editValue = $state('')
-  /** Whether the second way to open a tab — duplicating this one — is showing. */
+  /** Whether the active tab's menu — everything you can do to this file — is showing. */
   let menuOpen = $state(false)
+  /**
+   * Where that menu is drawn. It is positioned against the viewport rather than
+   * against the tab, because #tabs scrolls: a box positioned inside it is
+   * clipped by the scroller on both axes, however far it overhangs.
+   */
+  let menuAt = $state({ x: 0, y: 0 })
 
-  /** @type {HTMLDivElement} */
-  let newGroup
+  let menuGroup = $state(/** @type {HTMLDivElement | undefined} */ (undefined))
   let moreBtn = $state(/** @type {HTMLButtonElement | undefined} */ (undefined))
   let menu = $state(/** @type {HTMLDivElement | undefined} */ (undefined))
 
@@ -54,7 +60,7 @@
 
     /** @param {PointerEvent} e */
     const onPointerDown = (e) => {
-      if (!newGroup.contains(/** @type {Node | null} */ (e.target))) menuOpen = false
+      if (!menuGroup?.contains(/** @type {Node | null} */ (e.target))) menuOpen = false
     }
     document.addEventListener('pointerdown', onPointerDown)
     return () => document.removeEventListener('pointerdown', onPointerDown)
@@ -79,7 +85,8 @@
 
   /**
    * Renaming is a double-click for the pointer and F2 for the keyboard — the
-   * two gestures every file list has trained people to try.
+   * two gestures every file list has trained people to try. The menu offers it
+   * a third time, for whoever went looking there first.
    * @param {KeyboardEvent} e
    * @param {import('$lib/cv/files.svelte.js').FileMeta} f
    */
@@ -95,6 +102,13 @@
     node.select()
   }
 
+  /** Measure the caret first: the menu is placed against the viewport. */
+  function openMenu() {
+    const rect = moreBtn?.getBoundingClientRect()
+    if (rect) menuAt = { x: rect.left, y: rect.bottom + 6 }
+    menuOpen = true
+  }
+
   /** Run a menu choice and put focus back where the menu was opened from. */
   function pick(/** @type {() => void} */ action) {
     menuOpen = false
@@ -106,7 +120,7 @@
   function onMoreKeydown(e) {
     if (e.key !== 'ArrowDown' || menuOpen) return
     e.preventDefault()
-    menuOpen = true // the effect above puts the caret on the first item
+    openMenu() // the effect above puts the caret on the first item
   }
 
   /** @param {KeyboardEvent} e */
@@ -127,14 +141,15 @@
   /** @param {FocusEvent} e */
   function onMenuFocusOut(e) {
     const next = /** @type {Node | null} */ (e.relatedTarget)
-    if (next && !newGroup.contains(next)) menuOpen = false
+    if (next && !menuGroup?.contains(next)) menuOpen = false
   }
 </script>
 
 <div id="tabbar">
   <!-- Only the tabs scroll: everything after them stays reachable however
-	     many files are open, and on however narrow a screen. -->
-  <div id="tabs">
+	     many files are open, and on however narrow a screen. Scrolling them takes
+	     the menu down with it, since it is placed where the caret was. -->
+  <div id="tabs" onscroll={() => (menuOpen = false)}>
     {#each files.open as f (f.id)}
       {@const active = f.id === files.activeId}
       <div class="tab" class:active>
@@ -150,53 +165,70 @@
           >
             {f.name}
           </button>
-          <!-- Closing is deleting here — it moves the file to the trash — so
-					     the button says so, and only the tab being worked on carries
-					     one: a row of trash cans invites a mis-click on the wrong file. -->
+          <!-- Everything that can be done to a file is behind this one caret,
+					     and only the tab being worked on carries it: a row of trash cans
+					     invited a mis-click on the wrong file, and four actions can't sit
+					     in a tab as buttons. Deleting is last and set apart, for the same
+					     reason. -->
           {#if active}
-            <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
-            <button class="tab-close" accesskey="w" title={withKey('Move this CV to the trash', 'w')} onclick={() => onClose(f.id)}>
-              <Icon icon={IconTrash} width="11" height="11" />
-            </button>
+            <div class="tab-menu-group" bind:this={menuGroup}>
+              <button
+                class="tab-more"
+                bind:this={moreBtn}
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                aria-label="Actions for {f.name}"
+                title="What can be done to this CV"
+                onclick={() => (menuOpen ? (menuOpen = false) : openMenu())}
+                onkeydown={onMoreKeydown}
+              >
+                <Icon icon={IconChevron} width="11" height="11" />
+              </button>
+
+              {#if menuOpen}
+                <div
+                  class="tab-menu"
+                  role="menu"
+                  tabindex="-1"
+                  bind:this={menu}
+                  style:left="{menuAt.x}px"
+                  style:top="{menuAt.y}px"
+                  onkeydown={onMenuKeydown}
+                  onfocusout={onMenuFocusOut}
+                >
+                  <button class="menu-item" role="menuitem" onclick={() => pick(onDuplicate)}>
+                    <Icon icon={IconCopy} width="12" height="12" />
+                    <span>Duplicate</span>
+                  </button>
+                  <button class="menu-item" role="menuitem" onclick={() => pick(() => startRename(f))}>
+                    <Icon icon={IconPencil} width="12" height="12" />
+                    <span>Rename</span>
+                  </button>
+                  <button class="menu-item" role="menuitem" onclick={() => pick(onSave)}>
+                    <Icon icon={IconDownload} width="12" height="12" />
+                    <span>Export YAML</span>
+                  </button>
+                  <div class="menu-sep"></div>
+                  <button class="menu-item danger" role="menuitem" onclick={() => pick(() => onClose(f.id))}>
+                    <Icon icon={IconTrash} width="12" height="12" />
+                    <span>Move to trash</span>
+                  </button>
+                </div>
+              {/if}
+            </div>
           {/if}
         {/if}
       </div>
     {/each}
   </div>
 
-  <!-- Both ways to open a tab, in one control at the end of the row: the click
-	     starts a CV from the template, the caret also offers this one copied.
-	     Outside #tabs, so the menu isn't clipped by that scroller. -->
-  <div class="tab-new" class:open={menuOpen} bind:this={newGroup}>
-    <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
-    <button class="tab-new-main" accesskey="n" title={withKey('New CV from the template', 'n')} onclick={onNew}>
-      <Icon icon={IconFilePlus} width="12" height="12" />
-    </button>
-    <button
-      class="tab-new-more"
-      bind:this={moreBtn}
-      aria-haspopup="menu"
-      aria-expanded={menuOpen}
-      aria-label="More ways to open a tab"
-      onclick={() => (menuOpen = !menuOpen)}
-      onkeydown={onMoreKeydown}
-    >
-      <Icon icon={IconChevron} width="10" height="10" />
-    </button>
-
-    {#if menuOpen}
-      <div class="new-menu" role="menu" tabindex="-1" bind:this={menu} onkeydown={onMenuKeydown} onfocusout={onMenuFocusOut}>
-        <button class="new-item" role="menuitem" onclick={() => pick(onNew)}>
-          <Icon icon={IconFilePlus} width="12" height="12" />
-          <span><u>N</u>ew from template</span>
-        </button>
-        <button class="new-item" role="menuitem" onclick={() => pick(onDuplicate)}>
-          <Icon icon={IconCopy} width="12" height="12" />
-          <span><u>D</u>uplicate this CV</span>
-        </button>
-      </div>
-    {/if}
-  </div>
+  <!-- One way to open a tab, and one button for it: a CV from the template.
+	     Copying this one is a thing done to a file, so it lives in the tab's own
+	     menu with the rest of them. -->
+  <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
+  <button class="tab-new" accesskey="n" title={withKey('New CV from the template', 'n')} onclick={onNew}>
+    <Icon icon={IconFilePlus} width="12" height="12" />
+  </button>
 
   <div class="t-spacer"></div>
 
@@ -213,11 +245,6 @@
       <Icon icon={IconHistory} width="12" height="12" />
       <span class="t-txt"><u>H</u>istory</span>
       {#if historyCount}<span class="t-count">{historyCount}</span>{/if}
-    </button>
-    <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
-    <button class="t-btn" accesskey="y" title={withKey('Save the YAML to a file', 'y')} onclick={onSave}>
-      <Icon icon={IconSave} width="12" height="12" />
-      <span class="t-txt">Save <u>Y</u>AML</span>
     </button>
   </div>
 </div>
@@ -297,7 +324,7 @@
     text-overflow: ellipsis;
   }
 
-  /* No close button alongside to balance the label against. */
+  /* No caret alongside to balance the label against. */
   .tab:not(.active) .tab-select {
     padding-right: 9px;
   }
@@ -323,7 +350,13 @@
     outline: none;
   }
 
-  .tab-close {
+  /* ── What can be done to this file ────────────── */
+  .tab-menu-group {
+    display: flex;
+    align-items: center;
+  }
+
+  .tab-more {
     flex-shrink: 0;
     display: flex;
     align-items: center;
@@ -339,79 +372,49 @@
     padding: 0;
   }
 
-  .tab-close:hover {
+  .tab-more:hover,
+  .tab-more[aria-expanded='true'] {
     background: var(--line);
-    color: var(--danger);
+    color: var(--accent-deep);
   }
 
   /* ── Open another tab ─────────────────────────── */
   .tab-new {
-    position: relative;
     flex-shrink: 0;
     display: flex;
-    align-items: stretch;
+    align-items: center;
+    justify-content: center;
+    width: 23px;
     height: 22px;
+    background: none;
     border: 1.5px dashed var(--line);
     border-radius: 5px;
+    cursor: pointer;
     color: var(--muted);
+    padding: 0;
     transition:
       border-color 0.13s,
       color 0.13s;
   }
 
   .tab-new:hover,
-  .tab-new:focus-within,
-  .tab-new.open {
+  .tab-new:focus-visible {
+    background: var(--accent-wash);
     border-style: solid;
     border-color: var(--accent);
     color: var(--accent-deep);
   }
 
-  .tab-new > button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: inherit;
-    padding: 0;
-  }
-
-  .tab-new > button:hover {
-    background: var(--accent-wash);
-  }
-
-  /* Each half rounds only its outer corners, so a hover fill stops at the seam
-	   instead of pulling away from it. Both beat `.tab-new > button` on
-	   specificity — which is also what lets the divider survive its `border: none`. */
-  .tab-new > .tab-new-main {
-    width: 23px;
-    border-radius: 4px 0 0 4px;
-  }
-
-  .tab-new > .tab-new-more {
-    width: 15px;
-    border-left: 1px solid var(--line);
-    border-radius: 0 4px 4px 0;
-  }
-
-  .tab-new:hover > .tab-new-more,
-  .tab-new:focus-within > .tab-new-more,
-  .tab-new.open > .tab-new-more {
-    border-left-color: var(--accent);
-  }
-
   /* Matches the weight .t-btn gives its icons; the glyphs are drawn by <Icon>,
 	   so the compiler never sees the elements to scope them. */
-  .tab-new :global([stroke-width]) {
+  .tab-new :global([stroke-width]),
+  .tab-more :global([stroke-width]) {
     stroke-width: 2.5;
   }
 
-  .new-menu {
-    position: absolute;
-    top: calc(100% + 6px);
-    left: 0;
+  /* Fixed, and placed where the caret was — see `menuAt`. */
+  .tab-menu {
+    position: fixed;
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -423,7 +426,7 @@
     z-index: 100;
   }
 
-  .new-item {
+  .menu-item {
     display: flex;
     align-items: center;
     gap: 7px;
@@ -441,11 +444,23 @@
     padding: 5px 9px 5px 7px;
   }
 
-  .new-item:hover,
-  .new-item:focus-visible {
+  .menu-item:hover,
+  .menu-item:focus-visible {
     background: var(--accent-wash);
     color: var(--accent-deep);
     outline: none;
+  }
+
+  .menu-item.danger:hover,
+  .menu-item.danger:focus-visible {
+    background: var(--line);
+    color: var(--danger);
+  }
+
+  .menu-sep {
+    height: 1px;
+    margin: 2px 4px;
+    background: var(--line);
   }
 
   @media (max-width: 640px) {
