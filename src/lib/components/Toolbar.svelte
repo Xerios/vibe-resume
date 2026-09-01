@@ -2,38 +2,17 @@
   import Icon from '@iconify/svelte'
   import IconDownload from '@iconify-icons/lucide/download'
   import IconInstall from '@iconify-icons/lucide/arrow-down-to-line'
-  import StylePicker from './StylePicker.svelte'
+  import IconTrash from '@iconify-icons/lucide/trash'
   import { withKey } from './access-keys.js'
 
   let {
     /** True only while the browser has an install prompt waiting for us. */
     canInstall = false,
-    /** Every slot and its variants, the user's own included. @type {import('$lib/cv/slots.js').Registry} */
-    slots,
-    /** Slot id → the variant in use. @type {Record<string, string>} */
-    choices,
-    /** The active file's preset id. @type {string} */
-    preset,
-    /** Whether any axis has been moved off that preset. */
-    modified = false,
-    /** @type {string} */
-    theme,
-    /** @type {string} */
-    font,
-    /** @type {(id: string) => void} */
-    onPreset,
-    /** @type {(slotId: string, variantId: string) => void} */
-    onVariant,
+    /** How many files are in the trash — none, and the button isn't drawn at all. */
+    trashCount = 0,
+    trashOpen = false,
     /** @type {() => void} */
-    onReset,
-    /** @type {(id: string) => void} */
-    onTheme,
-    /** @type {(id: string) => void} */
-    onFont,
-    /** The active file's own CSS, and the setter behind the picker's editor. */
-    css = '',
-    /** @type {(text: string) => void} */
-    onCss,
+    onToggleTrash,
     /** @type {() => void} */
     onExport,
     /** @type {() => void} */
@@ -46,7 +25,17 @@
 
   <div class="t-spacer"></div>
 
-  <StylePicker {slots} {choices} {preset} {modified} {theme} {font} {css} {onPreset} {onVariant} {onReset} {onTheme} {onFont} {onCss} />
+  <!-- Beside Export because both act on files rather than on the CV in front
+	     of you, and only while there is something in there: an always-present
+	     button for an always-empty bin is a control that never does anything. -->
+  {#if trashCount}
+    <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
+    <button id="trash-toggle" class="t-btn" class:on={trashOpen} accesskey="t" title={withKey('Show the trash', 't')} onclick={onToggleTrash}>
+      <Icon icon={IconTrash} width="12" height="12" />
+      <span class="t-txt"><u>T</u>rash</span>
+      <span class="t-count">{trashCount}</span>
+    </button>
+  {/if}
 
   <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
   <button class="t-btn t-btn-pdf" accesskey="x" title={withKey('Export the current CV as PDF', 'x')} onclick={onExport}>

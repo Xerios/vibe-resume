@@ -14,7 +14,8 @@ export const KEYS = {
   activeFile: 'cv-editor:active-file',
   theme: 'cv-theme',
   editorWidth: 'cv-editor:width',
-  historyOpen: 'cv-editor:history-open',
+  /** Which panel has the split's third column: `style`, `history` or `none`. */
+  sidePanel: 'cv-editor:side-panel',
   sourceHidden: 'cv-editor:source-hidden',
   /** Set once the welcome overlay has been dismissed; absent means first visit. */
   welcomeSeen: 'cv-editor:welcome-seen',

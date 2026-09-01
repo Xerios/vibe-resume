@@ -1,12 +1,9 @@
 <script>
-  import Icon from '@iconify/svelte'
-  import IconLayout from '@iconify-icons/lucide/layout-panel-left'
   import { PRESETS } from '$lib/cv/compositions.js'
   import { FONTS } from '$lib/cv/fonts.js'
   import { THEMES } from '$lib/cv/presets.js'
   import TemplateThumb from './TemplateThumb.svelte'
   import VariantCycle from './VariantCycle.svelte'
-  import { withKey } from './access-keys.js'
 
   let {
     /** Every slot and its variants, the user's own included. @type {import('$lib/cv/slots.js').Registry} */
@@ -31,7 +28,7 @@
     onTheme,
     /** @type {(id: string) => void} */
     onFont,
-    /** The active file's own CSS — see the editor at the foot of the popover. */
+    /** The active file's own CSS — see the editor at the foot of the panel. */
     css = '',
     /** @type {(text: string) => void} */
     onCss,
@@ -49,166 +46,156 @@
 }
 `
 
-  let open = $state(false)
   let cssOpen = $state(false)
-  /** @type {HTMLDivElement} */
-  let root
-  let toggle = $state(/** @type {HTMLButtonElement | undefined} */ (undefined))
 
-  // Picking is not a commitment — the popover stays up so templates, themes and
-  // fonts can be tried against each other, and closes on Escape or a click
-  // elsewhere.
-  $effect(() => {
-    if (!open) return
-
-    /** @param {PointerEvent} e */
-    const onPointerDown = (e) => {
-      if (!root.contains(/** @type {Node | null} */ (e.target))) open = false
-    }
-    /** @param {KeyboardEvent} e */
-    const onKeydown = (e) => {
-      if (e.key !== 'Escape') return
-      open = false
-      // Dismissing by keyboard has to leave focus somewhere; the button that
-      // opened the popover is where it came from.
-      toggle?.focus()
-    }
-
-    document.addEventListener('pointerdown', onPointerDown)
-    document.addEventListener('keydown', onKeydown)
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown)
-      document.removeEventListener('keydown', onKeydown)
-    }
-  })
+  /** What the head says the groups below are set to, the way History counts its versions. */
+  const presetName = $derived((PRESETS.find((p) => p.id === preset)?.name ?? preset) + (modified ? ' — edited' : ''))
 </script>
 
-<div class="style-picker" bind:this={root}>
-  <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
-  <button
-    class="t-btn"
-    class:on={open}
-    bind:this={toggle}
-    onclick={() => (open = !open)}
-    accesskey="s"
-    title={withKey('Template, theme and font', 's')}
-    aria-expanded={open}
-  >
-    <Icon icon={IconLayout} width="12" height="12" />
-    <span><u>S</u>tyle</span>
-  </button>
+<aside id="style-pane">
+  <div class="style-head">
+    <span>Style</span>
+    <span class="style-preset" title={presetName}>{presetName}</span>
+  </div>
 
-  {#if open}
-    <div class="style-pop">
-      <!-- A preset is a whole set of the choices below it, and taking one
-			     replaces every one of them. That is what keeps the nine looks
-			     everybody knows as one click each, now that the axes underneath are
-			     the real thing. -->
-      <div class="style-group">
-        <span class="style-label">Preset</span>
-        <div class="layout-grid">
-          {#each PRESETS as p (p.id)}
-            <button class="layout-opt" class:on={p.id === preset} title={p.hint} aria-pressed={p.id === preset} onclick={() => onPreset(p.id)}>
-              <TemplateThumb id={p.id} />
-              <span>{p.name}</span>
-            </button>
-          {/each}
-        </div>
-      </div>
-
-      <!-- Every axis, always all of them. The same rows turn up beside the
-			     sheet when a block is hovered; this is where they are when you know
-			     which one you want rather than which block. -->
-      <div class="style-group">
-        <div class="blocks-head">
-          <span class="style-label">Blocks</span>
-          {#if modified}
-            <button class="blocks-reset" title="Put every block back to what this preset says" onclick={onReset}>reset</button>
-          {/if}
-        </div>
-        <div class="blocks-list">
-          {#each slots as slot (slot.id)}
-            <VariantCycle {slot} {choices} onPick={onVariant} />
-          {/each}
-        </div>
-      </div>
-
-      <div class="style-group">
-        <span class="style-label">Theme</span>
-        <div class="theme-grid">
-          {#each THEMES as t (t.id)}
-            <button class="theme-opt" class:on={t.id === theme} title={t.name} aria-pressed={t.id === theme} onclick={() => onTheme(t.id)} data-cv-theme={t.id}>
-              <span class="theme-dot"></span>
-              <span>{t.name}</span>
-            </button>
-          {/each}
-        </div>
-      </div>
-
-      <!-- Set in the face it offers, from the `data-cv-font` on the option —
-			     the same trick as the swatches above, and the same reason: one table
-			     of stacks (fonts.css), no second copy to drift. -->
-      <div class="style-group">
-        <span class="style-label">Font</span>
-        <div class="font-grid">
-          {#each FONTS as f (f.id)}
-            <button class="font-opt" class:on={f.id === font} title={f.hint} aria-pressed={f.id === font} onclick={() => onFont(f.id)} data-cv-font={f.id}>
-              <span class="font-sample">Aa</span>
-              <span>{f.name}</span>
-            </button>
-          {/each}
-        </div>
-      </div>
-
-      <!-- Anything at all, applied last inside the preview frame. It can't
-			     reach the editor around it, so there is nothing to validate. -->
-      <div class="style-group">
-        <button class="css-toggle" aria-expanded={cssOpen} onclick={() => (cssOpen = !cssOpen)}>
-          <span class="style-label">Custom CSS</span>
-          <span class="css-caret" class:on={cssOpen}>›</span>
-        </button>
-        {#if cssOpen}
-          <textarea
-            class="css-edit"
-            spellcheck="false"
-            autocapitalize="off"
-            autocomplete="off"
-            value={css}
-            placeholder={CSS_TEMPLATE}
-            aria-label="Custom CSS for this CV"
-            oninput={(e) => onCss(e.currentTarget.value)}></textarea>
-          <p class="css-hint">
-            Applies to this file only. Override the tokens on <code>#cv-root</code>, or style the sheet directly.
-          </p>
-        {/if}
+  <div class="style-body">
+    <!-- A preset is a whole set of the choices below it, and taking one
+		     replaces every one of them. That is what keeps the nine looks
+		     everybody knows as one click each, now that the axes underneath are
+		     the real thing. -->
+    <div class="style-group">
+      <span class="style-label">Preset</span>
+      <div class="layout-grid">
+        {#each PRESETS as p (p.id)}
+          <button class="layout-opt" class:on={p.id === preset} title={p.hint} aria-pressed={p.id === preset} onclick={() => onPreset(p.id)}>
+            <TemplateThumb id={p.id} />
+            <span>{p.name}</span>
+          </button>
+        {/each}
       </div>
     </div>
-  {/if}
-</div>
+
+    <!-- Every axis, always all of them. The same rows turn up beside the
+		     sheet when a block is hovered; this is where they are when you know
+		     which one you want rather than which block. -->
+    <div class="style-group">
+      <div class="blocks-head">
+        <span class="style-label">Blocks</span>
+        {#if modified}
+          <button class="blocks-reset" title="Put every block back to what this preset says" onclick={onReset}>reset</button>
+        {/if}
+      </div>
+      <div class="blocks-list">
+        {#each slots as slot (slot.id)}
+          <VariantCycle {slot} {choices} onPick={onVariant} />
+        {/each}
+      </div>
+    </div>
+
+    <div class="style-group">
+      <span class="style-label">Theme</span>
+      <div class="theme-grid">
+        {#each THEMES as t (t.id)}
+          <button class="theme-opt" class:on={t.id === theme} title={t.name} aria-pressed={t.id === theme} onclick={() => onTheme(t.id)} data-cv-theme={t.id}>
+            <span class="theme-dot"></span>
+            <span>{t.name}</span>
+          </button>
+        {/each}
+      </div>
+    </div>
+
+    <!-- Set in the face it offers, from the `data-cv-font` on the option —
+		     the same trick as the swatches above, and the same reason: one table
+		     of stacks (fonts.css), no second copy to drift. -->
+    <div class="style-group">
+      <span class="style-label">Font</span>
+      <div class="font-grid">
+        {#each FONTS as f (f.id)}
+          <button class="font-opt" class:on={f.id === font} title={f.hint} aria-pressed={f.id === font} onclick={() => onFont(f.id)} data-cv-font={f.id}>
+            <span class="font-sample">Aa</span>
+            <span>{f.name}</span>
+          </button>
+        {/each}
+      </div>
+    </div>
+
+    <!-- Anything at all, applied last inside the preview frame. It can't
+		     reach the editor around it, so there is nothing to validate. -->
+    <div class="style-group">
+      <button class="css-toggle" aria-expanded={cssOpen} onclick={() => (cssOpen = !cssOpen)}>
+        <span class="style-label">Custom CSS</span>
+        <span class="css-caret" class:on={cssOpen}>›</span>
+      </button>
+      {#if cssOpen}
+        <textarea
+          class="css-edit"
+          spellcheck="false"
+          autocapitalize="off"
+          autocomplete="off"
+          value={css}
+          placeholder={CSS_TEMPLATE}
+          aria-label="Custom CSS for this CV"
+          oninput={(e) => onCss(e.currentTarget.value)}></textarea>
+        <p class="css-hint">
+          Applies to this file only. Override the tokens on <code>#cv-root</code>, or style the sheet directly.
+        </p>
+      {/if}
+    </div>
+  </div>
+</aside>
 
 <style>
-  .style-picker {
-    position: relative;
+  /* The third column of the split, opposite the editor — same shape as the
+	   history panel, which it takes turns with. */
+  #style-pane {
+    flex-shrink: 0;
+    width: 288px;
     display: flex;
+    flex-direction: column;
+    background: var(--paper);
+    border-left: 1px solid var(--line);
+    overflow: hidden;
+    transition: var(--theme-fade);
   }
 
-  .style-pop {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    width: 268px;
-    max-height: min(78vh, 640px);
+  .style-head {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* The preset in play names what the groups below are set to; it is a value
+	   rather than a label, so it doesn't shout like one. */
+  .style-preset {
+    min-width: 0;
+    letter-spacing: 0.5px;
+    text-transform: none;
+    color: var(--faint);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Only the groups scroll — the head stays put, as it does in History. */
+  .style-body {
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: 10px;
     display: flex;
     flex-direction: column;
     gap: 12px;
-    background: var(--paper);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    box-shadow: var(--shadow-pop);
-    z-index: 100;
   }
 
   /* The disclosure is the label: the whole row is the hit target, so the caret
@@ -432,5 +419,22 @@
     box-shadow:
       inset 0 0 0 3px var(--t-paper-l),
       inset 0 0 0 4px var(--t-accent-l);
+  }
+
+  /* Stacked layout: there is no third column to sit in, so the panel lifts out
+	   of the flow as an overlay, like the history and trash panels. */
+  @media (max-width: 900px) {
+    #style-pane {
+      position: fixed;
+      top: 82px;
+      right: 8px;
+      /* Clear of the status bar, which is fixed to the foot of the shell. */
+      bottom: 34px;
+      width: min(288px, calc(100vw - 16px));
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow-pop);
+      z-index: 100;
+    }
   }
 </style>

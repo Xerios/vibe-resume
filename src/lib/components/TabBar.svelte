@@ -4,6 +4,7 @@
   import IconCopy from '@iconify-icons/lucide/copy'
   import IconFilePlus from '@iconify-icons/lucide/file-plus'
   import IconTrash from '@iconify-icons/lucide/trash'
+  import IconLayout from '@iconify-icons/lucide/layout-panel-left'
   import IconHistory from '@iconify-icons/lucide/history'
   import IconSave from '@iconify-icons/lucide/save'
   import { withKey } from './access-keys.js'
@@ -19,13 +20,14 @@
     onClose,
     /** @type {(id: string, name: string) => void} */
     onRename,
-    trashOpen = false,
-    /** @type {() => void} */
-    onToggleTrash,
     /** @type {() => void} */
     onNew,
     /** @type {() => void} */
     onCopy,
+    /** The two panels share the split's third column, so only one is ever on. */
+    styleOpen = false,
+    /** @type {() => void} */
+    onToggleStyle,
     historyOpen = false,
     historyCount = 0,
     /** @type {() => void} */
@@ -199,11 +201,12 @@
   <div class="t-spacer"></div>
 
   <div id="tab-actions">
+    <!-- Beside History because the two are one control between them: they take
+	       turns in the column to the right of the preview. -->
     <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
-    <button id="trash-toggle" class="t-btn" class:on={trashOpen} accesskey="t" title={withKey('Show the trash', 't')} onclick={onToggleTrash}>
-      <Icon icon={IconTrash} width="12" height="12" />
-      <span class="t-txt"><u>T</u>rash</span>
-      {#if files.trashed.length}<span class="t-count">{files.trashed.length}</span>{/if}
+    <button class="t-btn" class:on={styleOpen} accesskey="s" title={withKey('Template, theme and font', 's')} onclick={onToggleStyle}>
+      <Icon icon={IconLayout} width="12" height="12" />
+      <span class="t-txt"><u>S</u>tyle</span>
     </button>
     <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
     <button class="t-btn" class:on={historyOpen} accesskey="h" title={withKey('Show version history', 'h')} onclick={onToggleHistory}>
@@ -212,9 +215,9 @@
       {#if historyCount}<span class="t-count">{historyCount}</span>{/if}
     </button>
     <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
-    <button class="t-btn" accesskey="s" title={withKey('Save the YAML to a file', 's')} onclick={onSave}>
+    <button class="t-btn" accesskey="y" title={withKey('Save the YAML to a file', 'y')} onclick={onSave}>
       <Icon icon={IconSave} width="12" height="12" />
-      <span class="t-txt"><u>S</u>ave YAML</span>
+      <span class="t-txt">Save <u>Y</u>AML</span>
     </button>
   </div>
 </div>

@@ -3,6 +3,7 @@
   import BlockPicker from '$lib/components/BlockPicker.svelte'
   import HistoryPanel from '$lib/components/HistoryPanel.svelte'
   import StatusBar from '$lib/components/StatusBar.svelte'
+  import StylePicker from '$lib/components/StylePicker.svelte'
   import TabBar from '$lib/components/TabBar.svelte'
   import Toolbar from '$lib/components/Toolbar.svelte'
   import TrashPanel from '$lib/components/TrashPanel.svelte'
@@ -57,7 +58,11 @@
 
   /** First visit only — dismissing it writes the flag, so it never returns. */
   let welcomeOpen = $state(read(KEYS.welcomeSeen) !== 'true')
-  let historyOpen = $state(read(KEYS.historyOpen) !== 'false')
+  /* Style and History share the column to the right of the preview, so opening
+	   one closes the other. Style is what an unopinionated first visit gets: it
+	   is the panel with something to do in it before there is any history. */
+  const savedPanel = read(KEYS.sidePanel, 'style')
+  let sidePanel = $state(savedPanel === 'history' ? 'history' : savedPanel === 'none' ? null : 'style')
   let sourceHidden = $state(read(KEYS.sourceHidden) === 'true')
   let editorWidth = $state(read(KEYS.editorWidth))
   let toastMsg = $state('')
@@ -987,9 +992,10 @@
     await prompt.prompt()
   }
 
-  async function toggleHistory() {
-    historyOpen = !historyOpen
-    write(KEYS.historyOpen, String(historyOpen))
+  /** @param {'style' | 'history'} which */
+  async function toggleSidePanel(which) {
+    sidePanel = sidePanel === which ? null : which
+    write(KEYS.sidePanel, sidePanel ?? 'none')
     await tick()
   }
 
@@ -1169,19 +1175,9 @@
 
 <div id="app">
   <Toolbar
-    slots={parts.slots}
-    {choices}
-    {preset}
-    modified={isModified(files.active, parts.slots)}
-    {theme}
-    {font}
-    {css}
-    onPreset={setPreset}
-    onVariant={setVariant}
-    onReset={resetVariants}
-    onTheme={setTheme}
-    onFont={setFont}
-    onCss={setCss}
+    trashCount={files.trashed.length}
+    {trashOpen}
+    onToggleTrash={toggleTrash}
     onExport={exportPDF}
     canInstall={!!installPrompt}
     onInstall={installApp}
@@ -1193,13 +1189,13 @@
     onDuplicate={duplicateTab}
     onClose={closeTab}
     onRename={renameTab}
-    {trashOpen}
-    onToggleTrash={toggleTrash}
     onNew={newFile}
     onCopy={copyYaml}
-    {historyOpen}
+    styleOpen={sidePanel === 'style'}
+    onToggleStyle={() => toggleSidePanel('style')}
+    historyOpen={sidePanel === 'history'}
     historyCount={cv.history.length}
-    onToggleHistory={toggleHistory}
+    onToggleHistory={() => toggleSidePanel('history')}
     onSave={saveYaml}
   />
 
@@ -1280,7 +1276,24 @@
       {/if}
     </div>
 
-    {#if historyOpen && cv.ready}
+    <!-- The third column, whichever panel is holding it. -->
+    {#if sidePanel === 'style'}
+      <StylePicker
+        slots={parts.slots}
+        {choices}
+        {preset}
+        modified={isModified(files.active, parts.slots)}
+        {theme}
+        {font}
+        {css}
+        onPreset={setPreset}
+        onVariant={setVariant}
+        onReset={resetVariants}
+        onTheme={setTheme}
+        onFont={setFont}
+        onCss={setCss}
+      />
+    {:else if sidePanel === 'history' && cv.ready}
       <HistoryPanel doc={cv} {toast} />
     {/if}
   </div>
