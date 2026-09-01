@@ -8,16 +8,24 @@
   let {
     /** True only while the browser has an install prompt waiting for us. */
     canInstall = false,
-    /** @type {import('$lib/cv/templates.svelte.js').Template[]} */
-    templates,
-    /** The active file's template id. @type {string} */
-    layout,
+    /** Every slot and its variants, the user's own included. @type {import('$lib/cv/slots.js').Registry} */
+    slots,
+    /** Slot id → the variant in use. @type {Record<string, string>} */
+    choices,
+    /** The active file's preset id. @type {string} */
+    preset,
+    /** Whether any axis has been moved off that preset. */
+    modified = false,
     /** @type {string} */
     theme,
     /** @type {string} */
     font,
     /** @type {(id: string) => void} */
-    onLayout,
+    onPreset,
+    /** @type {(slotId: string, variantId: string) => void} */
+    onVariant,
+    /** @type {() => void} */
+    onReset,
     /** @type {(id: string) => void} */
     onTheme,
     /** @type {(id: string) => void} */
@@ -38,7 +46,7 @@
 
   <div class="t-spacer"></div>
 
-  <StylePicker {templates} {layout} {theme} {font} {css} {onLayout} {onTheme} {onFont} {onCss} />
+  <StylePicker {slots} {choices} {preset} {modified} {theme} {font} {css} {onPreset} {onVariant} {onReset} {onTheme} {onFont} {onCss} />
 
   <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
   <button class="t-btn t-btn-pdf" accesskey="x" title={withKey('Export the current CV as PDF', 'x')} onclick={onExport}>

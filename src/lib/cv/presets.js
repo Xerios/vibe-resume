@@ -2,7 +2,7 @@
  * How a CV is *painted*: a theme is a palette id that lands on `#cv-root` as a
  * data attribute, and presets.css re-points the sheet's tokens at the ramp it
  * names. How a CV is *arranged* used to live here too — those layouts are now
- * templates, in templates.js, because a component can be edited and a block of
+ * layouts, in slots.js, because a component can be edited and a block of
  * CSS in this repo cannot.
  *
  * A theme is presentation, not content, so it is stored per file in the

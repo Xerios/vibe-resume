@@ -1,17 +1,29 @@
 <!--
-	Minimal — no rules, no filled marks, nothing but type and the space around
-	it. Sections are told apart by how far they sit from each other.
+	Single column — the skeleton most composed sheets are built from: the markup for all seven
+	section types, and one snippet per slot that a block variant can replace.
 
-	The one thing it keeps from cv.css is the line under the name, and even that
-	is thinned. It is the quietest of the nine on paper, and the cheapest to
-	print: there is almost nothing on it that isn't text.
+	This file is a complete, working template on its own — it is what `classic`
+	used to be — and that is deliberate. The default variant of every slot *is*
+	the snippet defined here, so composing with nothing chosen hands back this
+	source verbatim, and `svelte-check` type-checks the whole sheet rather than a
+	pile of fragments that only mean something once assembled.
 
-	A template is a Svelte component handed the parsed YAML as `cv`. It renders
-	inside the preview frame on top of cv.css, whose class names the markup below
-	spends; this file's own <style> block is where a layout says how it differs.
+	A variant overrides a snippet by name (see compose.js). The names are the
+	contract, so don't rename one without changing slots.js with it:
 
-	Keep the `data-src` paths: they are what ties an element back to the line of
-	YAML behind it, and so what makes the two panes follow each other.
+	  head()                 header        the top of the sheet
+	  secHead(sec, path)     sectionHead   a section's title
+	  summaryBody(sec, path) summary       the summary paragraphs
+	  entry(item, path)      entry         one role, degree or project
+	  skillsBody(sec, path)  skills        the skill groups
+	  stackLine(item, path)  stack         an entry's tools
+	  listBody(sec, path)    list          a `list` section's items
+	  body()                 page          the arrangement of the whole sheet
+
+	`data-slot` is what the preview's block picker hits-tests against, so a
+	variant that overrides a snippet has to carry the same attribute the default
+	does. `data-src` is the older one and unrelated: it ties an element back to
+	the line of YAML behind it, and is what makes the two panes follow each other.
 -->
 <script>
   import { list, md, sections, techs } from '@cv'
@@ -23,7 +35,7 @@
 </script>
 
 {#snippet secHead(/** @type {any} */ sec, /** @type {string} */ path)}
-  <div class="sec-head">
+  <div class="sec-head" data-slot="sectionHead">
     <h2 data-src="{path}.title">{@html md(sec.title)}</h2>
     <div class="bar"></div>
   </div>
@@ -31,14 +43,14 @@
 
 {#snippet stackLine(/** @type {any} */ item, /** @type {string} */ path)}
   {#if item.stack}
-    <p class="stack" data-src="{path}.stack">
+    <p class="stack" data-slot="stack" data-src="{path}.stack">
       <b>STACK</b> · {@html md(techs(item.stack).join(' · '))}
     </p>
   {/if}
 {/snippet}
 
 {#snippet entry(/** @type {any} */ item, /** @type {string} */ path)}
-  <div class="job" data-src={path}>
+  <div class="job" data-slot="entry" data-src={path}>
     <div class="job-head">
       <p class="job-title" data-src="{path}.title">
         <!-- The space before each of these is written as `{' '}`: Svelte trims
@@ -62,6 +74,47 @@
   </div>
 {/snippet}
 
+{#snippet summaryBody(/** @type {any} */ sec, /** @type {string} */ path)}
+  {#each list(sec.paragraphs) as p, i}
+    <p data-src="{path}.paragraphs.{i}">{@html md(p)}</p>
+  {/each}
+{/snippet}
+
+{#snippet skillsBody(/** @type {any} */ sec, /** @type {string} */ path)}
+  <div class="skill-grid" data-slot="skills">
+    {#each list(sec.blocks) as b, i}
+      <div class="skill-block" data-src="{path}.blocks.{i}">
+        <h3 data-src="{path}.blocks.{i}.title">{@html md(b.title)}</h3>
+        {#each list(b.rows) as r, j}
+          <div class="skill-row" data-src="{path}.blocks.{i}.rows.{j}">
+            {#if r.tier}<span class="tier">{@html md(r.tier)}</span> ·
+            {/if}{@html md(r.text)}
+          </div>
+        {/each}
+      </div>
+    {/each}
+  </div>
+{/snippet}
+
+{#snippet listBody(/** @type {any} */ sec, /** @type {string} */ path)}
+  {#if sec.inline}
+    <div class="tags" data-slot="list">
+      {#each list(sec.items) as item, i}
+        <span class="tag" data-src="{path}.items.{i}">{@html md(item)}</span>
+      {/each}
+    </div>
+  {:else}
+    <ul class="bullets" data-slot="list">
+      {#each list(sec.items) as item, i}
+        <li data-src="{path}.items.{i}">{@html md(item)}</li>
+      {/each}
+    </ul>
+  {/if}
+{/snippet}
+
+<!-- Not a slot: an `earlier` run has no dates and no stack, so there is nothing
+     for an entry variant to vary. It still renders through `entry` for the
+     ordinary case, which is what keeps a variant's markup reaching both. -->
 {#snippet entries(/** @type {any} */ sec, /** @type {string} */ path)}
   {#each list(sec.items) as item, i}
     {#if item.subtype === 'earlier'}
@@ -81,28 +134,14 @@
 
 {#snippet block(/** @type {any} */ sec, /** @type {string} */ path)}
   {#if sec.type === 'summary'}
-    <section class="sec-summary" data-src={path}>
+    <section class="sec-summary" data-slot="summary" data-src={path}>
       {@render secHead(sec, path)}
-      {#each list(sec.paragraphs) as p, i}
-        <p data-src="{path}.paragraphs.{i}">{@html md(p)}</p>
-      {/each}
+      {@render summaryBody(sec, path)}
     </section>
   {:else if sec.type === 'skills'}
     <section class="sec-skills" data-src={path}>
       {@render secHead(sec, path)}
-      <div class="skill-grid">
-        {#each list(sec.blocks) as b, i}
-          <div class="skill-block" data-src="{path}.blocks.{i}">
-            <h3 data-src="{path}.blocks.{i}.title">{@html md(b.title)}</h3>
-            {#each list(b.rows) as r, j}
-              <div class="skill-row" data-src="{path}.blocks.{i}.rows.{j}">
-                {#if r.tier}<span class="tier">{@html md(r.tier)}</span> ·
-                {/if}{@html md(r.text)}
-              </div>
-            {/each}
-          </div>
-        {/each}
-      </div>
+      {@render skillsBody(sec, path)}
     </section>
   {:else if sec.type === 'experience'}
     <section class="sec-experience" data-src={path}>
@@ -122,19 +161,7 @@
   {:else if sec.type === 'list'}
     <section class="sec-list" data-src={path}>
       {@render secHead(sec, path)}
-      {#if sec.inline}
-        <div class="tags">
-          {#each list(sec.items) as item, i}
-            <span class="tag" data-src="{path}.items.{i}">{@html md(item)}</span>
-          {/each}
-        </div>
-      {:else}
-        <ul class="bullets">
-          {#each list(sec.items) as item, i}
-            <li data-src="{path}.items.{i}">{@html md(item)}</li>
-          {/each}
-        </ul>
-      {/if}
+      {@render listBody(sec, path)}
     </section>
   {:else if sec.type === 'oss'}
     <section class="sec-oss" data-src={path}>
@@ -168,7 +195,7 @@
 {/snippet}
 
 {#snippet head()}
-  <header data-src="header">
+  <header data-slot="header" data-src="header">
     <div>
       <h1 class="name" data-src="header.name">{@html md(cv.header?.name)}</h1>
       <p class="role" data-src="header.role">{@html md(cv.header?.role)}</p>
@@ -179,98 +206,11 @@
   </header>
 {/snippet}
 
-<div class="sheet">
+{#snippet body()}
   {@render head()}
   {#each secs as e}{@render block(e.sec, e.path)}{/each}
+{/snippet}
+
+<div class="sheet" data-slot="page">
+  {@render body()}
 </div>
-
-<style>
-  .sheet {
-    max-width: 760px;
-    padding: 48px 54px 40px;
-    font-size: 13px;
-    line-height: 1.52;
-  }
-
-  .sheet header {
-    align-items: baseline;
-    padding-bottom: 4px;
-    border-bottom-width: 1px;
-  }
-
-  .name {
-    font-size: 27px;
-    font-weight: 600;
-    letter-spacing: -0.2px;
-  }
-
-  .role {
-    color: var(--muted);
-    font-weight: 500;
-  }
-
-  .contact {
-    color: var(--faint);
-  }
-
-  /* Space is the only separator, so there is more of it. */
-  .sheet section {
-    margin-top: 26px;
-  }
-
-  .sec-head {
-    margin-bottom: 8px;
-  }
-
-  .sec-head h2 {
-    font-size: 9.5px;
-    letter-spacing: 3.2px;
-    color: var(--faint);
-  }
-
-  .sec-head .bar {
-    display: none;
-  }
-
-  .skill-block {
-    padding: 4px 0;
-    border-top: none;
-  }
-
-  .job-title {
-    font-size: 13.5px;
-    font-weight: 600;
-  }
-
-  .job-title .co {
-    color: var(--ink);
-    font-weight: 400;
-  }
-
-  /* A rule rather than a diamond: nothing on this sheet is filled in, which is
-	   also why none of it depends on a printer's background graphics. */
-  ul.bullets li::before {
-    top: 9px;
-    width: 6px;
-    height: 0;
-    background: none;
-    border-top: 1px solid var(--faint);
-    border-radius: 0;
-    transform: none;
-  }
-
-  .earlier ul.bullets li::before {
-    top: 9px;
-    width: 6px;
-    height: 0;
-    border-radius: 0;
-  }
-
-  .stack {
-    color: var(--faint);
-  }
-
-  table.oss thead th {
-    border-bottom-color: var(--line);
-  }
-</style>

@@ -1,0 +1,7 @@
+/* The opening paragraphs centred and pulled in from both margins, so they read
+   as a standfirst rather than as the first section. */
+.sec-summary {
+  text-align: center;
+  max-width: 92%;
+  margin-inline: auto;
+}

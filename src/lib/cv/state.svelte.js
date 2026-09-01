@@ -2,7 +2,7 @@
  * The app's state, as three objects both routes share.
  *
  * They used to be built inside the editor page, which was fine while there was
- * one page. There are two now — the CV and the template behind it — and each
+ * one page. There are two now — the CV and the parts behind it — and each
  * would otherwise build its own copy and load it back out of localStorage on
  * every navigation: two writers for the same keys, and a CRDT re-read from disk
  * rather than carried across. Module scope is what keeps them single, and
@@ -14,11 +14,11 @@
 
 import { CvDoc } from './doc.svelte.js'
 import { FileManager } from './files.svelte.js'
-import { TemplateManager } from './templates.svelte.js'
+import { PartManager } from './parts.svelte.js'
 
 export const doc = new CvDoc()
 export const files = new FileManager()
-export const templates = new TemplateManager()
+export const parts = new PartManager()
 
 let started = false
 
@@ -26,8 +26,11 @@ let started = false
 export function start() {
   if (started) return
   started = true
-  templates.init()
+  parts.init()
   files.init()
+  // Whole templates written before the layout/variant split became layouts a
+  // moment ago; the files that named one have to be pointed at it.
+  files.adoptLegacyTemplates(parts.migrated)
   // Async only because of the WASM it waits on; `doc.ready` is what the pages
   // watch, so there is nothing here to await.
   void doc.init(/** @type {string} */ (files.activeId))
@@ -36,5 +39,5 @@ export function start() {
 /** Write out everything that is sitting on a debounce — the tab is going away. */
 export function flush() {
   doc.flush()
-  templates.flush()
+  parts.flush()
 }

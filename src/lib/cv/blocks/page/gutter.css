@@ -1,0 +1,16 @@
+/* Everything on the sheet hangs off one measure down the left. The width is
+   declared here and spent by whichever of the gutter variants are chosen, so
+   changing it re-hangs the whole page; each of those falls back to the same
+   number on its own, so one can be used without this. */
+.sheet {
+  --gutter: 104px;
+  padding: 40px 50px 34px;
+}
+
+/* The two bodies that have no gutter part of their own still start where the
+   text above them does. */
+.sec-list ul.bullets,
+.sec-list .tags,
+.sec-oss table.oss {
+  margin-left: var(--gutter);
+}

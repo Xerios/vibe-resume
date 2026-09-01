@@ -24,7 +24,7 @@
   import CvFrameBody from './CvFrameBody.svelte'
   import { DEFAULT_FONT } from './fonts.js'
   import { DEFAULT_THEME } from './presets.js'
-  import { DEFAULT_TEMPLATE } from './templates.js'
+  import { DEFAULT_PRESET } from './compositions.js'
   import cvCss from './cv.css?raw'
   import fontsCss from './fonts.css?raw'
   import frameCss from './frame.css?raw'
@@ -58,7 +58,7 @@
     cv = null,
     component = null,
     templateCss = '',
-    layout = DEFAULT_TEMPLATE,
+    layout = DEFAULT_PRESET,
     theme = DEFAULT_THEME,
     font = DEFAULT_FONT,
     css = '',
@@ -173,6 +173,15 @@
     style.textContent = text
     d.head.appendChild(style)
     return style
+  }
+
+  /**
+   * The frame's box in the app's own viewport. The block picker floats over the
+   * pane rather than inside the frame, so it needs this to turn a rect measured
+   * in there into a position out here.
+   */
+  export function rect() {
+    return frameEl?.getBoundingClientRect() ?? null
   }
 
   /**

@@ -1,0 +1,15 @@
+/* No rule at all — the title is a small tracked-out label and the space around
+   it does the separating. */
+.sec-head {
+  margin-bottom: 8px;
+}
+
+.sec-head h2 {
+  font-size: 9.5px;
+  letter-spacing: 3.2px;
+  color: var(--faint);
+}
+
+.sec-head .bar {
+  display: none;
+}

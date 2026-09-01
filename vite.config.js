@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import adapter from '@sveltejs/adapter-static'
 import { sveltekit } from '@sveltejs/kit/vite'
 import { defineConfig } from 'vite'
@@ -28,6 +29,14 @@ export default defineConfig({
     // second copy, would hand us a second WASM instance whose objects the first
     // cannot accept. Pin every importer to the same async `web` build.
     alias: [{ find: /^loro-crdt$/, replacement: 'loro-crdt/web' }],
+  },
+
+  test: {
+    // The block variants that are plain CSS are imported `?raw` like every
+    // other part. Vitest stubs CSS out by default, which would hand the
+    // composer an empty string and quietly pass every test that depends on
+    // one — so it has to process them here as the browser does.
+    css: true,
   },
 
   optimizeDeps: {

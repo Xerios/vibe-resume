@@ -1,0 +1,30 @@
+/* Every group in a box of its own, drawn the same way an entry card is. */
+.skill-grid {
+  gap: 7px;
+}
+
+.skill-block {
+  padding: 9px 12px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--accent-wash) 45%, var(--paper));
+}
+
+/* cv.css drops the top border on the first row of the grid, which is the one
+   part of a card it can't be allowed to take. */
+.skill-block:first-child,
+.skill-block:nth-child(2) {
+  border-top: 1px solid var(--line);
+}
+
+/* A pill on a sheet of cards needs to sit on the paper rather than on a wash. */
+.tag {
+  background: var(--paper);
+}
+
+@media print {
+  .skill-block {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

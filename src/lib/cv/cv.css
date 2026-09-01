@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    The CV document itself: the vocabulary of class names every template shares,
    and how the sheet paginates. A template adds to this and overrides parts of
-   it from its own <style> block — see src/lib/cv/templates/.
+   it from its own <style> block — see src/lib/cv/layouts/ and src/lib/cv/blocks/.
 
    Not loaded by the app at all: PreviewFrame.svelte imports this as text and
    writes it into the iframe the sheet renders in, which is why none of these

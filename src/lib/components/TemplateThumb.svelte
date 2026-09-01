@@ -1,11 +1,12 @@
 <script>
   /**
-   * A template's thumbnail: the wireframe drawn in the Style popover and on the
-   * template page. The names alone don't say much, and a sketch reads faster
-   * than switching to find out.
+   * A preset's thumbnail: the wireframe drawn beside its name in the Style
+   * popover. The names alone don't say much, and a sketch reads faster than
+   * switching to find out.
    *
-   * Only the nine that ship have one. A template of your own gets the neutral
-   * sheet at the foot, since nothing here can know what its markup does.
+   * It stands for the preset as it ships. Change an axis and it goes on saying
+   * where you started from, which is the honest thing for it to say — nothing
+   * here can sketch an arbitrary set of choices.
    */
 
   /** @type {{ id: string }} */

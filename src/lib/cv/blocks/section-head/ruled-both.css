@@ -1,0 +1,8 @@
+/* The second arm: the default draws the rule after the title, this one before
+   it as well, which is what centres the title between them. */
+.sec-head::before {
+  content: '';
+  height: 1px;
+  flex: 1;
+  border-top: 1px solid var(--line);
+}

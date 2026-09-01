@@ -1,17 +1,12 @@
 <!--
-	Ledger — one gutter down the left, and everything hangs off it: the section
-	titles, the dates of every role, the name of every skill group.
+	Sidebar — a rail down the left with skills and lists in it, and everything
+	else beside it. The same skeleton as single.svelte in every other respect: a
+	layout owns the section markup, so the two files carry a copy each rather
+	than one importing the other, and a change to what a section *is* touches
+	both. That is the price of a layout being a template you can open and edit.
 
-	The dates are positioned into that gutter rather than laid out in a column of
-	their own, so a job long enough to break across a page doesn't have to drag a
-	grid track over the boundary with it.
-
-	A template is a Svelte component handed the parsed YAML as `cv`. It renders
-	inside the preview frame on top of cv.css, whose class names the markup below
-	spends; this file's own <style> block is where a layout says how it differs.
-
-	Keep the `data-src` paths: they are what ties an element back to the line of
-	YAML behind it, and so what makes the two panes follow each other.
+	See single.svelte for the slot/snippet contract; it is the same here, and
+	`body` is the one snippet that differs.
 -->
 <script>
   import { list, md, sections, techs } from '@cv'
@@ -20,10 +15,17 @@
   let { cv } = $props()
 
   const secs = $derived(sections(cv))
+
+  /**
+   * Skills go to the rail by default; any section can opt in or out with
+   * `rail: true` / `rail: false` in the YAML.
+   */
+  const rail = $derived(secs.filter((e) => e.sec.rail ?? (e.sec.type === 'skills' || e.sec.type === 'list')))
+  const main = $derived(secs.filter((e) => !rail.includes(e)))
 </script>
 
 {#snippet secHead(/** @type {any} */ sec, /** @type {string} */ path)}
-  <div class="sec-head">
+  <div class="sec-head" data-slot="sectionHead">
     <h2 data-src="{path}.title">{@html md(sec.title)}</h2>
     <div class="bar"></div>
   </div>
@@ -31,14 +33,14 @@
 
 {#snippet stackLine(/** @type {any} */ item, /** @type {string} */ path)}
   {#if item.stack}
-    <p class="stack" data-src="{path}.stack">
+    <p class="stack" data-slot="stack" data-src="{path}.stack">
       <b>STACK</b> · {@html md(techs(item.stack).join(' · '))}
     </p>
   {/if}
 {/snippet}
 
 {#snippet entry(/** @type {any} */ item, /** @type {string} */ path)}
-  <div class="job" data-src={path}>
+  <div class="job" data-slot="entry" data-src={path}>
     <div class="job-head">
       <p class="job-title" data-src="{path}.title">
         <!-- The space before each of these is written as `{' '}`: Svelte trims
@@ -62,6 +64,47 @@
   </div>
 {/snippet}
 
+{#snippet summaryBody(/** @type {any} */ sec, /** @type {string} */ path)}
+  {#each list(sec.paragraphs) as p, i}
+    <p data-src="{path}.paragraphs.{i}">{@html md(p)}</p>
+  {/each}
+{/snippet}
+
+{#snippet skillsBody(/** @type {any} */ sec, /** @type {string} */ path)}
+  <div class="skill-grid" data-slot="skills">
+    {#each list(sec.blocks) as b, i}
+      <div class="skill-block" data-src="{path}.blocks.{i}">
+        <h3 data-src="{path}.blocks.{i}.title">{@html md(b.title)}</h3>
+        {#each list(b.rows) as r, j}
+          <div class="skill-row" data-src="{path}.blocks.{i}.rows.{j}">
+            {#if r.tier}<span class="tier">{@html md(r.tier)}</span> ·
+            {/if}{@html md(r.text)}
+          </div>
+        {/each}
+      </div>
+    {/each}
+  </div>
+{/snippet}
+
+{#snippet listBody(/** @type {any} */ sec, /** @type {string} */ path)}
+  {#if sec.inline}
+    <div class="tags" data-slot="list">
+      {#each list(sec.items) as item, i}
+        <span class="tag" data-src="{path}.items.{i}">{@html md(item)}</span>
+      {/each}
+    </div>
+  {:else}
+    <ul class="bullets" data-slot="list">
+      {#each list(sec.items) as item, i}
+        <li data-src="{path}.items.{i}">{@html md(item)}</li>
+      {/each}
+    </ul>
+  {/if}
+{/snippet}
+
+<!-- Not a slot: an `earlier` run has no dates and no stack, so there is nothing
+     for an entry variant to vary. It still renders through `entry` for the
+     ordinary case, which is what keeps a variant's markup reaching both. -->
 {#snippet entries(/** @type {any} */ sec, /** @type {string} */ path)}
   {#each list(sec.items) as item, i}
     {#if item.subtype === 'earlier'}
@@ -81,28 +124,14 @@
 
 {#snippet block(/** @type {any} */ sec, /** @type {string} */ path)}
   {#if sec.type === 'summary'}
-    <section class="sec-summary" data-src={path}>
+    <section class="sec-summary" data-slot="summary" data-src={path}>
       {@render secHead(sec, path)}
-      {#each list(sec.paragraphs) as p, i}
-        <p data-src="{path}.paragraphs.{i}">{@html md(p)}</p>
-      {/each}
+      {@render summaryBody(sec, path)}
     </section>
   {:else if sec.type === 'skills'}
     <section class="sec-skills" data-src={path}>
       {@render secHead(sec, path)}
-      <div class="skill-grid">
-        {#each list(sec.blocks) as b, i}
-          <div class="skill-block" data-src="{path}.blocks.{i}">
-            <h3 data-src="{path}.blocks.{i}.title">{@html md(b.title)}</h3>
-            {#each list(b.rows) as r, j}
-              <div class="skill-row" data-src="{path}.blocks.{i}.rows.{j}">
-                {#if r.tier}<span class="tier">{@html md(r.tier)}</span> ·
-                {/if}{@html md(r.text)}
-              </div>
-            {/each}
-          </div>
-        {/each}
-      </div>
+      {@render skillsBody(sec, path)}
     </section>
   {:else if sec.type === 'experience'}
     <section class="sec-experience" data-src={path}>
@@ -122,19 +151,7 @@
   {:else if sec.type === 'list'}
     <section class="sec-list" data-src={path}>
       {@render secHead(sec, path)}
-      {#if sec.inline}
-        <div class="tags">
-          {#each list(sec.items) as item, i}
-            <span class="tag" data-src="{path}.items.{i}">{@html md(item)}</span>
-          {/each}
-        </div>
-      {:else}
-        <ul class="bullets">
-          {#each list(sec.items) as item, i}
-            <li data-src="{path}.items.{i}">{@html md(item)}</li>
-          {/each}
-        </ul>
-      {/if}
+      {@render listBody(sec, path)}
     </section>
   {:else if sec.type === 'oss'}
     <section class="sec-oss" data-src={path}>
@@ -168,7 +185,7 @@
 {/snippet}
 
 {#snippet head()}
-  <header data-src="header">
+  <header data-slot="header" data-src="header">
     <div>
       <h1 class="name" data-src="header.name">{@html md(cv.header?.name)}</h1>
       <p class="role" data-src="header.role">{@html md(cv.header?.role)}</p>
@@ -179,83 +196,74 @@
   </header>
 {/snippet}
 
-<div class="sheet">
+{#snippet body()}
   {@render head()}
-  {#each secs as e}{@render block(e.sec, e.path)}{/each}
+  <div class="cv-cols">
+    <aside class="cv-rail">
+      {#each rail as e}{@render block(e.sec, e.path)}{/each}
+    </aside>
+    <div class="cv-main">
+      {#each main as e}{@render block(e.sec, e.path)}{/each}
+    </div>
+  </div>
+{/snippet}
+
+<div class="sheet" data-slot="page">
+  {@render body()}
 </div>
 
 <style>
-  /* One number, reused: the gutter is this wide and everything else starts
-	   after it. Change it here and the whole sheet re-hangs. */
-  .sheet {
-    --gutter: 104px;
-    padding: 40px 50px 34px;
+  .cv-cols {
+    display: flex;
+    align-items: flex-start;
+    gap: 26px;
+    margin-top: 4px;
   }
 
-  /* The title sits in the gutter and the rule takes the rest of the line, so
-	   the rule begins exactly where the text below it does. `min-width` rather
-	   than a fixed one: a long title pushes the rule along instead of running
-	   underneath it. */
-  .sec-head {
-    gap: 0;
+  .cv-rail {
+    flex: 0 0 31%;
+    min-width: 0;
+    padding-right: 24px;
+    border-right: 1px solid var(--line);
   }
 
-  .sec-head h2 {
-    min-width: var(--gutter);
+  .cv-main {
+    flex: 1;
+    min-width: 0;
   }
 
-  .job {
-    position: relative;
-    padding-left: var(--gutter);
-    margin-bottom: 13px;
-  }
-
-  .job-head {
-    display: block;
-  }
-
-  .job-dates {
-    position: absolute;
-    left: 0;
-    top: 3px;
-    width: calc(var(--gutter) - 14px);
-    color: var(--accent);
-    font-weight: 600;
-    white-space: normal;
-  }
-
-  /* Earlier roles have no dates of their own, so the gutter is left empty and
-	   the block simply starts on the same line as everything else. */
-  .earlier h3 {
-    font-size: 13.5px;
-  }
-
-  /* One skill group per row, its name in the gutter beside its rows. */
-  .skill-grid {
+  /* One column of skills is all the rail has room for, so every block after
+	   the first needs the divider that cv.css's two-up grid suppresses. */
+  .cv-rail .skill-grid {
     grid-template-columns: 1fr;
-    gap: 0;
   }
 
-  .skill-block {
-    position: relative;
-    padding: 6px 0 6px var(--gutter);
-  }
-
-  .skill-block:nth-child(2) {
+  .cv-rail .skill-block:nth-child(2) {
     border-top: 1px solid var(--line);
   }
 
-  .skill-block h3 {
-    position: absolute;
-    left: 0;
-    top: 7px;
-    width: calc(var(--gutter) - 14px);
-    margin: 0;
+  .cv-rail .sec-head h2 {
+    letter-spacing: 1.6px;
   }
 
-  .sec-list ul.bullets,
-  .sec-list .tags,
-  .sec-oss table.oss {
-    margin-left: var(--gutter);
+  /* A pill wide enough to wrap in a 31% rail reads worse than a line does, so
+	   an inline list keeps the spacing in here and loses the shape. */
+  .cv-rail .tags {
+    display: block;
+  }
+
+  .cv-rail .tag {
+    display: block;
+    padding: 1px 0;
+    border: none;
+    border-radius: 0;
+    font-size: 12px;
+  }
+
+  @media print {
+    .cv-rail {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
   }
 </style>

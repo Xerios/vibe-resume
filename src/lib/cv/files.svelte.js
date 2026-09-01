@@ -5,7 +5,8 @@ import { KEYS, read, remove, snapshotKey, write } from './storage.js'
  * @property {string} id
  * @property {string} name
  * @property {number | null} deletedAt   ms epoch when moved to trash; null while open
- * @property {string} [layout]           template id from templates.js; absent means the default
+ * @property {string} [layout]           preset id from compositions.js; absent means the default
+ * @property {Record<string, string>} [variants]  slot id → variant id, on top of the preset's
  * @property {string} [theme]            palette id from presets.js; absent means the default
  * @property {string} [font]             font id from fonts.js; absent means the default
  * @property {string} [css]              the file's own CSS, applied last inside the preview frame
@@ -20,7 +21,7 @@ import { KEYS, read, remove, snapshotKey, write } from './storage.js'
  * key is left untouched, so restoring it from the trash brings back the full
  * history exactly as it was.
  *
- * Layout, theme and font ride along here too. They describe how a CV is
+ * Preset, block variants, theme and font ride along here too. They describe how a CV is
  * presented rather than what it says, so they belong beside the file's name
  * and not in the CRDT — restyling is not an edit and leaves version history
  * alone.
@@ -72,6 +73,7 @@ export class FileManager {
         name: this.#uniqueName(`${source.name} copy`),
         deletedAt: null,
         layout: source.layout,
+        variants: source.variants,
         theme: source.theme,
         font: source.font,
         css: source.css,
@@ -145,16 +147,53 @@ export class FileManager {
 
   /**
    * Restyle a file. Ids are stored as given and validated on the way out
-   * (`templates.resolve` / `resolveTheme` / `resolveFont`), so a preset that later disappears
-   * degrades to the default instead of rendering nothing. Custom CSS gets no
-   * validation at all: it is applied inside the preview frame, where the worst
-   * a broken rule can do is make the sheet look wrong.
+   * (`resolvePreset` / `resolveSlots` / `resolveTheme` / `resolveFont`), so a
+   * preset or variant that later disappears degrades to the default instead of
+   * rendering nothing. Custom CSS gets no validation at all: it is applied
+   * inside the preview frame, where the worst a broken rule can do is make the
+   * sheet look wrong.
    * @param {string} id
-   * @param {{ layout?: string, theme?: string, font?: string, css?: string }} style
+   * @param {{ layout?: string, variants?: Record<string, string>, theme?: string, font?: string, css?: string }} style
    */
   setStyle(id, style) {
     this.files = this.files.map((f) => (f.id === id ? { ...f, ...style } : f))
     this.#saveList()
+  }
+
+  /**
+   * Choose one block variant, leaving the file's preset — and every other slot
+   * — where it was. Picking the slot's default back drops the entry rather than
+   * storing it, so a file that has been put back to its preset reads as
+   * unmodified again.
+   * @param {string} id
+   * @param {string} slotId
+   * @param {string | null} variantId  null clears the override
+   */
+  setVariant(id, slotId, variantId) {
+    const file = this.files.find((f) => f.id === id)
+    if (!file) return
+    const variants = { ...file.variants }
+    if (variantId === null) delete variants[slotId]
+    else variants[slotId] = variantId
+    this.setStyle(id, { variants })
+  }
+
+  /**
+   * Take on the whole templates written before the layout/variant split. Each
+   * has become a layout of the user's own (see PartManager), so a file that
+   * named one now names it in the `page` slot instead.
+   * @param {Record<string, string>} map  old template id → new `page` variant id
+   */
+  adoptLegacyTemplates(map) {
+    if (Object.keys(map).length === 0) return
+    let changed = false
+    this.files = this.files.map((f) => {
+      const adopted = f.layout ? map[f.layout] : undefined
+      if (!adopted || f.variants?.page) return f
+      changed = true
+      return { ...f, variants: { ...f.variants, page: adopted } }
+    })
+    if (changed) this.#saveList()
   }
 
   // ── Internals ──────────────────────────────────────────────────────────────

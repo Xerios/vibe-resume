@@ -9,7 +9,7 @@
    that StylePicker can draw its swatches.
 
    The layouts that used to sit under this block are gone from here: each is a
-   template now (src/lib/cv/templates/), carrying its own <style> block, which
+   layout now (src/lib/cv/layouts/), carrying its own <style> block, which
    is what makes one editable in the app. What is left is the part a template
    has no say in — which ramp the sheet is painted from.
    ═══════════════════════════════════════════════════════════════════════════ */

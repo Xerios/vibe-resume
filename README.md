@@ -23,15 +23,20 @@ pnpm check      # svelte-check
 | ------------------ | ------------------------------------------------------------------------------------------------------------ |
 | Document + history | [src/lib/cv/doc.svelte.js](src/lib/cv/doc.svelte.js) — Loro doc, persistence, cross-tab merge                |
 | Editor             | [src/lib/components/YamlEditor.svelte](src/lib/components/YamlEditor.svelte) — CodeMirror 6                  |
-| Template editor    | [src/routes/template/+page.svelte](src/routes/template/+page.svelte) — the second page, and its CodeMirror   |
+| Parts editor       | [src/routes/template/+page.svelte](src/routes/template/+page.svelte) — the second page, and its CodeMirror   |
 | Chrome             | `components/{Toolbar,TabBar,StatusBar}.svelte` — the buttons, the tabs, the status bar                       |
 | YAML to HTML       | [src/lib/cv/render.js](src/lib/cv/render.js)                                                                 |
 | Preview            | [src/lib/cv/PreviewFrame.svelte](src/lib/cv/PreviewFrame.svelte) — the iframe the sheet renders in           |
 | Starting text      | [src/lib/cv/default-cv.yaml](src/lib/cv/default-cv.yaml)                                                     |
-| Templates          | [src/lib/cv/templates/](src/lib/cv/templates/) — one Svelte component per arrangement                        |
-| Template registry  | [src/lib/cv/templates.svelte.js](src/lib/cv/templates.svelte.js) — edits, forks, reverts                     |
-| Compiling one      | [src/lib/cv/compile-template.js](src/lib/cv/compile-template.js) — Svelte, in the browser                    |
-| Shared state       | [src/lib/cv/state.svelte.js](src/lib/cv/state.svelte.js) — the document, files and templates both pages hold |
+| Layouts            | [src/lib/cv/layouts/](src/lib/cv/layouts/) — the whole sheet, one file per arrangement                       |
+| Block variants     | [src/lib/cv/blocks/](src/lib/cv/blocks/) — one file per variation of one block                              |
+| The axes           | [src/lib/cv/slots.js](src/lib/cv/slots.js) — every slot, and every variant of each                          |
+| The nine looks     | [src/lib/cv/compositions.js](src/lib/cv/compositions.js) — presets, as sets of axis choices                 |
+| Composing          | [src/lib/cv/compose.js](src/lib/cv/compose.js) — layout + variants → one component                          |
+| Part registry      | [src/lib/cv/parts.svelte.js](src/lib/cv/parts.svelte.js) — edits, forks, reverts                            |
+| Compiling it       | [src/lib/cv/compile-template.js](src/lib/cv/compile-template.js) — Svelte, in the browser                    |
+| Picking a variant  | `components/{StylePicker,VariantCycle,BlockPicker}.svelte` — the popover, the row, the card by the sheet     |
+| Shared state       | [src/lib/cv/state.svelte.js](src/lib/cv/state.svelte.js) — the document, files and parts both pages hold     |
 | Theme              | [src/lib/cv/presets.js](src/lib/cv/presets.js) — the palettes, and the CSS beside it                         |
 | Type               | [src/lib/cv/fonts.js](src/lib/cv/fonts.js) — the font stacks, and the CSS beside it                          |
 | Tech logos         | [src/lib/cv/tech-icons.js](src/lib/cv/tech-icons.js) — generated; see _Logos_ below                          |
@@ -54,9 +59,9 @@ it, the `--cm-*` tokens it names live in
 [tokens.css](src/lib/styles/tokens.css), and the rules that spend the rest of
 them in [codemirror.css](src/lib/components/codemirror.css).
 
-There are two of these, one per page. The second is the template editor — the
+There are two of these, one per page. The second is the parts editor — the
 same CodeMirror over `@replit/codemirror-lang-svelte`, and the plain `history()`
-the first one can't have, since nothing but the user writes to a template. One
+the first one can't have, since nothing but the user writes to a part. One
 stylesheet themes both: [codemirror.css](src/lib/components/codemirror.css) goes
 through `:is(#cm-wrap, #tpl-cm)`, which keeps the id specificity it needs to
 outrank CodeMirror's own base theme while serving two hosts that can't share an
@@ -64,15 +69,15 @@ id.
 
 ### Two pages
 
-`/` is the CV — YAML on the left, sheet on the right. `/template` is the
-component that sheet is rendered by, with the same CV beside it as a live
-preview. The template editor was a second tab in the editor pane first, and the
-pane was the wrong place for it: it is a different job, wants the whole window,
-keeps an undo stack of its own, and belongs to the template rather than to the
-file that happens to be open.
+`/` is the CV — YAML on the left, sheet on the right. `/template` is the parts
+the sheet is composed out of, with the same CV beside it as a live preview. That
+editor was a second tab in the editor pane first, and the pane was the wrong
+place for it: it is a different job, wants the whole window, keeps an undo stack
+of its own, and belongs to the part rather than to the file that happens to be
+open.
 
 Two pages means the state can no longer be built inside one of them. The
-document, the file registry and the template registry are module-level
+document, the file registry and the part registry are module-level
 singletons in [state.svelte.js](src/lib/cv/state.svelte.js), and `start()` is
 idempotent because both pages call it — whichever is entered first does the
 work. That is what makes crossing between them carry the CRDT along rather than
@@ -81,82 +86,183 @@ keys. Client-side navigation is what keeps module scope alive; a hard load of
 either URL simply starts over, which is also why `/template` works as a deep
 link.
 
-Nothing on the template page writes to the document, so there is no editor bound
-to it and no history to keep — the CV over there is read-only, and what is being
-edited is stored per template rather than per file.
+Nothing on the parts page writes to the document, so there is no editor bound to
+it and no history to keep — the CV over there is read-only, and what is being
+edited is stored per part rather than per file.
 
-### Templates
+### Layouts, blocks and presets
 
-The Style button offers nine arrangements of the sheet — classic, compact,
-centered, sidebar, timeline, ledger, minimal, cards, tech — seven palettes and
-six fonts. All three are per file, stored in the file registry next to the name
-rather than in the CRDT: restyling is not an edit, so it leaves the YAML and the
-version history alone. The popover's _Edit this template_ is an ordinary link to
-`/template`, and picking a template there means the same thing it means in the
-popover: the CV switches to it.
+The Style button offers nine named looks — classic, compact, centered, sidebar,
+timeline, ledger, minimal, cards, tech — seven palettes and six fonts. All three
+are per file, stored in the file registry next to the name rather than in the
+CRDT: restyling is not an edit, so it leaves the YAML and the version history
+alone.
 
-An arrangement is a _template_: an ordinary Svelte component, handed the parsed
-YAML as `cv`, that renders the sheet. The nine that ship are
-[src/lib/cv/templates/](src/lib/cv/templates/) — real `.svelte` files, so
-`pnpm check` compiles and type-checks them, imported as text rather than as
-components because nothing mounts them directly. They began as five blocks of
-CSS in `presets.css` keyed off a `data-cv-layout` attribute; each one now carries
-its own markup and its own style block, which is what makes it something you can
-open and change.
+Those nine used to be nine whole Svelte components, one per look, and that was
+the wrong seam. Seven of them had markup identical to `classic` and differed
+only in their `<style>` block; taking Tech's logo chips meant taking Tech's
+everything. So a sheet is two things now:
 
-Every one of them has to print. That is the constraint the four newer ones are
-drawn under and the reason none of them leans on a filled background: Chrome
-drops background painting when _Background graphics_ is off in the print dialog,
-so a card that only existed as a fill would vanish from the PDF. Borders,
-outlines and type always print, and that is what Ledger's gutter, Minimal's
-spacing, Cards' outlines and Tech's chips are built out of.
+- a **layout** — [layouts/](src/lib/cv/layouts/), the arrangement of the page
+  and the markup for all seven section types. There are two: single column and
+  sidebar.
+- a **variant** per **slot** — [blocks/](src/lib/cv/blocks/), one decision each
+  about how one part of the sheet is drawn.
 
-The template page compiles what you type, on a debounce, and mounts the result;
-so does the editor page, from the same source text through the same
-[liveTemplate](src/lib/cv/live-template.svelte.js) — the debounce, the
-out-of-order guard and the keep-the-last-good-one rule are written once.
-A file's `layout` is only the id of the template it renders through, and
-templates themselves are shared by every file rather than owned by one — so
-deleting one can't break a CV: the id stops resolving and `resolve` hands back
-the default. Editing a built-in stores an _override_ under its own id, which is
-what lets Revert be a delete rather than a copy, and Duplicate is how a template
-of your own starts — from a copy, since a blank component would only mean
-retyping the sheet's markup.
+The slots are in [slots.js](src/lib/cv/slots.js): page, header, section title,
+summary, entry, skills, stack, list and density. The first variant of each is
+its *default*, and it has no file at all, because it is the snippet the layout
+already renders. That is what makes the whole thing subtractive rather than
+constructive — choose nothing and you get the layout verbatim.
+
+A variant is one of two kinds of file, and which one it is says what it is
+allowed to change:
+
+- a **`.svelte` fragment** defines the slot's snippet, so it can change markup.
+  Only a handful need to: the chip variants, which need `techIcon`, and Sidebar,
+  which needs a rail.
+- a **`.css` file** has no markup and restyles the snippet the layout renders.
+  Most of them, which is the same observation as the seven identical templates,
+  now expressed as a fact about the file rather than as duplication.
+
+Every one of them has to print. That is the constraint the whole set is drawn
+under and the reason none of them leans on a filled background: Chrome drops
+background painting when _Background graphics_ is off in the print dialog, so a
+card that only existed as a fill would vanish from the PDF. Borders, outlines and
+type always print, and that is what the gutter, the airy density, the card
+outlines and the chips are built out of.
+
+The nine names survive as **presets** — [compositions.js](src/lib/cv/compositions.js)
+— and a preset holds nothing but a set of axis values. That is deliberate: pick
+Tech and then set the stack back to a plain line, and what you keep is Tech's
+skills and lists as chips, with nothing invisible riding along. A file's `layout`
+is the preset it started from and its `variants` are what it has changed since,
+so the popover can go on saying *Tech · modified* rather than going nameless.
+
+Each is still a real `.svelte` or `.css` file that `pnpm check` compiles, so a
+broken one can't reach a release. What the type checker can't see is whether a
+layout and a variant still agree — a snippet renamed on one side, a `@cv` import
+one needs and the other doesn't, two chip variants declaring `chip` twice — so
+[compose.test.js](src/lib/cv/compose.test.js) compiles every preset and every
+variant against the defaults, which is the gate that catches those.
+
+#### Composing
+
+[compose.js](src/lib/cv/compose.js) takes the layout, swaps out the snippets
+whose slot has a non-default variant chosen, concatenates the stylesheets, and
+hands back one component source for compile-template.js to compile exactly as it
+used to compile a whole template.
+
+One component, not several. Compiling each fragment separately and importing
+them would be tidier, and it is the wrong shape: Svelte scopes a component's CSS
+to the markup in that same component, so a style-only variant would have to write
+`:global(.job)` — which then loses on specificity to any scoped `.job` rule in
+whichever component owns the markup. Assembled into one, every rule gets the same
+scoping class and plain cascade order decides, which is how the nine templates
+worked against cv.css in the first place. Slot order is that order, and `density`
+is last so it can quiet anything above it.
+
+A variant contributes its snippets and its style block; its script is there so
+`svelte-check` will read the file as a component, and is dropped. The `@cv`
+import line is rewritten to the union of what every chosen part needs, since
+`techIcon` only turns up once a chip variant is in play. A snippet the layout
+doesn't define — `chip` — is appended rather than swapped in, and de-duplicated,
+because the three chip variants each carry their own copy so that any one of them
+can be chosen alone.
+
+Compose also returns a **line map**, which is what lets a compile error in a
+source nobody wrote point at a line in the part being edited.
+
+Both pages compile what a composition comes to, on a debounce, and mount the
+result — through the same [liveTemplate](src/lib/cv/live-template.svelte.js), so
+the debounce, the out-of-order guard and the keep-the-last-good-one rule are
+written once. What it keys on is the whole composition rather than one part,
+because changing a variant is a choice and shouldn't sit out the debounce meant
+for someone typing.
+
+#### Picking one
+
+Three places, one control. [StylePicker](src/lib/components/StylePicker.svelte)
+lists the presets and then every axis; the parts page lists every part there is;
+and hovering the sheet floats [BlockPicker](src/lib/components/BlockPicker.svelte)
+beside it with a row per slot the thing under the pointer belongs to — hover an
+entry's stack line and you get Stack, Entry, Page and Density, innermost first,
+walked up the `data-slot` chain the layouts stamp. All three rows are the same
+[VariantCycle](src/lib/components/VariantCycle.svelte), because choosing a
+variant is the same act wherever it is done.
+
+The card lives in the app's DOM rather than in the preview frame. That is what
+keeps it out of a print — which goes to the frame's own window — and it is why
+positioning has to cross a boundary: a rect measured in there reaches us through
+the iframe's own box. It pins to whichever gutter beside the sheet is wider
+rather than to the block's edge, so it stays on screen without anyone having to
+know how wide it is, and flips to grow upward near the foot of the pane.
+
+The part that isn't obvious is holding still. Reaching the card means crossing
+every block between the pointer and the gutter, and a card that followed each of
+those in turn would rewrite its rows and move out from under the pointer on the
+way — which made it unreachable. So only the first appearance is immediate:
+after that a new block has to hold the pointer for a moment before the card
+moves to it, and even then it waits while the pointer is still travelling toward
+the side the card is on. A pointer that has stopped is not on its way anywhere,
+so settling on a block — including the sheet's own margin, which is one big
+block — still hands the card over. It follows what you meant, not the journey.
+
+#### Editing one
+
+`/template` is the parts page: every layout and every variant down the left, one
+of them open in a CodeMirror, and the CV beside it. The preview composes the
+file's own choices with one substitution — the slot of the part being edited is
+set to that part — so opening a variant the file doesn't use still shows you your
+edit. Choosing a part to read is not the same act as choosing it for the CV,
+which is what the Use button is for.
+
+Editing a shipped part stores an *override* under its own id, which is what lets
+Revert be a delete rather than a copy; Duplicate is how a variant of your own
+starts, from a copy, and it joins its slot's list everywhere — including the
+arrows beside the sheet. Parts are shared by every file rather than owned by one,
+so deleting one can't break a CV: the id stops resolving and the slot falls back
+to its default.
+
+Whole templates written before any of this split existed are folded in on first
+load as layouts of the user's own, since a whole template *is* a layout, and the
+files that named one are pointed at it.
 
 The theme is still pure data — a ramp of eight colours, declared in
 [palettes.css](src/lib/cv/palettes.css) and spent by one block in
 [presets.css](src/lib/cv/presets.css) that re-points the frame's tokens at it.
-`data-cv-layout` is still set on `#cv-root` too, carrying the template's id, but
+`data-cv-layout` is still set on `#cv-root` too, carrying the preset's id, but
 nothing shipped selects on it any more: it is there for a file's own CSS to hook.
 
 #### Compiling one
 
 [compile-template.js](src/lib/cv/compile-template.js) is the whole of it.
-Svelte's compiler is an ordinary module that runs in a browser, so a template
-goes through exactly the pass Vite would have given it at build time. What Vite
+Svelte's compiler is an ordinary module that runs in a browser, so the composed
+sheet goes through exactly the pass Vite would have given it at build time. What Vite
 also does — resolve the imports that come back — is what has to be replaced:
 compiled client code opens with `import * as $ from 'svelte/internal/client'`,
 and a bare specifier means nothing to the browser.
 
-So every specifier a template is allowed to name (`@cv`, `svelte`, `marked`, and
+So every specifier the sheet is allowed to name (`@cv`, `svelte`, `marked`, and
 the two the compiler emits itself) gets a _shim module_: a blob that re-exports,
 name by name, the module this app already has bundled. The compiled source's
 import lines are rewritten to point at those blobs, the whole thing becomes a
 blob of its own, and `import()` turns it into a component — one Svelte runtime,
 one copy of `marked`, and no network. `@cv` is aliased in `vite.config.js` as
-well, which is the trick that lets the shipped templates import the same module
+well, which is the trick that lets the shipped parts import the same module
 through a bundler that has never heard of any of this.
 
 The compiler is loaded on demand, being by far the largest thing this app could
 ship; it is still bundled locally and precached with everything else, so the
-first template compiles offline like everything else here.
+first sheet compiles offline like everything else here.
 
 Two things follow that are worth being plain about. A compile error keeps the
-last template that worked on screen — the same bargain as a YAML parse error —
-and reports itself in the strip under the template editor and in the banner over
-either preview. On a fresh load there _is_ no last good one, so a stored
-template that doesn't compile leaves the editor page with nothing to render:
-that banner carries a link to the page where the template can be fixed. And a template is the user's own code running in the
+last sheet that worked on screen — the same bargain as a YAML parse error — and
+reports itself in the strip under the parts editor and in the banner over either
+preview, traced back through compose.js's line map to the part it came from. On a
+fresh load there _is_ no last good one, so an edited part that doesn't compile
+leaves the editor page with nothing to render: that banner carries a link to the
+page where it can be fixed. And a part is the user's own code running in the
 app's realm rather than the frame's, because `mount()` takes a component and a
 component can only come from the realm that compiled it. That is a real
 difference from the file's custom CSS, which the frame contains completely; the
@@ -182,20 +288,19 @@ in the Style popover and applied last inside the frame. It is stored and
 validated exactly as much as it needs to be, which is not at all — the worst a
 broken rule can do is make the sheet look wrong.
 
-What every template shares is [cv.css](src/lib/cv/cv.css): the class names the
-sheet is built out of, and how it paginates. A template adds to that and
-overrides parts of it from its own style block, which the compiler scopes — so
-its rules outrank the base on specificity alone, whatever order they land in.
-Two of the nine need markup rather than CSS to do their job. Sidebar renders a
-rail and a main column, skills and lists going to the rail, and any section can
-opt in or out with `rail: true` / `rail: false`. Tech renders a chip per tool
-instead of a stack line — see _Logos_ below.
+What every sheet shares is [cv.css](src/lib/cv/cv.css): the class names it is
+built out of, and how it paginates. A layout and its variants add to that and
+override parts of it from the composed style block, which the compiler scopes —
+so their rules outrank the base on specificity alone, whatever order they land
+in. Sidebar renders a rail and a main column, skills and lists going to the rail,
+and any section can opt in or out with `rail: true` / `rail: false`. The chip
+variants render a chip per tool instead of a line — see _Logos_ below.
 
 #### What a CV is made of
 
 A document is a header and a list of sections, and a section's `type` is what
-decides how it renders. There are seven, all of them understood by all nine
-templates, so switching template can never lose one:
+decides how it renders. There are seven, all of them understood by both
+layouts, so switching preset can never lose one:
 
 | `type`       | Holds                                                                    |
 | ------------ | ------------------------------------------------------------------------ |
@@ -210,7 +315,7 @@ templates, so switching template can never lose one:
 Experience, education and projects are the same block underneath — `.job` in
 cv.css — because a degree and a role are the same shape: a title, something it
 belongs to, dates, a line of context and some bullets. Only the section around
-them differs, which is what a template selects on when it wants to tell the
+them differs, which is what a layout selects on when it wants to tell the
 three apart. An `experience` item can also say `subtype: earlier`, which renders
 a run of older roles as one titled list with no dates of its own.
 
@@ -224,8 +329,8 @@ section.
 `techs` in [template-api.js](src/lib/cv/template-api.js) is what reads either
 into a list, so no template has to care which was written.
 
-The Tech template draws each entry as a chip with its brand logo, from
-`techIcon` beside it. Matching is deliberately forgiving, because a CV is prose
+The chip variants draw each entry as a chip with its brand logo, from `techIcon`
+beside it. Matching is deliberately forgiving, because a CV is prose
 rather than a manifest: case and punctuation are normalised away and then a few
 reductions are tried in turn, so `Node.js`, `Postgres`, `TypeScript/JavaScript
 (10+ yrs)`, `React 18` and `ORM: Prisma` all land on a logo while `English C2`
@@ -413,7 +518,7 @@ All bundled locally — the only WASM/asset URL is same-origin, and the only oth
 URLs are the `blob:` ones a compiled template is imported through.
 
 `svelte/compiler` is a runtime dependency here rather than a build-time one, and
-`@replit/codemirror-lang-svelte` is what the template editor highlights with.
+`@replit/codemirror-lang-svelte` is what the parts editor highlights with.
 
 `loro-crdt` ships several builds. `loro-codemirror` imports the bare specifier, which
 resolves to a build that loads its WASM with a synchronous main-thread XHR, and would

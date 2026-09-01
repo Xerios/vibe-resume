@@ -1,0 +1,28 @@
+/* Dates in a gutter down the left, the entry beginning after it. Pairs with
+   the Gutter page, which is where the measure is declared; the fallback is
+   what lets this be used on a plain single column. */
+.job {
+  position: relative;
+  padding-left: var(--gutter, 104px);
+  margin-bottom: 13px;
+}
+
+.job-head {
+  display: block;
+}
+
+.job-dates {
+  position: absolute;
+  left: 0;
+  top: 3px;
+  width: calc(var(--gutter, 104px) - 14px);
+  color: var(--accent);
+  font-weight: 600;
+  white-space: normal;
+}
+
+/* Earlier roles have no dates of their own, so the gutter is left empty and
+   the block simply starts on the same line as everything else. */
+.earlier h3 {
+  font-size: 13.5px;
+}

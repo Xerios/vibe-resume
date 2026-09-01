@@ -1,12 +1,11 @@
 <script>
   /**
-   * The second editor: the Svelte component behind the sheet, rather than the
-   * YAML in it.
+   * The second editor: one part of the sheet — a layout, or one block variant —
+   * rather than the YAML in it.
    *
-   * CodeMirror again, but with none of the document plumbing next door — a
-   * template is plain text in localStorage, not a CRDT, so this one keeps an
-   * ordinary `history()` and pushes every change straight out through
-   * `onChange`.
+   * CodeMirror again, but with none of the document plumbing next door — a part
+   * is plain text in localStorage, not a CRDT, so this one keeps an ordinary
+   * `history()` and pushes every change straight out through `onChange`.
    *
    * Compiling is the page's job, not this component's: the result has to reach
    * the preview frame, and the error that comes back arrives here as a prop.
@@ -21,22 +20,24 @@
   import { highlight } from './cm-highlight.js'
   import './codemirror.css'
 
-  let {
-    /** @type {import('$lib/cv/templates.svelte.js').Template} */
-    template,
-    /** @type {(text: string) => void} */
-    onChange,
-    /** What the last compile said, if it failed. @type {{ message: string, line?: number } | null} */
-    error = null,
-    /** @type {() => void} */
-    onDuplicate,
-    /** @type {(name: string) => void} */
-    onRename,
-    /** @type {() => void} */
-    onRevert,
-    /** @type {() => void} */
-    onDelete,
-  } = $props()
+  /**
+   * `error` is what the last compile said, with its line already translated out
+   * of the composed sheet and into this part — or absent, when the failure was
+   * in another part entirely.
+   *
+   * @type {{
+   *   part: { name: string, source: string, builtin: boolean, edited: boolean },
+   *   onChange: (text: string) => void,
+   *   error?: { message: string, line?: number } | null,
+   *   inUse?: boolean,
+   *   onUse: () => void,
+   *   onDuplicate: () => void,
+   *   onRename: (name: string) => void,
+   *   onRevert: () => void,
+   *   onDelete: () => void,
+   * }}
+   */
+  let { part, onChange, error = null, inUse = false, onUse, onDuplicate, onRename, onRevert, onDelete } = $props()
 
   /** @type {HTMLDivElement} */
   let host
@@ -57,7 +58,7 @@
     const next = new EditorView({
       parent: host,
       state: EditorState.create({
-        doc: template.source,
+        doc: part.source,
         extensions: [
           lineNumbers(),
           highlightActiveLine(),
@@ -92,10 +93,10 @@
 
   /**
    * Take a source the user didn't type — Revert puts the shipped text back
-   * without the template's id changing, so the view has to be told.
+   * without the part's id changing, so the view has to be told.
    */
   $effect(() => {
-    const text = template.source
+    const text = part.source
     if (!view || view.state.doc.toString() === text) return
     view.dispatch({
       changes: { from: 0, to: view.state.doc.length, insert: text },
@@ -131,20 +132,20 @@
   function commitName(e) {
     onRename(e.currentTarget.value)
     // The manager de-duplicates, so what it kept may not be what was typed.
-    e.currentTarget.value = template.name
+    e.currentTarget.value = part.name
   }
 </script>
 
 <div id="tpl-pane">
   <div id="tpl-head">
-    {#if template.builtin}
-      <span class="tpl-name" title="Built-in templates keep the name they ship with">{template.name}</span>
-      {#if template.edited}<span class="tpl-badge">edited</span>{/if}
+    {#if part.builtin}
+      <span class="tpl-name" title="Parts that ship keep the name they ship with">{part.name}</span>
+      {#if part.edited}<span class="tpl-badge">edited</span>{/if}
     {:else}
       <input
         class="tpl-name tpl-rename"
-        value={template.name}
-        aria-label="Template name"
+        value={part.name}
+        aria-label="Part name"
         spellcheck="false"
         onchange={commitName}
         onkeydown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
@@ -153,11 +154,17 @@
 
     <div class="t-spacer"></div>
 
-    <button class="t-btn" onclick={onDuplicate} title="Copy this template into one of your own">Duplicate</button>
-    {#if template.builtin}
-      <button class="t-btn" onclick={onRevert} disabled={!template.edited} title="Put the shipped source back">Revert</button>
+    <!-- Opening a part to read it shouldn't restyle the CV, so choosing it for
+         the file is a separate act — the preview beside this shows the part
+         either way. -->
+    {#if !inUse}
+      <button class="t-btn" onclick={onUse} title="Render this CV through this variant">Use</button>
+    {/if}
+    <button class="t-btn" onclick={onDuplicate} title="Copy this part into a variant of your own">Duplicate</button>
+    {#if part.builtin}
+      <button class="t-btn" onclick={onRevert} disabled={!part.edited} title="Put the shipped source back">Revert</button>
     {:else}
-      <button class="t-btn tpl-delete" onclick={onDelete} title="Delete this template">Delete</button>
+      <button class="t-btn tpl-delete" onclick={onDelete} title="Delete this variant">Delete</button>
     {/if}
   </div>
 

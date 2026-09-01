@@ -2,22 +2,32 @@
   import Icon from '@iconify/svelte'
   import IconLayout from '@iconify-icons/lucide/layout-panel-left'
   import { base } from '$app/paths'
+  import { PRESETS } from '$lib/cv/compositions.js'
   import { FONTS } from '$lib/cv/fonts.js'
   import { THEMES } from '$lib/cv/presets.js'
   import TemplateThumb from './TemplateThumb.svelte'
+  import VariantCycle from './VariantCycle.svelte'
   import { withKey } from './access-keys.js'
 
   let {
-    /** Every template there is, built-in and otherwise. @type {import('$lib/cv/templates.svelte.js').Template[]} */
-    templates,
-    /** The active file's template id. @type {string} */
-    layout,
+    /** Every slot and its variants, the user's own included. @type {import('$lib/cv/slots.js').Registry} */
+    slots,
+    /** Slot id → the variant in use. @type {Record<string, string>} */
+    choices,
+    /** The active file's preset id. @type {string} */
+    preset,
+    /** Whether any axis has been moved off that preset. */
+    modified = false,
     /** @type {string} */
     theme,
     /** @type {string} */
     font,
     /** @type {(id: string) => void} */
-    onLayout,
+    onPreset,
+    /** @type {(slotId: string, variantId: string) => void} */
+    onVariant,
+    /** @type {() => void} */
+    onReset,
     /** @type {(id: string) => void} */
     onTheme,
     /** @type {(id: string) => void} */
@@ -91,27 +101,39 @@
 
   {#if open}
     <div class="style-pop">
+      <!-- A preset is a whole set of the choices below it, and taking one
+			     replaces every one of them. That is what keeps the nine looks
+			     everybody knows as one click each, now that the axes underneath are
+			     the real thing. -->
       <div class="style-group">
-        <span class="style-label">Template</span>
+        <span class="style-label">Preset</span>
         <div class="layout-grid">
-          {#each templates as t (t.id)}
-            <button
-              class="layout-opt"
-              class:on={t.id === layout}
-              title={t.hint ?? (t.builtin ? t.name : 'Your own template')}
-              aria-pressed={t.id === layout}
-              onclick={() => onLayout(t.id)}
-            >
-              <TemplateThumb id={t.id} />
-              <span
-                >{t.name}{#if t.edited}*{/if}</span
-              >
+          {#each PRESETS as p (p.id)}
+            <button class="layout-opt" class:on={p.id === preset} title={p.hint} aria-pressed={p.id === preset} onclick={() => onPreset(p.id)}>
+              <TemplateThumb id={p.id} />
+              <span>{p.name}</span>
             </button>
           {/each}
         </div>
-        <!-- The arrangement is a component now, edited on a page of its own. -->
+      </div>
+
+      <!-- Every axis, always all of them. The same rows turn up beside the
+			     sheet when a block is hovered; this is where they are when you know
+			     which one you want rather than which block. -->
+      <div class="style-group">
+        <div class="blocks-head">
+          <span class="style-label">Blocks</span>
+          {#if modified}
+            <button class="blocks-reset" title="Put every block back to what this preset says" onclick={onReset}>reset</button>
+          {/if}
+        </div>
+        <div class="blocks-list">
+          {#each slots as slot (slot.id)}
+            <VariantCycle {slot} {choices} onPick={onVariant} />
+          {/each}
+        </div>
         <a class="tpl-edit" href="{base}/template">
-          Edit this template <span class="tpl-edit-arrow">→</span>
+          Edit these parts <span class="tpl-edit-arrow">→</span>
         </a>
       </div>
 
@@ -179,6 +201,9 @@
     top: calc(100% + 8px);
     right: 0;
     width: 268px;
+    max-height: min(78vh, 640px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 10px;
     display: flex;
     flex-direction: column;
@@ -274,6 +299,34 @@
     letter-spacing: 1.8px;
     text-transform: uppercase;
     color: var(--muted);
+  }
+
+  .blocks-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .blocks-reset {
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--accent);
+  }
+
+  .blocks-reset:hover {
+    color: var(--accent-deep);
+  }
+
+  .blocks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
 
   .layout-grid {
