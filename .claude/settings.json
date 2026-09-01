@@ -1,84 +1,73 @@
 {
-	"permissions": {
-		"allow": [
-			"Bash(pnpm i *)"
-		],
-		"deny": [
-			"Read(./.env)",
-			"Read(./.env.*)",
-			"Read(**/.env)",
-			"Read(./.svelte-kit/**)",
-			"Read(./.vite-hooks/**)",
-			"Read(./content/**)",
-			"Read(./node_modules/**)",
-			"Read(./dist/**)",
-			"Read(./secrets/**)",
-			"Read(./config/credentials.json)",
-			"Read(~/.ssh/**)",
-			"Read(.git/**)",
-			"Bash(rm -rf node_modules*)",
-			"Bash(rm -rf *)",
-			"Bash(rm:*)",
-			"Bash(sudo:*)",
-			"Bash(chmod 777:*)",
-			"Bash(git push --force:*)",
-			"Bash(git push -f:*)",
-			"Bash(git reset --hard:*)",
-			"Bash(git clean:*)",
-			"Bash(git restore:*)",
-			"Bash(dd:*)",
-			"Bash(mkfs:*)",
-			"Bash(* > /dev/sda*)"
-		]
-	},
-	"extraKnownMarketplaces": {
-		"svelte": {
-			"source": {
-				"source": "github",
-				"repo": "sveltejs/ai-tools"
-			}
-		}
-	},
-	"enabledPlugins": {
-		"svelte@svelte": true
-	},
-	"hooks": {
-		"PreToolUse": [
-			{
-				"matcher": "Bash",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-destructive.sh"
-					}
-				]
-			}
-		]
-	},
-	"sandbox": {
-		"enabled": true,
-		"filesystem": {
-			"allowRead": [
-				"."
-			],
-			"denyRead": [
-				"~/.ssh",
-				"~/.aws",
-				"**/.env"
-			],
-			"allowWrite": [
-				"~/.npm",
-				"~/.cache"
-			]
-		},
-		"network": {
-			"allowedDomains": [
-				"registry.npmjs.org",
-				"api.github.com"
-			]
-		},
-		"autoAllowBashIfSandboxed": true
-	},
-	"includeCoAuthoredBy": false,
-	"gitAttribution": false
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "1"
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "allowUnsandboxedCommands": false,
+    "network": {
+      "allowedDomains": ["registry.npmjs.org", "*.npmjs.org", "nodejs.org", "*.nodejs.org"]
+    },
+    "credentials": {
+      "files": [
+        {
+          "path": "~/.ssh",
+          "mode": "deny"
+        },
+        {
+          "path": "~/.aws",
+          "mode": "deny"
+        },
+        {
+          "path": "~/.config/gh",
+          "mode": "deny"
+        },
+        {
+          "path": "~/.npmrc",
+          "mode": "deny"
+        }
+      ],
+      "envVars": [
+        {
+          "name": "NPM_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "GITHUB_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "GH_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "AWS_ACCESS_KEY_ID",
+          "mode": "deny"
+        },
+        {
+          "name": "AWS_SECRET_ACCESS_KEY",
+          "mode": "deny"
+        }
+      ]
+    }
+  },
+  "permissions": {
+    "deny": ["Read(./.env)", "Read(./.env.*)", "Read(./**/*.pem)", "Read(./**/*.key)"],
+    "ask": ["Bash(git push:*)"]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./.claude/hooks/format.sh"
+          }
+        ]
+      }
+    ]
+  }
 }

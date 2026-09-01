@@ -1,43 +1,65 @@
 {
-	"name": "ai-resume",
-	"private": true,
-	"version": "0.0.1",
-	"type": "module",
-	"scripts": {
-		"dev": "vite dev",
-		"build": "vite build",
-		"preview": "vite preview",
-		"prepare": "svelte-kit sync || echo ''",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch"
-	},
-	"devDependencies": {
-		"@iconify-icons/lucide": "^2.0.0",
-		"@iconify/svelte": "^5.2.2",
-		"@sveltejs/adapter-auto": "^7.0.1",
-		"@sveltejs/adapter-static": "^3.0.10",
-		"@sveltejs/kit": "^2.63.0",
-		"@sveltejs/vite-plugin-svelte": "^7.1.2",
-		"sass": "^1.103.0",
-		"svelte": "^5.56.1",
-		"svelte-check": "^4.6.0",
-		"typescript": "^6.0.3",
-		"vite": "^8.0.16"
-	},
-	"dependencies": {
-		"@codemirror/commands": "^6.11.0",
-		"@codemirror/lang-yaml": "^6.1.3",
-		"@codemirror/language": "^6.12.4",
-		"@codemirror/lint": "^6.9.7",
-		"@codemirror/search": "^6.7.1",
-		"@codemirror/state": "^6.7.1",
-		"@codemirror/view": "^6.43.9",
-		"@lezer/highlight": "^1.2.3",
-		"@replit/codemirror-lang-svelte": "^6.0.0",
-		"codemirror-wrapped-line-indent": "^1.0.9",
-		"js-yaml": "^5.3.0",
-		"loro-codemirror": "^0.3.3",
-		"loro-crdt": "^1.14.1",
-		"marked": "^18.0.10"
-	}
+  "name": "ai-resume",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "pnpm check:types && pnpm check:lint && pnpm check:security && pnpm check:tests",
+    "check:types": "svelte-check --tsconfig ./tsconfig.json",
+    "check:lint": "oxlint --deny-warnings",
+    "check:security": "node scripts/check-security.mjs",
+    "check:tests": "vitest run",
+    "check:fmt": "oxfmt --check",
+    "test": "vitest",
+    "lint": "oxlint --fix",
+    "fmt": "oxfmt"
+  },
+  "devDependencies": {
+    "@iconify-icons/lucide": "^2.0.0",
+    "@iconify/svelte": "^5.2.2",
+    "@sveltejs/adapter-auto": "^7.0.1",
+    "@sveltejs/adapter-static": "^3.0.10",
+    "@sveltejs/kit": "^2.63.0",
+    "@sveltejs/vite-plugin-svelte": "^7.1.2",
+    "sass": "^1.103.0",
+    "svelte": "^5.56.1",
+    "svelte-check": "^4.6.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16",
+    "vitest": "^4.1.11"
+  },
+  "dependencies": {
+    "@codemirror/commands": "^6.11.0",
+    "@codemirror/lang-yaml": "^6.1.3",
+    "@codemirror/language": "^6.12.4",
+    "@codemirror/lint": "^6.9.7",
+    "@codemirror/search": "^6.7.1",
+    "@codemirror/state": "^6.7.1",
+    "@codemirror/view": "^6.43.9",
+    "@lezer/highlight": "^1.2.3",
+    "@replit/codemirror-lang-svelte": "^6.0.0",
+    "codemirror-wrapped-line-indent": "^1.0.9",
+    "js-yaml": "^5.3.0",
+    "lint-staged": "^16.0.0",
+    "loro-codemirror": "^0.3.3",
+    "loro-crdt": "^1.14.1",
+    "marked": "^18.0.10",
+    "oxfmt": "^0.65.0",
+    "oxlint": "^1.80.0"
+  },
+  "lint-staged": {
+    "*.{js,mjs,cjs,ts,mts,cts}": [
+      "oxlint --fix --no-error-on-unmatched-pattern",
+      "oxfmt --no-error-on-unmatched-pattern"
+    ],
+    "*.{svelte,json,jsonc,css,md,yml,yaml,html}": [
+      "oxfmt --no-error-on-unmatched-pattern"
+    ]
+  },
+  "engines": {
+    "node": ">=22"
+  }
 }
