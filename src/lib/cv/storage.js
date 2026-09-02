@@ -17,6 +17,8 @@ export const KEYS = {
   /** Which panel has the split's third column: `style`, `history` or `none`. */
   sidePanel: 'cv-editor:side-panel',
   sourceHidden: 'cv-editor:source-hidden',
+  /** Whether the preview scales a whole page into the pane — a view, not a file. */
+  previewFit: 'cv-editor:preview-fit',
   /** Set once the welcome overlay has been dismissed; absent means first visit. */
   welcomeSeen: 'cv-editor:welcome-seen',
 }

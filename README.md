@@ -42,6 +42,7 @@ pnpm check      # svelte-check
 | Shared state         | [src/lib/cv/state.svelte.js](src/lib/cv/state.svelte.js) — the document, file registry and part registry |
 | Theme                | [src/lib/cv/presets.js](src/lib/cv/presets.js) — the palettes, and the CSS beside it                     |
 | Type                 | [src/lib/cv/fonts.js](src/lib/cv/fonts.js) — the font stacks, and the CSS beside it                      |
+| Paper                | [src/lib/cv/paper.js](src/lib/cv/paper.js) — the page box, and what stands in its margins                |
 | Tech logos           | [src/lib/cv/tech-icons.js](src/lib/cv/tech-icons.js) — generated; see _Logos_ below                      |
 | CSS                  | [src/app.css](src/app.css) — the index; see _Where the CSS lives_ below                                  |
 | Offline              | [src/service-worker.js](src/service-worker.js) — precache; manifest and icons in `static/`               |
@@ -88,10 +89,10 @@ singletons in [state.svelte.js](src/lib/cv/state.svelte.js), built once by
 
 The Style button offers thirteen named looks — classic, compact, centered,
 sidebar, timeline, ledger, minimal, cards, tech, editorial, brief, profile,
-dossier — seven palettes and six fonts. All three are per file, stored in the
-file registry next to the name; they are also in the file's own document, which
-is what puts a restyle in the version history and on the undo stack. See
-_Restyling is a change_ below.
+dossier — seven palettes, six fonts and the paper it all prints on. All four are
+per file, stored in the file registry next to the name; they are also in the
+file's own document, which is what puts a restyle in the version history and on
+the undo stack. See _Restyling is a change_ below.
 
 The first nine used to be nine whole Svelte components, one per look, and that
 was the wrong seam. Seven of them had markup identical to `classic` and differed
@@ -245,10 +246,12 @@ wrong reading: changing how a CV looks is a change to the CV, and the things a
 change gets here — a line in the version history, a place on the undo stack, and
 coming back with the version that had it — are exactly what a restyle wanted.
 
-So the same five values are also a `style` map in the file's Loro document, and
+So those values — and the paper, which arrived later and is one of them — are
+also a `style` map in the file's Loro document, and
 [restyle](src/lib/cv/state.svelte.js) is the one way to move them: it writes the
 registry first, so the sheet follows immediately, then records the result in the
-document with a label — `Entry — Card`, `Theme — Plum`. Ctrl+Z takes one back,
+document with a label — `Entry — Card`, `Theme — Plum`, `Paper — Landscape`.
+Ctrl+Z takes one back,
 from the editor as ever and now from anywhere else too, since a keystroke that
 didn't land in CodeMirror is handled by the page.
 
@@ -322,6 +325,43 @@ Below both is a third layer, per file like the other two: arbitrary CSS, edited
 in the Style popover and applied last inside the frame. It is stored and
 validated exactly as much as it needs to be, which is not at all — the worst a
 broken rule can do is make the sheet look wrong.
+
+#### The paper
+
+The page a CV prints on is a value now rather than one line of frame.css, and it
+is per file like the theme: a size, an orientation, and what — if anything —
+stands in the margin above and below the sheet.
+[paper.js](src/lib/cv/paper.js) is the whole of it, and `paperCss` is the one
+place it becomes CSS. That stylesheet says the same thing twice on purpose:
+`@page`, which is what the print uses, and a handful of `--page-*` tokens on
+`#cv-root`, which cv.css sizes the sheet from. The sheet on screen is therefore
+the page that comes out of the printer — turning it on its side turns the
+preview on its side — where before it was a `max-width: 820px` that happened to
+be about the width of an A4.
+
+A running header or footer is an `@page` **margin box**, which is real
+paged-media CSS rather than anything in the document. It has to be: the only
+thing that knows how many pages there are is the thing that made them, so
+`counter(pages)` is the only way to print _2 / 3_ at all. Chrome has had margin
+boxes since 131 and Firefox has never had them, so a header or a footer is the
+one thing here that some browsers will simply not print — which is why it prints
+nothing rather than something wrong, and why nothing else on the sheet depends
+on it. The name is baked in as a string literal because a margin box holds text
+and not elements. Page one gets no running _header_: it already has the name on
+it in 31px, and `@page :first` is what takes it back off.
+
+Whichever edge carries one is given 5mm more margin to carry it in, so a running
+head sits in the margin rather than on the first line.
+
+Beside all that in the Style panel, and deliberately not part of it, is **fit
+page to pane**: the preview scaled down until a whole page fits across the
+preview column. It changes no CV, so it is a preference of this browser's rather
+than a restyle — no history entry, no undo, nothing in the document — and it is
+offered only where the split still has two columns, since on a narrow screen the
+preview is already the width of the window. It is a `zoom` on `#cv-root` rather
+than a transform, which is what keeps every rect the page measures — the block
+picker's, the scroll ladder's — in the frame's own coordinates, and the print
+stylesheet drops it.
 
 What every sheet shares is [cv.css](src/lib/cv/cv.css): the class names it is
 built out of, and how it paginates. A layout and its variants add to that and

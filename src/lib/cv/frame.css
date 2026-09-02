@@ -62,6 +62,16 @@
   --cv-fs-name: 31px;
   --cv-fs-name-sm: 27px;
 
+  /* The paper itself, re-pointed on #cv-root by the stylesheet paper.js
+	   generates — one per file, from the size and orientation it chose. The
+	   values here are the page the sheet has always assumed, so cv.css can size
+	   the sheet from them before a file has said anything about paper. */
+  --page-w: 210mm;
+  --page-h: 297mm;
+  --page-mx: 13mm;
+  --page-mt: 12mm;
+  --page-mb: 12mm;
+
   --theme-fade: background-color 0.22s ease, color 0.22s ease, border-color 0.22s ease;
 }
 
@@ -126,8 +136,11 @@ body {
    Export prints *this* document rather than the app's, so the page box lives
    here. How the sheet paginates inside it is cv.css's job, and which ramp it
    falls back to is presets.css's. */
+/* The page box a file that has never chosen any paper prints on. The real one
+   is written into a stylesheet of its own further down the cascade — see
+   paper.js — including the margin boxes a running header or footer needs. */
 @page {
-  size: A4;
+  size: A4 portrait;
   margin: 12mm 13mm;
 }
 
@@ -135,5 +148,12 @@ body {
   html,
   body {
     background: #fff !important;
+  }
+
+  /* Fit-to-width is a way of looking at the sheet, not a property of it: the
+	   zoom PreviewFrame sets to scale a page into the pane has no business in
+	   the printed one. `!important` because that zoom is an inline style. */
+  #cv-root {
+    zoom: 1 !important;
   }
 }

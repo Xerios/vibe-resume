@@ -1,3 +1,4 @@
+import { resolvePaper } from './paper.js'
 import { KEYS, read, remove, snapshotKey, write } from './storage.js'
 
 /**
@@ -10,6 +11,7 @@ import { KEYS, read, remove, snapshotKey, write } from './storage.js'
  * @property {string} [theme]            palette id from presets.js; absent means the default
  * @property {string} [font]             font id from fonts.js; absent means the default
  * @property {string} [css]              the file's own CSS, applied last inside the preview frame
+ * @property {import('./paper.js').Paper} [paper]  the page box it prints on; absent means A4 portrait
  */
 
 /**
@@ -79,6 +81,7 @@ export class FileManager {
         theme: source.theme,
         font: source.font,
         css: source.css,
+        paper: source.paper,
       },
     ]
     this.#saveList()
@@ -161,7 +164,7 @@ export class FileManager {
    * back into when an undo or a restore moves the style from that end.
    *
    * @param {string} id
-   * @param {{ layout?: string, variants?: Record<string, string>, theme?: string, font?: string, css?: string }} style
+   * @param {{ layout?: string, variants?: Record<string, string>, theme?: string, font?: string, css?: string, paper?: import('./paper.js').Paper }} style
    */
   setStyle(id, style) {
     this.files = this.files.map((f) => (f.id === id ? { ...f, ...style } : f))
@@ -184,6 +187,21 @@ export class FileManager {
     if (variantId === null) delete variants[slotId]
     else variants[slotId] = variantId
     this.setStyle(id, { variants })
+  }
+
+  /**
+   * Change one thing about the paper, leaving the rest of it where it was.
+   * Stored whole rather than as a patch, so a file that has chosen any paper
+   * at all carries a complete answer and nothing has to merge two halves at
+   * read time; `resolvePaper` is still what fills in a file that has chosen
+   * none.
+   * @param {string} id
+   * @param {Partial<import('./paper.js').Paper>} patch
+   */
+  setPaper(id, patch) {
+    const file = this.files.find((f) => f.id === id)
+    if (!file) return
+    this.setStyle(id, { paper: { ...resolvePaper(file.paper), ...patch } })
   }
 
   /**
@@ -263,5 +281,5 @@ const newId = () => Math.random().toString(36).slice(2, 10)
  * @returns {Record<string, any>}
  */
 export function styleOf(file) {
-  return { layout: file?.layout, variants: file?.variants, theme: file?.theme, font: file?.font, css: file?.css }
+  return { layout: file?.layout, variants: file?.variants, theme: file?.theme, font: file?.font, css: file?.css, paper: file?.paper }
 }

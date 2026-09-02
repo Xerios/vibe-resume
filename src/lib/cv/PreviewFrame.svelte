@@ -25,6 +25,7 @@
   import { DEFAULT_FONT } from './fonts.js'
   import { DEFAULT_THEME } from './presets.js'
   import { DEFAULT_PRESET } from './compositions.js'
+  import { DEFAULT_PAPER, pageWidthPx, paperCss } from './paper.js'
   import cvCss from './cv.css?raw'
   import fontsCss from './fonts.css?raw'
   import frameCss from './frame.css?raw'
@@ -43,6 +44,16 @@
    * exist — the page binds its preview listeners in there, since nothing
    * inside an iframe bubbles out to us, keydown included.
    *
+   * `paper` is the one piece of presentation that can't be an id on an
+   * attribute: a page box is `@page`, and no selector reaches that. So it
+   * arrives as a value and becomes a stylesheet of its own — see paper.js —
+   * with `name` in it, since a running header can only hold a string literal.
+   *
+   * `fit` scales the sheet down until a whole page fits the pane, which is a
+   * way of looking at the preview rather than anything about the file. The
+   * page decides whether to ask for it; all that happens here is the arithmetic
+   * and a `zoom`, which the print stylesheet drops.
+   *
    * @type {{
    *   cv?: any,
    *   component?: any,
@@ -51,6 +62,9 @@
    *   theme?: string,
    *   font?: string,
    *   css?: string,
+   *   paper?: Partial<import('./paper.js').Paper>,
+   *   name?: string,
+   *   fit?: boolean,
    *   onReady?: (parts: { doc: Document, win: Window, root: HTMLElement }) => void
    * }}
    */
@@ -62,6 +76,9 @@
     theme = DEFAULT_THEME,
     font = DEFAULT_FONT,
     css = '',
+    paper = DEFAULT_PAPER,
+    name = '',
+    fit = false,
     onReady = undefined,
   } = $props()
 
@@ -78,9 +95,21 @@
    */
   let doc = $state(/** @type {Document | null} */ (null))
   let root = $state(/** @type {HTMLElement | null} */ (null))
+  let pageStyle = $state(/** @type {HTMLStyleElement | null} */ (null))
   let templateStyle = $state(/** @type {HTMLStyleElement | null} */ (null))
   let userStyle = $state(/** @type {HTMLStyleElement | null} */ (null))
   let sheet = /** @type {Record<string, any> | null} */ (null)
+
+  /** The page box and its margin boxes, as CSS. Rebuilt whenever either moves. */
+  const pageCss = $derived(paperCss(paper, name))
+
+  /** The frame's own width, watched so that a fitted sheet re-scales with the pane. */
+  let paneW = $state(0)
+
+  /** How much of the pane a fitted page leaves as a gutter either side. */
+  const FIT_GUTTER = 32
+  /** Below this the type is unreadable, so the sheet stops shrinking and scrolls. */
+  const FIT_FLOOR = 0.35
 
   /**
    * The mounted sheet's props. Assigned into rather than replaced — the object
@@ -121,6 +150,38 @@
   })
 
   $effect(() => {
+    const text = pageCss
+    if (pageStyle) pageStyle.textContent = text
+  })
+
+  /* Fit-to-width, as one number. `zoom` rather than a transform because it is
+	   laid out rather than painted: the frame's own scrollbars stay right, the
+	   rects the page measures for the block picker and the scroll ladder come
+	   back in the frame's viewport coordinates as they always did, and nothing
+	   has to be divided by anything. It never scales *up* — a page bigger than
+	   its paper is not a preview of anything. */
+  $effect(() => {
+    const on = fit
+    const width = paneW
+    const pageW = pageWidthPx(paper)
+    if (!root) return
+    const scale = on && width ? Math.max(FIT_FLOOR, Math.min(1, (width - FIT_GUTTER) / pageW)) : 1
+    // Cleared rather than set to 1, so an unfitted sheet carries no zoom at all.
+    root.style.zoom = scale === 1 ? '' : scale.toFixed(3)
+  })
+
+  /* The pane is resized by the divider, by the side panel opening and by the
+	   window; one observer on the frame itself answers all three. */
+  $effect(() => {
+    if (!frameEl) return
+    const observer = new ResizeObserver(([entry]) => {
+      paneW = entry.contentRect.width
+    })
+    observer.observe(frameEl)
+    return () => observer.disconnect()
+  })
+
+  $effect(() => {
     const text = templateCss
     if (templateStyle) templateStyle.textContent = text
   })
@@ -145,9 +206,11 @@
     if (!d || !win || doc) return // built already; the frame is never reloaded
 
     addStyle(d, [frameCss, cvCss, palettesCss, fontsCss, presetsCss].join('\n'))
-    // Two empty ones, in cascade order: the template's own styles are scoped
+    // Three more, in cascade order. The paper goes first, because it is the
+    // page the two below it are drawn on: the template's own styles are scoped
     // by the compiler and outrank cv.css on specificity alone, but the file's
     // CSS is written by hand and has only its position to win on.
+    pageStyle = addStyle(d, pageCss)
     templateStyle = addStyle(d, templateCss)
     userStyle = addStyle(d, css)
 

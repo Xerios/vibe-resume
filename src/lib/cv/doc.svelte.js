@@ -23,8 +23,8 @@ const TAGS_ID = 'checkpoints'
  */
 const STYLE_ID = 'style'
 
-/** @type {readonly ('layout' | 'variants' | 'theme' | 'font' | 'css')[]} */
-const STYLE_KEYS = ['layout', 'variants', 'theme', 'font', 'css']
+/** @type {readonly ('layout' | 'variants' | 'theme' | 'font' | 'css' | 'paper')[]} */
+const STYLE_KEYS = ['layout', 'variants', 'theme', 'font', 'css', 'paper']
 
 /** Commits made by naming a version, kept out of the undo stack. */
 const TAG_ORIGIN = 'cv-tag'

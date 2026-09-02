@@ -13,9 +13,10 @@
   import { isModified, preset as presetOf, resolvePreset } from '$lib/cv/compositions.js'
   import { FONTS, resolveFont } from '$lib/cv/fonts.js'
   import { liveTemplate } from '$lib/cv/live-template.svelte.js'
+  import { ORIENTATIONS, PAPER_SIZES, RUNNING, resolvePaper } from '$lib/cv/paper.js'
   import { THEMES, resolveTheme } from '$lib/cv/presets.js'
   import { parseCv } from '$lib/cv/render.js'
-  import { doc as cv, files, flush, parts, restyle, restyleVariant, start } from '$lib/cv/state.svelte.js'
+  import { doc as cv, files, flush, parts, restyle, restylePaper, restyleVariant, start } from '$lib/cv/state.svelte.js'
   import { KEYS, read, write } from '$lib/cv/storage.js'
 
   const PARSE_DEBOUNCE_MS = 250
@@ -42,6 +43,10 @@
   const PICKER_GAP = 8
   /** Below this much room underneath it, the block picker grows upward instead. */
   const PICKER_FLIP_AT = 170
+  /* Where the split still has two columns side by side — the same width the
+	   stacked layout takes over at, since fitting a page across a pane means
+	   nothing once the pane is the whole window. */
+  const DESKTOP = '(min-width: 900px)'
 
   /** Which document `parsed` reflects — used to bypass the debounce when a tab switch swaps it out from under us. */
   let lastParsedDocId = -1
@@ -64,6 +69,11 @@
   const savedPanel = read(KEYS.sidePanel, 'style')
   let sidePanel = $state(savedPanel === 'history' ? 'history' : savedPanel === 'none' ? null : 'style')
   let sourceHidden = $state(read(KEYS.sourceHidden) === 'true')
+  /* How the preview is looked at rather than anything about the file: scaling a
+	   page to fit the pane changes no CV, so it is a preference of this browser's
+	   and stays out of the document and the history. */
+  let fitPreview = $state(read(KEYS.previewFit) === 'true')
+  let desktop = $state(true)
   let editorWidth = $state(read(KEYS.editorWidth))
   let toastMsg = $state('')
   let toastOn = $state(false)
@@ -129,6 +139,9 @@
   const theme = $derived(resolveTheme(files.active?.theme))
   const font = $derived(resolveFont(files.active?.font))
   const css = $derived(files.active?.css ?? '')
+  const paper = $derived(resolvePaper(files.active?.paper))
+  /** The name a running header prints, which is the CV's own rather than the file's. */
+  const cvName = $derived(String(parsed?.header?.name ?? ''))
 
   /* Which variant fills each slot: the preset's choices with the file's own on
 	   top, and then the component those compose to. Composing is cheap — it is
@@ -183,6 +196,13 @@
       }
     })
 
+    // Fit-to-width is offered on a screen with room for it and simply not on
+    // one without, where the preview is already as wide as the window.
+    const wide = window.matchMedia(DESKTOP)
+    const onWidth = () => (desktop = wide.matches)
+    onWidth()
+    wide.addEventListener('change', onWidth)
+
     window.addEventListener('beforeunload', flush)
     window.addEventListener('keydown', onKeydown)
     window.addEventListener('pointerdown', onAppPointerDown)
@@ -210,6 +230,7 @@
     reflow = resize
 
     return () => {
+      wide.removeEventListener('change', onWidth)
       window.removeEventListener('beforeunload', flush)
       window.removeEventListener('keydown', onKeydown)
       window.removeEventListener('pointerdown', onAppPointerDown)
@@ -944,6 +965,34 @@
     restyle({ font: id }, `Font — ${FONTS.find((f) => f.id === id)?.name ?? id}`)
   }
 
+  /** Every paper axis, by the key it is stored under — for the history's label. */
+  const PAPER_AXES = /** @type {Record<string, { id: string, name: string }[]>} */ ({
+    size: PAPER_SIZES,
+    orientation: ORIENTATIONS,
+    header: RUNNING,
+    footer: RUNNING,
+  })
+
+  /**
+   * Change one thing about the page. Which thing is what the label says, since
+   * `Paper — A4` and `Paper — Footer: Page` are the same axis to a reader and
+   * different ones to the history.
+   * @param {Partial<import('$lib/cv/paper.js').Paper>} patch
+   */
+  function setPaper(patch) {
+    const [key, id] = Object.entries(patch)[0] ?? []
+    if (!key || !id) return
+    const name = PAPER_AXES[key]?.find((o) => o.id === id)?.name ?? id
+    const edge = key === 'header' || key === 'footer' ? `${key[0].toUpperCase()}${key.slice(1)}: ` : ''
+    restylePaper(patch, `Paper — ${edge}${name}`)
+  }
+
+  /** Scale the preview to the pane, or stop. Not a restyle — see `fitPreview`. */
+  function toggleFit() {
+    fitPreview = !fitPreview
+    write(KEYS.previewFit, String(fitPreview))
+  }
+
   /**
    * The active file's own CSS. Unvalidated by design — it is applied inside the
    * preview frame, where nothing it says can reach the editor around it.
@@ -970,9 +1019,9 @@
    * the two values out only because it runs before the stylesheet lands.
    */
   function syncThemeColor() {
-    const paper = getComputedStyle(document.documentElement).getPropertyValue('--paper').trim()
-    if (!paper) return
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', paper)
+    const paperColor = getComputedStyle(document.documentElement).getPropertyValue('--paper').trim()
+    if (!paperColor) return
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', paperColor)
   }
 
   /** @param {BeforeInstallPromptEvent} e */
@@ -1247,7 +1296,20 @@
           <span>⚠ {bannerError}</span>
         </div>
       {/if}
-      <PreviewFrame bind:this={frame} cv={parsed} component={tpl.component} templateCss={tpl.css} layout={preset} {theme} {font} {css} onReady={onFrameReady} />
+      <PreviewFrame
+        bind:this={frame}
+        cv={parsed}
+        component={tpl.component}
+        templateCss={tpl.css}
+        layout={preset}
+        {theme}
+        {font}
+        {css}
+        {paper}
+        name={cvName}
+        fit={fitPreview && desktop}
+        onReady={onFrameReady}
+      />
 
       <!-- Over the frame rather than in it: the sheet is a document of its own,
 			     and one that has to print exactly what it shows. -->
@@ -1282,6 +1344,11 @@
         onReset={resetVariants}
         onTheme={setTheme}
         onFont={setFont}
+        {paper}
+        onPaper={setPaper}
+        fit={fitPreview}
+        fitAvailable={desktop}
+        onFit={toggleFit}
         onCss={setCss}
       />
     {:else if sidePanel === 'history' && cv.ready}

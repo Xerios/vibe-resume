@@ -1,6 +1,7 @@
 <script>
   import { PRESETS } from '$lib/cv/compositions.js'
   import { FONTS } from '$lib/cv/fonts.js'
+  import { ORIENTATIONS, PAPER_SIZES, RUNNING_SLOTS, resolvePaper } from '$lib/cv/paper.js'
   import { THEMES } from '$lib/cv/presets.js'
   import TemplateThumb from './TemplateThumb.svelte'
   import VariantCycle from './VariantCycle.svelte'
@@ -28,6 +29,16 @@
     onTheme,
     /** @type {(id: string) => void} */
     onFont,
+    /** The page the file prints on. @type {Partial<import('$lib/cv/paper.js').Paper>} */
+    paper,
+    /** @type {(patch: Partial<import('$lib/cv/paper.js').Paper>) => void} */
+    onPaper,
+    /** Whether the preview is scaled to fit a whole page across the pane. */
+    fit = false,
+    /** False where there is no room to fit one — a narrow screen, where the preview is already the width of the window. */
+    fitAvailable = true,
+    /** @type {() => void} */
+    onFit,
     /** The active file's own CSS — see the editor at the foot of the panel. */
     css = '',
     /** @type {(text: string) => void} */
@@ -47,6 +58,12 @@
 `
 
   let cssOpen = $state(false)
+
+  /* Defaulted here as everything else in this panel is, so the buttons below
+	   can just compare ids. The two running-head rows are cycles over an axis
+	   like a block's, so they are drawn by the same control — see RUNNING_SLOTS. */
+  const page = $derived(resolvePaper(paper))
+  const running = $derived({ header: page.header, footer: page.footer })
 
   /** What the head says the groups below are set to, the way History counts its versions. */
   const presetName = $derived((PRESETS.find((p) => p.id === preset)?.name ?? preset) + (modified ? ' — edited' : ''))
@@ -117,6 +134,51 @@
           </button>
         {/each}
       </div>
+    </div>
+
+    <!-- The page itself, which is the one thing here that is not a matter of
+		     taste: it is the sheet the print lands on, and the preview is sized
+		     from the same numbers so that what is on screen is that page.
+
+		     A header or a footer is drawn by the browser in the page margin, from
+		     `@page` — which is also the only place a page *number* can come from,
+		     since nothing in the document knows how many pages there are. Chrome
+		     and Edge do that; Firefox ignores it and prints neither. -->
+    <div class="style-group">
+      <span class="style-label">Paper</span>
+      <div class="paper-grid">
+        {#each PAPER_SIZES as s (s.id)}
+          <button class="paper-opt" class:on={s.id === page.size} aria-pressed={s.id === page.size} onclick={() => onPaper({ size: s.id })}>
+            {s.name}
+          </button>
+        {/each}
+      </div>
+      <div class="paper-grid two">
+        {#each ORIENTATIONS as o (o.id)}
+          <button
+            class="paper-opt"
+            class:on={o.id === page.orientation}
+            title={o.hint}
+            aria-pressed={o.id === page.orientation}
+            onclick={() => onPaper({ orientation: o.id })}>
+            <span class="paper-shape" class:wide={o.id === 'landscape'}></span>
+            {o.name}
+          </button>
+        {/each}
+      </div>
+      <div class="blocks-list paper-runs">
+        {#each RUNNING_SLOTS as slot (slot.id)}
+          <VariantCycle {slot} choices={running} onPick={(edge, mode) => onPaper({ [edge]: mode })} />
+        {/each}
+      </div>
+      {#if fitAvailable}
+        <!-- Not part of the file: this is how the preview is looked at, so it
+				     stays out of the document and out of the history. -->
+        <button class="paper-fit" class:on={fit} aria-pressed={fit} title="Scale the preview until a whole page fits across the pane" onclick={onFit}>
+          <span class="paper-tick" aria-hidden="true">{fit ? '✓' : ''}</span>
+          Fit page to pane
+        </button>
+      {/if}
     </div>
 
     <!-- Anything at all, applied last inside the preview frame. It can't
@@ -357,8 +419,26 @@
     gap: 4px;
   }
 
+  /* One row per question — the sizes, then the two orientations — rather than
+	   one grid of six, so that neither reads as an answer to the other. */
+  .paper-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+
+  .paper-grid.two {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .paper-runs {
+    margin-top: 8px;
+  }
+
   .theme-opt,
-  .font-opt {
+  .font-opt,
+  .paper-opt {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -378,16 +458,71 @@
   }
 
   .theme-opt:hover,
-  .font-opt:hover {
+  .font-opt:hover,
+  .paper-opt:hover,
+  .paper-fit:hover {
     border-color: var(--accent);
     color: var(--accent-deep);
   }
 
   .theme-opt.on,
-  .font-opt.on {
+  .font-opt.on,
+  .paper-opt.on,
+  .paper-fit.on {
     border-color: var(--accent);
     color: var(--accent-deep);
     background: var(--accent-wash);
+  }
+
+  .paper-opt {
+    justify-content: center;
+  }
+
+  /* The page, at the shape the button is offering. Drawn rather than named,
+	   because which way round it goes is the whole answer. */
+  .paper-shape {
+    flex-shrink: 0;
+    width: 8px;
+    height: 11px;
+    border: 1.5px solid currentColor;
+    border-radius: 1px;
+    opacity: 0.75;
+  }
+
+  .paper-shape.wide {
+    width: 11px;
+    height: 8px;
+  }
+
+  /* Same face as the options above it, but it answers a different kind of
+	   question — on or off, and about the pane rather than about the file — so
+	   it is a full-width row with a tick rather than one of a pair. */
+  .paper-fit {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    margin-top: 8px;
+    padding: 4px 7px;
+    background: none;
+    border: 1.5px solid var(--line);
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: var(--ui-fs-sm);
+    font-weight: 600;
+    color: var(--muted);
+    transition:
+      border-color 0.13s,
+      color 0.13s,
+      background 0.13s;
+  }
+
+  .paper-tick {
+    flex-shrink: 0;
+    width: 11px;
+    text-align: center;
+    color: var(--accent);
   }
 
   /* The specimen, in the stack the option's own `data-cv-font` declares. The
