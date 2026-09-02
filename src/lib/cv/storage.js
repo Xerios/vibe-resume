@@ -19,6 +19,10 @@ export const KEYS = {
   sourceHidden: 'cv-editor:source-hidden',
   /** Whether the preview scales a whole page into the pane — a view, not a file. */
   previewFit: 'cv-editor:preview-fit',
+  /** Whether the pointer resting on the sheet pulls the editor to its line. */
+  hoverSync: 'cv-editor:hover-sync',
+  /** Whether scrolling either pane scrolls the other to the same place. */
+  scrollSync: 'cv-editor:scroll-sync',
   /** Set once the welcome overlay has been dismissed; absent means first visit. */
   welcomeSeen: 'cv-editor:welcome-seen',
 }

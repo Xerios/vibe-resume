@@ -59,7 +59,7 @@
     menu?.querySelector('button')?.focus()
 
     /** @param {PointerEvent} e */
-    const onPointerDown = (e) => {
+    const onPointerDown = e => {
       if (!menuGroup?.contains(/** @type {Node | null} */ (e.target))) menuOpen = false
     }
     document.addEventListener('pointerdown', onPointerDown)
@@ -161,8 +161,7 @@
             title="{f.name} — double-click or F2 to rename"
             onclick={() => onSelect(f.id)}
             ondblclick={() => startRename(f)}
-            onkeydown={(e) => onTabKeydown(e, f)}
-          >
+            onkeydown={e => onTabKeydown(e, f)}>
             {f.name}
           </button>
           <!-- Everything that can be done to a file is behind this one caret,
@@ -180,8 +179,7 @@
                 aria-label="Actions for {f.name}"
                 title="What can be done to this CV"
                 onclick={() => (menuOpen ? (menuOpen = false) : openMenu())}
-                onkeydown={onMoreKeydown}
-              >
+                onkeydown={onMoreKeydown}>
                 <Icon icon={IconChevron} width="11" height="11" />
               </button>
 
@@ -194,8 +192,7 @@
                   style:left="{menuAt.x}px"
                   style:top="{menuAt.y}px"
                   onkeydown={onMenuKeydown}
-                  onfocusout={onMenuFocusOut}
-                >
+                  onfocusout={onMenuFocusOut}>
                   <button class="menu-item" role="menuitem" onclick={() => pick(onDuplicate)}>
                     <Icon icon={IconCopy} width="12" height="12" />
                     <span>Duplicate</span>
@@ -236,9 +233,9 @@
     <!-- Beside History because the two are one control between them: they take
 	       turns in the column to the right of the preview. -->
     <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
-    <button class="t-btn" class:on={styleOpen} accesskey="s" title={withKey('Template, theme and font', 's')} onclick={onToggleStyle}>
+    <button class="t-btn" class:on={styleOpen} accesskey="t" title={withKey('Template, theme and font', 't')} onclick={onToggleStyle}>
       <Icon icon={IconLayout} width="12" height="12" />
-      <span class="t-txt"><u>S</u>tyle</span>
+      <span class="t-txt"><u>T</u>hemes</span>
     </button>
     <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
     <button class="t-btn" class:on={historyOpen} accesskey="h" title={withKey('Show version history', 'h')} onclick={onToggleHistory}>

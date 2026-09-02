@@ -2,7 +2,11 @@
   import Icon from '@iconify/svelte'
   import IconEye from '@iconify-icons/lucide/eye'
   import IconEyeOff from '@iconify-icons/lucide/eye-off'
+  import IconLink2 from '@iconify-icons/lucide/link-2'
+  import IconLink2Off from '@iconify-icons/lucide/link-2-off'
   import IconMoon from '@iconify-icons/lucide/moon'
+  import IconMousePointer2 from '@iconify-icons/lucide/mouse-pointer-2'
+  import IconMousePointer2Off from '@iconify-icons/lucide/mouse-pointer-2-off'
   import IconRefreshCw from '@iconify-icons/lucide/refresh-cw'
   import IconSun from '@iconify-icons/lucide/sun'
   import { withKey } from './access-keys.js'
@@ -12,9 +16,15 @@
     /** @type {string} */
     saveLabel = '',
     sourceHidden = false,
+    hoverSync = true,
+    scrollSync = true,
     updateAvailable = false,
     /** @type {() => void} */
     onToggleSource,
+    /** @type {() => void} */
+    onToggleHoverSync,
+    /** @type {() => void} */
+    onToggleScrollSync,
     /** @type {() => void} */
     onToggleTheme,
     /** @type {() => void} */
@@ -23,7 +33,7 @@
 </script>
 
 <!-- The bar that reports rather than asks: whether the YAML parses, and when it
-     was last written to storage. The two switches that decide what the window
+     was last written to storage. The switches that decide what the window
      shows — rather than what the CV says — keep it company at the far end,
      clear of the toolbar buttons that change the document. -->
 <div id="status-bar">
@@ -42,14 +52,48 @@
       </button>
     {/if}
 
+    <!-- Left unlit either way: it is on to begin with, and a switch that is
+	       always highlighted is furniture rather than information. The struck-out
+	       pointer is what says it has been turned off. -->
+    <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
+    <button
+      class="sb-btn"
+      onclick={onToggleHoverSync}
+      accesskey="f"
+      aria-pressed={hoverSync}
+      title={withKey(hoverSync ? 'Stop the editor following the pointer over the preview' : 'Follow the pointer over the preview in the editor', 'f')}>
+      {#if hoverSync}
+        <Icon icon={IconMousePointer2} width="12" height="12" />
+      {:else}
+        <Icon icon={IconMousePointer2Off} width="12" height="12" />
+      {/if}
+      <span class="t-txt"><u>F</u>ollow</span>
+    </button>
+
+    <!-- Its neighbour's twin, and unlit on the same grounds: the broken link is
+	       what says the two panes have stopped keeping each other's place. -->
+    <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
+    <button
+      class="sb-btn"
+      onclick={onToggleScrollSync}
+      accesskey="s"
+      aria-pressed={scrollSync}
+      title={withKey(scrollSync ? 'Stop the panes scrolling together' : 'Scroll the editor and the preview together', 'y')}>
+      {#if scrollSync}
+        <Icon icon={IconLink2} width="12" height="12" />
+      {:else}
+        <Icon icon={IconLink2Off} width="12" height="12" />
+      {/if}
+      <span class="t-txt"><u>S</u>croll</span>
+    </button>
+
     <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
     <button
       class="sb-btn"
       class:on={sourceHidden}
       onclick={onToggleSource}
-      accesskey="o"
-      title={withKey(sourceHidden ? 'Show source' : 'Hide source (preview only)', 'o')}
-    >
+      accesskey="e"
+      title={withKey(sourceHidden ? 'Show editor' : 'Hide editor (preview only)', 'e')}>
       {#if sourceHidden}
         <Icon icon={IconEyeOff} width="12" height="12" />
       {:else}
@@ -57,8 +101,7 @@
       {/if}
       <!-- One letter, two labels: the mnemonic stays put wherever the toggle is. -->
       <span class="t-txt"
-        >{#if sourceHidden}Preview <u>o</u>nly{:else}S<u>o</u>urce{/if}</span
-      >
+        >{#if sourceHidden}<u>E</u>ditor{:else}Hide <u>e</u>ditor{/if}</span>
     </button>
 
     <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->

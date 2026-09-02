@@ -156,9 +156,9 @@
 
   /* Fit-to-width, as one number. `zoom` rather than a transform because it is
 	   laid out rather than painted: the frame's own scrollbars stay right, the
-	   rects the page measures for the block picker and the scroll ladder come
-	   back in the frame's viewport coordinates as they always did, and nothing
-	   has to be divided by anything. It never scales *up* — a page bigger than
+	   rects the page measures for the scroll ladder come back in the frame's
+	   viewport coordinates as they always did, and nothing has to be divided by
+	   anything. It never scales *up* — a page bigger than
 	   its paper is not a preview of anything. */
   $effect(() => {
     const on = fit
@@ -236,15 +236,6 @@
     style.textContent = text
     d.head.appendChild(style)
     return style
-  }
-
-  /**
-   * The frame's box in the app's own viewport. The block picker floats over the
-   * pane rather than inside the frame, so it needs this to turn a rect measured
-   * in there into a position out here.
-   */
-  export function rect() {
-    return frameEl?.getBoundingClientRect() ?? null
   }
 
   /**

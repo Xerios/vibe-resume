@@ -38,7 +38,7 @@ pnpm check      # svelte-check
 | Composing            | [src/lib/cv/compose.js](src/lib/cv/compose.js) — layout + variants → one component                       |
 | Part registry        | [src/lib/cv/parts.svelte.js](src/lib/cv/parts.svelte.js) — overrides and the user's own variants         |
 | Compiling it         | [src/lib/cv/compile-template.js](src/lib/cv/compile-template.js) — Svelte, in the browser                |
-| Picking a variant    | `components/{StylePicker,VariantCycle,BlockPicker}.svelte` — the popover, the row, the card by the sheet |
+| Picking a variant    | `components/{StylePicker,VariantCycle}.svelte` — the popover and the row inside it                       |
 | Shared state         | [src/lib/cv/state.svelte.js](src/lib/cv/state.svelte.js) — the document, file registry and part registry |
 | Theme                | [src/lib/cv/presets.js](src/lib/cv/presets.js) — the palettes, and the CSS beside it                     |
 | Type                 | [src/lib/cv/fonts.js](src/lib/cv/fonts.js) — the font stacks, and the CSS beside it                      |
@@ -180,42 +180,17 @@ for someone typing.
 
 #### Picking one
 
-Two places, one control. [StylePicker](src/lib/components/StylePicker.svelte)
-lists the presets and then every axis, and hovering the sheet floats
-[BlockPicker](src/lib/components/BlockPicker.svelte) beside it with a row per
-slot the thing under the pointer belongs to — hover an entry's stack line and
-you get Stack, Entry, Page and Density, innermost first, walked up the
-`data-slot` chain the layouts stamp. Both rows are the same
-[VariantCycle](src/lib/components/VariantCycle.svelte), because choosing a
-variant is the same act wherever it is done.
+One place, one control. [StylePicker](src/lib/components/StylePicker.svelte)
+lists the presets and then every axis, a row each. A row is a
+[VariantCycle](src/lib/components/VariantCycle.svelte) — the arrows step through
+a slot's variants, and the name between them opens the whole list.
 
-The card lives in the app's DOM rather than in the preview frame. That is what
-keeps it out of a print — which goes to the frame's own window — and it is why
-positioning has to cross a boundary: a rect measured in there reaches us through
-the iframe's own box. It pins to whichever gutter beside the sheet is wider
-rather than to the block's edge, so it stays on screen without anyone having to
-know how wide it is, and flips to grow upward near the foot of the pane.
-
-The part that isn't obvious is holding still. Reaching the card means crossing
-every block between the pointer and the gutter, and a card that followed each of
-those in turn would rewrite its rows and move out from under the pointer on the
-way — which made it unreachable. So only the first appearance is immediate:
-after that a new block has to hold the pointer for a moment before the card
-moves to it, and even then it waits while the pointer is still travelling toward
-the side the card is on. A pointer that has stopped is not on its way anywhere,
-so settling on a block — including the sheet's own margin, which is one big
-block — still hands the card over. It follows what you meant, not the journey.
-
-Following the pointer is the wrong behaviour once you have found the block you
-meant, though: walking a slot's variants means going back and forth between the
-card and the sheet, and everything above is about a card that moves. So a
-**click pins it**. A pinned card stops answering the pointer entirely — hovering
-elsewhere doesn't move it, leaving the sheet doesn't take it away, and a
-recompile leaves it where it is — and it says so, with an accent edge and a
-close button. Clicking the same block again, the ×, Escape, a click anywhere in
-the app's own chrome, or a click on the sheet that isn't a block at all, each let
-it go. The click still does what it always did as well: the editor scrolls to the
-line behind whatever was clicked.
+There used to be a block picker here as well: hovering the sheet floated a card
+beside it with a row per slot the thing under the pointer belonged to, walked up
+the `data-slot` chain, and a click pinned it there. It has been removed, so the
+Style panel is the only way to choose a variant. The layouts still stamp
+`data-slot` — it names the block a piece of the sheet came from — but nothing
+reads it now.
 
 There used to be a `/template` deep link here for editing a part's source
 directly — a CodeMirror over the part, the CV beside it as a live preview, and

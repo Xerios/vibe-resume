@@ -1,6 +1,5 @@
 <script>
   import { onMount, tick } from 'svelte'
-  import BlockPicker from '$lib/components/BlockPicker.svelte'
   import HistoryPanel from '$lib/components/HistoryPanel.svelte'
   import StatusBar from '$lib/components/StatusBar.svelte'
   import StylePicker from '$lib/components/StylePicker.svelte'
@@ -31,19 +30,6 @@
   const EDIT_REVEAL_MARGIN = 72
   /** How long after the preview last moved it goes back to answering the pointer. */
   const POINTER_SETTLE_MS = 250
-  /** How long the block picker survives the pointer leaving the sheet, so it can be reached. */
-  const PICKER_GRACE_MS = 140
-  /** How long a new block has to hold the pointer before the card moves to it. */
-  const PICKER_SETTLE_MS = 260
-  /** How often the pointer's travel is sampled, and how far it has to go to count as travelling. */
-  const POINTER_SAMPLE_MS = 70
-  const POINTER_TRAVEL_PX = 4
-  /** How stale a sample can be and still describe where the pointer is going. */
-  const POINTER_IDLE_MS = 150
-  /** How far off the pane's own edges the block picker keeps. */
-  const PICKER_GAP = 8
-  /** Below this much room underneath it, the block picker grows upward instead. */
-  const PICKER_FLIP_AT = 170
   /* Where the split still has two columns side by side — the same width the
 	   stacked layout takes over at, since fitting a page across a pane means
 	   nothing once the pane is the whole window. */
@@ -74,6 +60,14 @@
 	   page to fit the pane changes no CV, so it is a preference of this browser's
 	   and stays out of the document and the history. */
   let fitPreview = $state(read(KEYS.previewFit) === 'true')
+  /* Whether the pointer resting on the sheet pulls the editor to its line. Same
+	   family as `fitPreview`: how the window behaves rather than what the CV says,
+	   so it stays out of the document and the history. On unless turned off. */
+  let hoverSync = $state(read(KEYS.hoverSync) !== 'false')
+  /* Whether a scroll in either pane drags the other along with it. Same family
+	   again — how the window behaves rather than what the CV says. On unless
+	   turned off. */
+  let scrollSync = $state(read(KEYS.scrollSync) !== 'false')
   let desktop = $state(true)
   let editorWidth = $state(read(KEYS.editorWidth))
   let toastMsg = $state('')
@@ -99,35 +93,6 @@
   let reflow = /** @type {ResizeObserver | null} */ (null)
   /** The preview element the pointer is on, outlined while the editor shows its line. */
   let hoverEl = /** @type {Element | null} */ (null)
-  /**
-   * The block picker: which slots it offers, and where it sits in the preview
-   * pane. Null when the pointer is nowhere near the sheet.
-   */
-  let picker = $state(/** @type {{ rows: string[], y: number, side: 'left' | 'right', flip: boolean } | null} */ (null))
-  /** The preview element it is anchored to, so a scroll can move it along. */
-  let pickerEl = /** @type {Element | null} */ (null)
-  /** Whether the pointer is on the card itself, which is what keeps it up. */
-  let pickerHeld = false
-  /**
-   * Clicking a block pins the card to it: hovering elsewhere stops moving it
-   * and leaving the sheet stops hiding it, so its rows can be worked through
-   * without keeping the pointer on the thing being restyled.
-   */
-  let pickerPinned = $state(false)
-  /** The block the card will move to once the pointer settles — see `showPicker`. */
-  let pendingEl = /** @type {Element | null} */ (null)
-  /** @type {ReturnType<typeof setTimeout> | undefined} */
-  let pickerTimer
-  /** @type {ReturnType<typeof setTimeout> | undefined} */
-  let anchorTimer
-  /* Where the pointer was last sampled inside the frame, and how far it has
-	   travelled sideways since — which is how "is it on its way to the card"
-	   gets answered. Sampled rather than taken per event: one mousemove moves it
-	   a pixel or two, and the sign of that is noise. */
-  let pointerX = 0
-  let pointerDx = 0
-  let pointerSampledAt = 0
-  let pointerMovedAt = 0
   let dragging = false
   /** @type {ReturnType<typeof setTimeout> | undefined} */
   let toastTimer
@@ -183,6 +148,16 @@
       if (document.visibilityState === 'hidden') flush()
     }
 
+    // The window lost focus with the pointer still on the sheet: drop the
+    // indication rather than leaving it lit over a window nobody is in. Focus
+    // moving *into* the preview iframe blurs this window too, so the answer is
+    // read a turn later, once `hasFocus` describes the whole tree again rather
+    // than the moment of handover.
+    const onBlur = () =>
+      setTimeout(() => {
+        if (!document.hasFocus()) clearHover()
+      })
+
     // Storage that survives eviction pressure: an offline editor that loses the CV
     // it was holding is not much of one. An installed PWA is usually granted this
     // silently; elsewhere it may prompt or be refused, and either is fine.
@@ -209,9 +184,9 @@
 
     window.addEventListener('beforeunload', flush)
     window.addEventListener('keydown', onKeydown)
-    window.addEventListener('pointerdown', onAppPointerDown)
     window.addEventListener('beforeinstallprompt', onInstallPrompt)
     window.addEventListener('appinstalled', onInstalled)
+    window.addEventListener('blur', onBlur)
     document.addEventListener('visibilitychange', onVisibility)
 
     // Whichever pane the user reaches for drives the other. Hovering doesn't
@@ -228,7 +203,6 @@
     // itself is watched too: narrowing it reflows the frame from outside.
     const resize = new ResizeObserver(() => {
       anchorsStale = true
-      repositionPicker()
     })
     resize.observe(previewPane)
     reflow = resize
@@ -237,9 +211,9 @@
       wide.removeEventListener('change', onWidth)
       window.removeEventListener('beforeunload', flush)
       window.removeEventListener('keydown', onKeydown)
-      window.removeEventListener('pointerdown', onAppPointerDown)
       window.removeEventListener('beforeinstallprompt', onInstallPrompt)
       window.removeEventListener('appinstalled', onInstalled)
+      window.removeEventListener('blur', onBlur)
       document.removeEventListener('visibilitychange', onVisibility)
       editorPane.removeEventListener('wheel', claimEditor)
       editorPane.removeEventListener('pointerdown', claimEditor)
@@ -270,7 +244,6 @@
     // control, and this DOM isn't Svelte's to put handlers on anyway.
     const claimPreview = () => takeOver('preview')
     doc.addEventListener('mouseover', onPreviewOver)
-    doc.addEventListener('mousemove', onPreviewMove, { passive: true })
     doc.documentElement.addEventListener('mouseleave', onPreviewLeave)
     doc.addEventListener('click', onPreviewClick)
     doc.addEventListener('keydown', onKeydown)
@@ -283,7 +256,6 @@
 
     detachFrame = () => {
       doc.removeEventListener('mouseover', onPreviewOver)
-      doc.removeEventListener('mousemove', onPreviewMove)
       doc.documentElement.removeEventListener('mouseleave', onPreviewLeave)
       doc.removeEventListener('click', onPreviewClick)
       doc.removeEventListener('keydown', onKeydown)
@@ -426,7 +398,9 @@
     // pointer moves do, and following one would haul the editor off wherever
     // the scroll just put it.
     if (previewMoving()) return
-    showPicker(asElement(e.target)?.closest('[data-slot]') ?? null)
+    // Outlining an element and pulling the editor to it are both reactions to
+    // attention, and there is none while the window is sitting behind another one.
+    if (!hoverSync || !document.hasFocus()) return
     const hit = srcTarget(e)
     if (hit?.el === hoverEl) return
     markHover(hit?.el ?? null)
@@ -437,10 +411,14 @@
     }
   }
 
-  function onPreviewLeave() {
+  /** Drop the hover indication — the outline and the peek line are one thing. */
+  function clearHover() {
     markHover(null)
     editor?.clearPeek()
-    hidePickerSoon()
+  }
+
+  function onPreviewLeave() {
+    clearHover()
   }
 
   /** @param {MouseEvent} e */
@@ -452,7 +430,6 @@
     // the user is in the middle of making.
     if (asElement(e.target)?.closest('a')) return
     if (frameWin?.getSelection()?.isCollapsed === false) return
-    pinPicker(asElement(e.target)?.closest('[data-slot]') ?? null)
     const hit = srcTarget(e)
     if (!hit?.line) return
     if (sourceHidden) {
@@ -475,214 +452,6 @@
     hoverEl?.classList.remove('src-hover')
     hoverEl = el
     hoverEl?.classList.add('src-hover')
-  }
-
-  /* ── Preview → variants ────────────────────────────────────────────────────
-	   The other thing every element in the sheet carries is `data-slot`, naming
-	   the block it was rendered by. Hovering one floats a card beside it with a
-	   row per slot in the chain, so the variations of whatever is under the
-	   pointer — and of everything containing it — are a click away. */
-
-  /**
-   * The slots an element belongs to, innermost first. Walked rather than read
-   * off the element itself: the pointer lands on a stack line, and Entry and
-   * Page are just as much what it is part of.
-   * @param {Element} el
-   * @returns {string[]}
-   */
-  function slotChain(el) {
-    /** @type {string[]} */
-    const out = []
-    for (let node = /** @type {Element | null} */ (el); node && node !== cvRoot; node = node.parentElement) {
-      const slot = node.getAttribute('data-slot')
-      if (slot && !out.includes(slot)) out.push(slot)
-    }
-    // Density has no element of its own to hang off — it is the page's other
-    // axis, so it rides along at the foot of the chain.
-    if (out.includes('page')) out.push('density')
-    return out
-  }
-
-  /**
-   * Where the card goes for a given block: level with it, in whichever gutter
-   * beside the sheet is wider.
-   *
-   * Rects measured inside the frame are in the frame's viewport, so they cross
-   * to ours through the iframe's own box. Only the vertical offset is taken
-   * from the block — the card sits against a pane edge rather than against the
-   * block's, which is what keeps it on screen whatever it turns out to be as
-   * wide as, and stops it sliding about as the pointer crosses blocks.
-   * @param {Element} el
-   */
-  function placePicker(el) {
-    const frameBox = frame?.rect()
-    if (!frameBox || !previewPane || !cvRoot) return null
-    const pane = previewPane.getBoundingClientRect()
-    const box = el.getBoundingClientRect()
-    const sheet = (cvRoot.querySelector('.sheet') ?? cvRoot).getBoundingClientRect()
-    const gutterLeft = sheet.left + frameBox.left - pane.left
-    const gutterRight = pane.width - (sheet.right + frameBox.left - pane.left)
-    // Clamped, so a block scrolled half off either end still gets a card that
-    // is on screen and beside it rather than past the pane.
-    const y = Math.max(PICKER_GAP, Math.min(box.top + frameBox.top - pane.top, pane.height - PICKER_GAP))
-    return {
-      side: /** @type {'left' | 'right'} */ (gutterLeft > gutterRight ? 'left' : 'right'),
-      y,
-      // Low on the pane, the card grows up from here instead of down off it.
-      // The threshold is deliberately generous: the tallest card is four rows.
-      flip: y > pane.height - PICKER_FLIP_AT,
-    }
-  }
-
-  /**
-   * A click settles the argument the hover rules below are having: the card
-   * pins to what was clicked and stays there. Clicking the block it is already
-   * pinned to takes the pin off again, and clicking anywhere on the sheet that
-   * isn't a block at all — the frame's own margin — dismisses it.
-   * @param {Element | null} el
-   */
-  function pinPicker(el) {
-    if (!el) return unpinPicker()
-    if (pickerPinned && el === pickerEl) return unpinPicker()
-    pickerHeld = false
-    clearTimeout(pickerTimer)
-    // Pinned only if there is something pinned *to*: a block that couldn't be
-    // measured would otherwise leave the pointer locked out with no card up.
-    if (anchorPicker(el)) pickerPinned = true
-  }
-
-  /** Let go of a pinned card. It goes back to following the pointer. */
-  function unpinPicker() {
-    if (!pickerPinned) return
-    pickerPinned = false
-    picker = null
-    pickerEl = null
-    cancelPending()
-  }
-
-  /**
-   * A click in the app's own document — the toolbar, the editor, the sheet's
-   * pane around the frame. Anything but the card itself lets a pinned one go,
-   * which is what every other popover here does.
-   * @param {PointerEvent} e
-   */
-  function onAppPointerDown(e) {
-    if (!pickerPinned) return
-    if (asElement(e.target)?.closest('.block-picker')) return
-    unpinPicker()
-  }
-
-  /**
-   * A block wants the card. Whether it gets it is the whole of the problem
-   * below.
-   * @param {Element | null} el
-   */
-  function showPicker(el) {
-    if (pickerPinned) return // pinned by a click; the pointer doesn't move it
-    if (pickerHeld) return // the pointer is on the card; it isn't in the frame at all
-    clearTimeout(pickerTimer)
-    if (!el) return hidePickerSoon()
-    if (el === pickerEl) return cancelPending() // already showing this one
-
-    // The first appearance is immediate — there is nothing on screen yet to
-    // move out from under anyone. After that the card holds still until the
-    // pointer settles: reaching it means crossing the blocks between here and
-    // there, and following each of those in turn is what made it unreachable.
-    if (!picker) return anchorPicker(el)
-    pendingEl = el
-    clearTimeout(anchorTimer)
-    anchorTimer = setTimeout(settlePicker, PICKER_SETTLE_MS)
-  }
-
-  /**
-   * The pointer has been on one block long enough to mean it — unless it is
-   * still travelling toward the card, in which case the blocks under it are
-   * scenery on the way and it can wait a little longer.
-   */
-  function settlePicker() {
-    if (pickerHeld || !pendingEl) return
-    if (headingForPicker()) {
-      anchorTimer = setTimeout(settlePicker, PICKER_SETTLE_MS)
-      return
-    }
-    anchorPicker(pendingEl)
-  }
-
-  /**
-   * @param {Element} el
-   * @returns {boolean} whether the block could be measured, and so anchored
-   */
-  function anchorPicker(el) {
-    const at = placePicker(el)
-    if (!at) return false
-    cancelPending()
-    pickerEl = el
-    picker = { rows: slotChain(el), ...at }
-    return true
-  }
-
-  /**
-   * Whether the pointer is on its way to the card: moving, and moving toward
-   * the side it is pinned to. A pointer that has stopped is not on its way
-   * anywhere, so dwelling anywhere — including the sheet's own margin, which
-   * is one big block — hands the card over as it should.
-   */
-  function headingForPicker() {
-    if (!picker || performance.now() - pointerMovedAt > POINTER_IDLE_MS) return false
-    return picker.side === 'right' ? pointerDx > POINTER_TRAVEL_PX : pointerDx < -POINTER_TRAVEL_PX
-  }
-
-  function cancelPending() {
-    clearTimeout(anchorTimer)
-    pendingEl = null
-  }
-
-  /** Long enough to cross the gap onto the card, short enough not to linger. */
-  function hidePickerSoon() {
-    if (pickerPinned) return
-    clearTimeout(pickerTimer)
-    // Whatever the pointer crossed on its way out is not what it was aiming at.
-    cancelPending()
-    pickerTimer = setTimeout(() => {
-      if (pickerHeld) return
-      picker = null
-      pickerEl = null
-    }, PICKER_GRACE_MS)
-  }
-
-  /** @param {boolean} inside */
-  function onPickerHover(inside) {
-    pickerHeld = inside
-    if (inside) {
-      clearTimeout(pickerTimer)
-      cancelPending()
-    } else hidePickerSoon()
-  }
-
-  /**
-   * Sample the pointer's sideways travel. Every mousemove would be a reading of
-   * one or two pixels, whose sign says nothing; over `POINTER_SAMPLE_MS` it
-   * says which way the pointer is going.
-   * @param {MouseEvent} e
-   */
-  function onPreviewMove(e) {
-    const now = performance.now()
-    pointerMovedAt = now
-    if (now - pointerSampledAt < POINTER_SAMPLE_MS) return
-    pointerDx = e.clientX - pointerX
-    pointerX = e.clientX
-    pointerSampledAt = now
-  }
-
-  /**
-   * Follow the block it is anchored to. A recompile replaces that element, so
-   * the card keeps its last position until the pointer re-anchors it — which is
-   * what stops it jumping away from under a click on its own arrows.
-   */
-  function repositionPicker() {
-    if (!picker || !pickerEl?.isConnected) return
-    const at = placePicker(pickerEl)
-    if (at) picker = { ...picker, ...at }
   }
 
   /* ── Scroll sync ───────────────────────────────────────────────────────────
@@ -834,9 +603,7 @@
    */
   function onPreviewScroll() {
     previewMovedAt = performance.now()
-    // The card is anchored to a block in a document that just moved under it.
-    repositionPicker()
-    if (scrollMaster !== 'preview' || hushed('preview') || !ladderReady()) return
+    if (!scrollSync || scrollMaster !== 'preview' || hushed('preview') || !ladderReady()) return
     const sc = scroller()
     if (!sc || !frameWin) return
     hush('editor')
@@ -848,7 +615,7 @@
 
   /** The editor moved — bring what its top line renders to the top of the preview. */
   function onEditorScroll() {
-    if (scrollMaster !== 'editor' || hushed('editor') || !ladderReady()) return
+    if (!scrollSync || scrollMaster !== 'editor' || hushed('editor') || !ladderReady()) return
     const line = editor?.topLine()
     const sc = scroller()
     if (line == null || !sc) return
@@ -921,9 +688,6 @@
       e.preventDefault()
       exportPDF()
     }
-    // Bound in both documents, so this reaches a pinned card whether the last
-    // click landed in the editor or on the sheet.
-    if (e.key === 'Escape') unpinPicker()
     // A restyle is a change in the document like an edit is, so Ctrl+Z has to
     // take one back from anywhere — the toolbar, the sheet, the popover. Inside
     // the editor it is CodeMirror's binding that pops the same stack, so this
@@ -1060,6 +824,21 @@
 
   function toggleSource() {
     setSourceHidden(!sourceHidden)
+  }
+
+  /** Couple the editor to the pointer over the preview, or stop. See `hoverSync`. */
+  function toggleHoverSync() {
+    hoverSync = !hoverSync
+    write(KEYS.hoverSync, String(hoverSync))
+    // Whatever the pointer was last on stays marked otherwise, with nothing
+    // left to come along and move it.
+    if (!hoverSync) clearHover()
+  }
+
+  /** Couple the two panes' scrolling, or let each keep its own place. See `scrollSync`. */
+  function toggleScrollSync() {
+    scrollSync = !scrollSync
+    write(KEYS.scrollSync, String(scrollSync))
   }
 
   /** Open a fresh tab holding the shipped template — no snapshot yet, so `CvDoc` seeds one. */
@@ -1314,23 +1093,6 @@
         fit={fitPreview && desktop}
         onReady={onFrameReady}
       />
-
-      <!-- Over the frame rather than in it: the sheet is a document of its own,
-			     and one that has to print exactly what it shows. -->
-      {#if picker}
-        <BlockPicker
-          rows={picker.rows}
-          slots={parts.slots}
-          {choices}
-          y={picker.y}
-          side={picker.side}
-          flip={picker.flip}
-          pinned={pickerPinned}
-          onPick={setVariant}
-          onHover={onPickerHover}
-          onClose={unpinPicker}
-        />
-      {/if}
     </div>
 
     <!-- The third column, whichever panel is holding it. -->
@@ -1364,8 +1126,12 @@
     valid={!parseError}
     {saveLabel}
     {sourceHidden}
+    {hoverSync}
+    {scrollSync}
     updateAvailable={swUpdate.available}
     onToggleSource={toggleSource}
+    onToggleHoverSync={toggleHoverSync}
+    onToggleScrollSync={toggleScrollSync}
     onToggleTheme={toggleTheme}
     onUpdate={() => swUpdate.applyUpdate()}
   />
@@ -1444,7 +1210,6 @@
 	   this pane holds is the banners stacked above it. That also retires the
 	   `position: sticky` they used to need to stay put over a moving sheet. */
   #preview-pane {
-    position: relative; /* the block picker floats in here, over the frame */
     flex: 1;
     display: flex;
     flex-direction: column;

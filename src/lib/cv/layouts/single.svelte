@@ -22,10 +22,11 @@
 	  certBody(sec, path)    certifications  a `certifications` section's rows
 	  body()                 page          the arrangement of the whole sheet
 
-	`data-slot` is what the preview's block picker hits-tests against, so a
-	variant that overrides a snippet has to carry the same attribute the default
-	does. `data-src` is the older one and unrelated: it ties an element back to
-	the line of YAML behind it, and is what makes the two panes follow each other.
+	`data-slot` names the block a piece of the sheet was rendered by, so a
+	variant that overrides a snippet carries the same attribute the default does.
+	Nothing reads it since the block picker was removed. `data-src` is the older
+	one and unrelated: it ties an element back to the line of YAML behind it, and
+	is what makes the two panes follow each other.
 -->
 <script>
   import { list, md, sections, techs } from '@cv'

@@ -2,11 +2,8 @@
   /**
    * One axis, as a control: `‹ Chips ›`.
    *
-   * The same row serves both places a variant can be chosen — the Style
-   * popover, where every slot is listed at once, and the block picker that
-   * floats beside the sheet, where only the slots under the pointer are. They
-   * are the same act, so they are the same control rather than two that have to
-   * be kept looking alike.
+   * The row the Style popover lists every slot as, and the same one the paper's
+   * running-head axes use.
    *
    * The arrows are the fast path and wrap at both ends; the name opens the full
    * list.
