@@ -24,6 +24,16 @@ export const highlight = HighlightStyle.define([
   { tag: t.keyword, color: 'var(--cm-key)' },
   { tag: t.invalid, color: 'var(--cm-invalid)' },
 
+  // The markdown inside a value. These sit on top of the token above — a bold
+  // word in a block scalar keeps the block's colour — so only the two that are
+  // chrome rather than content, the URL and a code span, set one of their own.
+  { tag: t.link, textDecoration: 'underline', textUnderlineOffset: '3px' },
+  { tag: t.url, color: 'var(--cm-comment)' },
+  { tag: t.strong, fontWeight: '700' },
+  { tag: t.emphasis, fontStyle: 'italic' },
+  { tag: t.strikethrough, textDecoration: 'line-through' },
+  { tag: t.monospace, color: 'var(--cm-string)' },
+
   // Templates: HTML, the script block and the style block.
   { tag: [t.tagName, t.angleBracket], color: 'var(--cm-tag)' },
   { tag: [t.attributeName, t.propertyName], color: 'var(--cm-attr)' },

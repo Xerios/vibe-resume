@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte'
+  import { acceptCompletion } from '@codemirror/autocomplete'
   import { indentWithTab, standardKeymap } from '@codemirror/commands'
   import { codeFolding, foldGutter, foldKeymap, indentUnit, syntaxHighlighting } from '@codemirror/language'
   import { forEachDiagnostic, lintGutter, linter, setDiagnosticsEffect } from '@codemirror/lint'
@@ -17,6 +18,7 @@
     lineNumbers,
   } from '@codemirror/view'
   import { wrappedLineIndent } from 'codemirror-wrapped-line-indent'
+  import { cvCompletion } from '$lib/cv/complete.js'
   import { lintCv } from '$lib/cv/lint.js'
   import { relaxedYaml } from '$lib/cv/relaxed-yaml-mode.js'
   import { splitLine } from '$lib/cv/relaxed-yaml.js'
@@ -178,9 +180,12 @@
           EditorState.tabSize.of(2),
           relaxedYaml(),
           syntaxHighlighting(highlight),
+          cvCompletion(),
           // No history() here on purpose: the Loro undo plugin binds Mod-Z at
-          // high precedence, and two undo stacks would fight over it.
-          keymap.of([...standardKeymap, ...foldKeymap, indentWithTab]),
+          // high precedence, and two undo stacks would fight over it. Tab comes
+          // before indentWithTab because `acceptCompletion` declines unless the
+          // completion tooltip is open, so Tab still indents the rest of the time.
+          keymap.of([{ key: 'Tab', run: acceptCompletion }, ...standardKeymap, ...foldKeymap, indentWithTab]),
           linter(yamlDiagnostics, { delay: 300 }),
           errorLineHighlight,
           editable.of(editableExtensions(readOnly)),

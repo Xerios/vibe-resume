@@ -40,12 +40,12 @@ export const SECTIONS = {
 }
 
 /** The keys any section may carry, whatever its type. */
-const SECTION_KEYS = ['type', 'title', 'rail']
+export const SECTION_KEYS = ['type', 'title', 'rail']
 /** A `skills` block's rows, which are a level deeper than anything else gets. */
-const ROW_KEYS = ['tier', 'text']
+export const ROW_KEYS = ['tier', 'text']
 /** The document itself. */
-const ROOT_KEYS = ['header', 'sections']
-const HEADER_KEYS = ['name', 'role', 'contact']
+export const ROOT_KEYS = ['header', 'sections']
+export const HEADER_KEYS = ['name', 'role', 'contact']
 /** Lists that hold prose, wherever they turn up under an item. */
 const TEXT_LISTS = new Set(['bullets', 'stack', 'items'])
 

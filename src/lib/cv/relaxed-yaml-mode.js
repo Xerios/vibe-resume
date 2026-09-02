@@ -14,6 +14,7 @@
 
 import { LanguageSupport, StreamLanguage, foldService } from '@codemirror/language'
 import { tags as t } from '@lezer/highlight'
+import { inlineRuns } from './inline-markdown.js'
 import { splitLine } from './relaxed-yaml.js'
 
 /**
@@ -21,6 +22,8 @@ import { splitLine } from './relaxed-yaml.js'
  * @property {number} block  indent of the line that opened a `|` or `>` body, or -1
  * @property {number} indent indent of the last line that had anything on it
  * @property {boolean} opens that line ended on a `key:` or a bare `-`, so the next one steps in
+ * @property {string} base   token the value on this line is made of, under its markdown
+ * @property {number} md     column that value starts at, or -1 when the line has no value
  */
 
 const tokenTable = {
@@ -31,6 +34,17 @@ const tokenTable = {
   cvBlock: t.special(t.string),
   cvBool: t.bool,
   cvComment: t.lineComment,
+
+  // The markdown inside a value. A name that carries a colour is emitted on its
+  // own; one that only adds weight, slant or a line is emitted alongside the
+  // value's own token, so `**bold**` in a block keeps the block's colour.
+  cvMdMark: t.punctuation,
+  cvMdLink: t.link,
+  cvMdUrl: t.url,
+  cvMdStrong: t.strong,
+  cvMdEm: t.emphasis,
+  cvMdCode: t.monospace,
+  cvMdStrike: t.strikethrough,
 }
 
 /**
@@ -46,23 +60,51 @@ function quoted(s) {
   return (q === "'" || q === '"') && v[v.length - 1] === q
 }
 
+/**
+ * Emit the next run of the value that starts at `state.md`, markdown and all.
+ * The value's own token is decided once, when the line's value begins, so a
+ * `true` or a quote halfway through a sentence can't take the rest of it over.
+ * @param {import('@codemirror/language').StringStream} stream
+ * @param {State} state
+ */
+function value(stream, state) {
+  const run = inlineRuns(stream.string, state.md).find((r) => r.to > stream.pos)
+  if (!run) {
+    stream.skipToEnd()
+    return state.base
+  }
+  stream.pos = run.to
+  return run.token ? state.base + ' ' + run.token : state.base
+}
+
 /** @type {import('@codemirror/language').StreamParser<State>} */
 const parser = {
   name: 'relaxed-yaml',
 
-  startState: () => ({ block: -1, indent: 0, opens: false }),
+  startState: () => ({ block: -1, indent: 0, opens: false, base: 'cvText', md: -1 }),
 
   token(stream, state) {
     const line = stream.string
     const p = splitLine(line)
     const blank = p.indent >= line.length
 
+    // A body line is content to its end, so nothing past the first run of it
+    // can be read as a key or a marker again.
+    if (state.block >= 0 && !stream.sol()) return value(stream, state)
+
     if (stream.sol()) {
+      state.md = -1 // this line's value hasn't been reached yet
       // Inside a `|` or `>` body everything is content until the indent comes back.
       if (state.block >= 0) {
         if (blank || p.indent > state.block) {
-          stream.skipToEnd()
-          return blank ? null : 'cvBlock'
+          if (blank) {
+            stream.skipToEnd()
+            return null
+          }
+          state.base = 'cvBlock'
+          state.md = p.indent
+          if (stream.eatSpace()) return null
+          return value(stream, state)
         }
         state.block = -1
       }
@@ -96,16 +138,24 @@ const parser = {
       return 'cvMark'
     }
 
-    // From here to the end of the line is one value, whatever is inside it.
-    const rest = line.slice(at)
-    stream.skipToEnd()
-    if (/^[|>][-+]?\s*$/.test(rest)) {
-      state.block = p.content
-      return 'cvBlock'
+    // From here to the end of the line is one value; what it is, is settled
+    // here, and the markdown inside it is coloured a run at a time.
+    if (state.md < 0) {
+      const rest = line.slice(at)
+      if (/^[|>][-+]?\s*$/.test(rest)) {
+        stream.skipToEnd()
+        state.block = p.content
+        return 'cvBlock'
+      }
+      const v = rest.trim()
+      if (v === 'true' || v === 'false') {
+        stream.skipToEnd()
+        return 'cvBool'
+      }
+      state.base = quoted(rest) ? 'cvString' : 'cvText'
+      state.md = at
     }
-    const v = rest.trim()
-    if (v === 'true' || v === 'false') return 'cvBool'
-    return quoted(rest) ? 'cvString' : 'cvText'
+    return value(stream, state)
   },
 
   /**

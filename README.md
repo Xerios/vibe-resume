@@ -26,6 +26,7 @@ pnpm check      # svelte-check
 | Chrome               | `components/{Toolbar,TabBar,StatusBar}.svelte` — the buttons, the tabs, the status bar                   |
 | The format           | [src/lib/cv/relaxed-yaml.js](src/lib/cv/relaxed-yaml.js) — the parser; see _The format_ below            |
 | What the editor says | [src/lib/cv/lint.js](src/lib/cv/lint.js) — the section table, as diagnostics                             |
+| What the editor offers | [src/lib/cv/complete.js](src/lib/cv/complete.js) — the same table, as completions                     |
 | Colours and folding  | [src/lib/cv/relaxed-yaml-mode.js](src/lib/cv/relaxed-yaml-mode.js) — the CodeMirror language             |
 | YAML to HTML         | [src/lib/cv/render.js](src/lib/cv/render.js)                                                             |
 | Preview              | [src/lib/cv/PreviewFrame.svelte](src/lib/cv/PreviewFrame.svelte) — the iframe the sheet renders in       |
@@ -59,6 +60,25 @@ it can serve both themes; it lives in
 [cm-highlight.js](src/lib/components/cm-highlight.js), the `--cm-*` tokens it
 names live in [tokens.css](src/lib/styles/tokens.css), and the rules that spend
 the rest of them are in [codemirror.css](src/lib/components/codemirror.css).
+
+Completion reads the same section table as the linter, forwards:
+[complete.js](src/lib/cv/complete.js) imports `SECTIONS` rather than copying it,
+so a type added there is offered without anything else being touched. What it
+offers depends only on where the cursor is — the keys the enclosing mapping
+accepts, the closed set of answers for the handful of keys that have one, and,
+wherever a new section can start, the whole shape of one as a snippet. Working
+out which mapping the cursor is in is the only hard part, and `spotAt` does it by
+walking the lines above through the same `splitLine` as the parser. Prose gets
+nothing: a bullet, a paragraph and the inside of a `|` body are exactly what the
+format exists to leave alone.
+
+It opens without waiting to be asked, but only where there is a question. A
+closed set of values shows the moment its `: ` is there — `type: ` on its own is
+a question, and only six keys have one to answer it with — and picking `type`
+from the key list runs straight on into picking which type, through CodeMirror's
+`activateOnCompletion`. Keys show while the mapping is still missing some and go
+quiet once it says everything it can, so landing in a finished entry doesn't put
+a list of what it already says on the screen. Ctrl-Space still answers anywhere.
 
 The document, the file registry and the part registry are module-level
 singletons in [state.svelte.js](src/lib/cv/state.svelte.js), built once by

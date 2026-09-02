@@ -246,3 +246,101 @@
 #cm-wrap .cm-diagnosticSource {
   color: var(--faint);
 }
+
+/* ── Completion ───────────────────────────────── */
+/* The list of keys, values and section skeletons the editor offers (see
+   src/lib/cv/complete.js). CodeMirror renders it as a tooltip inside the editor,
+   so the same id prefix reaches it — and has to, since the base theme's own
+   colours are scoped under a generated `&light`/`&dark` class. */
+#cm-wrap .cm-tooltip.cm-tooltip-autocomplete {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  box-shadow: var(--shadow-pop);
+  overflow: hidden;
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+
+#cm-wrap .cm-tooltip-autocomplete > ul {
+  max-height: 16em;
+  font-family: inherit;
+}
+
+#cm-wrap .cm-tooltip-autocomplete > ul > li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 8px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+#cm-wrap .cm-tooltip-autocomplete > ul > li[aria-selected] {
+  background: var(--accent-wash);
+  color: var(--accent-deep);
+}
+
+/* What the typed prefix matched, so a fuzzy hit shows why it's in the list. */
+#cm-wrap .cm-completionMatchedText {
+  text-decoration: none;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+#cm-wrap .cm-completionDetail {
+  margin-left: auto;
+  padding-left: 12px;
+  font-style: normal;
+  font-size: 10.5px;
+  color: var(--faint);
+}
+
+/* Three kinds of thing, three marks: a key, one of a closed set of values, and
+   a whole section. The stock glyphs are a generic shape per programming-language
+   construct, which none of these are. */
+#cm-wrap .cm-completionIcon {
+  width: 0.9em;
+  padding-right: 0;
+  opacity: 1;
+  text-align: center;
+}
+
+#cm-wrap .cm-completionIcon-property::after {
+  content: '▪';
+  color: var(--cm-key);
+}
+
+#cm-wrap .cm-completionIcon-enum::after {
+  content: '◆';
+  color: var(--cm-num);
+}
+
+#cm-wrap .cm-completionIcon-class::after {
+  content: '▤';
+  color: var(--cm-anchor);
+}
+
+/* The line about the selected entry, off to the side. */
+#cm-wrap .cm-tooltip.cm-completionInfo {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  box-shadow: var(--shadow-pop);
+  padding: 5px 8px;
+  max-width: 260px;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--faint);
+}
+
+/* A section skeleton lands with its fields marked; Tab steps through them. */
+#cm-wrap .cm-snippetField {
+  background: var(--cm-match);
+  border-radius: 2px;
+}
+
+#cm-wrap .cm-snippetFieldPosition {
+  border-left-color: var(--accent);
+}
