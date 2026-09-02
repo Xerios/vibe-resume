@@ -18,6 +18,7 @@
   import { parseCv } from '$lib/cv/render.js'
   import { doc as cv, files, flush, parts, restyle, restylePaper, restyleVariant, start } from '$lib/cv/state.svelte.js'
   import { KEYS, read, write } from '$lib/cv/storage.js'
+  import { swUpdate } from '$lib/sw-update.svelte.js'
 
   const PARSE_DEBOUNCE_MS = 250
   /** How long a pane's own scroll events stay ours after we move it ourselves. */
@@ -186,6 +187,9 @@
     // it was holding is not much of one. An installed PWA is usually granted this
     // silently; elsewhere it may prompt or be refused, and either is fine.
     void navigator.storage?.persist?.()
+
+    // A copy that never reloads never updates, so the status bar says when one is due.
+    void swUpdate.start()
 
     // An installed copy is registered for .yaml/.yml, and files opened from the OS
     // arrive through here rather than as a navigation.
@@ -1356,7 +1360,15 @@
     {/if}
   </div>
 
-  <StatusBar valid={!parseError} {saveLabel} {sourceHidden} onToggleSource={toggleSource} onToggleTheme={toggleTheme} />
+  <StatusBar
+    valid={!parseError}
+    {saveLabel}
+    {sourceHidden}
+    updateAvailable={swUpdate.available}
+    onToggleSource={toggleSource}
+    onToggleTheme={toggleTheme}
+    onUpdate={() => swUpdate.applyUpdate()}
+  />
 </div>
 
 {#if welcomeOpen}

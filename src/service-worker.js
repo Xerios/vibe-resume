@@ -30,6 +30,15 @@ sw.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)))
 })
 
+// The one way past that: the status bar's "Update ready" button, which is the user
+// saying the swap is welcome and which reloads the moment it lands. Activating early
+// takes over *every* client, so a second tab left on the old version can find a
+// lazily-loaded chunk purged above — it watches `controllerchange` and offers the
+// same reload rather than breaking silently. See `src/lib/sw-update.svelte.js`.
+sw.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') void sw.skipWaiting()
+})
+
 sw.addEventListener('activate', (event) => {
   event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)))))
 })

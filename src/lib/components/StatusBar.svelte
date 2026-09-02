@@ -3,6 +3,7 @@
   import IconEye from '@iconify-icons/lucide/eye'
   import IconEyeOff from '@iconify-icons/lucide/eye-off'
   import IconMoon from '@iconify-icons/lucide/moon'
+  import IconRefreshCw from '@iconify-icons/lucide/refresh-cw'
   import IconSun from '@iconify-icons/lucide/sun'
   import { withKey } from './access-keys.js'
 
@@ -11,10 +12,13 @@
     /** @type {string} */
     saveLabel = '',
     sourceHidden = false,
+    updateAvailable = false,
     /** @type {() => void} */
     onToggleSource,
     /** @type {() => void} */
     onToggleTheme,
+    /** @type {() => void} */
+    onUpdate,
   } = $props()
 </script>
 
@@ -28,6 +32,16 @@
   {#if saveLabel}<span id="save-state">{saveLabel}</span>{/if}
 
   <div class="sb-actions">
+    <!-- The one thing here that asks rather than reports, so it is the one thing
+	       wearing a colour. It appears only when a newer build is actually waiting. -->
+    {#if updateAvailable}
+      <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
+      <button class="sb-btn sb-update" onclick={onUpdate} accesskey="u" title={withKey('A new version is ready — reload to use it', 'u')}>
+        <Icon icon={IconRefreshCw} width="12" height="12" />
+        <span class="t-txt"><u>U</u>pdate ready</span>
+      </button>
+    {/if}
+
     <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
     <button
       class="sb-btn"
@@ -139,6 +153,43 @@
   .sb-btn.on {
     background: var(--accent-wash);
     color: var(--accent-deep);
+  }
+
+  /* Amber, as everywhere else something wants attention without being wrong — the
+	   detached-history banner wears the same pair. The border eats the padding back
+	   so the pill still fits the 26px bar. */
+  .sb-update {
+    background: var(--prompt-bg);
+    color: var(--prompt);
+    border: 1px solid color-mix(in srgb, var(--prompt) 35%, transparent);
+    padding: 2px 6px;
+    margin-right: 4px;
+    animation: sb-update-pulse 2.4s ease-in-out infinite;
+  }
+
+  /* Stated after `.sb-btn:hover`, whose accent colours it has to win against. */
+  .sb-update:hover {
+    background: var(--prompt);
+    color: var(--prompt-bg);
+  }
+
+  /* A halo that breathes rather than blinks: enough to catch the eye returning to
+	   the window, not enough to sit in the corner of it nagging. */
+  @keyframes sb-update-pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--prompt) 22%, transparent);
+    }
+
+    50% {
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--prompt) 22%, transparent);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sb-update {
+      animation: none;
+    }
   }
 
   /* Drawn by <Icon>, so the elements are ones the compiler never sees. */
