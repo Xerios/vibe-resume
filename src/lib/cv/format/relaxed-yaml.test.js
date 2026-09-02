@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import DEFAULT_YAML from './default-cv.yaml?raw'
+import DEFAULT_YAML from '../default-cv.yaml?raw'
 import { KEY_RE, needsQuotes, parse, readScalar, splitLine } from './relaxed-yaml.js'
 
 /** @param {string} text */

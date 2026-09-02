@@ -18,10 +18,10 @@
     lineNumbers,
   } from '@codemirror/view'
   import { wrappedLineIndent } from 'codemirror-wrapped-line-indent'
-  import { cvCompletion } from '$lib/cv/complete.js'
-  import { lintCv } from '$lib/cv/lint.js'
-  import { relaxedYaml } from '$lib/cv/relaxed-yaml-mode.js'
-  import { splitLine } from '$lib/cv/relaxed-yaml.js'
+  import { cvCompletion } from '$lib/cv/format/complete.js'
+  import { lintCv } from '$lib/cv/format/lint.js'
+  import { relaxedYaml } from '$lib/cv/format/relaxed-yaml-mode.js'
+  import { splitLine } from '$lib/cv/format/relaxed-yaml.js'
   import { highlight } from './cm-highlight.js'
   // CodeMirror builds its own DOM, so scoped styles can't reach it — its theme
   // ships as a plain stylesheet imported alongside the component instead.
@@ -31,7 +31,7 @@
     /** Extensions from the Loro binding — document sync and undo/redo live here. */
     loroExtensions,
     readOnly = false,
-    /** What the version on screen changed, highlighted inline. @type {import('$lib/cv/doc.svelte.js').VersionDiff | null} */
+    /** What the version on screen changed, highlighted inline. @type {import('$lib/cv/state/doc.svelte.js').VersionDiff | null} */
     diff = null,
     /** The editor scrolled — the page mirrors the move into the preview. */
     onScroll = () => {},
@@ -148,7 +148,7 @@
     }
   }
 
-  /** @param {import('$lib/cv/doc.svelte.js').VersionDiff | null} d */
+  /** @param {import('$lib/cv/state/doc.svelte.js').VersionDiff | null} d */
   function diffDecorations(d) {
     if (!d || (d.added.length === 0 && d.removed.length === 0)) return Decoration.none
     const ranges = [

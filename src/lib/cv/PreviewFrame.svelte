@@ -22,15 +22,15 @@
    */
   import { mount, onDestroy, unmount } from 'svelte'
   import CvFrameBody from './CvFrameBody.svelte'
-  import { DEFAULT_FONT } from './fonts.js'
-  import { DEFAULT_THEME } from './presets.js'
-  import { DEFAULT_PRESET } from './compositions.js'
-  import { DEFAULT_PAPER, pageWidthPx, paperCss } from './paper.js'
+  import { DEFAULT_PRESET } from './template/compositions.js'
+  import { DEFAULT_FONT } from './theme/fonts.js'
+  import { DEFAULT_PAPER, pageWidthPx, paperCss } from './theme/paper.js'
+  import { DEFAULT_THEME } from './theme/presets.js'
   import cvCss from './cv.css?raw'
-  import fontsCss from './fonts.css?raw'
   import frameCss from './frame.css?raw'
-  import palettesCss from './palettes.css?raw'
-  import presetsCss from './presets.css?raw'
+  import fontsCss from './theme/fonts.css?raw'
+  import palettesCss from './theme/palettes.css?raw'
+  import presetsCss from './theme/presets.css?raw'
 
   /**
    * `cv` is null until the first successful parse and `component` until the
@@ -62,7 +62,7 @@
    *   theme?: string,
    *   font?: string,
    *   css?: string,
-   *   paper?: Partial<import('./paper.js').Paper>,
+   *   paper?: Partial<import('./theme/paper.js').Paper>,
    *   name?: string,
    *   fit?: boolean,
    *   onReady?: (parts: { doc: Document, win: Window, root: HTMLElement }) => void

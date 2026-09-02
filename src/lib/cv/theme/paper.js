@@ -88,7 +88,7 @@ const PX_PER_MM = 96 / 25.4
  * The two axes, as the rows a picker cycles through. Shaped as slots so that
  * VariantCycle — which is the control for "one axis, one choice" everywhere
  * else — can draw them without knowing they aren't block variants.
- * @type {import('./slots.js').Registry}
+ * @type {import('../template/slots.js').Registry}
  */
 export const RUNNING_SLOTS = [
   { id: 'header', name: 'Header', snippet: '', variants: RUNNING },

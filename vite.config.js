@@ -6,11 +6,12 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [
     sveltekit({
-      // Templates are compiled in the browser (see src/lib/cv/compile-template.js),
+      // Templates are compiled in the browser (see src/lib/cv/template/compile-template.js),
       // where `@cv` is resolved by a registry rather than by a bundler. Declaring
-      // it here as well is what lets the built-in templates in src/lib/cv/templates
-      // be ordinary, type-checked components that import the very same module.
-      alias: { '@cv': 'src/lib/cv/template-api.js' },
+      // it here as well is what lets the built-in layouts and block variants in
+      // src/lib/cv/{layouts,blocks} be ordinary, type-checked components that
+      // import the very same module.
+      alias: { '@cv': 'src/lib/cv/template/template-api.js' },
 
       compilerOptions: {
         // Force runes mode for the project, except for libraries. Can be removed in svelte 6.

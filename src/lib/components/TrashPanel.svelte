@@ -1,8 +1,8 @@
 <script>
-  import { relativeTime } from '$lib/cv/storage.js'
+  import { relativeTime } from '$lib/cv/state/storage.js'
 
   let {
-    /** @type {import('$lib/cv/files.svelte.js').FileManager} */
+    /** @type {import('$lib/cv/state/files.svelte.js').FileManager} */
     files,
     /** @type {(id: string) => void} */
     onRestore,

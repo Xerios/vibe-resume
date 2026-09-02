@@ -1,6 +1,6 @@
-import { compose } from './compose.js'
-import { PRESETS, composition } from './compositions.js'
-import { SLOTS, partId, resolveSlots } from './slots.js'
+import { compose } from '../template/compose.js'
+import { PRESETS, composition } from '../template/compositions.js'
+import { SLOTS, partId, resolveSlots } from '../template/slots.js'
 import { KEYS, read, remove, write } from './storage.js'
 
 /**
@@ -13,7 +13,7 @@ import { KEYS, read, remove, write } from './storage.js'
  */
 
 /**
- * @typedef {import('./slots.js').Variant & {
+ * @typedef {import('../template/slots.js').Variant & {
  *   partId: string,
  *   slot: string,
  *   builtin: boolean,
@@ -45,7 +45,7 @@ export class PartManager {
    * first, in their shipped order, then anything written here — so a new
    * variant lands at the end of its slot rather than shuffling the ones
    * everybody knows.
-   * @type {(Omit<import('./slots.js').Slot, 'variants'> & { variants: Part[] })[]}
+   * @type {(Omit<import('../template/slots.js').Slot, 'variants'> & { variants: Part[] })[]}
    */
   slots = $derived(
     SLOTS.map((s) => ({

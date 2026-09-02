@@ -15,7 +15,7 @@
  */
 
 import { marked } from 'marked'
-import { ICON_ALIASES, ICON_BODIES } from './tech-icons.js'
+import { ICON_ALIASES, ICON_BODIES } from '../theme/tech-icons.js'
 
 /**
  * Inline Markdown → HTML. Links get target/rel, which marked won't add itself.

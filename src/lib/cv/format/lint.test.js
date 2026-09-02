@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import DEFAULT_YAML from './default-cv.yaml?raw'
+import DEFAULT_YAML from '../default-cv.yaml?raw'
 import { SECTIONS, lintCv } from './lint.js'
 
 /** @param {string} text */

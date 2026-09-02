@@ -1,4 +1,4 @@
-import { resolvePaper } from './paper.js'
+import { resolvePaper } from '../theme/paper.js'
 import { KEYS, read, remove, snapshotKey, write } from './storage.js'
 
 /**
@@ -11,7 +11,7 @@ import { KEYS, read, remove, snapshotKey, write } from './storage.js'
  * @property {string} [theme]            palette id from presets.js; absent means the default
  * @property {string} [font]             font id from fonts.js; absent means the default
  * @property {string} [css]              the file's own CSS, applied last inside the preview frame
- * @property {import('./paper.js').Paper} [paper]  the page box it prints on; absent means A4 portrait
+ * @property {import('../theme/paper.js').Paper} [paper]  the page box it prints on; absent means A4 portrait
  */
 
 /**
@@ -164,7 +164,7 @@ export class FileManager {
    * back into when an undo or a restore moves the style from that end.
    *
    * @param {string} id
-   * @param {{ layout?: string, variants?: Record<string, string>, theme?: string, font?: string, css?: string, paper?: import('./paper.js').Paper }} style
+   * @param {{ layout?: string, variants?: Record<string, string>, theme?: string, font?: string, css?: string, paper?: import('../theme/paper.js').Paper }} style
    */
   setStyle(id, style) {
     this.files = this.files.map((f) => (f.id === id ? { ...f, ...style } : f))
@@ -196,7 +196,7 @@ export class FileManager {
    * read time; `resolvePaper` is still what fills in a file that has chosen
    * none.
    * @param {string} id
-   * @param {Partial<import('./paper.js').Paper>} patch
+   * @param {Partial<import('../theme/paper.js').Paper>} patch
    */
   setPaper(id, patch) {
     const file = this.files.find((f) => f.id === id)

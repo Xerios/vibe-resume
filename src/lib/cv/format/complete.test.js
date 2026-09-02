@@ -13,7 +13,7 @@ import { CompletionContext } from '@codemirror/autocomplete'
 import { EditorState } from '@codemirror/state'
 import { describe, expect, it } from 'vitest'
 import { cvComplete, keysAt, opensValues, sectionSkeleton, spotAt } from './complete.js'
-import DEFAULT_YAML from './default-cv.yaml?raw'
+import DEFAULT_YAML from '../default-cv.yaml?raw'
 import { SECTIONS, lintCv } from './lint.js'
 import { parse, splitLine } from './relaxed-yaml.js'
 

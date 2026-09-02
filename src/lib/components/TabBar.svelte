@@ -11,7 +11,7 @@
   import { withKey } from './access-keys.js'
 
   let {
-    /** @type {import('$lib/cv/files.svelte.js').FileManager} */
+    /** @type {import('$lib/cv/state/files.svelte.js').FileManager} */
     files,
     /** @type {(id: string) => void} */
     onSelect,
@@ -66,7 +66,7 @@
     return () => document.removeEventListener('pointerdown', onPointerDown)
   })
 
-  /** @param {import('$lib/cv/files.svelte.js').FileMeta} f */
+  /** @param {import('$lib/cv/state/files.svelte.js').FileMeta} f */
   function startRename(f) {
     editingId = f.id
     editValue = f.name
@@ -88,7 +88,7 @@
    * two gestures every file list has trained people to try. The menu offers it
    * a third time, for whoever went looking there first.
    * @param {KeyboardEvent} e
-   * @param {import('$lib/cv/files.svelte.js').FileMeta} f
+   * @param {import('$lib/cv/state/files.svelte.js').FileMeta} f
    */
   function onTabKeydown(e, f) {
     if (e.key !== 'F2') return

@@ -1,4 +1,4 @@
-import { parse } from './relaxed-yaml.js'
+import { parse } from '../format/relaxed-yaml.js'
 
 /**
  * Parse the editor's source into a CV object, plus the map that ties every

@@ -8,8 +8,8 @@
   // the font stacks are the exception: StylePicker draws each option with
   // `data-cv-theme` / `data-cv-font` on the option itself, so the app needs
   // both tables even though it has no sheet.
-  import '$lib/cv/fonts.css'
-  import '$lib/cv/palettes.css'
+  import '$lib/cv/theme/fonts.css'
+  import '$lib/cv/theme/palettes.css'
   import '$lib/styles/print.css'
 
   let { children } = $props()

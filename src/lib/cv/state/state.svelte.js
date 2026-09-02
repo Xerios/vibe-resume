@@ -58,7 +58,7 @@ export function flush() {
  * `recordStyle`. Two goes at the theme are one line in the history; a theme and
  * then a font are two.
  *
- * @param {{ layout?: string, variants?: Record<string, string>, theme?: string, font?: string, css?: string, paper?: import('./paper.js').Paper }} patch
+ * @param {{ layout?: string, variants?: Record<string, string>, theme?: string, font?: string, css?: string, paper?: import('../theme/paper.js').Paper }} patch
  * @param {string} label   what the history entry reads as, e.g. `Theme — Plum`
  * @param {boolean} [defer]  for a style that is typed rather than chosen
  */
@@ -94,7 +94,7 @@ export function restyleVariant(slotId, variantId, label) {
  * Each key is its own axis, so turning the sheet on its side and then asking
  * for page numbers are two lines in the history rather than one — the same
  * rule the slots follow, for the same reason: they are two decisions.
- * @param {Partial<import('./paper.js').Paper>} patch
+ * @param {Partial<import('../theme/paper.js').Paper>} patch
  * @param {string} label
  */
 export function restylePaper(patch, label) {

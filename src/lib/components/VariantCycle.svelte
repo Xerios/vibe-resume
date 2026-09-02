@@ -11,7 +11,7 @@
 
   /**
    * @type {{
-   *   slot: import('$lib/cv/slots.js').Registry[number],
+   *   slot: import('$lib/cv/template/slots.js').Registry[number],
    *   choices: Record<string, string>,
    *   onPick: (slotId: string, variantId: string) => void,
    *   menuAlign?: 'left' | 'right',

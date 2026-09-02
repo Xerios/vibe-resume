@@ -9,14 +9,14 @@
   import WelcomeOverlay from '$lib/components/WelcomeOverlay.svelte'
   import YamlEditor from '$lib/components/YamlEditor.svelte'
   import PreviewFrame from '$lib/cv/PreviewFrame.svelte'
-  import { isModified, preset as presetOf, resolvePreset } from '$lib/cv/compositions.js'
-  import { FONTS, resolveFont } from '$lib/cv/fonts.js'
-  import { liveTemplate } from '$lib/cv/live-template.svelte.js'
-  import { ORIENTATIONS, PAPER_SIZES, RUNNING, resolvePaper } from '$lib/cv/paper.js'
-  import { THEMES, resolveTheme } from '$lib/cv/presets.js'
-  import { parseCv } from '$lib/cv/render.js'
-  import { doc as cv, files, flush, parts, restyle, restylePaper, restyleVariant, start } from '$lib/cv/state.svelte.js'
-  import { KEYS, read, write } from '$lib/cv/storage.js'
+  import { isModified, preset as presetOf, resolvePreset } from '$lib/cv/template/compositions.js'
+  import { FONTS, resolveFont } from '$lib/cv/theme/fonts.js'
+  import { liveTemplate } from '$lib/cv/template/live-template.svelte.js'
+  import { ORIENTATIONS, PAPER_SIZES, RUNNING, resolvePaper } from '$lib/cv/theme/paper.js'
+  import { THEMES, resolveTheme } from '$lib/cv/theme/presets.js'
+  import { parseCv } from '$lib/cv/template/render.js'
+  import { doc as cv, files, flush, parts, restyle, restylePaper, restyleVariant, start } from '$lib/cv/state/state.svelte.js'
+  import { KEYS, read, write } from '$lib/cv/state/storage.js'
   import { swUpdate } from '$lib/sw-update.svelte.js'
 
   const PARSE_DEBOUNCE_MS = 250
@@ -745,7 +745,7 @@
    * Change one thing about the page. Which thing is what the label says, since
    * `Paper — A4` and `Paper — Footer: Page` are the same axis to a reader and
    * different ones to the history.
-   * @param {Partial<import('$lib/cv/paper.js').Paper>} patch
+   * @param {Partial<import('$lib/cv/theme/paper.js').Paper>} patch
    */
   function setPaper(patch) {
     const [key, id] = Object.entries(patch)[0] ?? []

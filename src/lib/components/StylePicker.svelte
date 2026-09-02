@@ -1,13 +1,13 @@
 <script>
-  import { PRESETS } from '$lib/cv/compositions.js'
-  import { FONTS } from '$lib/cv/fonts.js'
-  import { ORIENTATIONS, PAPER_SIZES, RUNNING_SLOTS, resolvePaper } from '$lib/cv/paper.js'
-  import { THEMES } from '$lib/cv/presets.js'
+  import { PRESETS } from '$lib/cv/template/compositions.js'
+  import { FONTS } from '$lib/cv/theme/fonts.js'
+  import { ORIENTATIONS, PAPER_SIZES, RUNNING_SLOTS, resolvePaper } from '$lib/cv/theme/paper.js'
+  import { THEMES } from '$lib/cv/theme/presets.js'
   import TemplateThumb from './TemplateThumb.svelte'
   import VariantCycle from './VariantCycle.svelte'
 
   let {
-    /** Every slot and its variants, the user's own included. @type {import('$lib/cv/slots.js').Registry} */
+    /** Every slot and its variants, the user's own included. @type {import('$lib/cv/template/slots.js').Registry} */
     slots,
     /** Slot id → the variant in use. @type {Record<string, string>} */
     choices,
@@ -29,9 +29,9 @@
     onTheme,
     /** @type {(id: string) => void} */
     onFont,
-    /** The page the file prints on. @type {Partial<import('$lib/cv/paper.js').Paper>} */
+    /** The page the file prints on. @type {Partial<import('$lib/cv/theme/paper.js').Paper>} */
     paper,
-    /** @type {(patch: Partial<import('$lib/cv/paper.js').Paper>) => void} */
+    /** @type {(patch: Partial<import('$lib/cv/theme/paper.js').Paper>) => void} */
     onPaper,
     /** Whether the preview is scaled to fit a whole page across the pane. */
     fit = false,
