@@ -1,0 +1,5 @@
+/* A dashed trailing rule — the same weight as the default, broken up. Reads as
+   a note rather than a boundary, which suits a sheet whose sections run on. */
+.sec-head .bar {
+  border-top-style: dashed;
+}

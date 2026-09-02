@@ -1,0 +1,7 @@
+/* Two hairlines instead of one. The oldest way of making a heading rule carry
+   more weight than the text beneath it without setting it heavier.
+   `double` needs 3px to resolve into line-gap-line; below that it renders solid. */
+.sec-head .bar {
+  height: 3px;
+  border-top: 3px double var(--line);
+}

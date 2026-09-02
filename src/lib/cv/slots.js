@@ -39,6 +39,9 @@ import secHeadPlain from './blocks/section-head/plain.css?raw'
 import secHeadGutter from './blocks/section-head/gutter.css?raw'
 import secHeadBoxed from './blocks/section-head/boxed.css?raw'
 import secHeadNumbered from './blocks/section-head/numbered.css?raw'
+import secHeadDotted from './blocks/section-head/dotted.css?raw'
+import secHeadDashed from './blocks/section-head/dashed.css?raw'
+import secHeadDouble from './blocks/section-head/double.css?raw'
 import summaryCentered from './blocks/summary/centered.css?raw'
 import summaryLede from './blocks/summary/lede.css?raw'
 import entryTimeline from './blocks/entry/timeline.css?raw'
@@ -123,6 +126,9 @@ export const SLOTS = [
     variants: [
       { id: 'ruled', name: 'Ruled', hint: 'A rule trailing every heading' },
       { id: 'ruled-both', name: 'Ruled both', hint: 'A rule either side, so the title centres', css: secHeadRuledBoth },
+      { id: 'dotted', name: 'Dotted', hint: 'The trailing rule drawn as dots', css: secHeadDotted },
+      { id: 'dashed', name: 'Dashed', hint: 'The trailing rule broken into dashes', css: secHeadDashed },
+      { id: 'double', name: 'Double', hint: 'Two hairlines trailing every heading', css: secHeadDouble },
       { id: 'plain', name: 'Plain', hint: 'No rule — a small tracked-out label', css: secHeadPlain },
       { id: 'gutter', name: 'Gutter', hint: 'The title in the gutter, the rule beside it', css: secHeadGutter },
       { id: 'boxed', name: 'Boxed', hint: 'The title in an outlined box, no rule', css: secHeadBoxed },
