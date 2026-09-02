@@ -3,10 +3,10 @@ header:
   role: Senior Full-Stack Engineer · 10+ years
   contact:
     - Springfield, USA
-    - '+1 555 010 1234'
-    - '[github.com/example](https://github.com/example)'
-    - '[linkedin.com/in/example](https://linkedin.com/in/example)'
-    - '[example.dev](https://example.dev)'
+    - +1 555 010 1234
+    - [github.com/example](https://github.com/example)
+    - [linkedin.com/in/example](https://linkedin.com/in/example)
+    - [example.dev](https://example.dev)
 sections:
   - type: summary
     title: Summary
@@ -29,15 +29,15 @@ sections:
       - title: Databases & Data
         rows:
           - text: PostgreSQL, MongoDB, Redis, ElasticSearch
-          - text: 'ORM: Prisma, TypeORM · Message queues: RabbitMQ, Kafka'
+          - text: ORM: Prisma, TypeORM · Message queues: RabbitMQ, Kafka
       - title: Testing & Tooling
         rows:
           - text: Jest, Vitest, Playwright, Cypress
           - text: Vite, Webpack, ESLint, Prettier
       - title: Other
         rows:
-          - text: 'Analytics: Google Analytics, Mixpanel · Python, Go'
-          - text: 'Accessibility: WCAG 2.2, ARIA'
+          - text: Analytics: Google Analytics, Mixpanel · Python, Go
+          - text: Accessibility: WCAG 2.2, ARIA
 
   - type: experience
     title: Experience
@@ -78,20 +78,20 @@ sections:
       - subtype: earlier
         title: Earlier Roles
         items:
-          - '**Umbrella Startups** — Freelance developer; built small business websites and internal tools. _WordPress, PHP._'
-          - '**University Tech Club** — Volunteer developer; maintained club website and event registration system. _HTML, CSS, JavaScript._'
+          - **Umbrella Startups** — Freelance developer; built small business websites and internal tools. _WordPress, PHP._
+          - **University Tech Club** — Volunteer developer; maintained club website and event registration system. _HTML, CSS, JavaScript._
 
   - type: projects
     title: Projects
     items:
-      - title: '[dashboard-kit](https://example.dev/dashboard-kit)'
+      - title: [dashboard-kit](https://example.dev/dashboard-kit)
         dates: 2023 – Present
         sub: Charting and layout components for internal dashboards, extracted from the work at Acme and released publicly.
         stack:
           - TypeScript
           - Svelte
           - Vite
-      - title: '[deploy-bot](https://example.dev/deploy-bot)'
+      - title: [deploy-bot](https://example.dev/deploy-bot)
         dates: 2021
         sub: Chat-driven deployments for small teams — approvals, rollbacks and an audit trail.
         stack: Go, PostgreSQL, Docker
@@ -110,7 +110,7 @@ sections:
       - name: AWS Certified Solutions Architect – Associate
         issuer: Amazon Web Services
         dates: 2023
-        note: 'ID: AWS-1234-5678'
+        note: ID: AWS-1234-5678
       - name: Certified Kubernetes Administrator
         issuer: The Linux Foundation
         dates: 2022
@@ -142,9 +142,9 @@ sections:
     title: Open Source
     hasHeader: false
     projects:
-      - name: '[example-toolkit](https://github.com/github/example-toolkit)'
+      - name: [example-toolkit](https://github.com/github/example-toolkit)
         stars: ★ 120
         desc: Utility library for common frontend patterns
-      - name: '[cli-helper](https://github.com/github/cli-helper)'
+      - name: [cli-helper](https://github.com/github/cli-helper)
         stars: ★ 45
         desc: Command-line tool for scaffolding projects

@@ -33,7 +33,7 @@ Use the project's validation command:
 pnpm check
 ```
 
-This runs `svelte-check` (types), `oxlint --deny-warnings` (lint), `scripts/check-security.mjs`, and `vitest run` (tests).
+This runs `svelte-check` (types), `oxlint --deny-warnings` (lint), and `vitest run` (tests).
 
 For substantive code changes, run `pnpm check` after implementation.
 

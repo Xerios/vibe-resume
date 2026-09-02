@@ -1,7 +1,6 @@
 <script>
   import { onMount } from 'svelte'
   import { indentWithTab, standardKeymap } from '@codemirror/commands'
-  import { yaml } from '@codemirror/lang-yaml'
   import { codeFolding, foldGutter, foldKeymap, indentUnit, syntaxHighlighting } from '@codemirror/language'
   import { forEachDiagnostic, lintGutter, linter, setDiagnosticsEffect } from '@codemirror/lint'
   import { highlightSelectionMatches } from '@codemirror/search'
@@ -18,7 +17,9 @@
     lineNumbers,
   } from '@codemirror/view'
   import { wrappedLineIndent } from 'codemirror-wrapped-line-indent'
-  import { load } from 'js-yaml'
+  import { lintCv } from '$lib/cv/lint.js'
+  import { relaxedYaml } from '$lib/cv/relaxed-yaml-mode.js'
+  import { splitLine } from '$lib/cv/relaxed-yaml.js'
   import { highlight } from './cm-highlight.js'
   // CodeMirror builds its own DOM, so scoped styles can't reach it — its theme
   // ships as a plain stylesheet imported alongside the component instead.
@@ -65,40 +66,30 @@
   })
 
   /**
-   * Where the document stops parsing, as a lint diagnostic. js-yaml gives up at
-   * the first error, so there's never more than one; its mark carries the offset
-   * it choked on, and the underline runs from there to the end of that line.
+   * Everything wrong with the document, in three registers: what won't parse,
+   * what parses into a shape no template renders, and quotes left over from
+   * when the format still needed them (see lint.js). The dialect has few ways
+   * left to be broken, so most of what lands here is the middle one.
    * @param {EditorView} v
    * @returns {import('@codemirror/lint').Diagnostic[]}
    */
   function yamlDiagnostics(v) {
-    const doc = v.state.doc
-    try {
-      load(doc.toString())
-      return []
-    } catch (e) {
-      const err = /** @type {{ mark?: { position: number }, reason?: string }} */ (e)
-      const at = Math.min(Math.max(err.mark?.position ?? 0, 0), doc.length)
-      const line = doc.lineAt(at)
-      // An error that lands past the last character — an unterminated block,
-      // say — has nothing to its right to underline, so mark the line's own
-      // content instead of leaving a bare caret at the end.
-      const from = at < line.to ? at : line.from + (line.text.length - line.text.trimStart().length)
-      return [
-        {
-          from,
-          to: line.to,
-          severity: 'error',
-          source: 'yaml',
-          message: err.reason || (e instanceof Error ? e.message : String(e)),
-        },
-      ]
+    const len = v.state.doc.length
+    const found = lintCv(v.state.doc.toString())
+    // Clamped because the linter reads a snapshot of the text: by the time the
+    // debounce fires, the document may already be shorter than what it saw.
+    for (const d of found) {
+      d.from = Math.min(Math.max(d.from, 0), len)
+      d.to = Math.min(Math.max(d.to, d.from), len)
     }
+    return found
   }
 
   /**
    * The line behind a diagnostic, tinted. The lint extension underlines only the
    * failing range; this is what makes the broken line findable while scrolling.
+   * Errors only — a warning about a section's shape is worth an underline, but
+   * not worth painting the line red while it's being typed.
    */
   const errorLineMark = Decoration.line({ class: 'cm-error-line' })
 
@@ -106,7 +97,8 @@
   function errorLines(state) {
     /** @type {number[]} */
     const starts = []
-    forEachDiagnostic(state, (_d, from, to) => {
+    forEachDiagnostic(state, (d, from, to) => {
+      if (d.severity !== 'error') return
       for (let pos = from; ;) {
         const line = state.doc.lineAt(pos)
         if (starts[starts.length - 1] !== line.from) starts.push(line.from)
@@ -184,7 +176,7 @@
           wrappedLineIndent,
           indentUnit.of('  '),
           EditorState.tabSize.of(2),
-          yaml(),
+          relaxedYaml(),
           syntaxHighlighting(highlight),
           // No history() here on purpose: the Loro undo plugin binds Mod-Z at
           // high precedence, and two undo stacks would fight over it.
@@ -244,21 +236,20 @@
   }
 
   /**
-   * Where the content starts on a YAML line: past the indent, any `- ` sequence
-   * markers, a `key: ` and an opening quote — the character a click in the
-   * preview means to land on. A line carrying no inline value (`bullets:`, a
-   * block that continues below) falls back to its first non-space character,
-   * which still beats the indentation.
+   * Where the content starts on a line: past the indent, any `- ` markers, a
+   * `key: ` and an opening quote — the character a click in the preview means
+   * to land on. A line carrying no inline value (`bullets:`, a block that
+   * continues below) falls back to where its own content starts, which still
+   * beats the indentation.
    *
-   * Barring a quoted scalar from the key position is what keeps `text: 'ORM:
-   * Prisma'` — or a bare `- 'Analytics: Mixpanel'` — from reading as a key.
+   * The line is taken apart by the parser's own `splitLine`, so what counts as
+   * a key here is exactly what counts as one in the document.
    * @param {string} text a single line, without its newline
    * @returns {number} column offset into `text`
    */
   function contentColumn(text) {
-    const m = /^(\s*(?:-[ \t]+)*)(?:[^\s#'"][^:]*?:[ \t]+)?/.exec(text)
-    let col = m ? m[0].length : 0
-    if (col >= text.length) col = m ? m[1].length : 0 // a key with nothing after it
+    const p = splitLine(text)
+    let col = p.value >= 0 ? p.value : p.content
     if (text[col] === "'" || text[col] === '"') col++ // sit on the text, not the quote
     return Math.min(col, text.length)
   }

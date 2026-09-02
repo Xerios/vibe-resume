@@ -51,6 +51,10 @@
   --cm-match: #d9b96b52;
   --cm-error: #c73434;
   --cm-error-bg: #c7343414;
+  /* A section the templates won't render, and a quote that has stopped doing
+	   any work: worth marking, not worth alarm. */
+  --cm-warn: #b5750f;
+  --cm-hint: #7d8b88;
   --stat-add: #1a6b3a;
   --stat-del: #a83a3a;
   /* Derived rather than fixed, so a scrollbar follows the ramp it sits in:
@@ -111,6 +115,8 @@
   --cm-match: #c9922e4d;
   --cm-error: #f06a6a;
   --cm-error-bg: #f06a6a1c;
+  --cm-warn: #e0a545;
+  --cm-hint: #7f918d;
   --stat-add: #5dcc80;
   --stat-del: #e08a8a;
 }

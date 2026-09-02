@@ -19,28 +19,31 @@ pnpm check      # svelte-check
 
 ## How it works
 
-| Concern            | Where                                                                                                    |
-| ------------------ | -------------------------------------------------------------------------------------------------------- |
-| Document + history | [src/lib/cv/doc.svelte.js](src/lib/cv/doc.svelte.js) — Loro doc, persistence, cross-tab merge            |
-| Editor             | [src/lib/components/YamlEditor.svelte](src/lib/components/YamlEditor.svelte) — CodeMirror 6              |
-| Chrome             | `components/{Toolbar,TabBar,StatusBar}.svelte` — the buttons, the tabs, the status bar                   |
-| YAML to HTML       | [src/lib/cv/render.js](src/lib/cv/render.js)                                                             |
-| Preview            | [src/lib/cv/PreviewFrame.svelte](src/lib/cv/PreviewFrame.svelte) — the iframe the sheet renders in       |
-| Starting text      | [src/lib/cv/default-cv.yaml](src/lib/cv/default-cv.yaml)                                                 |
-| Layouts            | [src/lib/cv/layouts/](src/lib/cv/layouts/) — the whole sheet, one file per arrangement                   |
-| Block variants     | [src/lib/cv/blocks/](src/lib/cv/blocks/) — one file per variation of one block                           |
-| The axes           | [src/lib/cv/slots.js](src/lib/cv/slots.js) — every slot, and every variant of each                       |
-| The named looks    | [src/lib/cv/compositions.js](src/lib/cv/compositions.js) — presets, as sets of axis choices              |
-| Composing          | [src/lib/cv/compose.js](src/lib/cv/compose.js) — layout + variants → one component                       |
-| Part registry      | [src/lib/cv/parts.svelte.js](src/lib/cv/parts.svelte.js) — overrides and the user's own variants         |
-| Compiling it       | [src/lib/cv/compile-template.js](src/lib/cv/compile-template.js) — Svelte, in the browser                |
-| Picking a variant  | `components/{StylePicker,VariantCycle,BlockPicker}.svelte` — the popover, the row, the card by the sheet |
-| Shared state       | [src/lib/cv/state.svelte.js](src/lib/cv/state.svelte.js) — the document, file registry and part registry |
-| Theme              | [src/lib/cv/presets.js](src/lib/cv/presets.js) — the palettes, and the CSS beside it                     |
-| Type               | [src/lib/cv/fonts.js](src/lib/cv/fonts.js) — the font stacks, and the CSS beside it                      |
-| Tech logos         | [src/lib/cv/tech-icons.js](src/lib/cv/tech-icons.js) — generated; see _Logos_ below                      |
-| CSS                | [src/app.css](src/app.css) — the index; see _Where the CSS lives_ below                                  |
-| Offline            | [src/service-worker.js](src/service-worker.js) — precache; manifest and icons in `static/`               |
+| Concern              | Where                                                                                                    |
+| -------------------- | -------------------------------------------------------------------------------------------------------- |
+| Document + history   | [src/lib/cv/doc.svelte.js](src/lib/cv/doc.svelte.js) — Loro doc, persistence, cross-tab merge            |
+| Editor               | [src/lib/components/YamlEditor.svelte](src/lib/components/YamlEditor.svelte) — CodeMirror 6              |
+| Chrome               | `components/{Toolbar,TabBar,StatusBar}.svelte` — the buttons, the tabs, the status bar                   |
+| The format           | [src/lib/cv/relaxed-yaml.js](src/lib/cv/relaxed-yaml.js) — the parser; see _The format_ below            |
+| What the editor says | [src/lib/cv/lint.js](src/lib/cv/lint.js) — the section table, as diagnostics                             |
+| Colours and folding  | [src/lib/cv/relaxed-yaml-mode.js](src/lib/cv/relaxed-yaml-mode.js) — the CodeMirror language             |
+| YAML to HTML         | [src/lib/cv/render.js](src/lib/cv/render.js)                                                             |
+| Preview              | [src/lib/cv/PreviewFrame.svelte](src/lib/cv/PreviewFrame.svelte) — the iframe the sheet renders in       |
+| Starting text        | [src/lib/cv/default-cv.yaml](src/lib/cv/default-cv.yaml)                                                 |
+| Layouts              | [src/lib/cv/layouts/](src/lib/cv/layouts/) — the whole sheet, one file per arrangement                   |
+| Block variants       | [src/lib/cv/blocks/](src/lib/cv/blocks/) — one file per variation of one block                           |
+| The axes             | [src/lib/cv/slots.js](src/lib/cv/slots.js) — every slot, and every variant of each                       |
+| The named looks      | [src/lib/cv/compositions.js](src/lib/cv/compositions.js) — presets, as sets of axis choices              |
+| Composing            | [src/lib/cv/compose.js](src/lib/cv/compose.js) — layout + variants → one component                       |
+| Part registry        | [src/lib/cv/parts.svelte.js](src/lib/cv/parts.svelte.js) — overrides and the user's own variants         |
+| Compiling it         | [src/lib/cv/compile-template.js](src/lib/cv/compile-template.js) — Svelte, in the browser                |
+| Picking a variant    | `components/{StylePicker,VariantCycle,BlockPicker}.svelte` — the popover, the row, the card by the sheet |
+| Shared state         | [src/lib/cv/state.svelte.js](src/lib/cv/state.svelte.js) — the document, file registry and part registry |
+| Theme                | [src/lib/cv/presets.js](src/lib/cv/presets.js) — the palettes, and the CSS beside it                     |
+| Type                 | [src/lib/cv/fonts.js](src/lib/cv/fonts.js) — the font stacks, and the CSS beside it                      |
+| Tech logos           | [src/lib/cv/tech-icons.js](src/lib/cv/tech-icons.js) — generated; see _Logos_ below                      |
+| CSS                  | [src/app.css](src/app.css) — the index; see _Where the CSS lives_ below                                  |
+| Offline              | [src/service-worker.js](src/service-worker.js) — precache; manifest and icons in `static/`               |
 
 ### Editor and document
 
@@ -313,6 +316,66 @@ column, headings and chips are allowed to wrap, and the gutter a skills-rows
 title hangs in goes away. The chip
 variants render a chip per tool instead of a line — see _Logos_ below.
 
+#### The format
+
+It looks like YAML and it is read like YAML, but it isn't quite YAML, and the
+difference is deliberate. A CV is prose, and prose is full of the characters
+YAML reserves. Real YAML makes you quote a link because it starts with `[`, a
+phone number because it starts with `+`, and `ORM: Prisma` because of the colon
+— none of which is anything a person writing a resume should have to know. So
+[relaxed-yaml.js](src/lib/cv/relaxed-yaml.js) reads a smaller, line-oriented
+dialect instead, in which a value runs verbatim to the end of its line and
+nothing inside it means anything:
+
+```yaml
+- title: Some text: more text
+  subtitle: **bold text**
+  items:
+    - +1 555 010 1234
+    - [github.com/example](https://github.com/example)
+```
+
+The load-bearing rule is what counts as a key: one unspaced identifier, followed
+by a colon and a space, and only the _first_ one on a line. That is what makes
+`title: Some text: more text` read the obvious way — the second colon is inside
+the value and never looked at. A word with a space in it can't be a key at all,
+so `- Some text: more` stays a string.
+
+Everything else follows from taking values verbatim. A `#` only opens a comment
+at the head of a line, so `ranked # 1` and `#fff` are ordinary text. Indentation
+nests, and a tab in it is an error. Every scalar is a string except a bare `true`
+or `false`, which have to stay boolean because `inline`, `hasHeader` and `rail`
+are tested for truthiness and the string `'false'` is true. `|` and `>` still
+open a block. Flow collections, anchors, aliases, tags and `---` are gone — `[`
+is just a bracket now.
+
+Quotes aren't required anywhere any more, but they're still honoured, because
+every resume written before this is full of them: a value wrapped _entirely_ in
+matching quotes is unwrapped, while `'Bob' the builder` isn't wrapped, so it
+stays as typed. Where a pair has stopped doing any work the editor says so as a
+hint rather than removing it behind you.
+
+One ambiguity survives, and it's the one YAML has too. A bullet reading
+`- Analytics: Mixpanel` is a mapping, because `Analytics` is a perfectly good
+key and there's no way to tell it apart from a real entry. Quotes are still the
+escape hatch — `- 'Analytics: Mixpanel'` — and any list that should hold plain
+text is checked for it, so the editor offers the fix rather than leaving you to
+find it in the preview.
+
+That check is one of three things [lint.js](src/lib/cv/lint.js) reports, and it
+exists because relaxing the format moved where mistakes land. Almost nothing a
+person types fails to parse now, so a typo shows up as a section that quietly
+renders wrong instead of as an error. The table below is therefore held as data
+as well as prose, and the editor underlines an unknown `type`, a key nothing
+renders, and a section missing its content — as warnings, which don't stop the
+preview or block an export.
+
+The editor's colours, folding and indentation come from the same `splitLine` the
+parser uses ([relaxed-yaml-mode.js](src/lib/cv/relaxed-yaml-mode.js)), so what a
+line looks like and what it means can't drift apart. It's a `StreamLanguage`
+rather than a Lezer grammar because a line is an indent, some dashes, maybe a
+key and then text — none of which needs a parse tree.
+
 #### What a CV is made of
 
 A document is a header and a list of sections, and a section's `type` is what
@@ -352,7 +415,10 @@ a run of older roles as one titled list with no dates of its own.
 
 An unknown `type` renders as a red line naming itself rather than as nothing, so
 a typo in the YAML is visible in the preview instead of silently dropping a
-section.
+section. The editor says the same thing on the line itself, out of the copy of
+this table that [lint.js](src/lib/cv/lint.js) holds as `SECTIONS` — so a type
+added here has to be added there too, and lint.test.js fails if the two lists
+stop agreeing.
 
 #### Logos
 

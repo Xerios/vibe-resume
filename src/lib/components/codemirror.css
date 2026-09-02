@@ -136,14 +136,31 @@
   padding: 0 5px;
 }
 
-/* ── YAML errors ──────────────────────────────── */
+/* ── Diagnostics ──────────────────────────────── */
 /* The stock underline is a fixed-colour SVG tile; a wavy text-decoration takes
-   the theme's red instead. */
-#cm-wrap .cm-lintRange-error {
+   the theme's colours instead. Three severities: what doesn't parse, a section
+   the templates won't render, and a quote left over from when the format still
+   needed one. */
+#cm-wrap .cm-lintRange-error,
+#cm-wrap .cm-lintRange-warning,
+#cm-wrap .cm-lintRange-hint {
   background: none;
-  text-decoration: underline wavy var(--cm-error);
   text-decoration-skip-ink: none;
   text-underline-offset: 3px;
+}
+
+#cm-wrap .cm-lintRange-error {
+  text-decoration: underline wavy var(--cm-error);
+}
+
+#cm-wrap .cm-lintRange-warning {
+  text-decoration: underline wavy var(--cm-warn);
+}
+
+/* A hint is only ever the offer of a tidy-up, so it stays out of the way: a
+   flat dotted rule rather than the wave the other two get. */
+#cm-wrap .cm-lintRange-hint {
+  text-decoration: underline dotted var(--cm-hint);
 }
 
 /* An error with nothing left on the line to underline — an unterminated block,
@@ -176,12 +193,24 @@
   height: 100%;
 }
 
-#cm-wrap .cm-lint-marker-error::after {
+#cm-wrap .cm-lint-marker-error::after,
+#cm-wrap .cm-lint-marker-warning::after,
+#cm-wrap .cm-lint-marker-hint::after {
   content: '';
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: var(--cm-error);
+}
+
+#cm-wrap .cm-lint-marker-warning::after {
+  background: var(--cm-warn);
+}
+
+#cm-wrap .cm-lint-marker-hint::after {
+  width: 4px;
+  height: 4px;
+  background: var(--cm-hint);
 }
 
 #cm-wrap .cm-tooltip.cm-tooltip-lint {
@@ -204,6 +233,14 @@
 
 #cm-wrap .cm-diagnostic-error {
   border-left: 3px solid var(--cm-error);
+}
+
+#cm-wrap .cm-diagnostic-warning {
+  border-left: 3px solid var(--cm-warn);
+}
+
+#cm-wrap .cm-diagnostic-hint {
+  border-left: 3px solid var(--cm-hint);
 }
 
 #cm-wrap .cm-diagnosticSource {
