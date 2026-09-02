@@ -13,7 +13,7 @@
   padding: 1px 8px 2px;
   border: 1px solid var(--line);
   border-radius: 100px;
-  font-size: 9.5px;
+  font-size: var(--cv-fs-2xs);
   letter-spacing: 0.4px;
   color: var(--accent-deep);
 }

@@ -3,7 +3,7 @@
 .sheet {
   max-width: 780px;
   padding: 30px 40px 28px;
-  font-size: 12.5px;
+  font-size: var(--cv-fs-md);
   line-height: 1.38;
 }
 
@@ -12,7 +12,7 @@
 }
 
 .name {
-  font-size: 26px;
+  font-size: var(--cv-fs-name-sm);
 }
 
 .sheet section {
@@ -24,7 +24,7 @@
 }
 
 .skill-row {
-  font-size: 11px;
+  font-size: var(--cv-fs-sm);
 }
 
 .job {
@@ -32,7 +32,7 @@
 }
 
 .job-title {
-  font-size: 13px;
+  font-size: var(--cv-fs-lg);
 }
 
 .job-sub {
@@ -40,7 +40,7 @@
 }
 
 ul.bullets li {
-  font-size: 11.5px;
+  font-size: var(--cv-fs-sm);
   margin-bottom: 2px;
 }
 

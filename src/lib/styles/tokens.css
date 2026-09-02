@@ -62,8 +62,21 @@
 	   both halves resolve against the --muted/--accent in force on :root. */
   --scroll-thumb: color-mix(in srgb, var(--muted) 36%, transparent);
   --scroll-thumb-hover: color-mix(in srgb, var(--accent) 62%, transparent);
-  --mono: 'SFMono-Regular', ui-monospace, 'JetBrains Mono', 'Menlo', monospace;
-  --sans: 'Inter', 'Segoe UI', -apple-system, system-ui, Roboto, Helvetica, Arial, sans-serif;
+
+  --sans: 'GitLab Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'GitLab Mono', ui-monospace, Consolas, monospace;
+
+  /* The app's type ladder. Every font-size in the editor chrome spends one of
+	   these seven and nothing else, so the whole UI moves together when a step
+	   moves. The sheet inside the preview frame has a ladder of its own —
+	   --cv-fs-* in src/lib/cv/frame.css — which this one never reaches. */
+  --ui-fs-2xs: 10px;
+  --ui-fs-xs: 11px;
+  --ui-fs-sm: 12px;
+  --ui-fs-md: 14px;
+  --ui-fs-lg: 16px;
+  --ui-fs-xl: 17px;
+  --ui-fs-2xl: 18px;
 
   /* Swapping ramps should read as a fade rather than a cut. Anything carrying
 	   a themed background, border or foreground opts in with

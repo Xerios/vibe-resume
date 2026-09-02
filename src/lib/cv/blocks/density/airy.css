@@ -3,7 +3,7 @@
 .sheet {
   max-width: 760px;
   padding: 48px 54px 40px;
-  font-size: 13px;
+  font-size: var(--cv-fs-lg);
   line-height: 1.52;
 }
 

@@ -360,7 +360,7 @@
     padding: 1px 0;
     border: none;
     border-radius: 0;
-    font-size: 12px;
+    font-size: var(--cv-fs-md);
   }
 
   @media print {

@@ -316,7 +316,7 @@
     border: none;
     cursor: pointer;
     font-family: var(--mono);
-    font-size: 10.5px;
+    font-size: var(--ui-fs-sm);
     color: var(--muted);
     padding: 6px 4px 6px 9px;
     white-space: nowrap;
@@ -337,7 +337,7 @@
   .tab-rename {
     max-width: 150px;
     font-family: var(--mono);
-    font-size: 10.5px;
+    font-size: var(--ui-fs-sm);
     color: var(--ink);
     background: var(--paper);
     border: 1px solid var(--accent);
@@ -436,7 +436,7 @@
     border-radius: 5px;
     cursor: pointer;
     font-family: var(--mono);
-    font-size: 10.5px;
+    font-size: var(--ui-fs-sm);
     font-weight: 600;
     color: var(--muted);
     text-align: left;

@@ -11,7 +11,7 @@
 }
 
 .job-title {
-  font-size: 14px;
+  font-size: var(--cv-fs-xl);
 }
 
 /* The run of older roles is a stripe too, so a section of these stays one

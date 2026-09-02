@@ -7,7 +7,7 @@
 }
 
 .name {
-  font-size: 27px;
+  font-size: var(--cv-fs-name-sm);
   font-weight: 600;
   letter-spacing: -0.2px;
 }

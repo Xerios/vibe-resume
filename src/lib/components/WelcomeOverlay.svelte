@@ -93,7 +93,7 @@
   .w-eyebrow {
     margin: 0 0 10px;
     font-family: var(--mono);
-    font-size: 9.5px;
+    font-size: var(--ui-fs-xs);
     font-weight: 600;
     letter-spacing: 1.8px;
     text-transform: uppercase;
@@ -103,7 +103,7 @@
   h1 {
     margin: 0 0 12px;
     font-family: var(--sans);
-    font-size: 21px;
+    font-size: var(--ui-fs-2xl);
     font-weight: 650;
     line-height: 1.25;
     color: var(--ink);
@@ -112,7 +112,7 @@
   .w-lede {
     margin: 0 0 20px;
     font-family: var(--sans);
-    font-size: 13px;
+    font-size: var(--ui-fs-xl);
     line-height: 1.6;
     color: var(--muted);
   }
@@ -131,7 +131,7 @@
     align-items: flex-start;
     gap: 10px;
     font-family: var(--sans);
-    font-size: 12px;
+    font-size: var(--ui-fs-lg);
     line-height: 1.55;
     color: var(--muted);
   }
@@ -162,7 +162,7 @@
     border-radius: 6px;
     cursor: pointer;
     font-family: var(--mono);
-    font-size: 11.5px;
+    font-size: var(--ui-fs-md);
     font-weight: 600;
     letter-spacing: 0.4px;
     color: var(--on-accent);
@@ -179,7 +179,7 @@
   .w-foot {
     margin: 14px 0 0;
     font-family: var(--mono);
-    font-size: 9.5px;
+    font-size: var(--ui-fs-xs);
     line-height: 1.6;
     text-align: center;
     color: var(--faint);

@@ -173,7 +173,7 @@
     align-items: center;
     justify-content: space-between;
     font-family: var(--mono);
-    font-size: 9.5px;
+    font-size: var(--ui-fs-xs);
     font-weight: 600;
     letter-spacing: 1.8px;
     text-transform: uppercase;
@@ -190,7 +190,7 @@
     flex: 1;
     min-width: 0;
     font-family: var(--mono);
-    font-size: 10.5px;
+    font-size: var(--ui-fs-sm);
     color: var(--ink);
     background: var(--editor-bg);
     border: 1.5px solid var(--line);
@@ -316,7 +316,7 @@
     display: flex;
     gap: 5px;
     font-family: var(--mono);
-    font-size: 9px;
+    font-size: var(--ui-fs-xs);
     font-weight: 600;
     letter-spacing: -0.2px;
   }
@@ -332,7 +332,7 @@
   .hist-msg {
     flex: 1;
     min-width: 0;
-    font-size: 11.5px;
+    font-size: var(--ui-fs-md);
     font-weight: 600;
     line-height: 1.3;
     overflow: hidden;
@@ -343,13 +343,13 @@
   .hist-time {
     flex-shrink: 0;
     font-family: var(--mono);
-    font-size: 9px;
+    font-size: var(--ui-fs-xs);
     color: var(--faint);
   }
 
   .hist-empty {
     font-family: var(--mono);
-    font-size: 10.5px;
+    font-size: var(--ui-fs-sm);
     color: var(--faint);
     padding: 14px 8px;
     line-height: 1.6;
@@ -364,7 +364,7 @@
     padding: 6px 10px;
     border-top: 1px solid var(--line);
     font-family: var(--mono);
-    font-size: 9.5px;
+    font-size: var(--ui-fs-xs);
     color: var(--faint);
   }
 

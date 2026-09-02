@@ -24,5 +24,5 @@
 /* Earlier roles have no dates of their own, so the gutter is left empty and
    the block simply starts on the same line as everything else. */
 .earlier h3 {
-  font-size: 13.5px;
+  font-size: var(--cv-fs-lg);
 }

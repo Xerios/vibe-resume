@@ -17,6 +17,8 @@
 
 <svelte:head>
   <link rel="icon" href={favicon} />
+  <link href="/fonts/gitlab-mono/gitlab-mono.css" rel="stylesheet" />
+  <link href="/fonts/gitlab-sans/gitlab-sans.css" rel="stylesheet" />
 </svelte:head>
 
 {@render children()}

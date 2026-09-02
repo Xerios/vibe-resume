@@ -103,7 +103,7 @@
     padding: 8px 12px;
     border-bottom: 1px solid var(--line);
     font-family: var(--mono);
-    font-size: 9.5px;
+    font-size: var(--ui-fs-xs);
     font-weight: 600;
     letter-spacing: 1.8px;
     text-transform: uppercase;
@@ -140,7 +140,7 @@
   }
 
   .trash-name {
-    font-size: 11.5px;
+    font-size: var(--ui-fs-md);
     font-weight: 600;
     color: var(--ink);
     overflow: hidden;
@@ -150,7 +150,7 @@
 
   .trash-time {
     font-family: var(--mono);
-    font-size: 9px;
+    font-size: var(--ui-fs-xs);
     color: var(--faint);
   }
 
@@ -168,7 +168,7 @@
     border-radius: 5px;
     cursor: pointer;
     font-family: var(--mono);
-    font-size: 10px;
+    font-size: var(--ui-fs-sm);
     font-weight: 600;
     color: var(--faint);
     padding: 4px 8px;
@@ -184,7 +184,7 @@
 
   .trash-empty {
     font-family: var(--mono);
-    font-size: 10.5px;
+    font-size: var(--ui-fs-sm);
     color: var(--faint);
     padding: 14px 8px;
     line-height: 1.6;
@@ -204,7 +204,7 @@
     padding: 0;
     cursor: pointer;
     font-family: var(--mono);
-    font-size: 9.5px;
+    font-size: var(--ui-fs-xs);
     color: var(--faint);
     text-decoration: underline;
   }

@@ -118,7 +118,7 @@
 
   .bp-pin {
     font-family: var(--mono);
-    font-size: 8.5px;
+    font-size: var(--ui-fs-2xs);
     font-weight: 600;
     letter-spacing: 1.2px;
     text-transform: uppercase;
@@ -131,7 +131,7 @@
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 13px;
+    font-size: var(--ui-fs-xl);
     line-height: 1;
     color: var(--faint);
   }

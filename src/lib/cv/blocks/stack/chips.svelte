@@ -48,7 +48,7 @@
     border: 1px solid var(--line);
     border-radius: 100px;
     font-family: var(--mono);
-    font-size: 10px;
+    font-size: var(--cv-fs-xs);
     line-height: 1.7;
     color: var(--muted);
     white-space: nowrap;
@@ -59,7 +59,7 @@
 	   it. Its size comes from the 1em it was drawn at, against this font-size. */
   .tech .logo {
     display: inline-flex;
-    font-size: 11.5px;
+    font-size: var(--cv-fs-sm);
     color: var(--accent-deep);
   }
 

@@ -72,7 +72,7 @@
   .vc-slot {
     flex: 1;
     font-family: var(--mono);
-    font-size: 9px;
+    font-size: var(--ui-fs-xs);
     font-weight: 600;
     letter-spacing: 1.2px;
     text-transform: uppercase;
@@ -95,14 +95,14 @@
     border: none;
     cursor: pointer;
     font-family: var(--mono);
-    font-size: 9.5px;
+    font-size: var(--ui-fs-xs);
     font-weight: 600;
     color: var(--muted);
   }
 
   .vc-arrow {
     padding: 2px 6px 3px;
-    font-size: 13px;
+    font-size: var(--ui-fs-xl);
     line-height: 1;
     color: var(--faint);
   }

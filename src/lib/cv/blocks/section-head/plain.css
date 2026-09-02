@@ -5,7 +5,7 @@
 }
 
 .sec-head h2 {
-  font-size: 9.5px;
+  font-size: var(--cv-fs-2xs);
   letter-spacing: 3.2px;
   color: var(--faint);
 }

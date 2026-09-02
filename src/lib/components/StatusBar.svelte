@@ -71,7 +71,7 @@
 
   #status {
     font-family: var(--mono);
-    font-size: 10px;
+    font-size: var(--ui-fs-sm);
     font-weight: 600;
     padding: 1px 7px;
     border-radius: 4px;
@@ -100,7 +100,7 @@
 
   #save-state {
     font-family: var(--mono);
-    font-size: 10px;
+    font-size: var(--ui-fs-sm);
     letter-spacing: 0.3px;
     color: var(--faint);
     white-space: nowrap;
@@ -123,7 +123,7 @@
     border-radius: 4px;
     cursor: pointer;
     font-family: var(--mono);
-    font-size: 10px;
+    font-size: var(--ui-fs-sm);
     font-weight: 600;
     color: var(--faint);
     white-space: nowrap;

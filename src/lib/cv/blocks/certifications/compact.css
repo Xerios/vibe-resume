@@ -24,11 +24,11 @@
 }
 
 .cert-name {
-  font-size: 12px;
+  font-size: var(--cv-fs-md);
   font-weight: 600;
 }
 
 .cert-meta {
   margin: 0;
-  font-size: 11px;
+  font-size: var(--cv-fs-sm);
 }

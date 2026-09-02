@@ -1329,7 +1329,7 @@
     justify-content: center;
     height: 100%;
     font-family: var(--mono);
-    font-size: 11px;
+    font-size: var(--ui-fs-md);
     color: var(--faint);
   }
 
@@ -1390,7 +1390,7 @@
     border-bottom: 1px solid #fecaca;
     color: var(--danger);
     font-family: var(--mono);
-    font-size: 11px;
+    font-size: var(--ui-fs-md);
     padding: 7px 24px;
     white-space: pre-wrap;
     word-break: break-all;
@@ -1416,7 +1416,7 @@
     border-bottom: 1px solid var(--prompt);
     color: var(--prompt);
     font-family: var(--mono);
-    font-size: 11px;
+    font-size: var(--ui-fs-md);
     font-weight: 600;
     padding: 7px 24px;
     z-index: 6;
@@ -1443,7 +1443,7 @@
     background: var(--accent-deep);
     color: var(--on-accent);
     font-family: var(--mono);
-    font-size: 11.5px;
+    font-size: var(--ui-fs-md);
     padding: 7px 16px;
     border-radius: 5px;
     opacity: 0;

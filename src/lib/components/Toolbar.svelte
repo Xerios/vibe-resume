@@ -70,7 +70,7 @@
 
   .t-label {
     font-family: var(--mono);
-    font-size: 9.5px;
+    font-size: var(--ui-fs-xs);
     font-weight: 600;
     letter-spacing: 1.8px;
     text-transform: uppercase;

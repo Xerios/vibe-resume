@@ -167,7 +167,7 @@
     padding: 9px 10px;
     border-bottom: 1px solid var(--line);
     font-family: var(--mono);
-    font-size: 9.5px;
+    font-size: var(--ui-fs-xs);
     font-weight: 600;
     letter-spacing: 1.8px;
     text-transform: uppercase;
@@ -220,7 +220,7 @@
   }
 
   .css-caret {
-    font-size: 13px;
+    font-size: var(--ui-fs-xl);
     line-height: 1;
     color: var(--faint);
     transition: transform 0.14s;
@@ -241,7 +241,7 @@
     border-radius: 6px;
     color: var(--ink);
     font-family: var(--mono);
-    font-size: 10.5px;
+    font-size: var(--ui-fs-sm);
     line-height: 1.55;
     tab-size: 2;
     resize: vertical;
@@ -262,14 +262,14 @@
 
   .css-hint {
     margin: 6px 0 0;
-    font-size: 10px;
+    font-size: var(--ui-fs-sm);
     line-height: 1.45;
     color: var(--faint);
   }
 
   .css-hint code {
     font-family: var(--mono);
-    font-size: 9.5px;
+    font-size: var(--ui-fs-xs);
     color: var(--muted);
   }
 
@@ -277,7 +277,7 @@
     display: block;
     margin-bottom: 6px;
     font-family: var(--mono);
-    font-size: 9.5px;
+    font-size: var(--ui-fs-xs);
     font-weight: 600;
     letter-spacing: 1.8px;
     text-transform: uppercase;
@@ -296,7 +296,7 @@
     border: none;
     cursor: pointer;
     font-family: var(--mono);
-    font-size: 9px;
+    font-size: var(--ui-fs-xs);
     font-weight: 600;
     letter-spacing: 0.5px;
     color: var(--accent);
@@ -329,7 +329,7 @@
     border-radius: 6px;
     cursor: pointer;
     font-family: var(--mono);
-    font-size: 9px;
+    font-size: var(--ui-fs-xs);
     font-weight: 600;
     letter-spacing: 0.3px;
     color: var(--muted);
@@ -368,7 +368,7 @@
     border-radius: 6px;
     cursor: pointer;
     font-family: var(--mono);
-    font-size: 10px;
+    font-size: var(--ui-fs-sm);
     font-weight: 600;
     color: var(--muted);
     transition:
@@ -397,7 +397,7 @@
     flex-shrink: 0;
     width: 17px;
     font-family: var(--f-sans);
-    font-size: 12.5px;
+    font-size: var(--ui-fs-lg);
     font-weight: 600;
     line-height: 1;
     text-align: center;

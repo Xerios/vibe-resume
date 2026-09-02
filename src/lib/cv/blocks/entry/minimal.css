@@ -3,7 +3,7 @@
    than a diamond — which is also why none of this depends on a printer's
    background graphics. */
 .job-title {
-  font-size: 13.5px;
+  font-size: var(--cv-fs-lg);
   font-weight: 600;
 }
 

@@ -15,7 +15,7 @@
 }
 
 .name {
-  font-size: 27px;
+  font-size: var(--cv-fs-name-sm);
   font-weight: 800;
   letter-spacing: 2.5px;
   text-transform: uppercase;
@@ -24,7 +24,7 @@
 .role {
   margin-top: 4px;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--cv-fs-sm);
   font-weight: 600;
   letter-spacing: 1.6px;
   text-transform: uppercase;

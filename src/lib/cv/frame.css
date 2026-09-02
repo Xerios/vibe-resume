@@ -43,6 +43,25 @@
   --mono: 'SFMono-Regular', ui-monospace, 'JetBrains Mono', 'Menlo', monospace;
   --sans: 'Inter', 'Segoe UI', -apple-system, system-ui, Roboto, Helvetica, Arial, sans-serif;
 
+  /* The sheet's type ladder, anchored on --cv-fs-lg: that is what .sheet is set
+	   in, and every other step is read against it. cv.css and the blocks spend
+	   these rather than stating a size, so a file's custom CSS can re-point one
+	   step and have every block that uses it follow.
+
+	   The two display steps are the name only, which is the one piece of the
+	   sheet far enough off the ladder to need its own. The app's chrome is on a
+	   separate ladder — --ui-fs-* in src/lib/styles/tokens.css — and neither
+	   document can see the other's. */
+  --cv-fs-2xs: 9.5px;
+  --cv-fs-xs: 10.5px;
+  --cv-fs-sm: 11.5px;
+  --cv-fs-md: 12.5px;
+  --cv-fs-lg: 13.5px;
+  --cv-fs-xl: 14.5px;
+  --cv-fs-2xl: 15.5px;
+  --cv-fs-name: 31px;
+  --cv-fs-name-sm: 27px;
+
   --theme-fade: background-color 0.22s ease, color 0.22s ease, border-color 0.22s ease;
 }
 

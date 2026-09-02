@@ -23,7 +23,7 @@
   background: var(--editor-bg);
   color: var(--ink);
   font-family: var(--mono);
-  font-size: 12.5px;
+  font-size: var(--ui-fs-md);
   transition: var(--theme-fade);
 }
 
@@ -223,7 +223,7 @@
 
 #cm-wrap .cm-diagnostic {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--ui-fs-md);
   line-height: 1.5;
   color: var(--ink);
   padding: 5px 8px;
@@ -259,15 +259,15 @@
   box-shadow: var(--shadow-pop);
   overflow: hidden;
   font-family: var(--mono);
-  font-size: 11.5px;
+  font-size: var(--ui-fs-md);
 }
 
-#cm-wrap .cm-tooltip-autocomplete > ul {
+#cm-wrap .cm-tooltip-autocomplete>ul {
   max-height: 16em;
   font-family: inherit;
 }
 
-#cm-wrap .cm-tooltip-autocomplete > ul > li {
+#cm-wrap .cm-tooltip-autocomplete>ul>li {
   display: flex;
   align-items: baseline;
   gap: 6px;
@@ -276,7 +276,7 @@
   color: var(--ink);
 }
 
-#cm-wrap .cm-tooltip-autocomplete > ul > li[aria-selected] {
+#cm-wrap .cm-tooltip-autocomplete>ul>li[aria-selected] {
   background: var(--accent-wash);
   color: var(--accent-deep);
 }
@@ -292,7 +292,7 @@
   margin-left: auto;
   padding-left: 12px;
   font-style: normal;
-  font-size: 10.5px;
+  font-size: var(--ui-fs-sm);
   color: var(--faint);
 }
 
@@ -330,7 +330,7 @@
   padding: 5px 8px;
   max-width: 260px;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--ui-fs-md);
   line-height: 1.5;
   color: var(--faint);
 }

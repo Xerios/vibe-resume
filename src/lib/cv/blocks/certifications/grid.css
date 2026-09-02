@@ -17,7 +17,7 @@
 }
 
 .cert-name {
-  font-size: 12px;
+  font-size: var(--cv-fs-md);
 }
 
 .cert-dates {

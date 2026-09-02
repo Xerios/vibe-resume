@@ -24,7 +24,7 @@
     0 1px 3px rgba(0, 0, 0, 0.06),
     0 12px 40px color-mix(in srgb, var(--accent-deep) 14%, transparent);
   border-radius: 3px;
-  font-size: 13.5px;
+  font-size: var(--cv-fs-lg);
   line-height: 1.46;
   transition: var(--theme-fade);
 }
@@ -49,7 +49,7 @@
 }
 
 .name {
-  font-size: 31px;
+  font-size: var(--cv-fs-name);
   font-weight: 800;
   letter-spacing: -0.5px;
   line-height: 1.05;
@@ -60,12 +60,12 @@
   margin: 5px 0 0;
   color: var(--accent);
   font-weight: 600;
-  font-size: 13.5px;
+  font-size: var(--cv-fs-lg);
 }
 
 .contact {
   font-family: var(--mono);
-  font-size: 10.5px;
+  font-size: var(--cv-fs-xs);
   color: var(--muted);
   text-align: right;
   line-height: 1.8;
@@ -94,7 +94,7 @@
 
 .sec-head h2 {
   font-family: var(--mono);
-  font-size: 10.5px;
+  font-size: var(--cv-fs-xs);
   font-weight: 600;
   letter-spacing: 2.4px;
   text-transform: uppercase;
@@ -148,21 +148,21 @@
 }
 
 .skill-block h3 {
-  font-size: 11.5px;
+  font-size: var(--cv-fs-sm);
   font-weight: 700;
   margin: 0 0 3px;
   color: var(--accent-deep);
 }
 
 .skill-row {
-  font-size: 12px;
+  font-size: var(--cv-fs-md);
   margin: 1px 0;
   color: var(--ink);
 }
 
 .skill-row .tier {
   font-family: var(--mono);
-  font-size: 9.5px;
+  font-size: var(--cv-fs-2xs);
   letter-spacing: 0.5px;
   color: var(--accent);
   font-weight: 600;
@@ -181,7 +181,7 @@
 }
 
 .job-title {
-  font-size: 14.5px;
+  font-size: var(--cv-fs-xl);
   font-weight: 700;
   margin: 0;
 }
@@ -193,18 +193,18 @@
 .job-title .side-note {
   font-weight: 400;
   color: var(--faint);
-  font-size: 12px;
+  font-size: var(--cv-fs-md);
 }
 
 .job-dates {
   font-family: var(--mono);
-  font-size: 10.5px;
+  font-size: var(--cv-fs-xs);
   color: var(--faint);
   white-space: nowrap;
 }
 
 .job-sub {
-  font-size: 12px;
+  font-size: var(--cv-fs-md);
   color: var(--muted);
   font-style: italic;
   margin: 2px 0 6px;
@@ -220,7 +220,7 @@ ul.bullets li {
   position: relative;
   padding-left: 15px;
   margin: 0 0 4px;
-  font-size: 12.5px;
+  font-size: var(--cv-fs-md);
 }
 
 ul.bullets li::before {
@@ -237,7 +237,7 @@ ul.bullets li::before {
 
 .stack {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--cv-fs-xs);
   color: var(--muted);
   margin-top: 5px;
   line-height: 1.65;
@@ -250,7 +250,7 @@ ul.bullets li::before {
 }
 
 .earlier h3 {
-  font-size: 14.5px;
+  font-size: var(--cv-fs-xl);
   font-weight: 700;
   margin: 0 0 4px;
   padding: 3px 0 0;
@@ -266,7 +266,7 @@ ul.bullets li::before {
 }
 
 .earlier li {
-  font-size: 12px;
+  font-size: var(--cv-fs-md);
 }
 
 .earlier li strong {
@@ -308,7 +308,7 @@ ul.bullets li::before {
   padding: 1px 8px;
   border: 1px solid var(--line);
   border-radius: 100px;
-  font-size: 11.5px;
+  font-size: var(--cv-fs-sm);
   color: var(--muted);
 }
 
@@ -342,12 +342,12 @@ ul.bullets li::before {
 .lang-name {
   flex: 1 1 auto;
   min-width: 0;
-  font-size: 12.5px;
+  font-size: var(--cv-fs-md);
   font-weight: 600;
 }
 
 .lang-note {
-  font-size: 11px;
+  font-size: var(--cv-fs-sm);
   color: var(--faint);
 }
 
@@ -357,7 +357,7 @@ ul.bullets li::before {
    ends up wider than the rail it was put in. */
 .lang-level {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--cv-fs-xs);
   color: var(--accent);
 }
 
@@ -385,7 +385,7 @@ ul.bullets li::before {
 
 .cert-name {
   margin: 0;
-  font-size: 12.5px;
+  font-size: var(--cv-fs-md);
   font-weight: 700;
 }
 
@@ -400,7 +400,7 @@ ul.bullets li::before {
 
 .cert-meta {
   margin: 1px 0 0;
-  font-size: 11.5px;
+  font-size: var(--cv-fs-sm);
   color: var(--muted);
 }
 
@@ -410,7 +410,7 @@ ul.bullets li::before {
 
 .cert-dates {
   font-family: var(--mono);
-  font-size: 10.5px;
+  font-size: var(--cv-fs-xs);
   color: var(--faint);
   white-space: nowrap;
 }
@@ -421,19 +421,19 @@ ul.bullets li::before {
   font-weight: 600;
   padding: 0 5px;
   border-radius: 3px;
-  font-size: 11.5px;
+  font-size: var(--cv-fs-sm);
   white-space: nowrap;
 }
 
 table.oss {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: var(--cv-fs-md);
 }
 
 table.oss thead th {
   font-family: var(--mono);
-  font-size: 9.5px;
+  font-size: var(--cv-fs-2xs);
   letter-spacing: 1px;
   text-transform: uppercase;
   text-align: left;
@@ -470,7 +470,7 @@ table.oss .proj a:hover {
 .cv-unknown {
   color: var(--danger);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: var(--cv-fs-md);
 }
 
 @media (max-width: 900px) {

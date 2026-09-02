@@ -8,7 +8,7 @@
 .sec-summary p:first-of-type {
   max-width: 66ch;
   margin-bottom: 9px;
-  font-size: 15px;
+  font-size: var(--cv-fs-2xl);
   font-weight: 500;
   line-height: 1.5;
   color: var(--ink);

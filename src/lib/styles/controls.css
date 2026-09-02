@@ -18,7 +18,7 @@
   border-radius: 5px;
   cursor: pointer;
   font-family: var(--mono);
-  font-size: 10.5px;
+  font-size: var(--ui-fs-sm);
   font-weight: 600;
   color: var(--muted);
   padding: 4px 11px;
@@ -65,7 +65,7 @@
 
 /* The count on History and Trash. */
 .t-count {
-  font-size: 9.5px;
+  font-size: var(--ui-fs-xs);
   padding: 0 4px;
   border-radius: 6px;
   background: var(--accent);
