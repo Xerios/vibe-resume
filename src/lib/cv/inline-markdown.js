@@ -20,13 +20,21 @@
  */
 
 /** Characters that could open something. Everything else is prose. */
-const OPENERS = '[!`*_~'
+const OPENERS = '[!`*_~<'
 
 /** A link or an image: one line, a bare destination, an optional title. */
 const LINK_RE = /^(!?\[)([^\]]*)(\]\()([^\s)]*(?:\s+"[^"\n]*")?\))/
 
 /** A run of backticks, and the same run again — a code span, marked's first pass. */
 const CODE_RE = /^(`+)([^`]|[^`][\s\S]*?[^`])\1(?!`)/
+
+/**
+ * An inline tag — `<br>`, `</b>`, `<span class="x">`. marked passes raw HTML
+ * through untouched, so these reach the page as markup and are worth marking as
+ * such; the name has to follow the `<` immediately, which keeps a bare `a < b`
+ * prose. Comments and processing instructions aren't tags and stay text.
+ */
+const HTML_RE = /^<\/?[a-zA-Z][a-zA-Z0-9-]*(?:\s[^<>]*)?\/?>/
 
 /**
  * Whether the character on either side of a delimiter lets it open or close.
@@ -101,6 +109,7 @@ export function inlineRuns(text, from = 0, to = text.length, base = '') {
     const slice = text.slice(i, to)
     const code = text[i] === '`' && CODE_RE.exec(slice)
     const link = (text[i] === '[' || (text[i] === '!' && text[i + 1] === '[')) && LINK_RE.exec(slice)
+    const html = text[i] === '<' && HTML_RE.exec(slice)
 
     if (code) {
       const [all, ticks, body] = code
@@ -118,7 +127,9 @@ export function inlineRuns(text, from = 0, to = text.length, base = '') {
         { from: body + label.length, to: body + label.length + close.length, token: 'cvMdMark' },
         { from: body + label.length + close.length, to: i + all.length, token: 'cvMdUrl' },
       ]
-    } else if (text[i] !== '!' && text[i] !== '[') {
+    } else if (html) {
+      runs = [{ from: i, to: i + html[0].length, token: 'cvMdHtml' }]
+    } else if (text[i] === '*' || text[i] === '_' || text[i] === '~') {
       const em = emphasisAt(text, i, to)
       if (em) {
         const name = text[i] === '~' ? 'cvMdStrike' : em.token

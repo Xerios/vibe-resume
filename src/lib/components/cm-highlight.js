@@ -33,6 +33,9 @@ export const highlight = HighlightStyle.define([
   { tag: t.emphasis, fontStyle: 'italic' },
   { tag: t.strikethrough, textDecoration: 'line-through' },
   { tag: t.monospace, color: 'var(--cm-string)' },
+  // A raw `<br>` or `<b>` in a value: markup the page will pass through, dimmed
+  // so it reads as scaffolding beside the words it wraps.
+  { tag: t.special(t.content), color: 'var(--cm-html)' },
 
   // Templates: HTML, the script block and the style block.
   { tag: [t.tagName, t.angleBracket], color: 'var(--cm-tag)' },

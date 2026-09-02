@@ -62,12 +62,42 @@ describe('links', () => {
   })
 })
 
+describe('html tags', () => {
+  it('takes a whole tag as one run', () => {
+    expect(runs('one<br>two')).toEqual(['one', 'cvMdHtml:<br>', 'two'])
+    expect(runs('a <b>bold</b> word')).toEqual(['a ', 'cvMdHtml:<b>', 'bold', 'cvMdHtml:</b>', ' word'])
+    expect(runs('<span class="x">x</span>')).toEqual(['cvMdHtml:<span class="x">', 'x', 'cvMdHtml:</span>'])
+    expect(runs('line<br />')).toEqual(['line', 'cvMdHtml:<br />'])
+  })
+
+  it('leaves a stray angle bracket alone', () => {
+    expect(runs('a < b and c > d')).toEqual(['a < b and c > d'])
+    expect(runs('<3')).toEqual(['<3'])
+    expect(runs('scaled <2x')).toEqual(['scaled <2x'])
+    expect(runs('unclosed <b')).toEqual(['unclosed <b'])
+    expect(runs('<!-- note -->')).toEqual(['<!-- note -->'])
+  })
+
+  it('still reads the markdown around it', () => {
+    expect(runs('**a**<br>_b_')).toEqual([
+      'cvMdMark:**',
+      'cvMdStrong:a',
+      'cvMdMark:**',
+      'cvMdHtml:<br>',
+      'cvMdMark:_',
+      'cvMdEm:b',
+      'cvMdMark:_',
+    ])
+  })
+})
+
 describe('the runs themselves', () => {
   const lines = [
     'Full-stack engineer with **10+ years** of experience.',
     '- [github.com/example](https://github.com/example)',
     '**Umbrella Startups** — Freelance developer. _WordPress, PHP._',
     'plain text with no markup at all',
+    'Senior dev<br>Remote, since **2020**',
     '',
   ]
 

@@ -45,6 +45,7 @@ const tokenTable = {
   cvMdEm: t.emphasis,
   cvMdCode: t.monospace,
   cvMdStrike: t.strikethrough,
+  cvMdHtml: t.special(t.content),
 }
 
 /**
