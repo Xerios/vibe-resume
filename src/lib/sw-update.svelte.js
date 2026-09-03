@@ -1,5 +1,6 @@
 /**
- * Whether a newer build is waiting in the wings, and the one way to let it in.
+ * Registration of the worker, whether a newer build is waiting in the wings, and
+ * the one way to let it in.
  *
  * The worker in `src/service-worker.js` installs without calling `skipWaiting()`,
  * so a fresh deploy parks itself in `waiting` and takes over only once every tab
@@ -7,13 +8,23 @@
  * wants their session swapped out mid-keystroke — but left unannounced it means an
  * installed copy can sit on a stale build indefinitely. So the arrival is watched
  * for, reported in the status bar, and applied when the user says so.
+ *
+ * None of which belongs in `vite dev`, where a caching worker in front of the dev
+ * server means an edit shows up only after that same dance. SvelteKit would
+ * register one there too, so `serviceWorker.register` is off in `vite.config.js`
+ * and this does the registering — in production builds only.
  */
+
+import { base } from '$app/paths'
 
 /** How rarely the browser is asked to look for a new worker. Deploys aren't frequent. */
 const RECHECK_MS = 15 * 60 * 1000
 
 /** How long the swap gets before the reload happens anyway, worker or no worker. */
 const TAKEOVER_TIMEOUT_MS = 3000
+
+/** Marks the one reload `#tearDown` is allowed, so it cannot reload its way in circles. */
+const DEV_TEARDOWN_KEY = 'cv:sw-dev-teardown'
 
 class SwUpdate {
   /** A newer worker has finished installing and is ready to take over. */
@@ -29,16 +40,20 @@ class SwUpdate {
 
   #checkedAt = 0
 
-  /** Idempotent, and a no-op wherever no worker is registered — `vite dev`, mostly. */
+  /** Idempotent, and in `vite dev` a teardown rather than a setup. */
   async start() {
     if (this.#started) return
     this.#started = true
     if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return
 
-    // Not `getRegistration()`: SvelteKit registers the worker on the window's `load`
-    // event, which can land after this runs. `ready` waits for it instead, and simply
-    // never settles where there is nothing to register.
-    const registration = await navigator.serviceWorker.ready
+    if (import.meta.env.DEV) {
+      await this.#tearDown()
+      return
+    }
+
+    // `{ type: 'module' }` is deliberately absent: the built worker is a classic
+    // script, and the option would make Safari refuse it.
+    const registration = await navigator.serviceWorker.register(`${base}/service-worker.js`)
     this.#registration = registration
 
     // A worker that finished installing while this tab was elsewhere, or before the
@@ -81,6 +96,28 @@ class SwUpdate {
     } catch {
       // Offline, which for this app is an ordinary state rather than a fault.
     }
+  }
+
+  /**
+   * Undo a worker left behind by a production build served from this same origin —
+   * `vite preview` on the usual port, most often. Unregistering alone doesn't
+   * release the page it already controls, so one reload is needed to get out from
+   * under it; a session flag keeps that from becoming a loop.
+   */
+  async #tearDown() {
+    const registrations = await navigator.serviceWorker.getRegistrations()
+    if (registrations.length === 0) return
+
+    await Promise.all(registrations.map((registration) => registration.unregister()))
+    if (typeof caches !== 'undefined') {
+      const keys = await caches.keys()
+      await Promise.all(keys.map((key) => caches.delete(key)))
+    }
+
+    if (!navigator.serviceWorker.controller) return
+    if (sessionStorage.getItem(DEV_TEARDOWN_KEY)) return
+    sessionStorage.setItem(DEV_TEARDOWN_KEY, '1')
+    location.reload()
   }
 
   /** Hand the page over to the waiting worker and come back on the new version. */

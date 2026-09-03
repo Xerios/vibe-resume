@@ -21,6 +21,12 @@ export default defineConfig({
       // The editor is a fully client-side, offline-capable app (see src/routes/+layout.js),
       // so it builds to a plain static bundle that can be opened from any web server.
       adapter: adapter({ fallback: 'index.html' }),
+
+      // SvelteKit's own registration runs in `vite dev` too, which puts a caching
+      // worker in front of the dev server: edits arrive only after the "Update
+      // ready" dance, and sometimes not even then. src/lib/sw-update.svelte.js
+      // registers it by hand instead, in production builds only.
+      serviceWorker: { register: false },
     }),
   ],
 

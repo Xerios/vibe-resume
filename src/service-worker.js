@@ -8,8 +8,9 @@
  * no network calls, every byte of state in localStorage. All that was missing was
  * the ability to *load* without a server.
  *
- * SvelteKit registers this automatically in a production build and leaves it out
- * of `vite dev`, so development never serves stale bytes.
+ * `src/lib/sw-update.svelte.js` registers this in production builds only —
+ * SvelteKit's own registration would install it in `vite dev` too, where a
+ * caching worker in front of the dev server only serves stale bytes.
  */
 
 import { base, build, files, prerendered, version } from '$service-worker'
