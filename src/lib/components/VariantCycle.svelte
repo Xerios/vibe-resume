@@ -63,25 +63,28 @@
     position: relative;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--sp-4);
   }
 
   .vc-slot {
     flex: 1;
-    font-family: var(--mono);
-    font-size: var(--ui-fs-xs);
+    font-family: var(--sans);
+    font-size: var(--ui-fs-2xs);
     font-weight: 600;
     letter-spacing: 1.2px;
     text-transform: uppercase;
-    color: var(--faint);
+    color: var(--gray-11);
     white-space: nowrap;
   }
 
+  /* Three cells in one box, hairline-divided — the segmented control the rest
+	   of the chrome's grouped buttons are drawn as. */
   .vc-cycle {
     display: flex;
-    align-items: center;
-    border: 1.5px solid var(--line);
-    border-radius: 6px;
+    align-items: stretch;
+    background: var(--gray-3);
+    border: var(--hairline) solid var(--gray-a6);
+    border-radius: var(--corner-xs);
     overflow: hidden;
   }
 
@@ -91,49 +94,57 @@
     background: none;
     border: none;
     cursor: pointer;
-    font-family: var(--mono);
-    font-size: var(--ui-fs-xs);
+    font-family: var(--sans);
+    font-size: var(--ui-fs-2xs);
     font-weight: 600;
-    color: var(--muted);
+    color: var(--gray-12);
+    transition: var(--hover-fade);
   }
 
   .vc-arrow {
-    padding: 2px 6px 3px;
-    font-size: var(--ui-fs-xl);
+    padding: 0 var(--sp-3);
+    font-size: var(--ui-fs-lg);
     line-height: 1;
-    color: var(--faint);
+    color: var(--gray-11);
   }
 
   .vc-arrow:hover {
-    background: var(--accent-wash);
-    color: var(--accent-deep);
+    background: var(--accent-9);
+    color: var(--accent-contrast);
+  }
+
+  .vc-arrow:active {
+    background: var(--accent-10);
   }
 
   .vc-name {
-    min-width: 82px;
-    padding: 3px 4px;
+    min-width: 78px;
+    padding: var(--sp-1) var(--sp-2);
+    border-left: var(--hairline) solid var(--gray-a6);
+    border-right: var(--hairline) solid var(--gray-a6);
     text-align: center;
     white-space: nowrap;
   }
 
   .vc-name:hover,
   .vc-name[aria-expanded='true'] {
-    color: var(--accent-deep);
+    background: var(--gray-4);
+    color: var(--gray-12);
   }
 
   .vc-menu {
     position: absolute;
-    top: calc(100% + 4px);
+    top: calc(100% + var(--sp-1));
     right: 0;
     z-index: 1;
     display: flex;
     flex-direction: column;
     min-width: 128px;
-    padding: 4px;
-    background: var(--paper);
-    border: 1px solid var(--line);
-    border-radius: 7px;
-    box-shadow: var(--shadow-pop);
+    padding: var(--sp-1);
+    background: var(--gray-2);
+    border: var(--hairline) solid var(--gray-6);
+    border-radius: var(--corner-xs);
+    box-shadow: var(--shadow-4);
   }
 
   .vc-menu.left {
@@ -142,15 +153,19 @@
   }
 
   .vc-opt {
-    padding: 4px 7px;
-    border-radius: 5px;
+    padding: var(--sp-1) var(--sp-3);
+    border-radius: var(--corner-xs);
     text-align: left;
     white-space: nowrap;
   }
 
-  .vc-opt:hover,
+  .vc-opt:hover {
+    background: var(--gray-3);
+    color: var(--gray-12);
+  }
+
   .vc-opt.on {
-    background: var(--accent-wash);
-    color: var(--accent-deep);
+    background: var(--accent-9);
+    color: var(--accent-contrast);
   }
 </style>

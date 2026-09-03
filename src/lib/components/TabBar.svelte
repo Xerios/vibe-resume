@@ -59,7 +59,7 @@
     menu?.querySelector('button')?.focus()
 
     /** @param {PointerEvent} e */
-    const onPointerDown = e => {
+    const onPointerDown = (e) => {
       if (!menuGroup?.contains(/** @type {Node | null} */ (e.target))) menuOpen = false
     }
     document.addEventListener('pointerdown', onPointerDown)
@@ -161,7 +161,8 @@
             title="{f.name} — double-click or F2 to rename"
             onclick={() => onSelect(f.id)}
             ondblclick={() => startRename(f)}
-            onkeydown={e => onTabKeydown(e, f)}>
+            onkeydown={(e) => onTabKeydown(e, f)}
+          >
             {f.name}
           </button>
           <!-- Everything that can be done to a file is behind this one caret,
@@ -179,7 +180,8 @@
                 aria-label="Actions for {f.name}"
                 title="What can be done to this CV"
                 onclick={() => (menuOpen ? (menuOpen = false) : openMenu())}
-                onkeydown={onMoreKeydown}>
+                onkeydown={onMoreKeydown}
+              >
                 <Icon icon={IconChevron} width="11" height="11" />
               </button>
 
@@ -192,7 +194,8 @@
                   style:left="{menuAt.x}px"
                   style:top="{menuAt.y}px"
                   onkeydown={onMenuKeydown}
-                  onfocusout={onMenuFocusOut}>
+                  onfocusout={onMenuFocusOut}
+                >
                   <button class="menu-item" role="menuitem" onclick={() => pick(onDuplicate)}>
                     <Icon icon={IconCopy} width="12" height="12" />
                     <span>Duplicate</span>
@@ -251,25 +254,24 @@
     flex-shrink: 0;
     position: relative;
     display: flex;
-    align-items: center;
-    gap: 8px;
-    height: 34px;
-    padding: 0 10px;
-    background: var(--editor-chrome);
-    border-bottom: 1px solid var(--line);
+    align-items: stretch;
+    gap: var(--sp-3);
+    height: var(--bar-tabs);
+    padding: 0 var(--sp-3) 0 0;
+    background: var(--gray-2);
+    border-bottom: var(--hairline) solid var(--gray-6);
     z-index: 9;
     transition: var(--theme-fade);
   }
 
   /* Sized to its tabs and no wider, so the control that opens another one sits
 	   against the last of them rather than across the bar. Shrinks — and scrolls —
-	   only once there are more tabs than room. Its scrollbar is hidden: 34px
-	   leaves no room for one that isn't overlaid. */
+	   only once there are more tabs than room. Its scrollbar is hidden: a bar
+	   this thin leaves no room for one that isn't overlaid. */
   #tabs {
     flex: 0 1 auto;
     display: flex;
-    align-items: center;
-    gap: 3px;
+    align-items: stretch;
     min-width: 0;
     overflow-x: auto;
     scrollbar-width: none;
@@ -283,27 +285,34 @@
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: var(--sp-2);
   }
 
+  /* Full-height cells divided by a rule rather than pills floating in a bar:
+	   the tabs are a strip of the window, and the active one is a hole cut
+	   through to the pane below it. */
   .tab {
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    gap: 1px;
     background: none;
-    border: 1.5px solid transparent;
-    border-radius: 5px;
+    border: none;
+    border-right: var(--hairline) solid var(--gray-6);
     transition: var(--theme-fade);
   }
 
+  /* An alpha step rather than a solid one: the tab is a hole in the bar with
+	   nothing of its own behind it, so the hover has to tint whatever is. */
   .tab:hover {
-    background: var(--accent-wash);
+    background: var(--gray-a3);
+    transition: var(--hover-fade);
   }
 
   .tab.active {
-    background: var(--paper);
-    border-color: var(--line);
+    background: var(--gray-1);
+    /* The one mark that says which: a rule in the accent at step 9 along the
+		   top edge, inset so it can't add to the height of the bar. */
+    box-shadow: inset 0 2px 0 0 var(--accent-9);
   }
 
   .tab-select {
@@ -312,10 +321,10 @@
     background: none;
     border: none;
     cursor: pointer;
-    font-family: var(--mono);
+    font-family: var(--sans);
     font-size: var(--ui-fs-sm);
-    color: var(--muted);
-    padding: 6px 4px 6px 9px;
+    color: var(--gray-11);
+    padding: 0 var(--sp-1) 0 var(--sp-4);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -323,24 +332,24 @@
 
   /* No caret alongside to balance the label against. */
   .tab:not(.active) .tab-select {
-    padding-right: 9px;
+    padding-right: var(--sp-4);
   }
 
   .tab.active .tab-select {
-    color: var(--accent-deep);
+    color: var(--gray-12);
     font-weight: 600;
   }
 
   .tab-rename {
     max-width: 150px;
-    font-family: var(--mono);
+    font-family: var(--sans);
     font-size: var(--ui-fs-sm);
-    color: var(--ink);
-    background: var(--paper);
-    border: 1px solid var(--accent);
-    border-radius: 3px;
-    margin: 3px 4px 3px 9px;
-    padding: 3px 5px;
+    color: var(--gray-12);
+    background: var(--gray-1);
+    border: var(--hairline) solid var(--accent-8);
+    border-radius: var(--corner-xs);
+    margin: var(--sp-1) var(--sp-2) var(--sp-1) var(--sp-3);
+    padding: var(--sp-1) var(--sp-2);
   }
 
   .tab-rename:focus {
@@ -358,55 +367,56 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 18px;
-    height: 18px;
-    margin-right: 5px;
+    width: 16px;
+    height: 16px;
+    margin-right: var(--sp-2);
     background: none;
     border: none;
-    border-radius: 3px;
+    border-radius: var(--corner-xs);
     cursor: pointer;
-    color: var(--faint);
+    color: var(--gray-11);
     padding: 0;
   }
 
   .tab-more:hover,
   .tab-more[aria-expanded='true'] {
-    background: var(--line);
-    color: var(--accent-deep);
+    background: var(--accent-9);
+    color: var(--accent-contrast);
   }
 
   /* ── Open another tab ─────────────────────────── */
+  /* Square, and the width of the gutter it sits in. Dashed while it is only an
+	   offer; solid and lit once it is being taken. */
   .tab-new {
     flex-shrink: 0;
+    align-self: center;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 23px;
-    height: 22px;
+    width: 20px;
+    height: 18px;
     background: none;
-    border: 1.5px dashed var(--line);
-    border-radius: 5px;
+    border: var(--hairline) dashed var(--gray-7);
+    border-radius: var(--corner-xs);
     cursor: pointer;
-    color: var(--muted);
+    color: var(--gray-11);
     padding: 0;
-    transition:
-      border-color 0.13s,
-      color 0.13s;
+    transition: var(--hover-fade);
   }
 
   .tab-new:hover,
   .tab-new:focus-visible {
-    background: var(--accent-wash);
+    background: var(--accent-9);
     border-style: solid;
-    border-color: var(--accent);
-    color: var(--accent-deep);
+    border-color: var(--accent-9);
+    color: var(--accent-contrast);
   }
 
   /* Matches the weight .t-btn gives its icons; the glyphs are drawn by <Icon>,
 	   so the compiler never sees the elements to scope them. */
   .tab-new :global([stroke-width]),
   .tab-more :global([stroke-width]) {
-    stroke-width: 2.5;
+    stroke-width: 2.25;
   }
 
   /* Fixed, and placed where the caret was — see `menuAt`. */
@@ -414,56 +424,61 @@
     position: fixed;
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    padding: 4px;
-    background: var(--paper);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    box-shadow: var(--shadow-pop);
+    padding: var(--sp-1);
+    /* A popover is step 2 like every other panel — Radix has no tonal ladder,
+	     so height is said once, by the shadow. The 1px ring inside --shadow-4
+	     is what holds its edge; a border as well would state it twice. */
+    background: var(--gray-2);
+    border-radius: var(--corner-xs);
+    box-shadow: var(--shadow-4);
     z-index: 100;
   }
 
   .menu-item {
     display: flex;
     align-items: center;
-    gap: 7px;
+    gap: var(--sp-3);
     width: 100%;
     background: none;
     border: none;
-    border-radius: 5px;
+    border-radius: var(--corner-xs);
     cursor: pointer;
-    font-family: var(--mono);
+    font-family: var(--sans);
     font-size: var(--ui-fs-sm);
-    font-weight: 600;
-    color: var(--muted);
+    font-weight: 550;
+    color: var(--gray-12);
     text-align: left;
     white-space: nowrap;
-    padding: 5px 9px 5px 7px;
+    padding: var(--sp-2) var(--sp-4) var(--sp-2) var(--sp-3);
+    transition: var(--hover-fade);
   }
 
+  /* The highlighted row of a menu is the solid step, not a soft one: it is
+	   pointing at what Enter will do, and that wants the full-strength hue. */
   .menu-item:hover,
   .menu-item:focus-visible {
-    background: var(--accent-wash);
-    color: var(--accent-deep);
+    background: var(--accent-9);
+    color: var(--accent-contrast);
     outline: none;
   }
 
+  /* Same shape in red, because red 9 takes the same contrast colour. */
   .menu-item.danger:hover,
   .menu-item.danger:focus-visible {
-    background: var(--line);
-    color: var(--danger);
+    background: var(--red-9);
+    color: var(--accent-contrast);
   }
 
   .menu-sep {
-    height: 1px;
-    margin: 2px 4px;
-    background: var(--line);
+    height: var(--hairline);
+    margin: var(--sp-1) var(--sp-2);
+    background: var(--gray-6);
   }
 
   @media (max-width: 640px) {
     #tabbar {
-      gap: 6px;
-      padding: 0 6px;
+      gap: var(--sp-2);
+      padding: 0 var(--sp-2) 0 0;
     }
 
     .tab-select,

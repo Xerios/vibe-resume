@@ -59,30 +59,30 @@
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    gap: 12px;
-    height: 46px;
-    padding: 0 16px;
-    background: var(--paper);
-    border-bottom: 1px solid var(--line);
+    gap: var(--sp-4);
+    height: var(--bar-tool);
+    padding: 0 var(--sp-4);
+    background: var(--gray-2);
+    border-bottom: var(--hairline) solid var(--gray-6);
     z-index: 10;
     transition: var(--theme-fade);
   }
 
   .t-label {
-    font-family: var(--mono);
-    font-size: var(--ui-fs-xs);
+    font-family: var(--sans);
+    font-size: var(--ui-fs-2xs);
     font-weight: 600;
     letter-spacing: 1.8px;
     text-transform: uppercase;
-    color: var(--muted);
+    color: var(--gray-11);
   }
 
   /* At phone width the bar keeps only what can't be inferred: the label is
 	   the page title again. */
   @media (max-width: 640px) {
     #toolbar {
-      gap: 8px;
-      padding: 0 10px;
+      gap: var(--sp-3);
+      padding: 0 var(--sp-3);
     }
 
     .t-label {

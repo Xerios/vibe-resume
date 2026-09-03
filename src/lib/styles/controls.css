@@ -5,6 +5,19 @@
    StylePicker — and from the detached-version banner in +page.svelte. The
    status bar's own slimmer buttons are not these; they live in StatusBar.
 
+   A button at rest is Radix's *surface* variant, which is the four-step
+   sentence the scale is built to say: step 3 is the UI element background,
+   step 4 is that element hovered, step 5 is it held down, and step 12 is the
+   label on top. The edge is an *alpha* step rather than a solid one — a button
+   lands on the bars, on a panel and inside a popover, and an alpha border
+   keeps the same weight against all three, which `--gray-7` would not.
+
+   The one that is *on* graduates to the *solid* variant: step 9, the only step
+   where a hue appears at full strength, hovering to step 10, with
+   `--accent-contrast` as the label. Step 9 is also the one place the accent is
+   unambiguous, which is what makes it the right way to say "this is switched
+   on". Between them those two cover every button in the chrome.
+
    A class that only ever appears in one component does *not* belong here;
    it belongs in that component's <style> block.
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -12,65 +25,98 @@
 .t-btn {
   display: flex;
   align-items: center;
-  gap: 5px;
-  background: none;
-  border: 1.5px solid var(--line);
-  border-radius: 5px;
+  gap: var(--sp-2);
+  background: var(--gray-3);
+  border: var(--hairline) solid var(--gray-a6);
+  border-radius: var(--corner-xs);
   cursor: pointer;
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: var(--ui-fs-sm);
-  font-weight: 600;
-  color: var(--muted);
-  padding: 4px 11px;
+  font-weight: 550;
+  color: var(--gray-12);
+  padding: var(--sp-1) var(--sp-4);
   flex-shrink: 0;
   white-space: nowrap;
   transition: var(--theme-fade);
 }
 
 .t-btn:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent-deep);
+  background: var(--gray-4);
+  border-color: var(--gray-a7);
+  transition: var(--hover-fade);
+}
+
+/* Step 5 is the scale's "held down", and it is the whole of the press state:
+   nothing here moves or shrinks on click. */
+.t-btn:active:not(:disabled) {
+  background: var(--gray-5);
+}
+
+/* Step 8 is the focus-ring step in every Radix scale. */
+.t-btn:focus-visible {
+  outline: 2px solid var(--accent-8);
+  outline-offset: 1px;
 }
 
 .t-btn:disabled {
-  opacity: 0.45;
+  opacity: 0.4;
   cursor: default;
 }
 
+/* A toggle that is on is the solid variant — the accent at step 9 under the
+   one colour Radix sanctions on top of it. Everything at rest is the surface
+   variant instead, three steps down and out of the way. */
 .t-btn.on {
-  border-color: var(--accent);
-  color: var(--accent-deep);
-  background: var(--accent-wash);
+  color: var(--accent-contrast);
+  background: var(--accent-9);
+  border-color: var(--accent-9);
 }
 
-/* The one button that leaves the app: filled rather than outlined, so Export
-   reads as the end of the workflow instead of another toggle. */
+.t-btn.on:hover:not(:disabled) {
+  background: var(--accent-10);
+  border-color: var(--accent-10);
+}
+
+.t-btn.on:active:not(:disabled) {
+  background: var(--accent-10);
+}
+
+/* The one button that leaves the app: lit like a toggle that is on, so Export
+   reads as the end of the workflow instead of another switch. */
 .t-btn-pdf {
-  border-color: var(--accent);
-  color: var(--accent-deep);
-  background: var(--accent-wash);
+  color: var(--accent-contrast);
+  background: var(--accent-9);
+  border-color: var(--accent-9);
 }
 
 .t-btn-pdf:hover:not(:disabled) {
-  background: var(--accent);
-  color: var(--on-accent);
-  border-color: var(--accent);
+  background: var(--accent-10);
+  border-color: var(--accent-10);
 }
 
-/* Iconify ships the lucide set at stroke-width 2; at 11-13px these buttons
+/* Iconify ships the lucide set at stroke-width 2; at these sizes the buttons
    read better a touch bolder, as the hand-rolled SVGs they replaced did. */
 .t-btn [stroke-width] {
-  stroke-width: 2.5;
+  stroke-width: 2.25;
 }
 
-/* The count on History and Trash. */
+/* The count on History and Trash: a solid step 9 chip, the badge's job being
+   to be found rather than to be quiet. */
 .t-count {
-  font-size: var(--ui-fs-xs);
-  padding: 0 4px;
-  border-radius: 6px;
-  background: var(--accent);
-  color: var(--on-accent);
+  font-size: var(--ui-fs-2xs);
+  font-variant-numeric: tabular-nums;
+  padding: 0 var(--sp-2);
+  border-radius: var(--corner-full);
+  background: var(--accent-9);
+  color: var(--accent-contrast);
   line-height: 1.5;
+}
+
+/* Inside a lit button the badge is already on step 9, so it inverts: the
+   contrast colour becomes the fill and the accent becomes the digits. */
+.t-btn.on .t-count {
+  background: var(--accent-contrast);
+  color: var(--accent-9);
 }
 
 /* Pushes whatever follows to the far end of a bar. */
@@ -82,7 +128,7 @@
    that the icon beside it already says. */
 @media (max-width: 640px) {
   .t-btn {
-    padding: 4px 8px;
+    padding: var(--sp-1) var(--sp-2);
   }
 
   .t-btn .t-txt {

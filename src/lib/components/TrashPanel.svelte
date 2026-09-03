@@ -80,16 +80,16 @@
 <style>
   #trash-panel {
     position: fixed;
-    top: 82px;
-    right: 16px;
-    width: 280px;
+    top: var(--overlay-top);
+    right: var(--sp-4);
+    width: 252px;
     max-height: 60vh;
     display: flex;
     flex-direction: column;
-    background: var(--paper);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    box-shadow: var(--shadow-pop);
+    background: var(--gray-2);
+    border: var(--hairline) solid var(--gray-6);
+    border-radius: var(--corner-xs);
+    box-shadow: var(--shadow-4);
     z-index: 100;
     overflow: hidden;
     transition: var(--theme-fade);
@@ -100,14 +100,15 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--line);
-    font-family: var(--mono);
-    font-size: var(--ui-fs-xs);
+    padding: var(--sp-2) var(--sp-4);
+    border-bottom: var(--hairline) solid var(--gray-6);
+    background: var(--gray-2);
+    font-family: var(--sans);
+    font-size: var(--ui-fs-2xs);
     font-weight: 600;
     letter-spacing: 1.8px;
     text-transform: uppercase;
-    color: var(--muted);
+    color: var(--gray-11);
   }
 
   .trash-list {
@@ -115,7 +116,7 @@
     overflow-y: auto;
     min-height: 0;
     margin: 0;
-    padding: 4px;
+    padding: var(--sp-1);
     list-style: none;
   }
 
@@ -123,26 +124,26 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    padding: 6px 8px;
-    border-radius: 5px;
+    gap: var(--sp-4);
+    padding: var(--sp-2) var(--sp-3);
+    border-radius: var(--corner-xs);
   }
 
   .trash-row:hover {
-    background: var(--accent-wash);
+    background: var(--gray-3);
   }
 
   .trash-info {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--sp-1);
     min-width: 0;
   }
 
   .trash-name {
-    font-size: var(--ui-fs-md);
+    font-size: var(--ui-fs-sm);
     font-weight: 600;
-    color: var(--ink);
+    color: var(--gray-12);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -150,43 +151,47 @@
 
   .trash-time {
     font-family: var(--mono);
-    font-size: var(--ui-fs-xs);
-    color: var(--faint);
+    font-size: var(--ui-fs-2xs);
+    color: var(--gray-11);
   }
 
   .trash-actions {
     flex-shrink: 0;
     display: flex;
-    gap: 4px;
+    gap: var(--sp-1);
   }
 
   /* Not a .t-btn: deleting forever should not look like the Restore button
-	   sitting next to it, and turns red only on approach. */
+	   sitting next to it, so it is bare until approached and then goes red. */
   .trash-purge {
     background: none;
-    border: 1.5px solid var(--line);
-    border-radius: 5px;
+    border: var(--hairline) solid var(--gray-a6);
+    border-radius: var(--corner-xs);
     cursor: pointer;
-    font-family: var(--mono);
+    font-family: var(--sans);
     font-size: var(--ui-fs-sm);
-    font-weight: 600;
-    color: var(--faint);
-    padding: 4px 8px;
-    transition:
-      border-color 0.13s,
-      color 0.13s;
+    font-weight: 550;
+    color: var(--gray-11);
+    padding: var(--sp-1) var(--sp-3);
+    transition: var(--hover-fade);
   }
 
   .trash-purge:hover {
-    border-color: var(--danger);
-    color: var(--danger);
+    background: var(--red-9);
+    border-color: var(--red-9);
+    color: var(--accent-contrast);
+  }
+
+  .trash-purge:active {
+    background: var(--red-10);
+    border-color: var(--red-10);
   }
 
   .trash-empty {
-    font-family: var(--mono);
+    font-family: var(--sans);
     font-size: var(--ui-fs-sm);
-    color: var(--faint);
-    padding: 14px 8px;
+    color: var(--gray-11);
+    padding: var(--sp-6) var(--sp-3);
     line-height: 1.6;
   }
 
@@ -194,8 +199,8 @@
     flex-shrink: 0;
     display: flex;
     justify-content: flex-end;
-    padding: 6px 10px;
-    border-top: 1px solid var(--line);
+    padding: var(--sp-2) var(--sp-3);
+    border-top: var(--hairline) solid var(--gray-6);
   }
 
   .trash-foot button {
@@ -204,12 +209,12 @@
     padding: 0;
     cursor: pointer;
     font-family: var(--mono);
-    font-size: var(--ui-fs-xs);
-    color: var(--faint);
+    font-size: var(--ui-fs-2xs);
+    color: var(--gray-11);
     text-decoration: underline;
   }
 
   .trash-foot button:hover {
-    color: var(--danger);
+    color: var(--red-11);
   }
 </style>

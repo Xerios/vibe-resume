@@ -16,10 +16,13 @@ body {
   overflow: hidden;
 }
 
+/* Step 3 rather than step 1: the page behind everything is mostly the preview
+   canvas, and a canvas has to read as the desk a white sheet is lying on. The
+   panes that sit on top of it take step 1 and 2. */
 body {
   font-family: var(--sans);
-  color: var(--ink);
-  background: var(--bg);
+  color: var(--gray-12);
+  background: var(--gray-3);
   -webkit-font-smoothing: antialiased;
   transition: var(--theme-fade);
 }
@@ -46,8 +49,8 @@ u {
 }
 
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
 }
 
 ::-webkit-scrollbar-track,
@@ -56,12 +59,12 @@ u {
 }
 
 /* The transparent border is the inset: padding-box clipping keeps the fill
-   inside it, which is what makes a 10px-wide track carry a 6px thumb. */
+   inside it, which is what makes a 9px-wide track carry a 5px thumb. */
 ::-webkit-scrollbar-thumb {
   background: var(--scroll-thumb);
   background-clip: padding-box;
   border: 2px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--corner-xs);
 }
 
 ::-webkit-scrollbar-thumb:hover {

@@ -160,7 +160,8 @@
             class:on={o.id === page.orientation}
             title={o.hint}
             aria-pressed={o.id === page.orientation}
-            onclick={() => onPaper({ orientation: o.id })}>
+            onclick={() => onPaper({ orientation: o.id })}
+          >
             <span class="paper-shape" class:wide={o.id === 'landscape'}></span>
             {o.name}
           </button>
@@ -211,11 +212,11 @@
 	   history panel, which it takes turns with. */
   #style-pane {
     flex-shrink: 0;
-    width: 288px;
+    width: var(--panel-w);
     display: flex;
     flex-direction: column;
-    background: var(--paper);
-    border-left: 1px solid var(--line);
+    background: var(--gray-2);
+    border-left: var(--hairline) solid var(--gray-6);
     overflow: hidden;
     transition: var(--theme-fade);
   }
@@ -225,15 +226,15 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    padding: 9px 10px;
-    border-bottom: 1px solid var(--line);
-    font-family: var(--mono);
-    font-size: var(--ui-fs-xs);
+    gap: var(--sp-4);
+    padding: var(--sp-3) var(--sp-3);
+    border-bottom: var(--hairline) solid var(--gray-6);
+    font-family: var(--sans);
+    font-size: var(--ui-fs-2xs);
     font-weight: 600;
     letter-spacing: 1.8px;
     text-transform: uppercase;
-    color: var(--muted);
+    color: var(--gray-11);
   }
 
   /* The preset in play names what the groups below are set to; it is a value
@@ -242,7 +243,7 @@
     min-width: 0;
     letter-spacing: 0.5px;
     text-transform: none;
-    color: var(--faint);
+    color: var(--gray-11);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -254,10 +255,10 @@
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding: 10px;
+    padding: var(--sp-3);
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--sp-5);
   }
 
   /* The disclosure is the label: the whole row is the hit target, so the caret
@@ -278,13 +279,13 @@
   }
 
   .css-toggle:hover .style-label {
-    color: var(--accent-deep);
+    color: var(--gray-12);
   }
 
   .css-caret {
-    font-size: var(--ui-fs-xl);
+    font-size: var(--ui-fs-lg);
     line-height: 1;
-    color: var(--faint);
+    color: var(--gray-11);
     transition: transform 0.14s;
   }
 
@@ -296,12 +297,12 @@
     display: block;
     width: 100%;
     height: 132px;
-    margin-top: 7px;
-    padding: 7px 8px;
-    background: var(--editor-bg);
-    border: 1.5px solid var(--line);
-    border-radius: 6px;
-    color: var(--ink);
+    margin-top: var(--sp-3);
+    padding: var(--sp-3);
+    background: var(--gray-1);
+    border: var(--hairline) solid var(--gray-7);
+    border-radius: var(--corner-xs);
+    color: var(--gray-12);
     font-family: var(--mono);
     font-size: var(--ui-fs-sm);
     line-height: 1.55;
@@ -313,37 +314,37 @@
 
   .css-edit:focus {
     outline: none;
-    border-color: var(--accent);
+    border-color: var(--accent-8);
   }
 
   /* The template shows through as the placeholder, so an empty editor still
 	   says which tokens are worth reaching for. */
   .css-edit::placeholder {
-    color: var(--faint);
+    color: var(--gray-10);
   }
 
   .css-hint {
-    margin: 6px 0 0;
+    margin: var(--sp-3) 0 0;
     font-size: var(--ui-fs-sm);
     line-height: 1.45;
-    color: var(--faint);
+    color: var(--gray-11);
   }
 
   .css-hint code {
     font-family: var(--mono);
-    font-size: var(--ui-fs-xs);
-    color: var(--muted);
+    font-size: var(--ui-fs-2xs);
+    color: var(--gray-12);
   }
 
   .style-label {
     display: block;
-    margin-bottom: 6px;
-    font-family: var(--mono);
-    font-size: var(--ui-fs-xs);
+    margin-bottom: var(--sp-3);
+    font-family: var(--sans);
+    font-size: var(--ui-fs-2xs);
     font-weight: 600;
     letter-spacing: 1.8px;
     text-transform: uppercase;
-    color: var(--muted);
+    color: var(--gray-11);
   }
 
   .blocks-head {
@@ -357,66 +358,65 @@
     background: none;
     border: none;
     cursor: pointer;
-    font-family: var(--mono);
-    font-size: var(--ui-fs-xs);
+    font-family: var(--sans);
+    font-size: var(--ui-fs-2xs);
     font-weight: 600;
     letter-spacing: 0.5px;
-    color: var(--accent);
+    /* Step 11, because this is accent used as *text* — step 9 is a fill, and
+		   Radix does not guarantee it legible at 9px on a step 2 panel. */
+    color: var(--accent-11);
   }
 
   .blocks-reset:hover {
-    color: var(--accent-deep);
+    color: var(--accent-12);
   }
 
   .blocks-list {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--sp-2);
   }
 
   .layout-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 5px;
+    gap: var(--sp-1);
   }
 
   .layout-opt {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 3px;
-    padding: 5px 3px 4px;
-    background: none;
-    border: 1.5px solid var(--line);
-    border-radius: 6px;
+    gap: var(--sp-1);
+    padding: var(--sp-2) var(--sp-1);
+    background: var(--gray-3);
+    border: var(--hairline) solid var(--gray-a6);
+    border-radius: var(--corner-xs);
     cursor: pointer;
-    font-family: var(--mono);
-    font-size: var(--ui-fs-xs);
+    font-family: var(--sans);
+    font-size: var(--ui-fs-2xs);
     font-weight: 600;
     letter-spacing: 0.3px;
-    color: var(--muted);
-    transition:
-      border-color 0.13s,
-      color 0.13s,
-      background 0.13s;
+    color: var(--gray-12);
+    transition: var(--hover-fade);
   }
 
   .layout-opt:hover {
-    border-color: var(--accent);
-    color: var(--accent-deep);
+    background: var(--gray-4);
+    border-color: var(--gray-a7);
   }
 
   .layout-opt.on {
-    border-color: var(--accent);
-    color: var(--accent-deep);
-    background: var(--accent-wash);
+    border-color: var(--accent-9);
+    color: var(--accent-contrast);
+    background: var(--accent-9);
   }
 
   .theme-grid,
   .font-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 4px;
+    gap: var(--sp-1);
   }
 
   /* One row per question — the sizes, then the two orientations — rather than
@@ -424,8 +424,8 @@
   .paper-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 4px;
-    margin-bottom: 4px;
+    gap: var(--sp-1);
+    margin-bottom: var(--sp-1);
   }
 
   .paper-grid.two {
@@ -433,7 +433,7 @@
   }
 
   .paper-runs {
-    margin-top: 8px;
+    margin-top: var(--sp-4);
   }
 
   .theme-opt,
@@ -441,37 +441,34 @@
   .paper-opt {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 7px;
-    background: none;
-    border: 1.5px solid var(--line);
-    border-radius: 6px;
+    gap: var(--sp-3);
+    padding: var(--sp-1) var(--sp-3);
+    background: var(--gray-3);
+    border: var(--hairline) solid var(--gray-a6);
+    border-radius: var(--corner-xs);
     cursor: pointer;
-    font-family: var(--mono);
+    font-family: var(--sans);
     font-size: var(--ui-fs-sm);
-    font-weight: 600;
-    color: var(--muted);
-    transition:
-      border-color 0.13s,
-      color 0.13s,
-      background 0.13s;
+    font-weight: 550;
+    color: var(--gray-12);
+    transition: var(--hover-fade);
   }
 
   .theme-opt:hover,
   .font-opt:hover,
   .paper-opt:hover,
   .paper-fit:hover {
-    border-color: var(--accent);
-    color: var(--accent-deep);
+    background: var(--gray-4);
+    border-color: var(--gray-a7);
   }
 
   .theme-opt.on,
   .font-opt.on,
   .paper-opt.on,
   .paper-fit.on {
-    border-color: var(--accent);
-    color: var(--accent-deep);
-    background: var(--accent-wash);
+    border-color: var(--accent-9);
+    color: var(--accent-contrast);
+    background: var(--accent-9);
   }
 
   .paper-opt {
@@ -484,8 +481,7 @@
     flex-shrink: 0;
     width: 8px;
     height: 11px;
-    border: 1.5px solid currentColor;
-    border-radius: 1px;
+    border: var(--hairline) solid currentColor;
     opacity: 0.75;
   }
 
@@ -500,29 +496,26 @@
   .paper-fit {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--sp-3);
     width: 100%;
-    margin-top: 8px;
-    padding: 4px 7px;
-    background: none;
-    border: 1.5px solid var(--line);
-    border-radius: 6px;
+    margin-top: var(--sp-4);
+    padding: var(--sp-1) var(--sp-3);
+    background: var(--gray-3);
+    border: var(--hairline) solid var(--gray-a6);
+    border-radius: var(--corner-xs);
     cursor: pointer;
-    font-family: var(--mono);
+    font-family: var(--sans);
     font-size: var(--ui-fs-sm);
-    font-weight: 600;
-    color: var(--muted);
-    transition:
-      border-color 0.13s,
-      color 0.13s,
-      background 0.13s;
+    font-weight: 550;
+    color: var(--gray-12);
+    transition: var(--hover-fade);
   }
 
   .paper-tick {
     flex-shrink: 0;
     width: 11px;
     text-align: center;
-    color: var(--accent);
+    color: currentColor;
   }
 
   /* The specimen, in the stack the option's own `data-cv-font` declares. The
@@ -536,7 +529,7 @@
     font-weight: 600;
     line-height: 1;
     text-align: center;
-    color: var(--ink);
+    color: currentColor;
   }
 
   /* Accent over the sheet colour it sits on, so a swatch previews the pairing.
@@ -544,12 +537,13 @@
 
 	   The light ramp whatever the app is set to, because that is what the sheet
 	   renders from — a swatch that darkened with the chrome would be advertising
-	   a CV the preview can no longer produce. */
+	   a CV the preview can no longer produce. Square like everything else here;
+	   the CV's palette is data the chrome displays, not part of the chrome. */
   .theme-dot {
     flex-shrink: 0;
-    width: 13px;
-    height: 13px;
-    border-radius: 50%;
+    width: 12px;
+    height: 12px;
+    border-radius: var(--corner-xs);
     background: var(--t-accent-l);
     box-shadow:
       inset 0 0 0 3px var(--t-paper-l),
@@ -561,14 +555,14 @@
   @media (max-width: 900px) {
     #style-pane {
       position: fixed;
-      top: 82px;
-      right: 8px;
+      top: var(--overlay-top);
+      right: var(--sp-3);
       /* Clear of the status bar, which is fixed to the foot of the shell. */
-      bottom: 34px;
-      width: min(288px, calc(100vw - 16px));
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      box-shadow: var(--shadow-pop);
+      bottom: var(--bar-status);
+      width: min(var(--panel-w), calc(100vw - 2 * var(--sp-3)));
+      border: var(--hairline) solid var(--gray-6);
+      border-radius: var(--corner-xs);
+      box-shadow: var(--shadow-4);
       z-index: 100;
     }
   }

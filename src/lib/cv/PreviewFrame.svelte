@@ -263,6 +263,6 @@
     min-height: 0;
     display: block;
     border: 0;
-    background: var(--bg);
+    background: var(--gray-3);
   }
 </style>

@@ -19,33 +19,34 @@ pnpm check      # svelte-check
 
 ## How it works
 
-| Concern              | Where                                                                                                    |
-| -------------------- | -------------------------------------------------------------------------------------------------------- |
-| Document + history   | [src/lib/cv/state/doc.svelte.js](src/lib/cv/state/doc.svelte.js) — Loro doc, persistence, cross-tab merge            |
-| Editor               | [src/lib/components/YamlEditor.svelte](src/lib/components/YamlEditor.svelte) — CodeMirror 6              |
-| Chrome               | `components/{Toolbar,TabBar,StatusBar}.svelte` — the buttons, the tabs, the status bar                   |
-| The format           | [src/lib/cv/format/relaxed-yaml.js](src/lib/cv/format/relaxed-yaml.js) — the parser; see _The format_ below            |
-| What the editor says | [src/lib/cv/format/lint.js](src/lib/cv/format/lint.js) — the section table, as diagnostics                             |
-| What the editor offers | [src/lib/cv/format/complete.js](src/lib/cv/format/complete.js) — the same table, as completions                     |
-| Colours and folding  | [src/lib/cv/format/relaxed-yaml-mode.js](src/lib/cv/format/relaxed-yaml-mode.js) — the CodeMirror language             |
-| YAML to HTML         | [src/lib/cv/template/render.js](src/lib/cv/template/render.js)                                                             |
-| Preview              | [src/lib/cv/PreviewFrame.svelte](src/lib/cv/PreviewFrame.svelte) — the iframe the sheet renders in       |
-| Starting text        | [src/lib/cv/default-cv.yaml](src/lib/cv/default-cv.yaml)                                                 |
-| Layouts              | [src/lib/cv/layouts/](src/lib/cv/layouts/) — the whole sheet, one file per arrangement                   |
-| Block variants       | [src/lib/cv/blocks/](src/lib/cv/blocks/) — one file per variation of one block                           |
-| The axes             | [src/lib/cv/template/slots.js](src/lib/cv/template/slots.js) — every slot, and every variant of each                       |
-| The named looks      | [src/lib/cv/template/compositions.js](src/lib/cv/template/compositions.js) — presets, as sets of axis choices              |
-| Composing            | [src/lib/cv/template/compose.js](src/lib/cv/template/compose.js) — layout + variants → one component                       |
-| Part registry        | [src/lib/cv/state/parts.svelte.js](src/lib/cv/state/parts.svelte.js) — overrides and the user's own variants         |
-| Compiling it         | [src/lib/cv/template/compile-template.js](src/lib/cv/template/compile-template.js) — Svelte, in the browser                |
-| Picking a variant    | `components/{StylePicker,VariantCycle}.svelte` — the popover and the row inside it                       |
-| Shared state         | [src/lib/cv/state/state.svelte.js](src/lib/cv/state/state.svelte.js) — the document, file registry and part registry |
-| Theme                | [src/lib/cv/theme/presets.js](src/lib/cv/theme/presets.js) — the palettes, and the CSS beside it                     |
-| Type                 | [src/lib/cv/theme/fonts.js](src/lib/cv/theme/fonts.js) — the font stacks, and the CSS beside it                      |
-| Paper                | [src/lib/cv/theme/paper.js](src/lib/cv/theme/paper.js) — the page box, and what stands in its margins                |
-| Tech logos           | [src/lib/cv/theme/tech-icons.js](src/lib/cv/theme/tech-icons.js) — generated; see _Logos_ below                      |
-| CSS                  | [src/app.css](src/app.css) — the index; see _Where the CSS lives_ below                                  |
-| Offline              | [src/service-worker.js](src/service-worker.js) — precache; manifest and icons in `static/`               |
+| Concern                | Where                                                                                                                |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Document + history     | [src/lib/cv/state/doc.svelte.js](src/lib/cv/state/doc.svelte.js) — Loro doc, persistence, cross-tab merge            |
+| Editor                 | [src/lib/components/YamlEditor.svelte](src/lib/components/YamlEditor.svelte) — CodeMirror 6                          |
+| Chrome                 | `components/{Toolbar,TabBar,StatusBar}.svelte` — the buttons, the tabs, the status bar                               |
+| The chrome's palette   | [src/lib/styles/tokens.css](src/lib/styles/tokens.css) — Radix Colors scales; see _The chrome's palette_ below       |
+| The format             | [src/lib/cv/format/relaxed-yaml.js](src/lib/cv/format/relaxed-yaml.js) — the parser; see _The format_ below          |
+| What the editor says   | [src/lib/cv/format/lint.js](src/lib/cv/format/lint.js) — the section table, as diagnostics                           |
+| What the editor offers | [src/lib/cv/format/complete.js](src/lib/cv/format/complete.js) — the same table, as completions                      |
+| Colours and folding    | [src/lib/cv/format/relaxed-yaml-mode.js](src/lib/cv/format/relaxed-yaml-mode.js) — the CodeMirror language           |
+| YAML to HTML           | [src/lib/cv/template/render.js](src/lib/cv/template/render.js)                                                       |
+| Preview                | [src/lib/cv/PreviewFrame.svelte](src/lib/cv/PreviewFrame.svelte) — the iframe the sheet renders in                   |
+| Starting text          | [src/lib/cv/default-cv.yaml](src/lib/cv/default-cv.yaml)                                                             |
+| Layouts                | [src/lib/cv/layouts/](src/lib/cv/layouts/) — the whole sheet, one file per arrangement                               |
+| Block variants         | [src/lib/cv/blocks/](src/lib/cv/blocks/) — one file per variation of one block                                       |
+| The axes               | [src/lib/cv/template/slots.js](src/lib/cv/template/slots.js) — every slot, and every variant of each                 |
+| The named looks        | [src/lib/cv/template/compositions.js](src/lib/cv/template/compositions.js) — presets, as sets of axis choices        |
+| Composing              | [src/lib/cv/template/compose.js](src/lib/cv/template/compose.js) — layout + variants → one component                 |
+| Part registry          | [src/lib/cv/state/parts.svelte.js](src/lib/cv/state/parts.svelte.js) — overrides and the user's own variants         |
+| Compiling it           | [src/lib/cv/template/compile-template.js](src/lib/cv/template/compile-template.js) — Svelte, in the browser          |
+| Picking a variant      | `components/{StylePicker,VariantCycle}.svelte` — the popover and the row inside it                                   |
+| Shared state           | [src/lib/cv/state/state.svelte.js](src/lib/cv/state/state.svelte.js) — the document, file registry and part registry |
+| Theme                  | [src/lib/cv/theme/presets.js](src/lib/cv/theme/presets.js) — the palettes, and the CSS beside it                     |
+| Type                   | [src/lib/cv/theme/fonts.js](src/lib/cv/theme/fonts.js) — the font stacks, and the CSS beside it                      |
+| Paper                  | [src/lib/cv/theme/paper.js](src/lib/cv/theme/paper.js) — the page box, and what stands in its margins                |
+| Tech logos             | [src/lib/cv/theme/tech-icons.js](src/lib/cv/theme/tech-icons.js) — generated; see _Logos_ below                      |
+| CSS                    | [src/app.css](src/app.css) — the index; see _Where the CSS lives_ below                                              |
+| Offline                | [src/service-worker.js](src/service-worker.js) — precache; manifest and icons in `static/`                           |
 
 ### Editor and document
 
@@ -524,28 +525,129 @@ it genuinely has no single owner:
 
 In the app's document:
 
-| File                                                           | Holds                                                        |
-| -------------------------------------------------------------- | ------------------------------------------------------------ |
-| [app.css](src/app.css)                                         | the index — imports the three below, and nothing else        |
-| [styles/tokens.css](src/lib/styles/tokens.css)                 | both colour ramps, the type stack, `--theme-fade`            |
-| [styles/base.css](src/lib/styles/base.css)                     | reset, page background, scrollbars, the `#app` shell         |
-| [styles/controls.css](src/lib/styles/controls.css)             | `.t-btn` and friends — used from six different places        |
-| [styles/print.css](src/lib/styles/print.css)                   | the fallback for a print the app can't intercept             |
-| [components/codemirror.css](src/lib/components/codemirror.css) | the CodeMirror theme, imported by `YamlEditor.svelte`        |
-| [cv/theme/palettes.css](src/lib/cv/theme/palettes.css)                     | the seven ramps — here only so StylePicker can draw a swatch |
-| [cv/theme/fonts.css](src/lib/cv/theme/fonts.css)                           | the six stacks — here for the same reason, one option each   |
+| File                                                           | Holds                                                             |
+| -------------------------------------------------------------- | ----------------------------------------------------------------- |
+| [app.css](src/app.css)                                         | the index — imports the three below, and nothing else             |
+| [styles/tokens.css](src/lib/styles/tokens.css)                 | the Radix scales and their aliases, the shadows, the shape scale  |
+| [styles/base.css](src/lib/styles/base.css)                     | reset, page background, scrollbars, the `#app` shell              |
+| [styles/controls.css](src/lib/styles/controls.css)             | `.t-btn` and friends — used from six different places             |
+| [styles/print.css](src/lib/styles/print.css)                   | the fallback for a print the app can't intercept                  |
+| [components/codemirror.css](src/lib/components/codemirror.css) | the CodeMirror theme, imported by `YamlEditor.svelte`             |
+| [cv/theme/palettes.css](src/lib/cv/theme/palettes.css)         | the seven ramps — here only so StylePicker can draw a swatch      |
+| [cv/theme/fonts.css](src/lib/cv/theme/fonts.css)               | the six stacks — here for the same reason, one option each        |
 
 And in the preview frame's, written into it by `PreviewFrame`:
 
-| File                                       | Holds                                                        |
-| ------------------------------------------ | ------------------------------------------------------------ |
-| [cv/frame.css](src/lib/cv/frame.css)       | the frame's reset, tokens and page box — its declared inputs |
-| [cv/cv.css](src/lib/cv/cv.css)             | the sheet itself, plus how it paginates                      |
+| File                                                   | Holds                                                        |
+| ------------------------------------------------------ | ------------------------------------------------------------ |
+| [cv/frame.css](src/lib/cv/frame.css)                   | the frame's reset, tokens and page box — its declared inputs |
+| [cv/cv.css](src/lib/cv/cv.css)                         | the sheet itself, plus how it paginates                      |
 | [cv/theme/palettes.css](src/lib/cv/theme/palettes.css) | the same seven ramps, this time for the sheet to spend       |
 | [cv/theme/fonts.css](src/lib/cv/theme/fonts.css)       | the same six stacks, likewise                                |
 | [cv/theme/presets.css](src/lib/cv/theme/presets.css)   | the ramp and the stack selected on `#cv-root`                |
-| the active template's compiled style block | scoped by the compiler, so it can't reach anything else      |
-| the active file's own CSS                  | whatever you typed into the Style popover, applied last      |
+| the active template's compiled style block             | scoped by the compiler, so it can't reach anything else      |
+| the active file's own CSS                              | whatever you typed into the Style popover, applied last      |
+
+#### The chrome's palette
+
+The chrome is [Radix Colors](https://www.radix-ui.com/colors), imported from
+`@radix-ui/colors` and never re-typed. A rule spends a scale by *step number*
+rather than through a private vocabulary of role names, because each of the
+twelve steps in every Radix scale has one documented job and does that same job
+in both schemes:
+
+| Step  | For                                             |
+| ----- | ----------------------------------------------- |
+| 1     | app background                                  |
+| 2     | subtle background                               |
+| 3     | UI element background                           |
+| 4     | hovered UI element background                   |
+| 5     | active / selected UI element background         |
+| 6     | subtle borders and separators                   |
+| 7     | UI element border and focus rings               |
+| 8     | hovered UI element border, and the focus ring   |
+| 9     | solid backgrounds                               |
+| 10    | hovered solid backgrounds                       |
+| 11    | low-contrast text                               |
+| 12    | high-contrast text                              |
+
+That table is the whole design system. Steps 1–8 are backgrounds and borders
+and are not legible as text; 11 and 12 are the only two that carry words; step 9
+is the most saturated step and the one place a hue appears at full strength,
+where `--accent-contrast` is the only colour allowed on top. Because the meaning
+is attached to the step rather than to the value, `--accent-9` is teal 9 in the
+light scheme and teal 9 in the dark one and almost nothing in the app has a
+dark-mode branch of its own.
+
+Two hues do the work — **teal** as the accent and **slate** as the gray — and
+they are aliased to `--accent-*` and `--gray-*` in `tokens.css`, which is
+Radix's own convention and means the chrome re-hues from one block. Beside them
+sit red, amber and grass for the three states the app has to signal, and blue,
+purple and orange, which exist only to give the editor's syntax highlighting
+somewhere in the same system to draw from.
+
+**Soft containers** are the pattern that retired the ten hex tints the status
+pills and the banners used to spell out by hand: step 3 as the fill, step 6 as
+the rule under it, step 11 as the words. `#status.err` is `--red-3` under
+`--red-11`, the detached banner is the same shape in amber, and neither needs
+saying twice. Amber is the one hue whose step 9 does not take white, which is
+exactly why the amber things here are soft containers rather than solid fills.
+
+**Buttons** are Radix's three variants and nothing else. At rest a `.t-btn` is
+*surface*: step 3, hovering to 4, held down at 5, labelled at 12, with an alpha
+step for its edge because a button lands on the bars, on a panel and inside a
+popover and `--gray-7` would not hold the same weight against all three. A
+toggle that is on is *solid*: step 9 hovering to 10, under `--accent-contrast`.
+The Reconnect button in the detached banner is *outline*: an alpha step 7 edge
+and step 11 label over whatever is behind it, hovering to the alpha step 3 wash.
+
+**Elevation** is a shadow and nothing else. Radix has no tonal ladder, which is
+the biggest single difference from what was here before: a menu, a side panel
+and the welcome dialog are all step 2, and what says how high one floats is
+`--shadow-1` … `--shadow-6`. They are composed from the *alpha* grays rather
+than from black, so the same six levels read in either scheme — an opaque black
+shadow on a near-black page is invisible, an alpha one still darkens — and each
+carries a 1px alpha ring that holds the floating thing's edge where the blur
+fades out. What the app assigns:
+
+| Fill       | Shadow       | What                                            |
+| ---------- | ------------ | ----------------------------------------------- |
+| `--gray-3` | —            | the canvas the sheet floats on                  |
+| `--gray-1` | —            | the editor pane, and the active tab             |
+| `--gray-2` | —            | toolbar, tab bar, status bar; Style and History |
+| `--gray-2` | `--shadow-4` | menus, the trash popover, CodeMirror's tooltips |
+| `--gray-2` | `--shadow-6` | the welcome dialog                              |
+
+The editor pane takes step 1 — the app-background step, and the same fill
+CodeMirror's own editor takes, since the pane *is* the editor and a second tone
+there would only draw a seam through it. The preview canvas is step 3 rather
+than step 1 for the opposite reason: it has to read as the desk a white sheet is
+lying on, and steps 1 and 2 are too close to paper in the light scheme to do it.
+
+**Hover states** are the third rule, and they are just the next step up: 3 → 4 →
+5, or 9 → 10 for anything solid. There is no compositing, no opacity, no second
+hover colour per surface — where a control sits on a background it doesn't know
+(a tab in the bar, the scrollbar thumb) it takes an *alpha* step instead, which
+is the same rule with the fill left out.
+
+What is _not_ adopted is shape and type, which Radix Colors has no opinion about
+anyway. The shape scale is spent from the small end — `--corner-xs` on controls,
+`--corner-md` on the one dialog, `--corner-full` only on the badge, which is a
+chip — and the bars stay at 32/26/22px, because this is a two-pane editor and
+the sheet is what the room is for.
+
+One piece of plumbing: Radix scopes its dark steps under a `.dark` class, so
+that class is set on `<html>` alongside the `data-theme` attribute the app
+already toggles. The two are written together and never apart — in the pre-paint
+script in `app.html` and in `toggleTheme()` — and `data-theme` remains the app's
+own switch. The light files have to be imported before the dark ones: `:root`
+and `.dark` are the same specificity, so source order is what decides.
+
+None of it reaches the CV. The sheet is a separate document with its own inputs
+in `cv/frame.css`, and custom properties do not cross that boundary. The one
+rule that looks like an exception is the `<iframe>` element's own background in
+`PreviewFrame.svelte` — that element lives in the app's document, so it takes
+the app's steps, and only the sheet inside is the frame's.
 
 `codemirror.css` and the frame's own are global for the same underlying
 reason: they style DOM the Svelte compiler never sees. CodeMirror builds its

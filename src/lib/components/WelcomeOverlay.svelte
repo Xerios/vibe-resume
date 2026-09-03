@@ -72,117 +72,115 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 24px;
-    background: transparent;
-    backdrop-filter: blur(3px);
+    padding: var(--sp-6);
+    /* Radix's overlay: black alpha, the one scale that does not flip with the
+	     scheme — a scrim darkens what is behind it either way round. */
+    background: var(--overlay);
+    backdrop-filter: blur(2px);
     animation: w-fade 0.25s ease;
   }
 
   .w-card {
-    width: min(460px, 100%);
+    width: min(430px, 100%);
     max-height: 100%;
     overflow-y: auto;
-    padding: 30px 32px 26px;
-    background: var(--paper);
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    box-shadow: var(--shadow-pop);
+    padding: var(--sp-6) var(--sp-6) var(--sp-5);
+    background: var(--gray-2);
+    border-radius: var(--corner-md);
+    box-shadow: var(--shadow-6);
     animation: w-rise 0.28s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .w-eyebrow {
-    margin: 0 0 10px;
-    font-family: var(--mono);
-    font-size: var(--ui-fs-xs);
+    margin: 0 0 var(--sp-3);
+    font-family: var(--sans);
+    font-size: var(--ui-fs-2xs);
     font-weight: 600;
     letter-spacing: 1.8px;
     text-transform: uppercase;
-    color: var(--accent);
+    color: var(--accent-11);
   }
 
   h1 {
-    margin: 0 0 12px;
+    margin: 0 0 var(--sp-4);
     font-family: var(--sans);
     font-size: var(--ui-fs-2xl);
     font-weight: 650;
     line-height: 1.25;
-    color: var(--ink);
+    color: var(--gray-12);
   }
 
   .w-lede {
-    margin: 0 0 20px;
+    margin: 0 0 var(--sp-5);
     font-family: var(--sans);
-    font-size: var(--ui-fs-xl);
+    font-size: var(--ui-fs-lg);
     line-height: 1.6;
-    color: var(--muted);
+    color: var(--gray-11);
   }
 
   .w-points {
-    margin: 0 0 24px;
+    margin: 0 0 var(--sp-6);
     padding: 0;
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 11px;
+    gap: var(--sp-4);
   }
 
   .w-points li {
     display: flex;
     align-items: flex-start;
-    gap: 10px;
+    gap: var(--sp-3);
     font-family: var(--sans);
-    font-size: var(--ui-fs-lg);
+    font-size: var(--ui-fs-md);
     line-height: 1.55;
-    color: var(--muted);
+    color: var(--gray-11);
   }
 
   /* Iconify's lucide ships at stroke-width 2; the chrome runs bolder. */
   .w-points :global([stroke-width]) {
-    stroke-width: 2.5;
+    stroke-width: 2.25;
   }
 
   .w-points li :global(svg) {
     flex-shrink: 0;
     margin-top: 2px;
-    color: var(--accent);
+    color: var(--accent-11);
   }
 
   .w-points strong {
     font-weight: 620;
-    color: var(--ink);
+    color: var(--gray-12);
   }
 
-  /* The only way out of the overlay, so it is filled rather than outlined —
-	   the same weight Export carries in the toolbar. */
+  /* The only way out of the overlay, so it is lit rather than bare — the same
+	   weight Export carries in the toolbar. */
   .w-start {
     width: 100%;
-    padding: 10px;
-    background: var(--accent);
-    border: 1.5px solid var(--accent);
-    border-radius: 6px;
+    padding: var(--sp-3);
+    background: var(--accent-9);
+    border: none;
+    border-radius: var(--corner-xs);
     cursor: pointer;
-    font-family: var(--mono);
+    font-family: var(--sans);
     font-size: var(--ui-fs-md);
     font-weight: 600;
     letter-spacing: 0.4px;
-    color: var(--on-accent);
-    transition:
-      background-color 0.13s,
-      border-color 0.13s;
+    color: var(--accent-contrast);
+    transition: var(--hover-fade);
   }
 
   .w-start:hover {
-    background: var(--accent-deep);
-    border-color: var(--accent-deep);
+    background: var(--accent-10);
   }
 
   .w-foot {
-    margin: 14px 0 0;
+    margin: var(--sp-5) 0 0;
     font-family: var(--mono);
-    font-size: var(--ui-fs-xs);
+    font-size: var(--ui-fs-2xs);
     line-height: 1.6;
     text-align: center;
-    color: var(--faint);
+    color: var(--gray-11);
   }
 
   @keyframes w-fade {

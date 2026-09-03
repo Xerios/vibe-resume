@@ -61,7 +61,8 @@
       onclick={onToggleHoverSync}
       accesskey="f"
       aria-pressed={hoverSync}
-      title={withKey(hoverSync ? 'Stop the editor following the pointer over the preview' : 'Follow the pointer over the preview in the editor', 'f')}>
+      title={withKey(hoverSync ? 'Stop the editor following the pointer over the preview' : 'Follow the pointer over the preview in the editor', 'f')}
+    >
       {#if hoverSync}
         <Icon icon={IconMousePointer2} width="12" height="12" />
       {:else}
@@ -78,7 +79,8 @@
       onclick={onToggleScrollSync}
       accesskey="s"
       aria-pressed={scrollSync}
-      title={withKey(scrollSync ? 'Stop the panes scrolling together' : 'Scroll the editor and the preview together', 'y')}>
+      title={withKey(scrollSync ? 'Stop the panes scrolling together' : 'Scroll the editor and the preview together', 'y')}
+    >
       {#if scrollSync}
         <Icon icon={IconLink2} width="12" height="12" />
       {:else}
@@ -93,7 +95,8 @@
       class:on={sourceHidden}
       onclick={onToggleSource}
       accesskey="e"
-      title={withKey(sourceHidden ? 'Show editor' : 'Hide editor (preview only)', 'e')}>
+      title={withKey(sourceHidden ? 'Show editor' : 'Hide editor (preview only)', 'e')}
+    >
       {#if sourceHidden}
         <Icon icon={IconEyeOff} width="12" height="12" />
       {:else}
@@ -101,7 +104,8 @@
       {/if}
       <!-- One letter, two labels: the mnemonic stays put wherever the toggle is. -->
       <span class="t-txt"
-        >{#if sourceHidden}<u>E</u>ditor{:else}Hide <u>e</u>ditor{/if}</span>
+        >{#if sourceHidden}<u>E</u>ditor{:else}Hide <u>e</u>ditor{/if}</span
+      >
     </button>
 
     <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
@@ -117,103 +121,117 @@
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    gap: 12px;
-    height: 26px;
-    padding: 0 8px 0 12px;
-    background: var(--paper);
-    border-top: 1px solid var(--line);
+    gap: var(--sp-4);
+    height: var(--bar-status);
+    padding: 0 var(--sp-2) 0 var(--sp-4);
+    background: var(--gray-2);
+    border-top: var(--hairline) solid var(--gray-6);
     z-index: 8;
     transition: var(--theme-fade);
   }
 
   #status {
     font-family: var(--mono);
-    font-size: var(--ui-fs-sm);
+    font-size: var(--ui-fs-2xs);
     font-weight: 600;
-    padding: 1px 7px;
-    border-radius: 4px;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    padding: 0 var(--sp-2);
+    border-radius: var(--corner-xs);
     transition: var(--theme-fade);
   }
 
+  /* Two soft containers: step 3 as the fill, step 11 as the word on it. That
+	   pair is Radix's whole answer to a tinted badge — 3 is the background step
+	   and 11 is guaranteed legible on it — and it holds in both schemes, so
+	   neither pill needs a dark branch of its own. */
   #status.ok {
-    color: #1a6b3a;
-    background: #e8f5ee;
+    color: var(--grass-11);
+    background: var(--grass-3);
   }
 
   #status.err {
-    color: var(--danger);
-    background: #fee2e2;
-  }
-
-  /* Tints with no token of their own — the red foreground comes from --danger. */
-  :root[data-theme='dark'] #status.ok {
-    color: #5dcc80;
-    background: #082210;
-  }
-
-  :root[data-theme='dark'] #status.err {
-    background: #2a0808;
+    color: var(--red-11);
+    background: var(--red-3);
   }
 
   #save-state {
     font-family: var(--mono);
-    font-size: var(--ui-fs-sm);
+    font-size: var(--ui-fs-2xs);
     letter-spacing: 0.3px;
-    color: var(--faint);
+    color: var(--gray-11);
     white-space: nowrap;
   }
 
   .sb-actions {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: var(--sp-1);
   }
 
-  /* Not a .t-btn: an outlined button is too much furniture for a 26px bar, so
-	   these carry no border and answer on approach instead. */
+  /* Not a .t-btn: a filled button is too much furniture for a bar this thin, so
+	   these are bare and take a surface only on approach. */
   .sb-btn {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: var(--sp-2);
     background: none;
     border: none;
-    border-radius: 4px;
+    border-radius: var(--corner-xs);
     cursor: pointer;
-    font-family: var(--mono);
+    font-family: var(--sans);
     font-size: var(--ui-fs-sm);
-    font-weight: 600;
-    color: var(--faint);
+    font-weight: 550;
+    color: var(--gray-11);
     white-space: nowrap;
-    padding: 3px 7px;
+    padding: var(--sp-1) var(--sp-3);
     transition: var(--theme-fade);
   }
 
+  /* Bare until approached, and then the same three background steps every
+	   other control here walks: 3 on hover, 4 held down. The label climbs from
+	   the low-contrast text step to the high-contrast one at the same time. */
   .sb-btn:hover {
-    background: var(--accent-wash);
-    color: var(--accent-deep);
+    background: var(--gray-3);
+    color: var(--gray-12);
+    transition: var(--hover-fade);
+  }
+
+  .sb-btn:active {
+    background: var(--gray-4);
   }
 
   .sb-btn.on {
-    background: var(--accent-wash);
-    color: var(--accent-deep);
+    background: var(--accent-9);
+    color: var(--accent-contrast);
+  }
+
+  .sb-btn.on:hover {
+    background: var(--accent-10);
+    color: var(--accent-contrast);
   }
 
   /* Amber, as everywhere else something wants attention without being wrong — the
-	   detached-history banner wears the same pair. The border eats the padding back
-	   so the pill still fits the 26px bar. */
+	   detached-history banner wears the same 3/11 pair. Amber is the one hue
+	   whose step 9 does not take white, which is exactly why the soft container
+	   rather than the solid fill is the right way to spend it. */
   .sb-update {
-    background: var(--prompt-bg);
-    color: var(--prompt);
-    border: 1px solid color-mix(in srgb, var(--prompt) 35%, transparent);
-    padding: 2px 6px;
-    margin-right: 4px;
+    background: var(--amber-3);
+    color: var(--amber-11);
+    border: none;
+    padding: 0 var(--sp-2);
+    margin-right: var(--sp-1);
     animation: sb-update-pulse 2.4s ease-in-out infinite;
   }
 
-  /* Stated after `.sb-btn:hover`, whose accent colours it has to win against. */
+  /* Stated after `.sb-btn:hover`, whose colours it has to win against. */
   .sb-update:hover {
-    background: var(--prompt);
-    color: var(--prompt-bg);
+    background: var(--amber-4);
+    color: var(--amber-11);
+  }
+
+  .sb-update:active {
+    background: var(--amber-5);
   }
 
   /* A halo that breathes rather than blinks: enough to catch the eye returning to
@@ -221,11 +239,11 @@
   @keyframes sb-update-pulse {
     0%,
     100% {
-      box-shadow: 0 0 0 0 color-mix(in srgb, var(--prompt) 22%, transparent);
+      box-shadow: 0 0 0 0 var(--amber-a7);
     }
 
     50% {
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--prompt) 22%, transparent);
+      box-shadow: 0 0 0 3px var(--amber-a7);
     }
   }
 
@@ -237,7 +255,7 @@
 
   /* Drawn by <Icon>, so the elements are ones the compiler never sees. */
   .sb-btn :global([stroke-width]) {
-    stroke-width: 2.5;
+    stroke-width: 2.25;
   }
 
   /* Moon and sun are denser shapes, and were always drawn lighter than the
@@ -267,8 +285,8 @@
 	   already says drops out. */
   @media (max-width: 640px) {
     #status-bar {
-      gap: 8px;
-      padding: 0 6px 0 8px;
+      gap: var(--sp-3);
+      padding: 0 var(--sp-2) 0 var(--sp-3);
     }
 
     .sb-btn .t-txt {

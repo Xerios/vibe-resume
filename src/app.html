@@ -1,46 +1,49 @@
 <!doctype html>
 <html lang="en">
-
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="text-scale" content="scale" />
-  <!-- Overwritten below and by toggleTheme(); a media-query pair would not work,
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="text-scale" content="scale" />
+    <!-- Overwritten below and by syncThemeColor(); a media-query pair would not work,
 		     because the theme is a manual toggle and not purely a system preference. -->
-  <meta name="theme-color" content="#ffffff" />
-  <link rel="manifest" href="/manifest.webmanifest" />
-  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-  <link rel="canonical" href="https://resume.app.xerios.dev/" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="canonical" href="https://resume.app.xerios.dev/" />
 
-  <meta name="description" content="A local-first Resume Editor: YAML on the left, a print-ready CV on the right." />
-  <meta property="og:type" content="website" />
-  <meta property="og:title" content="Resume Editor" />
-  <meta property="og:description"
-    content="A local-first Resume Editor: YAML on the left, a print-ready CV on the right." />
-  <meta property="og:url" content="https://resume.app.xerios.dev/" />
-  <meta property="og:image" content="https://resume.app.xerios.dev/icons/icon-512.png" />
-  <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Resume Editor" />
-  <meta name="twitter:description"
-    content="A local-first Resume Editor: YAML on the left, a print-ready CV on the right." />
-  <meta name="twitter:image" content="https://resume.app.xerios.dev/icons/icon-512.png" />
+    <meta name="description" content="A local-first Resume Editor: YAML on the left, a print-ready CV on the right." />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Resume Editor" />
+    <meta property="og:description" content="A local-first Resume Editor: YAML on the left, a print-ready CV on the right." />
+    <meta property="og:url" content="https://resume.app.xerios.dev/" />
+    <meta property="og:image" content="https://resume.app.xerios.dev/icons/icon-512.png" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Resume Editor" />
+    <meta name="twitter:description" content="A local-first Resume Editor: YAML on the left, a print-ready CV on the right." />
+    <meta name="twitter:image" content="https://resume.app.xerios.dev/icons/icon-512.png" />
 
-  <script>
-    // Apply before first paint — prevents flash of wrong theme
-    ; (function () {
-      var t = localStorage.getItem('cv-theme') || 'light'
-      document.documentElement.setAttribute('data-theme', t)
-      // The installed window's titlebar sits directly above the toolbar, so it
-      // takes --paper rather than --bg.
-      var meta = document.querySelector('meta[name="theme-color"]')
-      if (meta) meta.setAttribute('content', t === 'dark' ? '#152320' : '#ffffff')
-    })()
-  </script>
-  %sveltekit.head%
-</head>
+    <script>
+      // Apply before first paint — prevents flash of wrong theme
+      ;(function () {
+        var t = localStorage.getItem('cv-theme') || 'light'
+        document.documentElement.setAttribute('data-theme', t)
+        // Radix ships its dark steps under `.dark`, so the class is what the
+        // scales themselves read; `data-theme` stays as the app's own switch.
+        // The two are set together and never apart — see toggleTheme().
+        document.documentElement.classList.toggle('dark', t === 'dark')
+        // The installed window's titlebar sits directly above the toolbar, so it
+        // takes the toolbar's surface rather than the page's. syncThemeColor()
+        // replaces this with the computed token as soon as the stylesheet lands;
+        // these two are only what stands in until it does — they are slate 2 in
+        // each scheme, which is what the bars are drawn on.
+        var meta = document.querySelector('meta[name="theme-color"]')
+        if (meta) meta.setAttribute('content', t === 'dark' ? '#18191b' : '#f9f9fb')
+      })()
+    </script>
+    %sveltekit.head%
+  </head>
 
-<body data-sveltekit-preload-data="hover">
-  <div style="display: contents">%sveltekit.body%</div>
-</body>
-
+  <body data-sveltekit-preload-data="hover">
+    <div style="display: contents">%sveltekit.body%</div>
+  </body>
 </html>

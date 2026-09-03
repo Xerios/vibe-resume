@@ -777,6 +777,9 @@
     // The preview sits this out: the sheet is paper, and paper is white.
     const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
     document.documentElement.setAttribute('data-theme', next)
+    // The attribute is the app's switch; the class is what Radix's own dark
+    // scales are scoped under. Set together, always — see tokens.css.
+    document.documentElement.classList.toggle('dark', next === 'dark')
     syncThemeColor()
     write(KEYS.theme, next)
   }
@@ -787,9 +790,9 @@
    * the two values out only because it runs before the stylesheet lands.
    */
   function syncThemeColor() {
-    const paperColor = getComputedStyle(document.documentElement).getPropertyValue('--paper').trim()
-    if (!paperColor) return
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', paperColor)
+    const bar = getComputedStyle(document.documentElement).getPropertyValue('--theme-color').trim()
+    if (!bar) return
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bar)
   }
 
   /** @param {BeforeInstallPromptEvent} e */
@@ -1158,7 +1161,11 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: var(--editor-bg);
+    /* Step 1, the app-background step, and the same fill CodeMirror's own
+	     editor takes — the pane *is* the editor, so a second tone here would
+	     only draw a seam through it. The preview canvas beside it is step 3,
+	     which is what separates the two in either scheme. */
+    background: var(--gray-1);
     transition: var(--theme-fade);
   }
 
@@ -1174,17 +1181,19 @@
     justify-content: center;
     height: 100%;
     font-family: var(--mono);
-    font-size: var(--ui-fs-md);
-    color: var(--faint);
+    font-size: var(--ui-fs-sm);
+    color: var(--gray-11);
   }
 
   /* ── Divider ──────────────────────────────────── */
+  /* A rule that can be dragged rather than a bar that happens to be draggable:
+	   at this weight it reads as the seam between two panes, which is what it is. */
   #divider {
     flex-shrink: 0;
-    width: 5px;
-    background: var(--line);
+    width: 3px;
+    background: var(--gray-6);
     cursor: col-resize;
-    transition: background 0.12s;
+    transition: background 0.08s;
     position: relative;
     border: none;
     padding: 0;
@@ -1194,11 +1203,11 @@
   #divider::after {
     content: '';
     position: absolute;
-    inset: 0 -4px;
+    inset: 0 -5px;
   }
 
   #divider:hover {
-    background: var(--accent);
+    background: var(--accent-9);
   }
 
   #divider.hidden {
@@ -1214,7 +1223,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: var(--bg);
+    background: var(--gray-3);
     min-width: 0;
     transition: var(--theme-fade);
   }
@@ -1225,17 +1234,20 @@
     pointer-events: none;
   }
 
+  /* Both banners are the soft container Radix builds out of a hue: step 3 as
+	   the fill, step 6 as the rule under it, step 11 as the words. Red for what
+	   is wrong, amber for what only wants attention. */
   #error-banner {
     flex-shrink: 0;
     display: flex;
     align-items: baseline;
-    gap: 12px;
-    background: #fff0f0;
-    border-bottom: 1px solid #fecaca;
-    color: var(--danger);
+    gap: var(--sp-5);
+    background: var(--red-3);
+    border-bottom: var(--hairline) solid var(--red-6);
+    color: var(--red-11);
     font-family: var(--mono);
-    font-size: var(--ui-fs-md);
-    padding: 7px 24px;
+    font-size: var(--ui-fs-sm);
+    padding: var(--sp-2) var(--sp-6);
     white-space: pre-wrap;
     word-break: break-all;
   }
@@ -1245,51 +1257,55 @@
     min-width: 0;
   }
 
-  /* A tint with no token of its own — the red foreground comes from --danger. */
-  :root[data-theme='dark'] #error-banner {
-    background: #2a0808;
-    border-bottom-color: #5a1818;
-  }
-
   #detached-banner {
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    gap: 12px;
-    background: var(--prompt-bg);
-    border-bottom: 1px solid var(--prompt);
-    color: var(--prompt);
+    gap: var(--sp-5);
+    background: var(--amber-3);
+    border-bottom: var(--hairline) solid var(--amber-6);
+    color: var(--amber-11);
     font-family: var(--mono);
-    font-size: var(--ui-fs-md);
+    font-size: var(--ui-fs-sm);
     font-weight: 600;
-    padding: 7px 24px;
+    padding: var(--sp-2) var(--sp-6);
     z-index: 6;
   }
 
-  /* The shared button, restated in the banner's own colour. */
+  /* The shared button, restated in the banner's own hue: Radix's *outline*
+	   variant, which is a step 7 alpha edge and a step 11 label over whatever is
+	   behind it, hovering to the step 3 alpha wash rather than to a fill. */
   #detached-banner .t-btn {
-    border-color: var(--prompt);
-    color: var(--prompt);
-    padding: 3px 9px;
+    background: none;
+    border: var(--hairline) solid var(--amber-a7);
+    color: var(--amber-11);
+    padding: var(--sp-1) var(--sp-3);
   }
 
   #detached-banner .t-btn:hover {
-    background: var(--prompt);
-    color: var(--prompt-bg);
+    background: var(--amber-a3);
+    border-color: var(--amber-a8);
+    color: var(--amber-11);
   }
 
   /* ── Toast ────────────────────────────────────── */
   #toast {
     position: fixed;
-    bottom: 38px;
+    bottom: calc(var(--bar-status) + var(--sp-5));
     left: 50%;
     transform: translateX(-50%) translateY(10px);
-    background: var(--accent-deep);
-    color: var(--on-accent);
-    font-family: var(--mono);
-    font-size: var(--ui-fs-md);
-    padding: 7px 16px;
-    border-radius: 5px;
+    /* The two ends of the gray scale, swapped over: step 12 as the fill and
+	     step 1 as the text. Nothing else in the chrome is drawn that way round,
+	     which is what makes a transient message read as laid over the app
+	     rather than as part of it. */
+    background: var(--gray-12);
+    color: var(--gray-1);
+    font-family: var(--sans);
+    font-size: var(--ui-fs-sm);
+    font-weight: 500;
+    padding: var(--sp-3) var(--sp-5);
+    border-radius: var(--corner-xs);
+    box-shadow: var(--shadow-4);
     opacity: 0;
     transition:
       opacity 0.2s,

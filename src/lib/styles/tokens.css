@@ -1,137 +1,297 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   Design tokens: the two colour ramps, the type stack, and the one shared
-   transition. Nothing here selects anything the app draws — every rule that
-   does lives in a component's <style> block or in one of the sibling
-   stylesheets listed in src/app.css.
+   Design tokens — Radix Colors, as two schemes.
+
+   Nothing here selects anything the app draws; every rule that does lives in a
+   component's <style> block or in one of the sibling stylesheets listed in
+   src/app.css.
+
+   The scales come from @radix-ui/colors verbatim — imported, never re-typed —
+   and the app spends them by *step number* rather than through a private
+   vocabulary of role names. That is the whole point of the system: each of the
+   twelve steps in every Radix scale has one documented job, and the same step
+   does that job in both schemes, so a rule that picks the right step needs no
+   dark-mode branch of its own.
+
+      1   app background
+      2   subtle background
+      3   UI element background
+      4   hovered UI element background
+      5   active / selected UI element background
+      6   subtle borders and separators
+      7   UI element border and focus rings
+      8   hovered UI element border
+      9   solid backgrounds
+     10   hovered solid backgrounds
+     11   low-contrast text
+     12   high-contrast text
+
+   Steps 1–8 are backgrounds and borders and are *not* legible as text. Steps
+   11 and 12 are the only two that carry words. Step 9 is the most saturated
+   step and the one place a hue appears at full strength; `--accent-contrast`
+   is the only colour that goes on top of it.
+
+   Two hues do the work: **teal** as the accent, aliased to `--accent-*` below,
+   and **slate** as the gray, aliased to `--gray-*`. Aliasing rather than
+   naming the hue directly is Radix's own convention, and it means the accent
+   is one line to swap. Alongside them sit red, amber and grass for the three
+   states the app has to signal, and blue, purple and orange, which exist only
+   to give the editor's syntax highlighting somewhere in the same system to
+   draw from.
+
+   Elevation is a shadow and nothing else. Radix has no tonal ladder: a panel
+   is step 2 whatever height it floats at, and what says it floats is
+   `--shadow-*`, built out of the gray *alpha* scale so it darkens the light
+   scheme and stays visible against the dark one.
+
+   The sheet in the preview frame is not reachable from here and never follows:
+   it is a separate document with its own inputs in src/lib/cv/frame.css.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── The scales ───────────────────────────────── */
+/* Light first, then dark. Radix ships the light steps under `:root, .light`
+   and the dark steps under `.dark`, which are the same specificity, so the
+   dark file has to come second to win. `.dark` is put on <html> beside the
+   `data-theme` attribute the app already toggles — see toggleTheme() in
+   +page.svelte and the pre-paint script in app.html. */
+@import '@radix-ui/colors/slate.css';
+@import '@radix-ui/colors/slate-alpha.css';
+@import '@radix-ui/colors/teal.css';
+@import '@radix-ui/colors/teal-alpha.css';
+@import '@radix-ui/colors/red.css';
+@import '@radix-ui/colors/red-alpha.css';
+@import '@radix-ui/colors/amber.css';
+@import '@radix-ui/colors/amber-alpha.css';
+@import '@radix-ui/colors/grass.css';
+@import '@radix-ui/colors/grass-alpha.css';
+@import '@radix-ui/colors/blue.css';
+@import '@radix-ui/colors/purple.css';
+@import '@radix-ui/colors/orange.css';
+@import '@radix-ui/colors/black-alpha.css';
+
+@import '@radix-ui/colors/slate-dark.css';
+@import '@radix-ui/colors/slate-dark-alpha.css';
+@import '@radix-ui/colors/teal-dark.css';
+@import '@radix-ui/colors/teal-dark-alpha.css';
+@import '@radix-ui/colors/red-dark.css';
+@import '@radix-ui/colors/red-dark-alpha.css';
+@import '@radix-ui/colors/amber-dark.css';
+@import '@radix-ui/colors/amber-dark-alpha.css';
+@import '@radix-ui/colors/grass-dark.css';
+@import '@radix-ui/colors/grass-dark-alpha.css';
+@import '@radix-ui/colors/blue-dark.css';
+@import '@radix-ui/colors/purple-dark.css';
+@import '@radix-ui/colors/orange-dark.css';
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   The two aliases. Every rule in the app reads `--accent-*` and `--gray-*`;
+   these two blocks are the only place the hues behind them are named, so the
+   chrome re-hues from here and nowhere else.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* Tells the browser which ramp its own chrome should use — the bits no
+  /* Tells the browser which scheme its own chrome should use — the bits no
 	   stylesheet reaches, like the scrollbars inside a native popup. */
   color-scheme: light;
 
-  --ink: #15211f;
-  --muted: #5f6f6c;
-  --faint: #8a9794;
-  --accent: #157c75;
-  --accent-deep: #0d4f4a;
-  --accent-wash: #eaf4f2;
-  --on-accent: #fff;
-  --danger: #b91c1c;
-  --line: #dbe6e3;
-  --prompt: #9a5b00;
-  --prompt-bg: #fbf2e2;
-  --paper: #fff;
-  --bg: #eef1f0;
-  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.18);
-  --editor-bg: #f6f8f7;
-  --editor-chrome: #eef1f0;
-  --cm-active: #c2c2c236;
-  --cm-selection: #96c3bb88;
-  --cm-selection-focus: #9ebfb985;
-  --cm-key: #0d4f4a;
-  --cm-string: #2a6b3f;
-  --cm-block: #7c5200;
-  --cm-text: #15211f;
-  --cm-comment: #8a9794;
-  --cm-punct: #5f6f6c;
-  --cm-anchor: #9a5b00;
-  --cm-html: #5c7ea6;
-  /* The template editor's half of the palette: markup, JS and CSS, which
-	   YAML has no equivalent of. Same tokens serve both editors. */
-  --cm-tag: #0f6f68;
-  --cm-attr: #9a5b00;
-  --cm-keyword: #8a3ea8;
-  --cm-fn: #1d5fa8;
-  --cm-num: #a8481d;
-  --cm-invalid: #b91c1c;
-  --cm-diff-add-bg: #cdedd3;
-  --cm-diff-del-bg: #f6d3d3;
-  --cm-diff-del-text: #7a2b2b;
-  --cm-peek: #157c751f;
-  --cm-match: #d9b96b52;
-  --cm-error: #c73434;
-  --cm-error-bg: #c7343414;
-  /* A section the templates won't render, and a quote that has stopped doing
-	   any work: worth marking, not worth alarm. */
-  --cm-warn: #b5750f;
-  --cm-hint: #7d8b88;
-  --stat-add: #1a6b3a;
-  --stat-del: #a83a3a;
-  /* Derived rather than fixed, so a scrollbar follows the ramp it sits in:
-	   both halves resolve against the --muted/--accent in force on :root. */
-  --scroll-thumb: color-mix(in srgb, var(--muted) 36%, transparent);
-  --scroll-thumb-hover: color-mix(in srgb, var(--accent) 62%, transparent);
+  /* ── Accent: teal ── */
+  --accent-1: var(--teal-1);
+  --accent-2: var(--teal-2);
+  --accent-3: var(--teal-3);
+  --accent-4: var(--teal-4);
+  --accent-5: var(--teal-5);
+  --accent-6: var(--teal-6);
+  --accent-7: var(--teal-7);
+  --accent-8: var(--teal-8);
+  --accent-9: var(--teal-9);
+  --accent-10: var(--teal-10);
+  --accent-11: var(--teal-11);
+  --accent-12: var(--teal-12);
+  --accent-a1: var(--teal-a1);
+  --accent-a2: var(--teal-a2);
+  --accent-a3: var(--teal-a3);
+  --accent-a4: var(--teal-a4);
+  --accent-a5: var(--teal-a5);
+  --accent-a6: var(--teal-a6);
+  --accent-a7: var(--teal-a7);
+  --accent-a8: var(--teal-a8);
+  --accent-a9: var(--teal-a9);
+  --accent-a10: var(--teal-a10);
+  --accent-a11: var(--teal-a11);
+  --accent-a12: var(--teal-a12);
+
+  /* ── Gray: slate ── */
+  --gray-1: var(--slate-1);
+  --gray-2: var(--slate-2);
+  --gray-3: var(--slate-3);
+  --gray-4: var(--slate-4);
+  --gray-5: var(--slate-5);
+  --gray-6: var(--slate-6);
+  --gray-7: var(--slate-7);
+  --gray-8: var(--slate-8);
+  --gray-9: var(--slate-9);
+  --gray-10: var(--slate-10);
+  --gray-11: var(--slate-11);
+  --gray-12: var(--slate-12);
+  --gray-a1: var(--slate-a1);
+  --gray-a2: var(--slate-a2);
+  --gray-a3: var(--slate-a3);
+  --gray-a4: var(--slate-a4);
+  --gray-a5: var(--slate-a5);
+  --gray-a6: var(--slate-a6);
+  --gray-a7: var(--slate-a7);
+  --gray-a8: var(--slate-a8);
+  --gray-a9: var(--slate-a9);
+  --gray-a10: var(--slate-a10);
+  --gray-a11: var(--slate-a11);
+  --gray-a12: var(--slate-a12);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  /* The one token that has to be restated per scheme, because it is the one
+	   that isn't a step — see --theme-color below. */
+  --theme-color: #18191b;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Everything derived from the scales.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Contrast ───────────────────────────────── */
+  /* The one colour that goes on a step 9 fill. Radix pairs teal, slate, red,
+	   grass, blue, purple and orange with white at step 9, in both schemes —
+	   which is why these do not flip. Amber does not pair with white, and so
+	   the app never puts text on amber 9; the amber pill is a step 3 fill with
+	   step 11 text like every other soft container here. */
+  --accent-contrast: #fff;
+  --gray-contrast: #fff;
+
+  /* ── The installed window's titlebar ────────── */
+  /* Read by syncThemeColor() and handed to <meta name="theme-color">, which
+	   parses a plain colour and nothing else — so this is slate 2 spelled out
+	   in sRGB rather than `var(--gray-2)`. Radix rewrites its scales to
+	   `color(display-p3 …)` on a wide-gamut display, and the meta tag would
+	   drop the value on the floor. Nothing else may spend this token. */
+  --theme-color: #f9f9fb;
+
+  /* ── Elevation ──────────────────────────────── */
+  /* Shadows only. There is no tonal ladder in Radix: a menu and a resting
+	   panel are the same step 2 fill, and what separates them is how far the
+	   shadow throws. Composed from the gray *alpha* scale rather than from
+	   black, so the same six levels read in both schemes — an opaque black
+	   shadow on a near-black page is invisible, an alpha one still darkens.
+	   The 1px alpha ring in each is the shadow's own hairline: it holds the
+	   edge of a floating thing at the point where the blur has faded out. */
+  --shadow-1: inset 0 0 0 1px var(--gray-a5);
+  --shadow-2: 0 0 0 1px var(--gray-a3), 0 1px 2px 0 var(--gray-a4);
+  --shadow-3: 0 0 0 1px var(--gray-a3), 0 2px 4px -1px var(--gray-a5), 0 4px 8px -2px var(--gray-a3);
+  --shadow-4: 0 0 0 1px var(--gray-a3), 0 4px 8px -2px var(--gray-a5), 0 10px 20px -4px var(--gray-a4);
+  --shadow-5: 0 0 0 1px var(--gray-a3), 0 8px 16px -4px var(--gray-a6), 0 18px 36px -8px var(--gray-a5);
+  --shadow-6: 0 0 0 1px var(--gray-a3), 0 12px 24px -6px var(--gray-a6), 0 28px 56px -12px var(--gray-a6);
+
+  /* What a dialog dims the app with. Radix's overlay is black alpha in either
+	   scheme — a scrim darkens what is behind it whichever way round the app is
+	   drawn — and `--black-a*` is the one scale that does not flip. */
+  --overlay: var(--black-a8);
+
+  /* ── Shape ──────────────────────────────────── */
+  /* The app takes the small end of the scale — controls at extra-small,
+	   containers at small, the one dialog at medium — because a dense editor is
+	   what this is. `--corner-full` is spent only on the badge, which is a chip. */
+  --corner-none: 0;
+  --corner-xs: 4px;
+  --corner-sm: 8px;
+  --corner-md: 12px;
+  --corner-lg: 16px;
+  --corner-full: 9999px;
+
+  /* ── Spacing and measure ────────────────────── */
+  /* A 4px grid, tightened at the low end. The bars are deliberately thin: this
+	   is a two-pane editor, and the sheet is what the room is for. */
+  --sp-1: 2px;
+  --sp-2: 4px;
+  --sp-3: 6px;
+  --sp-4: 8px;
+  --sp-5: 12px;
+  --sp-6: 16px;
+
+  --bar-tool: 32px;
+  --bar-tabs: 26px;
+  --bar-status: 22px;
+  --panel-w: 264px;
+  /* Where a popover hanging off the chrome starts: the two bars above it, plus
+	   their rules. Derived so the panels that float can't drift from the bars
+	   they hang under. */
+  --overlay-top: calc(var(--bar-tool) + var(--bar-tabs) + 2px);
+  --hairline: 1px;
+
+  /* A scrollbar is furniture on top of a pane whose colour it doesn't know, so
+	   it takes alpha steps rather than solid ones — 7 is the border step, 9 the
+	   solid one, and a thumb sits between the two jobs. */
+  --scroll-thumb: var(--gray-a7);
+  --scroll-thumb-hover: var(--accent-a9);
+
+  /* ── Editor ─────────────────────────────────── */
+  /* The syntax roles. Every one is a step 11 — the low-contrast text step —
+	   which is the whole reason there is no second block for the dark scheme:
+	   step 11 is defined as legible on steps 1 and 2, and the editor's page is
+	   step 1 in both. The two grays below 11 are the deliberate exception:
+	   punctuation and hints are meant to recede *out* of the text steps.
+
+	   The tokens are read from JS as well as from CSS — see cm-highlight.js. */
+  --cm-key: var(--accent-11);
+  --cm-tag: var(--accent-11);
+  --cm-string: var(--grass-11);
+  --cm-num: var(--orange-11);
+  --cm-keyword: var(--purple-11);
+  --cm-fn: var(--blue-11);
+  --cm-html: var(--blue-11);
+  --cm-anchor: var(--amber-11);
+  --cm-attr: var(--amber-11);
+  --cm-block: var(--amber-11);
+  --cm-text: var(--gray-12);
+  --cm-punct: var(--gray-10);
+  --cm-comment: var(--gray-11);
+  --cm-hint: var(--gray-10);
+  --cm-error: var(--red-11);
+  --cm-invalid: var(--red-11);
+  --cm-warn: var(--amber-11);
+
+  /* The editor's washes. All alpha, because each one lands on top of text it
+	   must not bury: an alpha step tints the line and leaves the glyphs where
+	   they were, which a solid step at the same darkness would not. */
+  --cm-error-bg: var(--red-a3);
+  --cm-active: var(--gray-a3);
+  --cm-selection: var(--accent-a5);
+  --cm-selection-focus: var(--accent-a6);
+  --cm-peek: var(--accent-a3);
+  --cm-match: var(--amber-a5);
+  --cm-diff-add-bg: var(--grass-a4);
+  --cm-diff-del-bg: var(--red-a4);
+  --cm-diff-del-text: var(--red-11);
+  --stat-add: var(--grass-11);
+  --stat-del: var(--red-11);
+
+  /* ── Type ───────────────────────────────────── */
+  /* Every font-size in the editor chrome spends one of these seven and nothing
+	   else, so the whole UI moves together when a step moves. The sheet inside
+	   the preview frame has a ladder of its own — --cv-fs-* in
+	   src/lib/cv/frame.css — which this one never reaches. */
+  --ui-fs-2xs: 9px;
+  --ui-fs-xs: 10px;
+  --ui-fs-sm: 11px;
+  --ui-fs-md: 12px;
+  --ui-fs-lg: 14px;
+  --ui-fs-xl: 15px;
+  --ui-fs-2xl: 17px;
 
   --sans: 'GitLab Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: 'GitLab Mono', ui-monospace, Consolas, monospace;
 
-  /* The app's type ladder. Every font-size in the editor chrome spends one of
-	   these seven and nothing else, so the whole UI moves together when a step
-	   moves. The sheet inside the preview frame has a ladder of its own —
-	   --cv-fs-* in src/lib/cv/frame.css — which this one never reaches. */
-  --ui-fs-2xs: 10px;
-  --ui-fs-xs: 11px;
-  --ui-fs-sm: 12px;
-  --ui-fs-md: 14px;
-  --ui-fs-lg: 16px;
-  --ui-fs-xl: 17px;
-  --ui-fs-2xl: 18px;
-
-  /* Swapping ramps should read as a fade rather than a cut. Anything carrying
-	   a themed background, border or foreground opts in with
-	   `transition: var(--theme-fade)`; the property list is fixed here so the
-	   whole app crossfades at one speed. */
-  --theme-fade: background-color 0.22s ease, color 0.22s ease, border-color 0.22s ease;
-}
-
-/* ── Dark ramp ────────────────────────────────── */
-:root[data-theme='dark'] {
-  color-scheme: dark;
-
-  --ink: #cde0dd;
-  --muted: #7a9491;
-  --faint: #5c7e7a;
-  --accent: #1cbdb2;
-  --accent-deep: #6dd9d3;
-  --accent-wash: #0d2926;
-  /* Ink laid over an accent fill: the dark ramp's accents are light, so white
-	   on them is unreadable — the pairing flips with the theme. */
-  --on-accent: #06201e;
-  --danger: #f87171;
-  --line: #1e302e;
-  --prompt: #e8a84a;
-  --prompt-bg: #231800;
-  --paper: #152320;
-  --bg: #0c1917;
-  --shadow-pop: 0 10px 28px rgba(0, 0, 0, 0.5);
-  --editor-bg: #10201e;
-  --editor-chrome: #0c1917;
-  --cm-active: #418d8414;
-  --cm-selection: #3c807b4a;
-  --cm-selection-focus: #5c8a864e;
-  --cm-key: #6dd9d3;
-  --cm-string: #7ac47c;
-  --cm-text: #cde0dd;
-  --cm-comment: #3e5e5a;
-  --cm-punct: #7a9491;
-  --cm-anchor: #e8a84a;
-  --cm-html: #6f93b8;
-  --cm-tag: #58c8bf;
-  --cm-attr: #e8a84a;
-  --cm-keyword: #d38ae8;
-  --cm-fn: #79b8f0;
-  --cm-num: #f0a179;
-  --cm-invalid: #f87171;
-  --cm-diff-add-bg: #163a24;
-  --cm-diff-del-bg: #3a1616;
-  --cm-diff-del-text: #e89a9a;
-  --cm-peek: #1cbdb229;
-  --cm-match: #c9922e4d;
-  --cm-error: #f06a6a;
-  --cm-error-bg: #f06a6a1c;
-  --cm-warn: #e0a545;
-  --cm-hint: #7f918d;
-  --stat-add: #5dcc80;
-  --stat-del: #e08a8a;
+  /* Swapping schemes should read as a fade rather than a cut; a control
+	   answering the pointer is a different event and wants the shorter one. */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --theme-fade: background-color 200ms var(--ease), color 200ms var(--ease), border-color 200ms var(--ease);
+  --hover-fade: background-color 100ms var(--ease), color 100ms var(--ease), border-color 100ms var(--ease);
 }

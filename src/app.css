@@ -26,7 +26,8 @@
    each font option in the face it offers from the stacks in the other.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Order matters: tokens define what the other two spend. */
+/* Order matters: tokens define what the other two spend. They are Radix Colors
+   scales, spent by step number — see the header of tokens.css. */
 @import './lib/styles/tokens.css';
 @import './lib/styles/base.css';
 @import './lib/styles/controls.css';

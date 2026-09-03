@@ -153,58 +153,60 @@
 <style>
   #history-pane {
     flex-shrink: 0;
-    width: 288px;
+    width: var(--panel-w);
     display: flex;
     flex-direction: column;
-    background: var(--paper);
-    border-left: 1px solid var(--line);
+    background: var(--gray-2);
+    border-left: var(--hairline) solid var(--gray-6);
     overflow: hidden;
     transition: var(--theme-fade);
   }
 
   .hist-head {
     flex-shrink: 0;
-    padding: 7px 10px;
-    border-bottom: 1px solid var(--line);
+    padding: var(--sp-3) var(--sp-3);
+    border-bottom: var(--hairline) solid var(--gray-6);
   }
 
   .hist-title {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-family: var(--mono);
-    font-size: var(--ui-fs-xs);
+    font-family: var(--sans);
+    font-size: var(--ui-fs-2xs);
     font-weight: 600;
     letter-spacing: 1.8px;
     text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 6px;
+    color: var(--gray-11);
+    margin-bottom: var(--sp-3);
   }
 
   .hist-form {
     display: flex;
-    gap: 5px;
+    gap: var(--sp-2);
   }
 
   .hist-form input {
     flex: 1;
     min-width: 0;
-    font-family: var(--mono);
+    font-family: var(--sans);
     font-size: var(--ui-fs-sm);
-    color: var(--ink);
-    background: var(--editor-bg);
-    border: 1.5px solid var(--line);
-    border-radius: 5px;
-    padding: 4px 8px;
+    color: var(--gray-12);
+    background: var(--gray-1);
+    /* A field is an interactive element, so its edge is step 7 — the border
+	     step — rather than the step 6 the panel's own rules take. */
+    border: var(--hairline) solid var(--gray-7);
+    border-radius: var(--corner-xs);
+    padding: var(--sp-1) var(--sp-3);
   }
 
   .hist-form input:focus {
     outline: none;
-    border-color: var(--accent);
+    border-color: var(--accent-8);
   }
 
   .hist-form input::placeholder {
-    color: var(--faint);
+    color: var(--gray-10);
   }
 
   .hist-list {
@@ -212,51 +214,53 @@
     overflow-y: auto;
     min-height: 0;
     margin: 0;
-    padding: 4px;
+    padding: var(--sp-1);
     list-style: none;
   }
 
   .hist-row {
-    margin-bottom: 1px;
+    margin-bottom: var(--hairline);
   }
 
   .hist-item {
     display: flex;
     align-items: baseline;
-    gap: 7px;
+    gap: var(--sp-3);
     width: 100%;
     text-align: left;
     background: none;
-    border: 1.5px solid transparent;
-    border-radius: 5px;
+    border: var(--hairline) solid transparent;
+    border-radius: var(--corner-xs);
     cursor: pointer;
-    padding: 4px 8px;
+    padding: var(--sp-1) var(--sp-3);
     font-family: var(--sans);
-    color: var(--ink);
+    color: var(--gray-12);
     position: relative;
-    transition:
-      background 0.12s,
-      border-color 0.12s;
+    transition: var(--hover-fade);
   }
 
   .hist-item:hover {
-    background: var(--accent-wash);
+    background: var(--gray-3);
   }
 
+  /* The row being previewed is *selected*, which is step 5's one job — and it
+	   is the accent's step 5, because which version is on screen is the panel's
+	   whole subject. Step 12 of the same scale is the text that goes on it. */
   .hist-item.active {
-    border-color: var(--accent);
-    background: var(--accent-wash);
+    border-color: transparent;
+    background: var(--accent-5);
+    color: var(--accent-12);
   }
 
   /* Drawn by <Icon>, so the class lands on SVG the compiler never sees. */
   :global(.hist-mark) {
     flex-shrink: 0;
     align-self: center;
-    color: var(--faint);
+    color: var(--gray-11);
   }
 
   :global(.hist-mark [stroke-width]) {
-    stroke-width: 2.5;
+    stroke-width: 2.25;
   }
 
   /* Kinds, quietest first: an ordinary edit is background noise, a named version
@@ -264,46 +268,47 @@
 	   three, so its rule comes last and wins over `.latest` on the same row. */
   .hist-item.kind-edit .hist-msg {
     font-weight: 500;
-    color: var(--muted);
+    color: var(--gray-11);
   }
 
   .hist-item.kind-checkpoint :global(.hist-mark),
   .hist-item.kind-initial :global(.hist-mark),
   .hist-item.kind-restore :global(.hist-mark) {
-    color: var(--accent);
+    color: var(--accent-11);
   }
 
   /* A restyle changed no text, so it reads as quietly as an edit does — the
 	   glyph is what says which of the two it was. */
   .hist-item.kind-style .hist-msg {
     font-weight: 500;
-    color: var(--muted);
+    color: var(--gray-11);
   }
 
   .hist-item.kind-style :global(.hist-mark) {
-    color: var(--accent);
+    color: var(--accent-11);
   }
 
   .hist-item.latest .hist-msg {
-    color: var(--accent-deep);
+    color: var(--accent-11);
   }
 
   .hist-item.kind-export {
-    background: var(--prompt-bg);
-    border-color: color-mix(in srgb, var(--prompt) 28%, transparent);
-  }
-
-  .hist-item.kind-export:hover {
-    border-color: var(--prompt);
+    background: var(--amber-3);
+    border-color: transparent;
   }
 
   .hist-item.kind-export.active {
-    border-color: var(--accent);
+    background: var(--accent-5);
   }
 
   .hist-item.kind-export :global(.hist-mark),
   .hist-item.kind-export .hist-msg {
-    color: var(--prompt);
+    color: var(--amber-11);
+  }
+
+  .hist-item.kind-export.active :global(.hist-mark),
+  .hist-item.kind-export.active .hist-msg {
+    color: var(--accent-12);
   }
 
   .hist-item.kind-export .hist-msg {
@@ -314,10 +319,11 @@
   .hist-stats {
     flex-shrink: 0;
     display: flex;
-    gap: 5px;
+    gap: var(--sp-2);
     font-family: var(--mono);
-    font-size: var(--ui-fs-xs);
+    font-size: var(--ui-fs-2xs);
     font-weight: 600;
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.2px;
   }
 
@@ -332,9 +338,9 @@
   .hist-msg {
     flex: 1;
     min-width: 0;
-    font-size: var(--ui-fs-md);
+    font-size: var(--ui-fs-sm);
     font-weight: 600;
-    line-height: 1.3;
+    line-height: 1.35;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -343,15 +349,15 @@
   .hist-time {
     flex-shrink: 0;
     font-family: var(--mono);
-    font-size: var(--ui-fs-xs);
-    color: var(--faint);
+    font-size: var(--ui-fs-2xs);
+    color: var(--gray-11);
   }
 
   .hist-empty {
-    font-family: var(--mono);
+    font-family: var(--sans);
     font-size: var(--ui-fs-sm);
-    color: var(--faint);
-    padding: 14px 8px;
+    color: var(--gray-11);
+    padding: var(--sp-6) var(--sp-3);
     line-height: 1.6;
   }
 
@@ -360,12 +366,12 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    padding: 6px 10px;
-    border-top: 1px solid var(--line);
+    gap: var(--sp-4);
+    padding: var(--sp-2) var(--sp-3);
+    border-top: var(--hairline) solid var(--gray-6);
     font-family: var(--mono);
-    font-size: var(--ui-fs-xs);
-    color: var(--faint);
+    font-size: var(--ui-fs-2xs);
+    color: var(--gray-11);
   }
 
   .hist-foot button {
@@ -374,27 +380,28 @@
     padding: 0;
     cursor: pointer;
     font: inherit;
-    color: var(--faint);
+    color: var(--gray-11);
     text-decoration: underline;
   }
 
   .hist-foot button:hover {
-    color: var(--danger);
+    color: var(--red-11);
   }
 
   /* Stacked layout: there is no third column to sit in, so the panel lifts out
-	   of the flow as an overlay, like the trash panel. */
+	   of the flow as an overlay, like the trash panel. Anchored on the tokens the
+	   bars are drawn from, so it can't drift from them when the density moves. */
   @media (max-width: 900px) {
     #history-pane {
       position: fixed;
-      top: 82px;
-      right: 8px;
+      top: var(--overlay-top);
+      right: var(--sp-3);
       /* Clear of the status bar, which is fixed to the foot of the shell. */
-      bottom: 34px;
-      width: min(288px, calc(100vw - 16px));
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      box-shadow: var(--shadow-pop);
+      bottom: var(--bar-status);
+      width: min(var(--panel-w), calc(100vw - 2 * var(--sp-3)));
+      border: var(--hairline) solid var(--gray-6);
+      border-radius: var(--corner-xs);
+      box-shadow: var(--shadow-4);
       z-index: 100;
     }
   }

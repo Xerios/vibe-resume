@@ -15,13 +15,14 @@
    editor and `overflow: auto` on the scroller are what make a pane-sized editor
    scroll at all.
 
-   Colours come from the --cm-* tokens in src/lib/styles/tokens.css.
+   Colours come from the --cm-* tokens in src/lib/styles/tokens.css, and from
+   the Radix steps directly where the surface is a surface rather than syntax.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 #cm-wrap .cm-editor {
   height: 100%;
-  background: var(--editor-bg);
-  color: var(--ink);
+  background: var(--gray-1);
+  color: var(--gray-12);
   font-family: var(--mono);
   font-size: var(--ui-fs-md);
   transition: var(--theme-fade);
@@ -40,14 +41,16 @@
 }
 
 #cm-wrap .cm-content {
-  caret-color: var(--accent);
+  caret-color: var(--accent-9);
 }
 
 #cm-wrap .cm-gutters {
   transition: var(--theme-fade);
-  background: var(--editor-chrome);
-  border-right: 1px solid var(--line);
-  color: var(--faint);
+  background: var(--gray-2);
+  border-right: var(--hairline) solid var(--gray-6);
+  /* Step 9, one below the two text steps, and deliberately: a line number is
+     ornament beside the line, not something anyone reads a run of. */
+  color: var(--gray-9);
 }
 
 #cm-wrap .cm-lineNumbers .cm-gutterElement {
@@ -61,12 +64,12 @@
 
 #cm-wrap .cm-activeLineGutter {
   background: var(--cm-active);
-  color: var(--accent-deep);
+  color: var(--accent-11);
 }
 
 #cm-wrap .cm-cursor,
 #cm-wrap .cm-dropCursor {
-  border-left-color: var(--accent);
+  border-left-color: var(--accent-9);
   border-left-width: 2px;
 }
 
@@ -103,7 +106,7 @@
    point of it, since the pointer is over on the other pane. */
 #cm-wrap .cm-peek-line {
   background: var(--cm-peek);
-  box-shadow: inset 2px 0 0 var(--accent);
+  box-shadow: inset 2px 0 0 var(--accent-9);
 }
 
 /* Every other run of whatever's selected — renaming a key shows its twins. */
@@ -115,7 +118,7 @@
 /* ── Folding ──────────────────────────────────── */
 #cm-wrap .cm-foldGutter .cm-gutterElement {
   padding: 0 5px 0 1px;
-  color: var(--faint);
+  color: var(--gray-11);
   opacity: 0.5;
   transition:
     opacity 0.12s ease,
@@ -124,14 +127,14 @@
 
 #cm-wrap .cm-foldGutter .cm-gutterElement:hover {
   opacity: 1;
-  color: var(--accent-deep);
+  color: var(--accent-11);
 }
 
 #cm-wrap .cm-foldPlaceholder {
-  background: var(--editor-chrome);
-  border: 1px solid var(--line);
-  color: var(--faint);
-  border-radius: 3px;
+  background: var(--gray-3);
+  border: var(--hairline) solid var(--gray-6);
+  color: var(--gray-11);
+  border-radius: var(--corner-xs);
   margin: 0 2px;
   padding: 0 5px;
 }
@@ -214,10 +217,10 @@
 }
 
 #cm-wrap .cm-tooltip.cm-tooltip-lint {
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  box-shadow: var(--shadow-pop);
+  background: var(--gray-2);
+  border: var(--hairline) solid var(--gray-6);
+  border-radius: var(--corner-xs);
+  box-shadow: var(--shadow-4);
   overflow: hidden;
 }
 
@@ -225,7 +228,7 @@
   font-family: var(--mono);
   font-size: var(--ui-fs-md);
   line-height: 1.5;
-  color: var(--ink);
+  color: var(--gray-12);
   padding: 5px 8px;
   margin: 0;
   max-width: 320px;
@@ -244,7 +247,7 @@
 }
 
 #cm-wrap .cm-diagnosticSource {
-  color: var(--faint);
+  color: var(--gray-11);
 }
 
 /* ── Completion ───────────────────────────────── */
@@ -253,39 +256,40 @@
    so the same id prefix reaches it — and has to, since the base theme's own
    colours are scoped under a generated `&light`/`&dark` class. */
 #cm-wrap .cm-tooltip.cm-tooltip-autocomplete {
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  box-shadow: var(--shadow-pop);
+  background: var(--gray-2);
+  border: var(--hairline) solid var(--gray-6);
+  border-radius: var(--corner-xs);
+  box-shadow: var(--shadow-4);
   overflow: hidden;
   font-family: var(--mono);
   font-size: var(--ui-fs-md);
 }
 
-#cm-wrap .cm-tooltip-autocomplete>ul {
+#cm-wrap .cm-tooltip-autocomplete > ul {
   max-height: 16em;
   font-family: inherit;
 }
 
-#cm-wrap .cm-tooltip-autocomplete>ul>li {
+#cm-wrap .cm-tooltip-autocomplete > ul > li {
   display: flex;
   align-items: baseline;
   gap: 6px;
   padding: 3px 8px;
   line-height: 1.5;
-  color: var(--ink);
+  color: var(--gray-12);
 }
 
-#cm-wrap .cm-tooltip-autocomplete>ul>li[aria-selected] {
-  background: var(--accent-wash);
-  color: var(--accent-deep);
+/* Selected, not hovered: step 5 is the scale's own word for that. */
+#cm-wrap .cm-tooltip-autocomplete > ul > li[aria-selected] {
+  background: var(--accent-5);
+  color: var(--accent-12);
 }
 
 /* What the typed prefix matched, so a fuzzy hit shows why it's in the list. */
 #cm-wrap .cm-completionMatchedText {
   text-decoration: none;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--accent-11);
 }
 
 #cm-wrap .cm-completionDetail {
@@ -293,7 +297,7 @@
   padding-left: 12px;
   font-style: normal;
   font-size: var(--ui-fs-sm);
-  color: var(--faint);
+  color: var(--gray-11);
 }
 
 /* Three kinds of thing, three marks: a key, one of a closed set of values, and
@@ -323,16 +327,16 @@
 
 /* The line about the selected entry, off to the side. */
 #cm-wrap .cm-tooltip.cm-completionInfo {
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  box-shadow: var(--shadow-pop);
+  background: var(--gray-2);
+  border: var(--hairline) solid var(--gray-6);
+  border-radius: var(--corner-xs);
+  box-shadow: var(--shadow-4);
   padding: 5px 8px;
   max-width: 260px;
   font-family: var(--mono);
   font-size: var(--ui-fs-md);
   line-height: 1.5;
-  color: var(--faint);
+  color: var(--gray-11);
 }
 
 /* A section skeleton lands with its fields marked; Tab steps through them. */
@@ -342,5 +346,5 @@
 }
 
 #cm-wrap .cm-snippetFieldPosition {
-  border-left-color: var(--accent);
+  border-left-color: var(--accent-9);
 }
