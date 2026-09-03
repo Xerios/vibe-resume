@@ -264,5 +264,6 @@
     display: block;
     border: 0;
     background: var(--gray-3);
+    color-scheme: auto;
   }
 </style>
