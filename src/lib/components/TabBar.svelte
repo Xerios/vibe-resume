@@ -39,6 +39,8 @@
 
   let editingId = $state(/** @type {string | null} */ (null))
   let editValue = $state('')
+  /** The tab being dragged, while it is being dragged. */
+  let dragId = $state(/** @type {string | null} */ (null))
   /** Whether the active tab's menu — everything you can do to this file — is showing. */
   let menuOpen = $state(false)
   /**
@@ -59,7 +61,7 @@
     menu?.querySelector('button')?.focus()
 
     /** @param {PointerEvent} e */
-    const onPointerDown = e => {
+    const onPointerDown = (e) => {
       if (!menuGroup?.contains(/** @type {Node | null} */ (e.target))) menuOpen = false
     }
     document.addEventListener('pointerdown', onPointerDown)
@@ -91,9 +93,71 @@
    * @param {import('$lib/cv/state/files.svelte.js').FileMeta} f
    */
   function onTabKeydown(e, f) {
+    // Alt+arrows are the drag below, for whoever isn't holding a pointer.
+    if (e.altKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      e.preventDefault()
+      moveTab(f.id, e.key === 'ArrowRight' ? 1 : -1)
+      return
+    }
     if (e.key !== 'F2') return
     e.preventDefault()
     startRename(f)
+  }
+
+  /**
+   * Move a tab one place along the row. The each block is keyed, so the DOM
+   * node moves rather than being rebuilt and the key that did this keeps it.
+   * @param {string} id
+   * @param {1 | -1} by
+   */
+  function moveTab(id, by) {
+    const ids = files.open.map((/** @type {import('$lib/cv/state/files.svelte.js').FileMeta} */ f) => f.id)
+    const to = ids.indexOf(id) + by
+    if (to < 0 || to >= ids.length) return
+    // Left means "take that tab's place"; right means "go past it".
+    files.reorder(id, by < 0 ? ids[to] : (ids[to + 1] ?? null))
+  }
+
+  /**
+   * Dragging a tab reorders as it goes rather than dropping a marker and
+   * settling up at the end: the row is short and the tabs are wide, so the
+   * order under the pointer is the clearest preview of the order being asked
+   * for. The menu is closed on the way in, because it is placed against the
+   * viewport and the tab it belongs to is about to move.
+   * @param {DragEvent} e
+   * @param {import('$lib/cv/state/files.svelte.js').FileMeta} f
+   */
+  function onTabDragStart(e, f) {
+    dragId = f.id
+    menuOpen = false
+    if (!e.dataTransfer) return
+    e.dataTransfer.effectAllowed = 'move'
+    // Firefox starts no drag at all unless the payload is set.
+    e.dataTransfer.setData('text/plain', f.id)
+  }
+
+  /**
+   * @param {DragEvent} e
+   * @param {import('$lib/cv/state/files.svelte.js').FileMeta} f
+   */
+  function onTabDragOver(e, f) {
+    if (!dragId || dragId === f.id) return
+    e.preventDefault() // this is a drop target
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+
+    const rect = /** @type {HTMLElement} */ (e.currentTarget).getBoundingClientRect()
+    const ids = files.open.map((/** @type {import('$lib/cv/state/files.svelte.js').FileMeta} */ x) => x.id)
+    const at = ids.indexOf(f.id)
+    // Past the middle of a tab is a request to be on its far side.
+    const before = e.clientX > rect.left + rect.width / 2 ? (ids[at + 1] ?? null) : f.id
+    files.reorder(dragId, before)
+  }
+
+  /** The order is already what the drag asked for; this only ends it. @param {DragEvent} e */
+  function onTabDrop(e) {
+    if (!dragId) return
+    e.preventDefault() // no snap-back animation
+    dragId = null
   }
 
   /** @param {HTMLInputElement} node */
@@ -149,19 +213,35 @@
   <!-- Only the tabs scroll: everything after them stays reachable however
 	     many files are open, and on however narrow a screen. Scrolling them takes
 	     the menu down with it, since it is placed where the caret was. -->
-  <div id="tabs" onscroll={() => (menuOpen = false)}>
+  <!-- A list, and the tabs its items: the row has an order that the drag below
+	     changes, which is the one thing a screen reader has to be told about it. -->
+  <div id="tabs" role="list" onscroll={() => (menuOpen = false)}>
     {#each files.open as f (f.id)}
       {@const active = f.id === files.activeId}
-      <div class="tab" class:active>
+      <!-- Dragged by the tab as a whole, but not while it is being renamed:
+			     a draggable ancestor takes the pointer away from the input inside it,
+			     and selecting the text you are editing stops working. -->
+      <div
+        class="tab"
+        role="listitem"
+        class:active
+        class:dragging={dragId === f.id}
+        draggable={editingId !== f.id}
+        ondragstart={(e) => onTabDragStart(e, f)}
+        ondragover={(e) => onTabDragOver(e, f)}
+        ondrop={onTabDrop}
+        ondragend={() => (dragId = null)}
+      >
         {#if editingId === f.id}
           <input class="tab-rename" bind:value={editValue} use:focusAndSelect onblur={commitRename} onkeydown={onRenameKeydown} />
         {:else}
           <button
             class="tab-select"
-            title="{f.name} — double-click or F2 to rename"
+            title="{f.name} — double-click or F2 to rename, drag or Alt+← → to reorder"
             onclick={() => onSelect(f.id)}
             ondblclick={() => startRename(f)}
-            onkeydown={e => onTabKeydown(e, f)}>
+            onkeydown={(e) => onTabKeydown(e, f)}
+          >
             {f.name}
           </button>
           <!-- Everything that can be done to a file is behind this one caret,
@@ -179,7 +259,8 @@
                 aria-label="Actions for {f.name}"
                 title="What can be done to this CV"
                 onclick={() => (menuOpen ? (menuOpen = false) : openMenu())}
-                onkeydown={onMoreKeydown}>
+                onkeydown={onMoreKeydown}
+              >
                 <Icon icon={IconChevron} width="11" height="11" />
               </button>
 
@@ -192,7 +273,8 @@
                   style:left="{menuAt.x}px"
                   style:top="{menuAt.y}px"
                   onkeydown={onMenuKeydown}
-                  onfocusout={onMenuFocusOut}>
+                  onfocusout={onMenuFocusOut}
+                >
                   <button class="menu-item" role="menuitem" onclick={() => pick(onDuplicate)}>
                     <Icon icon={IconCopy} width="12" height="12" />
                     <span>Duplicate</span>
@@ -311,6 +393,12 @@
     /* The one mark that says which: a rule in the accent at step 9 along the
 		   top edge, inset so it can't add to the height of the bar. */
     box-shadow: inset 0 2px 0 0 var(--accent-9);
+  }
+
+  /* The tab in hand, while the row rearranges itself around it. Faded rather
+	   than lifted: it is still in the row, in the place it would land. */
+  .tab.dragging {
+    opacity: 0.5;
   }
 
   .tab-select {

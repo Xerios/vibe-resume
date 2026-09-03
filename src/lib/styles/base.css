@@ -85,3 +85,25 @@ body.resizing {
   cursor: col-resize !important;
   user-select: none;
 }
+
+/* ── Selection ────────────────────────────────── */
+/* The chrome is furniture, not content: dragging across a toolbar or a tab
+   should never leave a blue smear, and a double-click on a label should not
+   highlight the word. So the document opts *out* of selection and the three
+   places that are genuinely text opt back in.
+
+   The preview isn't listed because it can't be: the sheet lives in an iframe
+   and this stylesheet never reaches it. Selecting and copying out of the
+   rendered CV keeps working, which is what you want there. */
+body {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#cm-wrap,
+input,
+textarea,
+[contenteditable='true'] {
+  user-select: text;
+  -webkit-user-select: text;
+}

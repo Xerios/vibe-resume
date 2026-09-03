@@ -17,6 +17,8 @@ export const KEYS = {
   /** Which panel has the split's third column: `style`, `history` or `none`. */
   sidePanel: 'cv-editor:side-panel',
   sourceHidden: 'cv-editor:source-hidden',
+  /** Which groups of the style panel are folded open — group id → boolean. */
+  styleGroups: 'cv-editor:style-groups',
   /** Whether the preview scales a whole page into the pane — a view, not a file. */
   previewFit: 'cv-editor:preview-fit',
   /** Whether the pointer resting on the sheet pulls the editor to its line. */

@@ -3,6 +3,8 @@
   import { FONTS } from '$lib/cv/theme/fonts.js'
   import { ORIENTATIONS, PAPER_SIZES, RUNNING_SLOTS, resolvePaper } from '$lib/cv/theme/paper.js'
   import { THEMES } from '$lib/cv/theme/presets.js'
+  import { KEYS, read, write } from '$lib/cv/state/storage.js'
+  import Foldout from './Foldout.svelte'
   import TemplateThumb from './TemplateThumb.svelte'
   import VariantCycle from './VariantCycle.svelte'
 
@@ -57,7 +59,33 @@
 }
 `
 
-  let cssOpen = $state(false)
+  /**
+   * Which groups start folded open. Everything but the CSS editor, which is
+   * the one thing here most files never touch.
+   */
+  const GROUPS_OPEN = { preset: true, blocks: true, theme: true, font: true, paper: true, css: false }
+
+  /**
+   * The panel comes back the shape it was left in. Read over the defaults
+   * rather than replacing them, so a group added later takes its own default
+   * instead of vanishing for everyone who has been here before.
+   */
+  let groups = $state(/** @type {Record<string, boolean>} */ ({ ...GROUPS_OPEN, ...readGroups() }))
+
+  function readGroups() {
+    try {
+      const parsed = JSON.parse(read(KEYS.styleGroups) ?? '{}')
+      return parsed && typeof parsed === 'object' ? parsed : {}
+    } catch {
+      return {}
+    }
+  }
+
+  /** @param {string} id */
+  function toggleGroup(id) {
+    groups = { ...groups, [id]: !groups[id] }
+    write(KEYS.styleGroups, JSON.stringify(groups))
+  }
 
   /* Defaulted here as everything else in this panel is, so the buttons below
 	   can just compare ids. The two running-head rows are cycles over an axis
@@ -80,8 +108,7 @@
 		     replaces every one of them. That is what keeps the nine looks
 		     everybody knows as one click each, now that the axes underneath are
 		     the real thing. -->
-    <div class="style-group">
-      <span class="style-label">Preset</span>
+    <Foldout label="Preset" open={groups.preset} onToggle={() => toggleGroup('preset')}>
       <div class="layout-grid">
         {#each PRESETS as p (p.id)}
           <button class="layout-opt" class:on={p.id === preset} title={p.hint} aria-pressed={p.id === preset} onclick={() => onPreset(p.id)}>
@@ -90,27 +117,25 @@
           </button>
         {/each}
       </div>
-    </div>
+    </Foldout>
 
     <!-- Every axis, always all of them. The same rows turn up beside the
 		     sheet when a block is hovered; this is where they are when you know
 		     which one you want rather than which block. -->
-    <div class="style-group">
-      <div class="blocks-head">
-        <span class="style-label">Blocks</span>
+    <Foldout label="Blocks" open={groups.blocks} onToggle={() => toggleGroup('blocks')}>
+      {#snippet head()}
         {#if modified}
           <button class="blocks-reset" title="Put every block back to what this preset says" onclick={onReset}>reset</button>
         {/if}
-      </div>
+      {/snippet}
       <div class="blocks-list">
         {#each slots as slot (slot.id)}
           <VariantCycle {slot} {choices} onPick={onVariant} />
         {/each}
       </div>
-    </div>
+    </Foldout>
 
-    <div class="style-group">
-      <span class="style-label">Theme</span>
+    <Foldout label="Theme" open={groups.theme} onToggle={() => toggleGroup('theme')}>
       <div class="theme-grid">
         {#each THEMES as t (t.id)}
           <button class="theme-opt" class:on={t.id === theme} title={t.name} aria-pressed={t.id === theme} onclick={() => onTheme(t.id)} data-cv-theme={t.id}>
@@ -119,13 +144,12 @@
           </button>
         {/each}
       </div>
-    </div>
+    </Foldout>
 
     <!-- Set in the face it offers, from the `data-cv-font` on the option —
 		     the same trick as the swatches above, and the same reason: one table
 		     of stacks (fonts.css), no second copy to drift. -->
-    <div class="style-group">
-      <span class="style-label">Font</span>
+    <Foldout label="Font" open={groups.font} onToggle={() => toggleGroup('font')}>
       <div class="font-grid">
         {#each FONTS as f (f.id)}
           <button class="font-opt" class:on={f.id === font} title={f.hint} aria-pressed={f.id === font} onclick={() => onFont(f.id)} data-cv-font={f.id}>
@@ -134,7 +158,7 @@
           </button>
         {/each}
       </div>
-    </div>
+    </Foldout>
 
     <!-- The page itself, which is the one thing here that is not a matter of
 		     taste: it is the sheet the print lands on, and the preview is sized
@@ -144,8 +168,7 @@
 		     `@page` — which is also the only place a page *number* can come from,
 		     since nothing in the document knows how many pages there are. Chrome
 		     and Edge do that; Firefox ignores it and prints neither. -->
-    <div class="style-group">
-      <span class="style-label">Paper</span>
+    <Foldout label="Paper" open={groups.paper} onToggle={() => toggleGroup('paper')}>
       <div class="paper-grid">
         {#each PAPER_SIZES as s (s.id)}
           <button class="paper-opt" class:on={s.id === page.size} aria-pressed={s.id === page.size} onclick={() => onPaper({ size: s.id })}>
@@ -180,30 +203,24 @@
           Fit page to pane
         </button>
       {/if}
-    </div>
+    </Foldout>
 
     <!-- Anything at all, applied last inside the preview frame. It can't
 		     reach the editor around it, so there is nothing to validate. -->
-    <div class="style-group">
-      <button class="css-toggle" aria-expanded={cssOpen} onclick={() => (cssOpen = !cssOpen)}>
-        <span class="style-label">Custom CSS</span>
-        <span class="css-caret" class:on={cssOpen}>›</span>
-      </button>
-      {#if cssOpen}
-        <textarea
-          class="css-edit"
-          spellcheck="false"
-          autocapitalize="off"
-          autocomplete="off"
-          value={css}
-          placeholder={CSS_TEMPLATE}
-          aria-label="Custom CSS for this CV"
-          oninput={(e) => onCss(e.currentTarget.value)}></textarea>
-        <p class="css-hint">
-          Applies to this file only. Override the tokens on <code>#cv-root</code>, or style the sheet directly.
-        </p>
-      {/if}
-    </div>
+    <Foldout label="Custom CSS" open={groups.css} onToggle={() => toggleGroup('css')}>
+      <textarea
+        class="css-edit"
+        spellcheck="false"
+        autocapitalize="off"
+        autocomplete="off"
+        value={css}
+        placeholder={CSS_TEMPLATE}
+        aria-label="Custom CSS for this CV"
+        oninput={(e) => onCss(e.currentTarget.value)}></textarea>
+      <p class="css-hint">
+        Applies to this file only. Override the tokens on <code>#cv-root</code>, or style the sheet directly.
+      </p>
+    </Foldout>
   </div>
 </aside>
 
@@ -258,46 +275,15 @@
     padding: var(--sp-3);
     display: flex;
     flex-direction: column;
-    gap: var(--sp-5);
-  }
-
-  /* The disclosure is the label: the whole row is the hit target, so the caret
-	   doesn't need one of its own. */
-  .css-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    padding: 0;
-    background: none;
-    border: none;
-    cursor: pointer;
-  }
-
-  .css-toggle .style-label {
-    margin-bottom: 0;
-  }
-
-  .css-toggle:hover .style-label {
-    color: var(--gray-12);
-  }
-
-  .css-caret {
-    font-size: var(--ui-fs-lg);
-    line-height: 1;
-    color: var(--gray-11);
-    transition: transform 0.14s;
-  }
-
-  .css-caret.on {
-    transform: rotate(90deg);
+    /* Tighter than it was: each group now says where it starts, so the space
+	     between them no longer has to. */
+    gap: var(--sp-3);
   }
 
   .css-edit {
     display: block;
     width: 100%;
     height: 132px;
-    margin-top: var(--sp-3);
     padding: var(--sp-3);
     background: var(--gray-1);
     border: var(--hairline) solid var(--gray-7);
@@ -334,23 +320,6 @@
     font-family: var(--mono);
     font-size: var(--ui-fs-2xs);
     color: var(--gray-12);
-  }
-
-  .style-label {
-    display: block;
-    margin-bottom: var(--sp-3);
-    font-family: var(--sans);
-    font-size: var(--ui-fs-2xs);
-    font-weight: 600;
-    letter-spacing: 1.8px;
-    text-transform: uppercase;
-    color: var(--gray-11);
-  }
-
-  .blocks-head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
   }
 
   .blocks-reset {

@@ -151,6 +151,34 @@ export class FileManager {
   }
 
   /**
+   * Move a tab along the row: `id` lands where `beforeId` sits now, pushing it
+   * and everything after it to the right. A null `beforeId` puts it last.
+   *
+   * The trashed files are carried along in `files` untouched — the row is the
+   * `open` slice of it, so re-inserting relative to another open file is
+   * enough to say where the tab goes. A move that changes nothing is dropped
+   * before the write, because this runs on every dragover event.
+   *
+   * @param {string} id
+   * @param {string | null} beforeId
+   */
+  reorder(id, beforeId) {
+    if (id === beforeId) return
+    const from = this.files.findIndex((f) => f.id === id)
+    if (from < 0) return
+
+    const next = this.files.slice()
+    const [moved] = next.splice(from, 1)
+    const at = beforeId === null ? -1 : next.findIndex((f) => f.id === beforeId)
+    if (beforeId !== null && at < 0) return
+    next.splice(at < 0 ? next.length : at, 0, moved)
+
+    if (next.every((f, i) => f.id === this.files[i].id)) return
+    this.files = next
+    this.#saveList()
+  }
+
+  /**
    * Restyle a file. Ids are stored as given and validated on the way out
    * (`resolvePreset` / `resolveSlots` / `resolveTheme` / `resolveFont`), so a
    * preset or variant that later disappears degrades to the default instead of
