@@ -59,7 +59,7 @@
     menu?.querySelector('button')?.focus()
 
     /** @param {PointerEvent} e */
-    const onPointerDown = (e) => {
+    const onPointerDown = e => {
       if (!menuGroup?.contains(/** @type {Node | null} */ (e.target))) menuOpen = false
     }
     document.addEventListener('pointerdown', onPointerDown)
@@ -161,8 +161,7 @@
             title="{f.name} — double-click or F2 to rename"
             onclick={() => onSelect(f.id)}
             ondblclick={() => startRename(f)}
-            onkeydown={(e) => onTabKeydown(e, f)}
-          >
+            onkeydown={e => onTabKeydown(e, f)}>
             {f.name}
           </button>
           <!-- Everything that can be done to a file is behind this one caret,
@@ -180,8 +179,7 @@
                 aria-label="Actions for {f.name}"
                 title="What can be done to this CV"
                 onclick={() => (menuOpen ? (menuOpen = false) : openMenu())}
-                onkeydown={onMoreKeydown}
-              >
+                onkeydown={onMoreKeydown}>
                 <Icon icon={IconChevron} width="11" height="11" />
               </button>
 
@@ -194,8 +192,7 @@
                   style:left="{menuAt.x}px"
                   style:top="{menuAt.y}px"
                   onkeydown={onMenuKeydown}
-                  onfocusout={onMenuFocusOut}
-                >
+                  onfocusout={onMenuFocusOut}>
                   <button class="menu-item" role="menuitem" onclick={() => pick(onDuplicate)}>
                     <Icon icon={IconCopy} width="12" height="12" />
                     <span>Duplicate</span>
@@ -258,7 +255,7 @@
     gap: var(--sp-3);
     height: var(--bar-tabs);
     padding: 0 var(--sp-3) 0 0;
-    background: var(--gray-2);
+    background: var(--gray-3);
     border-bottom: var(--hairline) solid var(--gray-6);
     z-index: 9;
     transition: var(--theme-fade);
@@ -299,6 +296,7 @@
     border: none;
     border-right: var(--hairline) solid var(--gray-6);
     transition: var(--theme-fade);
+    background: var(--gray-2);
   }
 
   /* An alpha step rather than a solid one: the tab is a hole in the bar with
