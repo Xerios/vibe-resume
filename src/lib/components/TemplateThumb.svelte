@@ -136,7 +136,7 @@
   {/if}
 </svg>
 
-<style>
+<style lang="scss">
   svg {
     width: 100%;
     height: auto;

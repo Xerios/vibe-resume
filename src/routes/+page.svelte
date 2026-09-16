@@ -1209,7 +1209,7 @@
 
 <div id="toast" class:show={toastOn}>{toastMsg}</div>
 
-<style>
+<style lang="scss">
   /* ── Split ────────────────────────────────────── */
   #split {
     flex: 1;
@@ -1224,18 +1224,18 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    /* Step 1, the app-background step, and the same fill CodeMirror's own
-	     editor takes — the pane *is* the editor, so a second tone here would
-	     only draw a seam through it. The preview canvas beside it is step 3,
-	     which is what separates the two in either scheme. */
-    background: var(--gray-1);
+    /* The page rung, and the same fill CodeMirror's own editor takes — the
+	     pane *is* the editor, so a second tone here would only draw a seam
+	     through it. The preview canvas beside it is the bottom rung, which is
+	     what separates the two in either scheme. */
+    background: var(--bg);
     transition: var(--theme-fade);
-  }
 
-  /* Kept mounted (not removed) so the Loro/CodeMirror binding stays alive —
-	   Reset and Restore apply text through it even while it's out of view. */
-  #editor-pane.hidden {
-    display: none;
+    /* Kept mounted (not removed) so the Loro/CodeMirror binding stays alive —
+	     Reset and Restore apply text through it even while it's out of view. */
+    &.hidden {
+      display: none;
+    }
   }
 
   #boot {
@@ -1260,21 +1260,21 @@
     position: relative;
     border: none;
     padding: 0;
-  }
 
-  /* Widens the grab target without widening the line. */
-  #divider::after {
-    content: '';
-    position: absolute;
-    inset: 0 -5px;
-  }
+    /* Widens the grab target without widening the line. */
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0 -5px;
+    }
 
-  #divider:hover {
-    background: var(--accent-9);
-  }
+    &:hover {
+      background: var(--accent-9);
+    }
 
-  #divider.hidden {
-    display: none;
+    &.hidden {
+      display: none;
+    }
   }
 
   /* ── Preview ──────────────────────────────────── */
@@ -1286,7 +1286,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: var(--gray-3);
+    background: var(--bg-darker);
     min-width: 0;
     transition: var(--theme-fade);
   }
@@ -1313,11 +1313,11 @@
     padding: var(--sp-2) var(--sp-6);
     white-space: pre-wrap;
     word-break: break-all;
-  }
 
-  #error-banner span {
-    flex: 1;
-    min-width: 0;
+    span {
+      flex: 1;
+      min-width: 0;
+    }
   }
 
   #detached-banner {
@@ -1333,22 +1333,22 @@
     font-weight: 600;
     padding: var(--sp-2) var(--sp-6);
     z-index: 6;
-  }
 
-  /* The shared button, restated in the banner's own hue: Radix's *outline*
-	   variant, which is a step 7 alpha edge and a step 11 label over whatever is
-	   behind it, hovering to the step 3 alpha wash rather than to a fill. */
-  #detached-banner .t-btn {
-    background: none;
-    border: var(--hairline) solid var(--amber-a7);
-    color: var(--amber-11);
-    padding: var(--sp-1) var(--sp-3);
-  }
+    /* The shared button, restated in the banner's own hue: Radix's *outline*
+	     variant, which is a step 7 alpha edge and a step 11 label over whatever is
+	     behind it, hovering to the step 3 alpha wash rather than to a fill. */
+    .t-btn {
+      background: none;
+      border: var(--hairline) solid var(--amber-a7);
+      color: var(--amber-11);
+      padding: var(--sp-1) var(--sp-3);
 
-  #detached-banner .t-btn:hover {
-    background: var(--amber-a3);
-    border-color: var(--amber-a8);
-    color: var(--amber-11);
+      &:hover {
+        background: var(--amber-a3);
+        border-color: var(--amber-a8);
+        color: var(--amber-11);
+      }
+    }
   }
 
   /* ── Toast ────────────────────────────────────── */
@@ -1368,18 +1368,18 @@
     font-weight: 500;
     padding: var(--sp-3) var(--sp-5);
     border-radius: var(--corner-xs);
-    box-shadow: var(--shadow-4);
+    box-shadow: var(--shadow-ring), var(--shadow-md);
     opacity: 0;
     transition:
       opacity 0.2s,
       transform 0.2s;
     pointer-events: none;
     z-index: 999;
-  }
 
-  #toast.show {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    &.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
   }
 
   /* ── Narrow screens ───────────────────────────── */

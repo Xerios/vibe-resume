@@ -145,5 +145,5 @@ binding, version history, CSS layering) in depth. Don't duplicate it here.
   `<script>` block — the parser reads it as the real thing and `pnpm check`
   fails, even though the app compiles.
 - Style each piece of UI in its own component's `<style>` block. `src/lib/styles/*`,
-  `cv/*.css` and `components/codemirror.css` are global only because they style DOM
+  `cv/*.css` and `components/codemirror.scss` are global only because they style DOM
   Svelte never compiles (CodeMirror's own, and `{@html}` output).

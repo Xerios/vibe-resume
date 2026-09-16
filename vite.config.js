@@ -1,11 +1,17 @@
 /// <reference types="vitest/config" />
 import adapter from '@sveltejs/adapter-static'
 import { sveltekit } from '@sveltejs/kit/vite'
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
 import { defineConfig } from 'vite'
 
 export default defineConfig({
   plugins: [
     sveltekit({
+      // The app's own <style> blocks are SCSS (nesting only — see README). The
+      // layouts and blocks under src/lib/cv are compiled in the browser, where
+      // no preprocessor runs, so they stay plain CSS.
+      preprocess: vitePreprocess(),
+
       // Templates are compiled in the browser (see src/lib/cv/template/compile-template.js),
       // where `@cv` is resolved by a registry rather than by a bundler. Declaring
       // it here as well is what lets the built-in layouts and block variants in

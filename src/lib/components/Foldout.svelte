@@ -38,27 +38,32 @@
   {/if}
 </div>
 
-<style>
+<style lang="scss">
   .fold {
     display: flex;
     flex-direction: column;
+
+    &.open .fold-caret {
+      transform: rotate(90deg);
+    }
   }
 
   /* A bar rather than a bare label: it is a thing to press, and the groups
-	   below one another read as a stack of them. */
+	   below one another read as a stack of them. Alpha steps, since the panel
+	   is one rung docked and another floating. */
   .fold-head {
     display: flex;
     align-items: center;
     gap: var(--sp-2);
     padding: var(--sp-1) var(--sp-2);
-    background: var(--gray-3);
+    background: var(--gray-a3);
     border: var(--hairline) solid var(--gray-a6);
     border-radius: var(--corner-xs);
     transition: var(--hover-fade);
-  }
 
-  .fold-head:hover {
-    background: var(--gray-4);
+    &:hover {
+      background: var(--gray-a4);
+    }
   }
 
   .fold-btn {
@@ -72,6 +77,11 @@
     border: none;
     cursor: pointer;
     text-align: left;
+
+    &:hover .fold-label,
+    &:focus-visible .fold-label {
+      color: var(--gray-12);
+    }
   }
 
   .fold-caret {
@@ -82,10 +92,6 @@
     text-align: center;
     color: var(--gray-11);
     transition: transform 0.14s;
-  }
-
-  .fold.open .fold-caret {
-    transform: rotate(90deg);
   }
 
   /* The same voice the panel's own head speaks in — these are its sections. */
@@ -100,11 +106,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  .fold-btn:hover .fold-label,
-  .fold-btn:focus-visible .fold-label {
-    color: var(--gray-12);
   }
 
   .fold-extra {

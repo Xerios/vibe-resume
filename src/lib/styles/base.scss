@@ -16,13 +16,13 @@ body {
   overflow: hidden;
 }
 
-/* Step 3 rather than step 1: the page behind everything is mostly the preview
-   canvas, and a canvas has to read as the desk a white sheet is lying on. The
-   panes that sit on top of it take step 1 and 2. */
+/* The bottom rung: the page behind everything is mostly the preview canvas,
+   and a canvas has to read as the desk a white sheet is lying on. Every pane
+   sits on a rung above it. */
 body {
   font-family: var(--sans);
   color: var(--gray-12);
-  background: var(--gray-3);
+  background: var(--bg-darker);
   -webkit-font-smoothing: antialiased;
   transition: var(--theme-fade);
 }
@@ -65,11 +65,11 @@ u {
   background-clip: padding-box;
   border: 2px solid transparent;
   border-radius: var(--corner-xs);
-}
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--scroll-thumb-hover);
-  background-clip: padding-box;
+  &:hover {
+    background: var(--scroll-thumb-hover);
+    background-clip: padding-box;
+  }
 }
 
 #app {

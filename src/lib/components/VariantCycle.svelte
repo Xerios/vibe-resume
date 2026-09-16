@@ -21,7 +21,7 @@
 
   let open = $state(false)
 
-  const current = $derived(slot.variants.find((v) => v.id === choices[slot.id]) ?? slot.variants[0])
+  const current = $derived(slot.variants.find(v => v.id === choices[slot.id]) ?? slot.variants[0])
 
   /**
    * Wraps. A slot has three or four variants, and stopping at the last one
@@ -58,7 +58,7 @@
   {/if}
 </div>
 
-<style>
+<style lang="scss">
   .vc-row {
     position: relative;
     display: flex;
@@ -78,12 +78,13 @@
   }
 
   /* Three cells in one box, hairline-divided — the segmented control the rest
-	   of the chrome's grouped buttons are drawn as. */
+	   of the chrome's grouped buttons are drawn as. Alpha steps throughout, since
+	   the panel it sits in is a different rung docked and floating. */
   .vc-cycle {
     display: flex;
     align-items: stretch;
-    background: var(--gray-3);
-    border: var(--hairline) solid var(--gray-a6);
+    background: var(--gray-a3);
+    border: var(--hairline) solid var(--gray-a4);
     border-radius: var(--corner-xs);
     overflow: hidden;
   }
@@ -106,15 +107,15 @@
     font-size: var(--ui-fs-lg);
     line-height: 1;
     color: var(--gray-11);
-  }
 
-  .vc-arrow:hover {
-    background: var(--accent-9);
-    color: var(--accent-contrast);
-  }
+    &:hover {
+      background: var(--accent-9);
+      color: var(--accent-contrast);
+    }
 
-  .vc-arrow:active {
-    background: var(--accent-10);
+    &:active {
+      background: var(--accent-10);
+    }
   }
 
   .vc-name {
@@ -124,14 +125,15 @@
     border-right: var(--hairline) solid var(--gray-a6);
     text-align: center;
     white-space: nowrap;
+
+    &:hover,
+    &[aria-expanded='true'] {
+      background: var(--gray-a4);
+      color: var(--gray-12);
+    }
   }
 
-  .vc-name:hover,
-  .vc-name[aria-expanded='true'] {
-    background: var(--gray-4);
-    color: var(--gray-12);
-  }
-
+  /* The raised rung under the popover shadow, like every other menu. */
   .vc-menu {
     position: absolute;
     top: calc(100% + var(--sp-1));
@@ -141,15 +143,15 @@
     flex-direction: column;
     min-width: 128px;
     padding: var(--sp-1);
-    background: var(--gray-2);
+    background: var(--bg-light);
     border: var(--hairline) solid var(--gray-6);
     border-radius: var(--corner-xs);
-    box-shadow: var(--shadow-4);
-  }
+    box-shadow: var(--shadow-ring), var(--shadow-md);
 
-  .vc-menu.left {
-    right: auto;
-    left: 0;
+    &.left {
+      right: auto;
+      left: 0;
+    }
   }
 
   .vc-opt {
@@ -157,15 +159,15 @@
     border-radius: var(--corner-xs);
     text-align: left;
     white-space: nowrap;
-  }
 
-  .vc-opt:hover {
-    background: var(--gray-3);
-    color: var(--gray-12);
-  }
+    &:hover {
+      background: var(--gray-a3);
+      color: var(--gray-12);
+    }
 
-  .vc-opt.on {
-    background: var(--accent-9);
-    color: var(--accent-contrast);
+    &.on {
+      background: var(--accent-9);
+      color: var(--accent-contrast);
+    }
   }
 </style>

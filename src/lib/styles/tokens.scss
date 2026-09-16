@@ -1,0 +1,349 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Design tokens — Radix Colors, as two schemes.
+
+   Nothing here selects anything the app draws; every rule that does lives in a
+   component's <style> block or in one of the sibling stylesheets listed in
+   src/app.scss.
+
+   The scales come from @radix-ui/colors verbatim — imported, never re-typed —
+   and text, borders and controls spend them by *step number* rather than
+   through a private vocabulary of role names: each of the twelve steps in
+   every Radix scale has one documented job, and the same step does that job in
+   both schemes, so a rule that picks the right step needs no dark-mode branch
+   of its own.
+
+      1   app background
+      2   subtle background
+      3   UI element background
+      4   hovered UI element background
+      5   active / selected UI element background
+      6   subtle borders and separators
+      7   UI element border and focus rings
+      8   hovered UI element border
+      9   solid backgrounds
+     10   hovered solid backgrounds
+     11   low-contrast text
+     12   high-contrast text
+
+   Steps 1–8 are backgrounds and borders and are *not* legible as text. Steps
+   11 and 12 are the only two that carry words. Step 9 is the most saturated
+   step and the one place a hue appears at full strength; `--accent-contrast`
+   is the only colour that goes on top of it.
+
+   Two hues do the work: **teal** as the accent, aliased to `--accent-*` below,
+   and **slate** as the gray, aliased to `--gray-*`. Aliasing rather than
+   naming the hue directly is Radix's own convention, and it means the accent
+   is one line to swap. Alongside them sit red, amber and grass for the three
+   states the app has to signal, and blue, purple and orange, which exist only
+   to give the editor's syntax highlighting somewhere in the same system to
+   draw from.
+
+   Surfaces are the exception to spending by step. Radix has no tonal ladder,
+   and a step that is "subtle background" in both schemes lands a popover
+   *below* the canvas it hangs over once the scheme is dark. So surfaces take
+   one of five rungs instead — `--bg-darker` … `--bg-lighter`, CodyFrame's
+   elevation practice — each rung pointing at a gray step per scheme: sunken
+   things are darker, raised things lighter, and shadows only reinforce. The
+   light scheme collapses the top rungs onto the page and lets the shadow say
+   the height; the dark scheme steps them up in lightness, where a shadow
+   alone would not read. A control that can land on any rung takes an *alpha*
+   step for its fill, so it tints whatever it is on rather than fighting it.
+
+   The sheet in the preview frame is not reachable from here and never follows:
+   it is a separate document with its own inputs in src/lib/cv/frame.css.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── The scales ───────────────────────────────── */
+/* Light first, then dark. Radix ships the light steps under `:root, .light`
+   and the dark steps under `.dark`, which are the same specificity, so the
+   dark file has to come second to win. `.dark` is put on <html> beside the
+   `data-theme` attribute the app already toggles — see toggleTheme() in
+   +page.svelte and the pre-paint script in app.html. */
+@import '@radix-ui/colors/slate.css';
+@import '@radix-ui/colors/slate-alpha.css';
+@import '@radix-ui/colors/teal.css';
+@import '@radix-ui/colors/teal-alpha.css';
+@import '@radix-ui/colors/red.css';
+@import '@radix-ui/colors/red-alpha.css';
+@import '@radix-ui/colors/amber.css';
+@import '@radix-ui/colors/amber-alpha.css';
+@import '@radix-ui/colors/grass.css';
+@import '@radix-ui/colors/grass-alpha.css';
+@import '@radix-ui/colors/blue.css';
+@import '@radix-ui/colors/blue-alpha.css';
+@import '@radix-ui/colors/purple.css';
+@import '@radix-ui/colors/orange.css';
+@import '@radix-ui/colors/black-alpha.css';
+
+@import '@radix-ui/colors/slate-dark.css';
+@import '@radix-ui/colors/slate-dark-alpha.css';
+@import '@radix-ui/colors/teal-dark.css';
+@import '@radix-ui/colors/teal-dark-alpha.css';
+@import '@radix-ui/colors/red-dark.css';
+@import '@radix-ui/colors/red-dark-alpha.css';
+@import '@radix-ui/colors/amber-dark.css';
+@import '@radix-ui/colors/amber-dark-alpha.css';
+@import '@radix-ui/colors/grass-dark.css';
+@import '@radix-ui/colors/grass-dark-alpha.css';
+@import '@radix-ui/colors/blue-dark.css';
+@import '@radix-ui/colors/blue-dark-alpha.css';
+@import '@radix-ui/colors/purple-dark.css';
+@import '@radix-ui/colors/orange-dark.css';
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   The two aliases. Every rule in the app reads `--accent-*` and `--gray-*`;
+   these two blocks are the only place the hues behind them are named, so the
+   chrome re-hues from here and nowhere else.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Tells the browser which scheme its own chrome should use — the bits no
+	   stylesheet reaches, like the scrollbars inside a native popup. */
+  color-scheme: light;
+
+  /* ── Accent: teal ── */
+  --accent-1: var(--teal-1);
+  --accent-2: var(--teal-2);
+  --accent-3: var(--teal-3);
+  --accent-4: var(--teal-4);
+  --accent-5: var(--teal-5);
+  --accent-6: var(--teal-6);
+  --accent-7: var(--teal-7);
+  --accent-8: var(--teal-8);
+  --accent-9: var(--teal-9);
+  --accent-10: var(--teal-10);
+  --accent-11: var(--teal-11);
+  --accent-12: var(--teal-12);
+  --accent-a1: var(--teal-a1);
+  --accent-a2: var(--teal-a2);
+  --accent-a3: var(--teal-a3);
+  --accent-a4: var(--teal-a4);
+  --accent-a5: var(--teal-a5);
+  --accent-a6: var(--teal-a6);
+  --accent-a7: var(--teal-a7);
+  --accent-a8: var(--teal-a8);
+  --accent-a9: var(--teal-a9);
+  --accent-a10: var(--teal-a10);
+  --accent-a11: var(--teal-a11);
+  --accent-a12: var(--teal-a12);
+
+  /* ── Gray: slate ── */
+  --gray-1: var(--slate-1);
+  --gray-2: var(--slate-2);
+  --gray-3: var(--slate-3);
+  --gray-4: var(--slate-4);
+  --gray-5: var(--slate-5);
+  --gray-6: var(--slate-6);
+  --gray-7: var(--slate-7);
+  --gray-8: var(--slate-8);
+  --gray-9: var(--slate-9);
+  --gray-10: var(--slate-10);
+  --gray-11: var(--slate-11);
+  --gray-12: var(--slate-12);
+  --gray-a1: var(--slate-a1);
+  --gray-a2: var(--slate-a2);
+  --gray-a3: var(--slate-a3);
+  --gray-a4: var(--slate-a4);
+  --gray-a5: var(--slate-a5);
+  --gray-a6: var(--slate-a6);
+  --gray-a7: var(--slate-a7);
+  --gray-a8: var(--slate-a8);
+  --gray-a9: var(--slate-a9);
+  --gray-a10: var(--slate-a10);
+  --gray-a11: var(--slate-a11);
+  --gray-a12: var(--slate-a12);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   The surface ladder — the one place a token points at a *different* step per
+   scheme, and the reason it exists. Five rungs, sunken to raised:
+
+     --bg-darker   the canvas the sheet lies on; the strip the tabs sit in
+     --bg-dark     bars, docked panels, resting tabs, CodeMirror's gutter
+     --bg          the page: the editor pane, inputs, the active tab
+     --bg-light    menus, popovers, tooltips, the panels when they float
+     --bg-lighter  dialogs
+
+   Light collapses the top three onto step 1 — a white card on a white page,
+   with the shadow alone saying how high — because the light steps above 1
+   are all *darker* than it, and a raised thing cannot be. Dark walks up the
+   scale one step per rung, which is the only way a popover reads as being in
+   front of what it covers when a shadow has nothing darker to fall on.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --bg-darker: var(--gray-3);
+  --bg-dark: var(--gray-2);
+  --bg: var(--gray-1);
+  --bg-light: var(--gray-1);
+  --bg-lighter: var(--gray-1);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg-darker: var(--gray-1);
+  --bg-dark: var(--gray-2);
+  --bg: var(--gray-3);
+  --bg-light: var(--gray-4);
+  --bg-lighter: var(--gray-5);
+
+  /* Restated per scheme because it isn't a step — see --theme-color below. */
+  --theme-color: #18191b;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Everything derived from the scales.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Contrast ───────────────────────────────── */
+  /* The one colour that goes on a step 9 fill. Radix pairs teal, slate, red,
+	   grass, blue, purple and orange with white at step 9, in both schemes —
+	   which is why these do not flip. Amber does not pair with white, and so
+	   the app never puts text on amber 9; the amber pill is a step 3 fill with
+	   step 11 text like every other soft container here. */
+  --accent-contrast: #fff;
+  --gray-contrast: #fff;
+
+  /* ── The installed window's titlebar ────────── */
+  /* Read by syncThemeColor() and handed to <meta name="theme-color">, which
+	   parses a plain colour and nothing else — so this is slate 2 spelled out
+	   in sRGB rather than `var(--gray-2)`. Radix rewrites its scales to
+	   `color(display-p3 …)` on a wide-gamut display, and the meta tag would
+	   drop the value on the floor. Nothing else may spend this token. */
+  --theme-color: #f9f9fb;
+
+  /* ── Shadows ────────────────────────────────── */
+  /* The second half of elevation, after the rung. CodyFrame's scale: a ring
+	   kept apart from five sizes, so a floating thing composes the two —
+	   `box-shadow: var(--shadow-ring), var(--shadow-md)`. The blurs are plain
+	   black alpha, as CodyFrame's are, and in the dark scheme they go faint by
+	   design: there the rung carries the height and the shadow is only a hint.
+	   The ring is the one part that takes a gray *alpha* step, so the hairline
+	   that holds a floating edge reads against either scheme. */
+  --shadow-ring: 0 0 0 1px var(--gray-a4);
+  --shadow-xs: 0 0.1px 0.3px rgb(0 0 0 / 0.06), 0 1px 2px rgb(0 0 0 / 0.12);
+  --shadow-sm: 0 0.3px 0.4px rgb(0 0 0 / 0.025), 0 0.9px 1.5px rgb(0 0 0 / 0.05), 0 3.5px 6px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 0.9px 1.5px rgb(0 0 0 / 0.03), 0 3.1px 5.5px rgb(0 0 0 / 0.08), 0 14px 25px rgb(0 0 0 / 0.12);
+  --shadow-lg:
+    0 1.2px 1.9px -1px rgb(0 0 0 / 0.014), 0 3.3px 5.3px -1px rgb(0 0 0 / 0.038), 0 8.5px 12.7px -1px rgb(0 0 0 / 0.085), 0 30px 42px -1px rgb(0 0 0 / 0.15);
+  --shadow-xl:
+    0 1.5px 2.1px -6px rgb(0 0 0 / 0.012), 0 3.6px 5.2px -6px rgb(0 0 0 / 0.035), 0 7.3px 10.8px -6px rgb(0 0 0 / 0.07),
+    0 16.2px 21.9px -6px rgb(0 0 0 / 0.117), 0 46px 60px -6px rgb(0 0 0 / 0.2);
+
+  /* What a dialog dims the app with. Radix's overlay is black alpha in either
+	   scheme — a scrim darkens what is behind it whichever way round the app is
+	   drawn — and `--black-a*` is the one scale that does not flip. */
+  --overlay: var(--black-a8);
+
+  /* ── Shape ──────────────────────────────────── */
+  /* The app takes the small end of the scale — controls at extra-small,
+	   containers at small, the one dialog at medium — because a dense editor is
+	   what this is. `--corner-full` is spent only on the badge, which is a chip. */
+  --corner-none: 0;
+  --corner-xs: 4px;
+  --corner-sm: 8px;
+  --corner-md: 12px;
+  --corner-lg: 16px;
+  --corner-full: 9999px;
+
+  /* ── Spacing and measure ────────────────────── */
+  /* A 4px grid, tightened at the low end. The bars are deliberately thin: this
+	   is a two-pane editor, and the sheet is what the room is for. */
+  --sp-1: 2px;
+  --sp-2: 4px;
+  --sp-3: 6px;
+  --sp-4: 8px;
+  --sp-5: 12px;
+  --sp-6: 16px;
+
+  --bar-tool: 32px;
+  --bar-tabs: 26px;
+  --bar-status: 22px;
+  --panel-w: 264px;
+  /* Where a popover hanging off the chrome starts: the two bars above it, plus
+	   their rules. Derived so the panels that float can't drift from the bars
+	   they hang under. */
+  --overlay-top: calc(var(--bar-tool) + var(--bar-tabs) + 2px);
+  --hairline: 1px;
+
+  /* A scrollbar is furniture on top of a pane whose colour it doesn't know, so
+	   it takes alpha steps rather than solid ones — 7 is the border step, 9 the
+	   solid one, and a thumb sits between the two jobs. */
+  --scroll-thumb: var(--gray-a7);
+  --scroll-thumb-hover: var(--accent-a9);
+
+  /* ── Editor ─────────────────────────────────── */
+  /* The syntax roles. Every one is a step 11 — the low-contrast text step —
+	   which is the whole reason there is no second block for the dark scheme:
+	   step 11 is defined as legible on steps 1 and 2, and the editor's page is
+	   step 1 in both. The two grays below 11 are the deliberate exception:
+	   punctuation and hints are meant to recede *out* of the text steps.
+
+	   The tokens are read from JS as well as from CSS — see cm-highlight.js. */
+  --cm-key: var(--accent-11);
+  --cm-tag: var(--accent-11);
+  --cm-string: var(--grass-11);
+  --cm-num: var(--orange-11);
+  --cm-keyword: var(--purple-11);
+  --cm-fn: var(--blue-11);
+  --cm-html: var(--blue-11);
+  --cm-anchor: var(--amber-11);
+  --cm-attr: var(--amber-11);
+  --cm-block: var(--amber-11);
+  --cm-text: var(--gray-12);
+  --cm-punct: var(--gray-10);
+  --cm-comment: var(--gray-11);
+  --cm-hint: var(--gray-10);
+  --cm-error: var(--red-11);
+  --cm-invalid: var(--red-11);
+  --cm-warn: var(--amber-11);
+
+  /* The editor's washes. All alpha, because each one lands on top of text it
+	   must not bury: an alpha step tints the line and leaves the glyphs where
+	   they were, which a solid step at the same darkness would not. */
+  --cm-error-bg: var(--red-a3);
+  --cm-active: var(--gray-a3);
+  --cm-selection: var(--accent-a5);
+  --cm-selection-focus: var(--accent-a6);
+  --cm-peek: var(--accent-a3);
+  --cm-match: var(--amber-a5);
+  --cm-diff-add-bg: var(--grass-a4);
+  --cm-diff-del-bg: var(--red-a4);
+  --cm-diff-del-text: var(--red-11);
+  /* The compare view's two extra readings, and the darker step each wash
+	   deepens to on the very characters that differ. Blue is the one hue the
+	   chrome doesn't already spend on a state, which is why a moved block gets
+	   it: it is neither wrong nor new. */
+  --cm-diff-mod-bg: var(--amber-a4);
+  --cm-diff-mod-range: var(--amber-a7);
+  --cm-diff-add-range: var(--grass-a7);
+  --cm-diff-del-range: var(--red-a7);
+  --cm-diff-move-bg: var(--blue-a3);
+  --cm-diff-move-edge: var(--blue-9);
+  --stat-add: var(--grass-11);
+  --stat-del: var(--red-11);
+
+  /* ── Type ───────────────────────────────────── */
+  /* Every font-size in the editor chrome spends one of these seven and nothing
+	   else, so the whole UI moves together when a step moves. The sheet inside
+	   the preview frame has a ladder of its own — --cv-fs-* in
+	   src/lib/cv/frame.css — which this one never reaches. */
+  --ui-fs-2xs: 10px;
+  --ui-fs-xs: 11px;
+  --ui-fs-sm: 12px;
+  --ui-fs-md: 14px;
+  --ui-fs-lg: 15px;
+  --ui-fs-xl: 17px;
+  --ui-fs-2xl: 18px;
+
+  --sans: 'GitLab Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'GitLab Mono', ui-monospace, Consolas, monospace;
+
+  /* Swapping schemes should read as a fade rather than a cut; a control
+	   answering the pointer is a different event and wants the shorter one. */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --theme-fade: background-color 200ms var(--ease), color 200ms var(--ease), border-color 200ms var(--ease);
+  --hover-fade: background-color 100ms var(--ease), color 100ms var(--ease), border-color 100ms var(--ease);
+}

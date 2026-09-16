@@ -54,7 +54,7 @@
   {/if}
 </div>
 
-<style>
+<style lang="scss">
   #toolbar {
     flex-shrink: 0;
     display: flex;
@@ -62,7 +62,7 @@
     gap: var(--sp-4);
     height: var(--bar-tool);
     padding: 0 var(--sp-4);
-    background: var(--gray-2);
+    background: var(--bg-dark);
     border-bottom: var(--hairline) solid var(--gray-6);
     z-index: 10;
     transition: var(--theme-fade);

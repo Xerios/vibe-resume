@@ -13,7 +13,7 @@
   import { relaxedYaml } from '$lib/cv/format/relaxed-yaml-mode.js'
   import { storedText } from '$lib/cv/state/doc.svelte.js'
   import { highlight } from './cm-highlight.js'
-  import './codemirror.css'
+  import './codemirror.scss'
 
   /**
    * One side of the comparison: a file, at a version — or at its newest text,
@@ -439,7 +439,7 @@
   </div>
 </div>
 
-<style>
+<style lang="scss">
   #compare {
     position: fixed;
     inset: 0;
@@ -453,15 +453,16 @@
     animation: cmp-fade 0.2s ease;
   }
 
+  /* A dialog is the top rung, under the largest shadow. */
   .cmp-card {
     display: flex;
     flex-direction: column;
     width: min(1400px, 100%);
     height: min(92vh, 100%);
     overflow: hidden;
-    background: var(--gray-2);
+    background: var(--bg-lighter);
     border-radius: var(--corner-md);
-    box-shadow: var(--shadow-6);
+    box-shadow: var(--shadow-ring), var(--shadow-xl);
     animation: cmp-rise 0.24s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
@@ -473,6 +474,10 @@
     height: var(--bar-tool);
     padding: 0 var(--sp-4);
     border-bottom: var(--hairline) solid var(--gray-6);
+
+    .t-btn {
+      padding: var(--sp-1) var(--sp-2);
+    }
   }
 
   .cmp-title {
@@ -517,10 +522,6 @@
     white-space: nowrap;
   }
 
-  .cmp-bar .t-btn {
-    padding: var(--sp-1) var(--sp-2);
-  }
-
   .cmp-body {
     flex: 1;
     min-height: 0;
@@ -533,10 +534,10 @@
     flex-direction: column;
     min-width: 0;
     min-height: 0;
-  }
 
-  .cmp-col + .cmp-col {
-    border-left: var(--hairline) solid var(--gray-6);
+    & + & {
+      border-left: var(--hairline) solid var(--gray-6);
+    }
   }
 
   .cmp-pick {
@@ -545,33 +546,33 @@
     gap: var(--sp-2);
     padding: var(--sp-2) var(--sp-3);
     border-bottom: var(--hairline) solid var(--gray-6);
-  }
 
-  /* A field is an interactive element, so its edge is step 7. The version
-	   picker takes what room the file picker leaves. */
-  .cmp-pick select {
-    min-width: 0;
-    flex: 1;
-    font-family: var(--sans);
-    font-size: var(--ui-fs-sm);
-    color: var(--gray-12);
-    background: var(--gray-1);
-    border: var(--hairline) solid var(--gray-7);
-    border-radius: var(--corner-xs);
-    padding: var(--sp-1) var(--sp-2);
-  }
+    /* A field is an interactive element, so its edge is step 7. The version
+	     picker takes what room the file picker leaves. */
+    select {
+      min-width: 0;
+      flex: 1;
+      font-family: var(--sans);
+      font-size: var(--ui-fs-sm);
+      color: var(--gray-12);
+      background: var(--bg);
+      border: var(--hairline) solid var(--gray-7);
+      border-radius: var(--corner-xs);
+      padding: var(--sp-1) var(--sp-2);
 
-  .cmp-pick select:first-child {
-    flex: 0 1 40%;
-  }
+      &:first-child {
+        flex: 0 1 40%;
+      }
 
-  .cmp-pick select:focus {
-    outline: none;
-    border-color: var(--accent-8);
-  }
+      &:focus {
+        outline: none;
+        border-color: var(--accent-8);
+      }
 
-  .cmp-pick select:disabled {
-    opacity: 0.5;
+      &:disabled {
+        opacity: 0.5;
+      }
+    }
   }
 
   .cm-host {

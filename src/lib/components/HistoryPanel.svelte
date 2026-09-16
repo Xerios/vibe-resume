@@ -161,13 +161,14 @@
   </div>
 </aside>
 
-<style>
+<style lang="scss">
+  /* Docked, the panel is a bar's rung; floating (below), it climbs one. */
   #history-pane {
     flex-shrink: 0;
     width: var(--panel-w);
     display: flex;
     flex-direction: column;
-    background: var(--gray-2);
+    background: var(--bg-dark);
     border-left: var(--hairline) solid var(--gray-6);
     overflow: hidden;
     transition: var(--theme-fade);
@@ -195,29 +196,29 @@
   .hist-form {
     display: flex;
     gap: var(--sp-2);
-  }
 
-  .hist-form input {
-    flex: 1;
-    min-width: 0;
-    font-family: var(--sans);
-    font-size: var(--ui-fs-sm);
-    color: var(--gray-12);
-    background: var(--gray-1);
-    /* A field is an interactive element, so its edge is step 7 — the border
-	     step — rather than the step 6 the panel's own rules take. */
-    border: var(--hairline) solid var(--gray-7);
-    border-radius: var(--corner-xs);
-    padding: var(--sp-1) var(--sp-3);
-  }
+    input {
+      flex: 1;
+      min-width: 0;
+      font-family: var(--sans);
+      font-size: var(--ui-fs-sm);
+      color: var(--gray-12);
+      background: var(--bg);
+      /* A field is an interactive element, so its edge is step 7 — the border
+	       step — rather than the step 6 the panel's own rules take. */
+      border: var(--hairline) solid var(--gray-7);
+      border-radius: var(--corner-xs);
+      padding: var(--sp-1) var(--sp-3);
 
-  .hist-form input:focus {
-    outline: none;
-    border-color: var(--accent-8);
-  }
+      &:focus {
+        outline: none;
+        border-color: var(--accent-8);
+      }
 
-  .hist-form input::placeholder {
-    color: var(--gray-10);
+      &::placeholder {
+        color: var(--gray-10);
+      }
+    }
   }
 
   .hist-list {
@@ -234,11 +235,11 @@
     align-items: stretch;
     gap: var(--sp-1);
     margin-bottom: var(--hairline);
-  }
 
-  .hist-row .hist-item {
-    flex: 1;
-    min-width: 0;
+    .hist-item {
+      flex: 1;
+      min-width: 0;
+    }
   }
 
   /* Step 9 at rest — ornament beside the row, like a line number — lifting to
@@ -255,16 +256,16 @@
     padding: 0;
     color: var(--gray-9);
     transition: var(--hover-fade);
-  }
 
-  .hist-compare:hover,
-  .hist-compare:focus-visible {
-    background: var(--gray-3);
-    color: var(--accent-11);
-  }
+    &:hover,
+    &:focus-visible {
+      background: var(--gray-a3);
+      color: var(--accent-11);
+    }
 
-  .hist-compare :global([stroke-width]) {
-    stroke-width: 2.25;
+    :global([stroke-width]) {
+      stroke-width: 2.25;
+    }
   }
 
   .hist-item {
@@ -282,19 +283,73 @@
     color: var(--gray-12);
     position: relative;
     transition: var(--hover-fade);
-  }
 
-  .hist-item:hover {
-    background: var(--gray-3);
-  }
+    /* An alpha step: the panel is one rung docked and another floating. */
+    &:hover {
+      background: var(--gray-a3);
+    }
 
-  /* The row being previewed is *selected*, which is step 5's one job — and it
-	   is the accent's step 5, because which version is on screen is the panel's
-	   whole subject. Step 12 of the same scale is the text that goes on it. */
-  .hist-item.active {
-    border-color: transparent;
-    background: var(--accent-5);
-    color: var(--accent-12);
+    /* The row being previewed is *selected*, which is step 5's one job — and it
+	     is the accent's step 5, because which version is on screen is the panel's
+	     whole subject. Step 12 of the same scale is the text that goes on it. */
+    &.active {
+      border-color: transparent;
+      background: var(--accent-5);
+      color: var(--accent-12);
+    }
+
+    /* Kinds, quietest first: an ordinary edit is background noise, a named version
+	     is a marker, and an export is the CV leaving the app — the loudest of the
+	     three, so its rule comes last and wins over `.latest` on the same row. */
+    &.kind-edit .hist-msg {
+      font-weight: 500;
+      color: var(--gray-11);
+    }
+
+    &.kind-checkpoint :global(.hist-mark),
+    &.kind-initial :global(.hist-mark),
+    &.kind-restore :global(.hist-mark) {
+      color: var(--accent-11);
+    }
+
+    /* A restyle changed no text, so it reads as quietly as an edit does — the
+	     glyph is what says which of the two it was. */
+    &.kind-style .hist-msg {
+      font-weight: 500;
+      color: var(--gray-11);
+    }
+
+    &.kind-style :global(.hist-mark) {
+      color: var(--accent-11);
+    }
+
+    &.latest .hist-msg {
+      color: var(--accent-11);
+    }
+
+    &.kind-export {
+      background: var(--amber-3);
+      border-color: transparent;
+
+      &.active {
+        background: var(--accent-5);
+      }
+
+      :global(.hist-mark),
+      .hist-msg {
+        color: var(--amber-11);
+      }
+
+      &.active :global(.hist-mark),
+      &.active .hist-msg {
+        color: var(--accent-12);
+      }
+
+      .hist-msg {
+        font-weight: 700;
+        letter-spacing: 0.2px;
+      }
+    }
   }
 
   /* Drawn by <Icon>, so the class lands on SVG the compiler never sees. */
@@ -306,59 +361,6 @@
 
   :global(.hist-mark [stroke-width]) {
     stroke-width: 2.25;
-  }
-
-  /* Kinds, quietest first: an ordinary edit is background noise, a named version
-	   is a marker, and an export is the CV leaving the app — the loudest of the
-	   three, so its rule comes last and wins over `.latest` on the same row. */
-  .hist-item.kind-edit .hist-msg {
-    font-weight: 500;
-    color: var(--gray-11);
-  }
-
-  .hist-item.kind-checkpoint :global(.hist-mark),
-  .hist-item.kind-initial :global(.hist-mark),
-  .hist-item.kind-restore :global(.hist-mark) {
-    color: var(--accent-11);
-  }
-
-  /* A restyle changed no text, so it reads as quietly as an edit does — the
-	   glyph is what says which of the two it was. */
-  .hist-item.kind-style .hist-msg {
-    font-weight: 500;
-    color: var(--gray-11);
-  }
-
-  .hist-item.kind-style :global(.hist-mark) {
-    color: var(--accent-11);
-  }
-
-  .hist-item.latest .hist-msg {
-    color: var(--accent-11);
-  }
-
-  .hist-item.kind-export {
-    background: var(--amber-3);
-    border-color: transparent;
-  }
-
-  .hist-item.kind-export.active {
-    background: var(--accent-5);
-  }
-
-  .hist-item.kind-export :global(.hist-mark),
-  .hist-item.kind-export .hist-msg {
-    color: var(--amber-11);
-  }
-
-  .hist-item.kind-export.active :global(.hist-mark),
-  .hist-item.kind-export.active .hist-msg {
-    color: var(--accent-12);
-  }
-
-  .hist-item.kind-export .hist-msg {
-    font-weight: 700;
-    letter-spacing: 0.2px;
   }
 
   .hist-stats {
@@ -417,25 +419,26 @@
     font-family: var(--mono);
     font-size: var(--ui-fs-2xs);
     color: var(--gray-11);
-  }
 
-  .hist-foot button {
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    font: inherit;
-    color: var(--gray-11);
-    text-decoration: underline;
-  }
+    button {
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      font: inherit;
+      color: var(--gray-11);
+      text-decoration: underline;
 
-  .hist-foot button:hover {
-    color: var(--red-11);
+      &:hover {
+        color: var(--red-11);
+      }
+    }
   }
 
   /* Stacked layout: there is no third column to sit in, so the panel lifts out
-	   of the flow as an overlay, like the trash panel. Anchored on the tokens the
-	   bars are drawn from, so it can't drift from them when the density moves. */
+	   of the flow as an overlay, like the trash panel — and takes the popover's
+	   rung and shadow with it. Anchored on the tokens the bars are drawn from,
+	   so it can't drift from them when the density moves. */
   @media (max-width: 900px) {
     #history-pane {
       position: fixed;
@@ -444,9 +447,10 @@
       /* Clear of the status bar, which is fixed to the foot of the shell. */
       bottom: var(--bar-status);
       width: min(var(--panel-w), calc(100vw - 2 * var(--sp-3)));
+      background: var(--bg-light);
       border: var(--hairline) solid var(--gray-6);
       border-radius: var(--corner-xs);
-      box-shadow: var(--shadow-4);
+      box-shadow: var(--shadow-ring), var(--shadow-md);
       z-index: 100;
     }
   }

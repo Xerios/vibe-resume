@@ -24,7 +24,7 @@ pnpm check      # svelte-check
 | Document + history     | [src/lib/cv/state/doc.svelte.js](src/lib/cv/state/doc.svelte.js) — Loro doc, persistence, cross-tab merge            |
 | Editor                 | [src/lib/components/YamlEditor.svelte](src/lib/components/YamlEditor.svelte) — CodeMirror 6                          |
 | Chrome                 | `components/{Toolbar,TabBar,StatusBar}.svelte` — the buttons, the tabs, the status bar                               |
-| The chrome's palette   | [src/lib/styles/tokens.css](src/lib/styles/tokens.css) — Radix Colors scales; see _The chrome's palette_ below       |
+| The chrome's palette   | [src/lib/styles/tokens.scss](src/lib/styles/tokens.scss) — Radix Colors scales; see _The chrome's palette_ below     |
 | The format             | [src/lib/cv/format/relaxed-yaml.js](src/lib/cv/format/relaxed-yaml.js) — the parser; see _The format_ below          |
 | What the editor says   | [src/lib/cv/format/lint.js](src/lib/cv/format/lint.js) — the section table, as diagnostics                           |
 | What the editor offers | [src/lib/cv/format/complete.js](src/lib/cv/format/complete.js) — the same table, as completions                      |
@@ -45,7 +45,7 @@ pnpm check      # svelte-check
 | Type                   | [src/lib/cv/theme/fonts.js](src/lib/cv/theme/fonts.js) — the font stacks, and the CSS beside it                      |
 | Paper                  | [src/lib/cv/theme/paper.js](src/lib/cv/theme/paper.js) — the page box, and what stands in its margins                |
 | Tech logos             | [src/lib/cv/theme/tech-icons.js](src/lib/cv/theme/tech-icons.js) — generated; see _Logos_ below                      |
-| CSS                    | [src/app.css](src/app.css) — the index; see _Where the CSS lives_ below                                              |
+| CSS                    | [src/app.scss](src/app.scss) — the index; see _Where the CSS lives_ below                                            |
 | Offline                | [src/service-worker.js](src/service-worker.js) — precache; manifest and icons in `static/`                           |
 
 ### Editor and document
@@ -60,8 +60,8 @@ undo at high precedence, and two undo stacks would fight over Ctrl+Z.
 Syntax colours are a `HighlightStyle` whose values are CSS custom properties, so
 it can serve both themes; it lives in
 [cm-highlight.js](src/lib/components/cm-highlight.js), the `--cm-*` tokens it
-names live in [tokens.css](src/lib/styles/tokens.css), and the rules that spend
-the rest of them are in [codemirror.css](src/lib/components/codemirror.css).
+names live in [tokens.scss](src/lib/styles/tokens.scss), and the rules that spend
+the rest of them are in [codemirror.scss](src/lib/components/codemirror.scss).
 
 Completion reads the same section table as the linter, forwards:
 [complete.js](src/lib/cv/format/complete.js) imports `SECTIONS` rather than copying it,
@@ -519,22 +519,28 @@ the divider between the panes moves with the arrow keys.
 ### Where the CSS lives
 
 Everything that belongs to one piece of UI is styled where that piece is
-written, in the component's own `<style>` block — `#toolbar` in `Toolbar.svelte`,
-`.hist-*` in `HistoryPanel.svelte`, and so on. A rule only becomes global when
-it genuinely has no single owner:
+written, in the component's own `<style lang="scss">` block — `#toolbar` in
+`Toolbar.svelte`, `.hist-*` in `HistoryPanel.svelte`, and so on. The app's
+sheets are SCSS for one feature only: nesting, so that a control's states and
+children sit inside its rule (`.tab { &:hover … &.active … }`) instead of being
+restated beside it. Tokens stay CSS custom properties; there are no Sass
+variables, mixins or functions to learn. The preview frame's sheets under
+`src/lib/cv` remain plain `.css` — the layouts and blocks beside them are
+compiled in the browser, where no preprocessor runs. A rule only becomes global
+when it genuinely has no single owner:
 
 In the app's document:
 
-| File                                                           | Holds                                                            |
-| -------------------------------------------------------------- | ---------------------------------------------------------------- |
-| [app.css](src/app.css)                                         | the index — imports the three below, and nothing else            |
-| [styles/tokens.css](src/lib/styles/tokens.css)                 | the Radix scales and their aliases, the shadows, the shape scale |
-| [styles/base.css](src/lib/styles/base.css)                     | reset, page background, scrollbars, the `#app` shell             |
-| [styles/controls.css](src/lib/styles/controls.css)             | `.t-btn` and friends — used from six different places            |
-| [styles/print.css](src/lib/styles/print.css)                   | the fallback for a print the app can't intercept                 |
-| [components/codemirror.css](src/lib/components/codemirror.css) | the CodeMirror theme, imported by `YamlEditor.svelte`            |
-| [cv/theme/palettes.css](src/lib/cv/theme/palettes.css)         | the seven ramps — here only so StylePicker can draw a swatch     |
-| [cv/theme/fonts.css](src/lib/cv/theme/fonts.css)               | the six stacks — here for the same reason, one option each       |
+| File                                                             | Holds                                                           |
+| ---------------------------------------------------------------- | --------------------------------------------------------------- |
+| [app.scss](src/app.scss)                                         | the index — `@use`s the three below, and nothing else           |
+| [styles/tokens.scss](src/lib/styles/tokens.scss)                 | the Radix scales and their aliases, the surface ladder, shadows |
+| [styles/base.scss](src/lib/styles/base.scss)                     | reset, page background, scrollbars, the `#app` shell            |
+| [styles/controls.scss](src/lib/styles/controls.scss)             | `.t-btn` and friends — used from six different places           |
+| [styles/print.scss](src/lib/styles/print.scss)                   | the fallback for a print the app can't intercept                |
+| [components/codemirror.scss](src/lib/components/codemirror.scss) | the CodeMirror theme, imported by `YamlEditor.svelte`           |
+| [cv/theme/palettes.css](src/lib/cv/theme/palettes.css)           | the seven ramps — here only so StylePicker can draw a swatch    |
+| [cv/theme/fonts.css](src/lib/cv/theme/fonts.css)                 | the six stacks — here for the same reason, one option each      |
 
 And in the preview frame's, written into it by `PreviewFrame`:
 
@@ -580,7 +586,7 @@ light scheme and teal 9 in the dark one and almost nothing in the app has a
 dark-mode branch of its own.
 
 Two hues do the work — **teal** as the accent and **slate** as the gray — and
-they are aliased to `--accent-*` and `--gray-*` in `tokens.css`, which is
+they are aliased to `--accent-*` and `--gray-*` in `tokens.scss`, which is
 Radix's own convention and means the chrome re-hues from one block. Beside them
 sit red, amber and grass for the three states the app has to signal, and blue,
 purple and orange, which exist only to give the editor's syntax highlighting
@@ -601,34 +607,43 @@ toggle that is on is _solid_: step 9 hovering to 10, under `--accent-contrast`.
 The Reconnect button in the detached banner is _outline_: an alpha step 7 edge
 and step 11 label over whatever is behind it, hovering to the alpha step 3 wash.
 
-**Elevation** is a shadow and nothing else. Radix has no tonal ladder, which is
-the biggest single difference from what was here before: a menu, a side panel
-and the welcome dialog are all step 2, and what says how high one floats is
-`--shadow-1` … `--shadow-6`. They are composed from the _alpha_ grays rather
-than from black, so the same six levels read in either scheme — an opaque black
-shadow on a near-black page is invisible, an alpha one still darkens — and each
-carries a 1px alpha ring that holds the floating thing's edge where the blur
-fades out. What the app assigns:
+**Elevation** is the one place the chrome does _not_ spend a step directly.
+Radix has no tonal ladder, and a "subtle background" step that is the same
+number in both schemes puts a dark-scheme popover _below_ the canvas it hangs
+over. So surfaces take a rung of a five-step ladder instead — CodyFrame's
+elevation practice, with Radix steps behind it — and the rung points at a
+different step per scheme:
 
-| Fill       | Shadow       | What                                            |
-| ---------- | ------------ | ----------------------------------------------- |
-| `--gray-3` | —            | the canvas the sheet floats on                  |
-| `--gray-1` | —            | the editor pane, and the active tab             |
-| `--gray-2` | —            | toolbar, tab bar, status bar; Style and History |
-| `--gray-2` | `--shadow-4` | menus, the trash popover, CodeMirror's tooltips |
-| `--gray-2` | `--shadow-6` | the welcome dialog                              |
+| Rung           | Light      | Dark       | What                                                  |
+| -------------- | ---------- | ---------- | ----------------------------------------------------- |
+| `--bg-darker`  | `--gray-3` | `--gray-1` | the canvas the sheet floats on; the tab strip         |
+| `--bg-dark`    | `--gray-2` | `--gray-2` | toolbar, status bar, resting tabs; Style and History  |
+| `--bg`         | `--gray-1` | `--gray-3` | the editor pane, inputs, the active tab               |
+| `--bg-light`   | `--gray-1` | `--gray-4` | menus, popovers, CodeMirror's tooltips; panels afloat |
+| `--bg-lighter` | `--gray-1` | `--gray-5` | the welcome and compare dialogs                       |
 
-The editor pane takes step 1 — the app-background step, and the same fill
-CodeMirror's own editor takes, since the pane _is_ the editor and a second tone
-there would only draw a seam through it. The preview canvas is step 3 rather
-than step 1 for the opposite reason: it has to read as the desk a white sheet is
-lying on, and steps 1 and 2 are too close to paper in the light scheme to do it.
+Sunken things are darker, raised things lighter. The light scheme collapses
+the top three rungs onto step 1 — a white card on a white page — because every
+light step above 1 is _darker_ than it, and lets the shadow say the height. The
+dark scheme walks up the scale one step per rung, which is what a shadow on a
+near-black page cannot do on its own. The editor pane and the active tab share
+`--bg` with CodeMirror's own editor, since the pane _is_ the editor and a second
+tone there would only draw a seam through it.
 
-**Hover states** are the third rule, and they are just the next step up: 3 → 4 →
-5, or 9 → 10 for anything solid. There is no compositing, no opacity, no second
-hover colour per surface — where a control sits on a background it doesn't know
-(a tab in the bar, the scrollbar thumb) it takes an _alpha_ step instead, which
-is the same rule with the fill left out.
+Shadows are the second half, and they follow CodyFrame's scale too: a
+`--shadow-ring` kept apart from `--shadow-xs` … `--shadow-xl`, composed as
+`box-shadow: var(--shadow-ring), var(--shadow-md)` on a popover and `--shadow-xl`
+on a dialog. The blurs are plain black alpha and go faint in the dark scheme by
+design — there the rung carries the height. The ring is a gray _alpha_ step, so
+the hairline that holds a floating edge reads against either scheme.
+
+**Control fills** are the third rule, and they are the next step up: 3 → 4 → 5,
+or 9 → 10 for anything solid. Because a control can land on any rung — the same
+`.t-btn` sits on a bar, in a panel and inside a popover — its fill is the
+_alpha_ step (`--gray-a3` → `a4` → `a5`) rather than the solid one, which tints
+whatever it is on; a solid step 3 would sink below a dark-scheme popover at
+step 4. Only fills that must match a surface exactly (the active tab, a field)
+take a rung instead.
 
 What is _not_ adopted is shape and type, which Radix Colors has no opinion about
 anyway. The shape scale is spent from the small end — `--corner-xs` on controls,
@@ -649,7 +664,7 @@ rule that looks like an exception is the `<iframe>` element's own background in
 `PreviewFrame.svelte` — that element lives in the app's document, so it takes
 the app's steps, and only the sheet inside is the frame's.
 
-`codemirror.css` and the frame's own are global for the same underlying
+`codemirror.scss` and the frame's own are global for the same underlying
 reason: they style DOM the Svelte compiler never sees. CodeMirror builds its
 own; the sheet is mounted into another document, and its markdown fields are
 injected with `{@html}` on top of that. Scoped selectors would reach neither.
@@ -661,7 +676,7 @@ own DOM. That is what makes a file's custom CSS safe to allow at all: nothing
 crosses the boundary in either direction, custom properties included, so the
 worst a rule can do is make the CV look wrong. It also means the frame has to
 declare everything the sheet spends — `frame.css` is that list, and the overlap
-with `tokens.css` is the point rather than an oversight.
+with `tokens.scss` is the point rather than an oversight.
 
 `CvFrameBody` is `mount()`ed into the frame's `#cv-root` with a `$state` props
 object; mutating it re-renders the sheet in place, so the frame is built once
@@ -672,7 +687,7 @@ there — see _Compiling one_ above for why it can't be the other way round.
 
 Two things follow from the move. Printing goes to `iframe.contentWindow.print()`
 — printing the app instead would put the frame on the page as a box and crop the
-CV to it — which is also why `Ctrl+P` is intercepted; `print.css` is now only the
+CV to it — which is also why `Ctrl+P` is intercepted; `print.scss` is now only the
 fallback for a print started from the browser's own menu, which nothing can
 catch. And every listener the two panes need is bound to the frame's document,
 since an iframe's events don't bubble out: `instanceof Element` is no use in

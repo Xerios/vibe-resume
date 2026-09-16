@@ -94,7 +94,7 @@
   const running = $derived({ header: page.header, footer: page.footer })
 
   /** What the head says the groups below are set to, the way History counts its versions. */
-  const presetName = $derived((PRESETS.find((p) => p.id === preset)?.name ?? preset) + (modified ? ' — edited' : ''))
+  const presetName = $derived((PRESETS.find(p => p.id === preset)?.name ?? preset) + (modified ? ' — edited' : ''))
 </script>
 
 <aside id="style-pane">
@@ -183,8 +183,7 @@
             class:on={o.id === page.orientation}
             title={o.hint}
             aria-pressed={o.id === page.orientation}
-            onclick={() => onPaper({ orientation: o.id })}
-          >
+            onclick={() => onPaper({ orientation: o.id })}>
             <span class="paper-shape" class:wide={o.id === 'landscape'}></span>
             {o.name}
           </button>
@@ -216,7 +215,7 @@
         value={css}
         placeholder={CSS_TEMPLATE}
         aria-label="Custom CSS for this CV"
-        oninput={(e) => onCss(e.currentTarget.value)}></textarea>
+        oninput={e => onCss(e.currentTarget.value)}></textarea>
       <p class="css-hint">
         Applies to this file only. Override the tokens on <code>#cv-root</code>, or style the sheet directly.
       </p>
@@ -224,15 +223,16 @@
   </div>
 </aside>
 
-<style>
+<style lang="scss">
   /* The third column of the split, opposite the editor — same shape as the
-	   history panel, which it takes turns with. */
+	   history panel, which it takes turns with. Docked, it is a bar's rung;
+	   floating (below), it climbs one. */
   #style-pane {
     flex-shrink: 0;
     width: var(--panel-w);
     display: flex;
     flex-direction: column;
-    background: var(--gray-2);
+    background: var(--bg-dark);
     border-left: var(--hairline) solid var(--gray-6);
     overflow: hidden;
     transition: var(--theme-fade);
@@ -285,7 +285,7 @@
     width: 100%;
     height: 132px;
     padding: var(--sp-3);
-    background: var(--gray-1);
+    background: var(--bg);
     border: var(--hairline) solid var(--gray-7);
     border-radius: var(--corner-xs);
     color: var(--gray-12);
@@ -296,17 +296,17 @@
     resize: vertical;
     white-space: pre;
     overflow: auto;
-  }
 
-  .css-edit:focus {
-    outline: none;
-    border-color: var(--accent-8);
-  }
+    &:focus {
+      outline: none;
+      border-color: var(--accent-8);
+    }
 
-  /* The template shows through as the placeholder, so an empty editor still
-	   says which tokens are worth reaching for. */
-  .css-edit::placeholder {
-    color: var(--gray-10);
+    /* The template shows through as the placeholder, so an empty editor still
+	     says which tokens are worth reaching for. */
+    &::placeholder {
+      color: var(--gray-10);
+    }
   }
 
   .css-hint {
@@ -314,12 +314,12 @@
     font-size: var(--ui-fs-sm);
     line-height: 1.45;
     color: var(--gray-11);
-  }
 
-  .css-hint code {
-    font-family: var(--mono);
-    font-size: var(--ui-fs-2xs);
-    color: var(--gray-12);
+    code {
+      font-family: var(--mono);
+      font-size: var(--ui-fs-2xs);
+      color: var(--gray-12);
+    }
   }
 
   .blocks-reset {
@@ -334,10 +334,10 @@
     /* Step 11, because this is accent used as *text* — step 9 is a fill, and
 		   Radix does not guarantee it legible at 9px on a step 2 panel. */
     color: var(--accent-11);
-  }
 
-  .blocks-reset:hover {
-    color: var(--accent-12);
+    &:hover {
+      color: var(--accent-12);
+    }
   }
 
   .blocks-list {
@@ -352,14 +352,16 @@
     gap: var(--sp-1);
   }
 
+  /* Every option here is a control on a panel that is one rung docked and
+	   another floating, so the fills are alpha steps — see controls.scss. */
   .layout-opt {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: var(--sp-1);
     padding: var(--sp-2) var(--sp-1);
-    background: var(--gray-3);
-    border: var(--hairline) solid var(--gray-a6);
+    background: var(--gray-a3);
+    border: var(--hairline) solid var(--gray-a4);
     border-radius: var(--corner-xs);
     cursor: pointer;
     font-family: var(--sans);
@@ -368,17 +370,17 @@
     letter-spacing: 0.3px;
     color: var(--gray-12);
     transition: var(--hover-fade);
-  }
 
-  .layout-opt:hover {
-    background: var(--gray-4);
-    border-color: var(--gray-a7);
-  }
+    &:hover {
+      background: var(--gray-a4);
+      border-color: var(--gray-a7);
+    }
 
-  .layout-opt.on {
-    border-color: var(--accent-9);
-    color: var(--accent-contrast);
-    background: var(--accent-9);
+    &.on {
+      border-color: var(--accent-9);
+      color: var(--accent-contrast);
+      background: var(--accent-9);
+    }
   }
 
   .theme-grid,
@@ -395,10 +397,10 @@
     grid-template-columns: repeat(3, 1fr);
     gap: var(--sp-1);
     margin-bottom: var(--sp-1);
-  }
 
-  .paper-grid.two {
-    grid-template-columns: repeat(2, 1fr);
+    &.two {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
 
   .paper-runs {
@@ -412,8 +414,8 @@
     align-items: center;
     gap: var(--sp-3);
     padding: var(--sp-1) var(--sp-3);
-    background: var(--gray-3);
-    border: var(--hairline) solid var(--gray-a6);
+    background: var(--gray-a3);
+    border: var(--hairline) solid var(--gray-a4);
     border-radius: var(--corner-xs);
     cursor: pointer;
     font-family: var(--sans);
@@ -423,21 +425,20 @@
     transition: var(--hover-fade);
   }
 
-  .theme-opt:hover,
-  .font-opt:hover,
-  .paper-opt:hover,
-  .paper-fit:hover {
-    background: var(--gray-4);
-    border-color: var(--gray-a7);
-  }
+  .theme-opt,
+  .font-opt,
+  .paper-opt,
+  .paper-fit {
+    &:hover {
+      background: var(--gray-a4);
+      border-color: var(--gray-a7);
+    }
 
-  .theme-opt.on,
-  .font-opt.on,
-  .paper-opt.on,
-  .paper-fit.on {
-    border-color: var(--accent-9);
-    color: var(--accent-contrast);
-    background: var(--accent-9);
+    &.on {
+      border-color: var(--accent-9);
+      color: var(--accent-contrast);
+      background: var(--accent-9);
+    }
   }
 
   .paper-opt {
@@ -452,11 +453,11 @@
     height: 11px;
     border: var(--hairline) solid currentColor;
     opacity: 0.75;
-  }
 
-  .paper-shape.wide {
-    width: 11px;
-    height: 8px;
+    &.wide {
+      width: 11px;
+      height: 8px;
+    }
   }
 
   /* Same face as the options above it, but it answers a different kind of
@@ -469,8 +470,8 @@
     width: 100%;
     margin-top: var(--sp-4);
     padding: var(--sp-1) var(--sp-3);
-    background: var(--gray-3);
-    border: var(--hairline) solid var(--gray-a6);
+    background: var(--gray-a3);
+    border: var(--hairline) solid var(--gray-a4);
     border-radius: var(--corner-xs);
     cursor: pointer;
     font-family: var(--sans);
@@ -520,7 +521,8 @@
   }
 
   /* Stacked layout: there is no third column to sit in, so the panel lifts out
-	   of the flow as an overlay, like the history and trash panels. */
+	   of the flow as an overlay, like the history and trash panels — and takes
+	   the popover's rung and shadow with it. */
   @media (max-width: 900px) {
     #style-pane {
       position: fixed;
@@ -529,9 +531,10 @@
       /* Clear of the status bar, which is fixed to the foot of the shell. */
       bottom: var(--bar-status);
       width: min(var(--panel-w), calc(100vw - 2 * var(--sp-3)));
+      background: var(--bg-light);
       border: var(--hairline) solid var(--gray-6);
       border-radius: var(--corner-xs);
-      box-shadow: var(--shadow-4);
+      box-shadow: var(--shadow-ring), var(--shadow-md);
       z-index: 100;
     }
   }

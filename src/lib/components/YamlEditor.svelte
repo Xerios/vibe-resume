@@ -25,7 +25,7 @@
   import { highlight } from './cm-highlight.js'
   // CodeMirror builds its own DOM, so scoped styles can't reach it — its theme
   // ships as a plain stylesheet imported alongside the component instead.
-  import './codemirror.css'
+  import './codemirror.scss'
 
   let {
     /** Extensions from the Loro binding — document sync and undo/redo live here. */
@@ -375,9 +375,9 @@
 
 <div id="cm-wrap" bind:this={host}></div>
 
-<style>
+<style lang="scss">
   /* The editor's host. Everything CodeMirror renders inside it is themed by
-	   codemirror.css, next to this file. */
+	   codemirror.scss, next to this file. */
   #cm-wrap {
     flex: 1;
     overflow: hidden;

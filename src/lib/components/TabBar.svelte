@@ -338,7 +338,7 @@
   </div>
 </div>
 
-<style>
+<style lang="scss">
   #tabbar {
     flex-shrink: 0;
     position: relative;
@@ -347,7 +347,8 @@
     gap: var(--sp-3);
     height: var(--bar-tabs);
     padding: 0 var(--sp-3) 0 0;
-    background: var(--gray-3);
+    /* The bottom rung, with the canvas: the tabs are cut into it. */
+    background: var(--bg-darker);
     border-bottom: var(--hairline) solid var(--gray-6);
     z-index: 9;
     transition: var(--theme-fade);
@@ -364,10 +365,10 @@
     min-width: 0;
     overflow-x: auto;
     scrollbar-width: none;
-  }
 
-  #tabs::-webkit-scrollbar {
-    display: none;
+    &::-webkit-scrollbar {
+      display: none;
+    }
   }
 
   #tab-actions {
@@ -379,36 +380,45 @@
 
   /* Full-height cells divided by a rule rather than pills floating in a bar:
 	   the tabs are a strip of the window, and the active one is a hole cut
-	   through to the pane below it. */
+	   through to the pane below it — the same rung as the editor. */
   .tab {
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    background: none;
     border: none;
     border-right: var(--hairline) solid var(--gray-6);
     transition: var(--theme-fade);
-    background: var(--gray-2);
-  }
+    background: var(--bg-dark);
 
-  /* An alpha step rather than a solid one: the tab is a hole in the bar with
-	   nothing of its own behind it, so the hover has to tint whatever is. */
-  .tab:hover {
-    background: var(--gray-a3);
-    transition: var(--hover-fade);
-  }
+    /* An alpha step rather than a solid one: the tab is a hole in the bar with
+	     nothing of its own behind it, so the hover has to tint whatever is. */
+    &:hover {
+      background: var(--gray-a3);
+      transition: var(--hover-fade);
+    }
 
-  .tab.active {
-    background: var(--gray-1);
-    /* The one mark that says which: a rule in the accent at step 9 along the
-		   top edge, inset so it can't add to the height of the bar. */
-    box-shadow: inset 0 2px 0 0 var(--accent-9);
-  }
+    &.active {
+      background: var(--bg);
+      /* The one mark that says which: a rule in the accent at step 9 along the
+		     top edge, inset so it can't add to the height of the bar. */
+      box-shadow: inset 0 2px 0 0 var(--accent-9);
 
-  /* The tab in hand, while the row rearranges itself around it. Faded rather
-	   than lifted: it is still in the row, in the place it would land. */
-  .tab.dragging {
-    opacity: 0.5;
+      .tab-select {
+        color: var(--gray-12);
+        font-weight: 600;
+      }
+    }
+
+    /* No caret alongside to balance the label against. */
+    &:not(.active) .tab-select {
+      padding-right: var(--sp-4);
+    }
+
+    /* The tab in hand, while the row rearranges itself around it. Faded rather
+	     than lifted: it is still in the row, in the place it would land. */
+    &.dragging {
+      opacity: 0.5;
+    }
   }
 
   .tab-select {
@@ -426,30 +436,20 @@
     text-overflow: ellipsis;
   }
 
-  /* No caret alongside to balance the label against. */
-  .tab:not(.active) .tab-select {
-    padding-right: var(--sp-4);
-  }
-
-  .tab.active .tab-select {
-    color: var(--gray-12);
-    font-weight: 600;
-  }
-
   .tab-rename {
     max-width: 150px;
     font-family: var(--sans);
     font-size: var(--ui-fs-sm);
     color: var(--gray-12);
-    background: var(--gray-1);
+    background: var(--bg);
     border: var(--hairline) solid var(--accent-8);
     border-radius: var(--corner-xs);
     margin: var(--sp-1) var(--sp-2) var(--sp-1) var(--sp-3);
     padding: var(--sp-1) var(--sp-2);
-  }
 
-  .tab-rename:focus {
-    outline: none;
+    &:focus {
+      outline: none;
+    }
   }
 
   /* ── What can be done to this file ────────────── */
@@ -472,12 +472,12 @@
     cursor: pointer;
     color: var(--gray-11);
     padding: 0;
-  }
 
-  .tab-more:hover,
-  .tab-more[aria-expanded='true'] {
-    background: var(--accent-9);
-    color: var(--accent-contrast);
+    &:hover,
+    &[aria-expanded='true'] {
+      background: var(--accent-9);
+      color: var(--accent-contrast);
+    }
   }
 
   /* ── Open another tab ─────────────────────────── */
@@ -498,14 +498,14 @@
     color: var(--gray-11);
     padding: 0;
     transition: var(--hover-fade);
-  }
 
-  .tab-new:hover,
-  .tab-new:focus-visible {
-    background: var(--accent-9);
-    border-style: solid;
-    border-color: var(--accent-9);
-    color: var(--accent-contrast);
+    &:hover,
+    &:focus-visible {
+      background: var(--accent-9);
+      border-style: solid;
+      border-color: var(--accent-9);
+      color: var(--accent-contrast);
+    }
   }
 
   /* Matches the weight .t-btn gives its icons; the glyphs are drawn by <Icon>,
@@ -521,12 +521,11 @@
     display: flex;
     flex-direction: column;
     padding: var(--sp-1);
-    /* A popover is step 2 like every other panel — Radix has no tonal ladder,
-	     so height is said once, by the shadow. The 1px ring inside --shadow-4
-	     is what holds its edge; a border as well would state it twice. */
-    background: var(--gray-2);
+    /* A popover is the raised rung, and the shadow says the rest. The ring
+	     inside the shadow holds its edge; a border as well would state it twice. */
+    background: var(--bg-light);
     border-radius: var(--corner-xs);
-    box-shadow: var(--shadow-4);
+    box-shadow: var(--shadow-ring), var(--shadow-md);
     z-index: 100;
   }
 
@@ -547,22 +546,22 @@
     white-space: nowrap;
     padding: var(--sp-2) var(--sp-4) var(--sp-2) var(--sp-3);
     transition: var(--hover-fade);
-  }
 
-  /* The highlighted row of a menu is the solid step, not a soft one: it is
-	   pointing at what Enter will do, and that wants the full-strength hue. */
-  .menu-item:hover,
-  .menu-item:focus-visible {
-    background: var(--accent-9);
-    color: var(--accent-contrast);
-    outline: none;
-  }
+    /* The highlighted row of a menu is the solid step, not a soft one: it is
+	     pointing at what Enter will do, and that wants the full-strength hue. */
+    &:hover,
+    &:focus-visible {
+      background: var(--accent-9);
+      color: var(--accent-contrast);
+      outline: none;
+    }
 
-  /* Same shape in red, because red 9 takes the same contrast colour. */
-  .menu-item.danger:hover,
-  .menu-item.danger:focus-visible {
-    background: var(--red-9);
-    color: var(--accent-contrast);
+    /* Same shape in red, because red 9 takes the same contrast colour. */
+    &.danger:hover,
+    &.danger:focus-visible {
+      background: var(--red-9);
+      color: var(--accent-contrast);
+    }
   }
 
   .menu-sep {

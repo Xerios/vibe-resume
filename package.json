@@ -53,7 +53,7 @@
       "oxlint --fix --no-error-on-unmatched-pattern",
       "oxfmt --no-error-on-unmatched-pattern"
     ],
-    "*.{svelte,json,jsonc,css,md,yml,yaml,html}": [
+    "*.{svelte,json,jsonc,css,scss,md,yml,yaml,html}": [
       "oxfmt --no-error-on-unmatched-pattern"
     ]
   },

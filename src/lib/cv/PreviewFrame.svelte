@@ -269,14 +269,15 @@
      for scroll sync and the hover-to-source mapping. -->
 <iframe bind:this={frameEl} title="CV preview" srcdoc={SHELL} onload={build}></iframe>
 
-<style>
+<style lang="scss">
   iframe {
     flex: 1;
     width: 100%;
     min-height: 0;
     display: block;
     border: 0;
-    background: var(--gray-3);
+    /* The canvas rung, as the pane behind it: this element is the app's. */
+    background: var(--bg-darker);
     color-scheme: auto;
   }
 </style>

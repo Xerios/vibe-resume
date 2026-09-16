@@ -77,7 +77,8 @@
   {/if}
 </div>
 
-<style>
+<style lang="scss">
+  /* A popover: the raised rung, and the popover shadow to reinforce it. */
   #trash-panel {
     position: fixed;
     top: var(--overlay-top);
@@ -86,10 +87,10 @@
     max-height: 60vh;
     display: flex;
     flex-direction: column;
-    background: var(--gray-2);
+    background: var(--bg-light);
     border: var(--hairline) solid var(--gray-6);
     border-radius: var(--corner-xs);
-    box-shadow: var(--shadow-4);
+    box-shadow: var(--shadow-ring), var(--shadow-md);
     z-index: 100;
     overflow: hidden;
     transition: var(--theme-fade);
@@ -102,7 +103,7 @@
     justify-content: space-between;
     padding: var(--sp-2) var(--sp-4);
     border-bottom: var(--hairline) solid var(--gray-6);
-    background: var(--gray-2);
+    background: var(--bg-light);
     font-family: var(--sans);
     font-size: var(--ui-fs-2xs);
     font-weight: 600;
@@ -127,10 +128,11 @@
     gap: var(--sp-4);
     padding: var(--sp-2) var(--sp-3);
     border-radius: var(--corner-xs);
-  }
 
-  .trash-row:hover {
-    background: var(--gray-3);
+    /* An alpha step: a solid 3 would sink below the raised rung it is on. */
+    &:hover {
+      background: var(--gray-a3);
+    }
   }
 
   .trash-info {
@@ -165,7 +167,7 @@
 	   sitting next to it, so it is bare until approached and then goes red. */
   .trash-purge {
     background: none;
-    border: var(--hairline) solid var(--gray-a6);
+    border: var(--hairline) solid var(--gray-a4);
     border-radius: var(--corner-xs);
     cursor: pointer;
     font-family: var(--sans);
@@ -174,17 +176,17 @@
     color: var(--gray-11);
     padding: var(--sp-1) var(--sp-3);
     transition: var(--hover-fade);
-  }
 
-  .trash-purge:hover {
-    background: var(--red-9);
-    border-color: var(--red-9);
-    color: var(--accent-contrast);
-  }
+    &:hover {
+      background: var(--red-9);
+      border-color: var(--red-9);
+      color: var(--accent-contrast);
+    }
 
-  .trash-purge:active {
-    background: var(--red-10);
-    border-color: var(--red-10);
+    &:active {
+      background: var(--red-10);
+      border-color: var(--red-10);
+    }
   }
 
   .trash-empty {
@@ -201,20 +203,20 @@
     justify-content: flex-end;
     padding: var(--sp-2) var(--sp-3);
     border-top: var(--hairline) solid var(--gray-6);
-  }
 
-  .trash-foot button {
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    font-family: var(--mono);
-    font-size: var(--ui-fs-2xs);
-    color: var(--gray-11);
-    text-decoration: underline;
-  }
+    button {
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: var(--ui-fs-2xs);
+      color: var(--gray-11);
+      text-decoration: underline;
 
-  .trash-foot button:hover {
-    color: var(--red-11);
+      &:hover {
+        color: var(--red-11);
+      }
+    }
   }
 </style>

@@ -61,8 +61,7 @@
       onclick={onToggleHoverSync}
       accesskey="f"
       aria-pressed={hoverSync}
-      title={withKey(hoverSync ? 'Stop the editor following the pointer over the preview' : 'Follow the pointer over the preview in the editor', 'f')}
-    >
+      title={withKey(hoverSync ? 'Stop the editor following the pointer over the preview' : 'Follow the pointer over the preview in the editor', 'f')}>
       {#if hoverSync}
         <Icon icon={IconMousePointer2} width="12" height="12" />
       {:else}
@@ -79,8 +78,7 @@
       onclick={onToggleScrollSync}
       accesskey="s"
       aria-pressed={scrollSync}
-      title={withKey(scrollSync ? 'Stop the panes scrolling together' : 'Scroll the editor and the preview together', 'y')}
-    >
+      title={withKey(scrollSync ? 'Stop the panes scrolling together' : 'Scroll the editor and the preview together', 'y')}>
       {#if scrollSync}
         <Icon icon={IconLink2} width="12" height="12" />
       {:else}
@@ -95,17 +93,14 @@
       class:on={sourceHidden}
       onclick={onToggleSource}
       accesskey="e"
-      title={withKey(sourceHidden ? 'Show editor' : 'Hide editor (preview only)', 'e')}
-    >
+      title={withKey(sourceHidden ? 'Show editor' : 'Hide editor (preview only)', 'e')}>
       {#if sourceHidden}
         <Icon icon={IconEyeOff} width="12" height="12" />
       {:else}
         <Icon icon={IconEye} width="12" height="12" />
       {/if}
       <!-- One letter, two labels: the mnemonic stays put wherever the toggle is. -->
-      <span class="t-txt"
-        >{#if sourceHidden}<u>E</u>ditor{:else}Hide <u>e</u>ditor{/if}</span
-      >
+      <span class="t-txt"><u>E</u>ditor</span>
     </button>
 
     <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
@@ -116,7 +111,7 @@
   </div>
 </div>
 
-<style>
+<style lang="scss">
   #status-bar {
     flex-shrink: 0;
     display: flex;
@@ -124,7 +119,7 @@
     gap: var(--sp-4);
     height: var(--bar-status);
     padding: 0 var(--sp-2) 0 var(--sp-4);
-    background: var(--gray-2);
+    background: var(--bg-dark);
     border-top: var(--hairline) solid var(--gray-6);
     z-index: 8;
     transition: var(--theme-fade);
@@ -139,20 +134,20 @@
     padding: 0 var(--sp-2);
     border-radius: var(--corner-xs);
     transition: var(--theme-fade);
-  }
 
-  /* Two soft containers: step 3 as the fill, step 11 as the word on it. That
-	   pair is Radix's whole answer to a tinted badge — 3 is the background step
-	   and 11 is guaranteed legible on it — and it holds in both schemes, so
-	   neither pill needs a dark branch of its own. */
-  #status.ok {
-    color: var(--grass-11);
-    background: var(--grass-3);
-  }
+    /* Two soft containers: step 3 as the fill, step 11 as the word on it. That
+	     pair is Radix's whole answer to a tinted badge — 3 is the background step
+	     and 11 is guaranteed legible on it — and it holds in both schemes, so
+	     neither pill needs a dark branch of its own. */
+    &.ok {
+      color: var(--grass-11);
+      background: var(--grass-3);
+    }
 
-  #status.err {
-    color: var(--red-11);
-    background: var(--red-3);
+    &.err {
+      color: var(--red-11);
+      background: var(--red-3);
+    }
   }
 
   #save-state {
@@ -186,29 +181,34 @@
     white-space: nowrap;
     padding: var(--sp-1) var(--sp-3);
     transition: var(--theme-fade);
-  }
 
-  /* Bare until approached, and then the same three background steps every
-	   other control here walks: 3 on hover, 4 held down. The label climbs from
-	   the low-contrast text step to the high-contrast one at the same time. */
-  .sb-btn:hover {
-    background: var(--gray-3);
-    color: var(--gray-12);
-    transition: var(--hover-fade);
-  }
+    /* Bare until approached, and then the same alpha steps every other control
+	     here walks: 3 on hover, 4 held down. The label climbs from the
+	     low-contrast text step to the high-contrast one at the same time. */
+    &:hover {
+      background: var(--gray-a3);
+      color: var(--gray-12);
+      transition: var(--hover-fade);
+    }
 
-  .sb-btn:active {
-    background: var(--gray-4);
-  }
+    &:active {
+      background: var(--gray-a4);
+    }
 
-  .sb-btn.on {
-    background: var(--accent-9);
-    color: var(--accent-contrast);
-  }
+    &.on {
+      background: var(--accent-9);
+      color: var(--accent-contrast);
 
-  .sb-btn.on:hover {
-    background: var(--accent-10);
-    color: var(--accent-contrast);
+      &:hover {
+        background: var(--accent-10);
+        color: var(--accent-contrast);
+      }
+    }
+
+    /* Drawn by <Icon>, so the elements are ones the compiler never sees. */
+    :global([stroke-width]) {
+      stroke-width: 2.25;
+    }
   }
 
   /* Amber, as everywhere else something wants attention without being wrong — the
@@ -222,16 +222,16 @@
     padding: 0 var(--sp-2);
     margin-right: var(--sp-1);
     animation: sb-update-pulse 2.4s ease-in-out infinite;
-  }
 
-  /* Stated after `.sb-btn:hover`, whose colours it has to win against. */
-  .sb-update:hover {
-    background: var(--amber-4);
-    color: var(--amber-11);
-  }
+    /* Stated after `.sb-btn:hover`, whose colours it has to win against. */
+    &:hover {
+      background: var(--amber-4);
+      color: var(--amber-11);
+    }
 
-  .sb-update:active {
-    background: var(--amber-5);
+    &:active {
+      background: var(--amber-5);
+    }
   }
 
   /* A halo that breathes rather than blinks: enough to catch the eye returning to
@@ -251,11 +251,6 @@
     .sb-update {
       animation: none;
     }
-  }
-
-  /* Drawn by <Icon>, so the elements are ones the compiler never sees. */
-  .sb-btn :global([stroke-width]) {
-    stroke-width: 2.25;
   }
 
   /* Moon and sun are denser shapes, and were always drawn lighter than the

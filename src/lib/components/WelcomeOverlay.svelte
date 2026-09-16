@@ -64,7 +64,7 @@
   </div>
 </div>
 
-<style>
+<style lang="scss">
   #welcome {
     position: fixed;
     inset: 0;
@@ -80,14 +80,15 @@
     animation: w-fade 0.25s ease;
   }
 
+  /* A dialog is the top rung, under the largest shadow. */
   .w-card {
     width: min(430px, 100%);
     max-height: 100%;
     overflow-y: auto;
     padding: var(--sp-6) var(--sp-6) var(--sp-5);
-    background: var(--gray-2);
+    background: var(--bg-lighter);
     border-radius: var(--corner-md);
-    box-shadow: var(--shadow-6);
+    box-shadow: var(--shadow-ring), var(--shadow-xl);
     animation: w-rise 0.28s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
@@ -125,32 +126,32 @@
     display: flex;
     flex-direction: column;
     gap: var(--sp-4);
-  }
 
-  .w-points li {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--sp-3);
-    font-family: var(--sans);
-    font-size: var(--ui-fs-md);
-    line-height: 1.55;
-    color: var(--gray-11);
-  }
+    li {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--sp-3);
+      font-family: var(--sans);
+      font-size: var(--ui-fs-md);
+      line-height: 1.55;
+      color: var(--gray-11);
 
-  /* Iconify's lucide ships at stroke-width 2; the chrome runs bolder. */
-  .w-points :global([stroke-width]) {
-    stroke-width: 2.25;
-  }
+      :global(svg) {
+        flex-shrink: 0;
+        margin-top: 2px;
+        color: var(--accent-11);
+      }
+    }
 
-  .w-points li :global(svg) {
-    flex-shrink: 0;
-    margin-top: 2px;
-    color: var(--accent-11);
-  }
+    /* Iconify's lucide ships at stroke-width 2; the chrome runs bolder. */
+    :global([stroke-width]) {
+      stroke-width: 2.25;
+    }
 
-  .w-points strong {
-    font-weight: 620;
-    color: var(--gray-12);
+    strong {
+      font-weight: 620;
+      color: var(--gray-12);
+    }
   }
 
   /* The only way out of the overlay, so it is lit rather than bare — the same
@@ -168,10 +169,10 @@
     letter-spacing: 0.4px;
     color: var(--accent-contrast);
     transition: var(--hover-fade);
-  }
 
-  .w-start:hover {
-    background: var(--accent-10);
+    &:hover {
+      background: var(--accent-10);
+    }
   }
 
   .w-foot {
