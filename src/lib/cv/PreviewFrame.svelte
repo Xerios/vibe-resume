@@ -54,6 +54,11 @@
    * page decides whether to ask for it; all that happens here is the arithmetic
    * and a `zoom`, which the print stylesheet drops.
    *
+   * `dark` is the app's colour scheme, which the frame can't see for itself.
+   * Only the gutter around the sheet follows it — the sheet stays paper — so it
+   * lands on the frame's `<html>` rather than on `#cv-root`, out of reach of
+   * the palettes and a file's own CSS.
+   *
    * @type {{
    *   cv?: any,
    *   component?: any,
@@ -65,6 +70,7 @@
    *   paper?: Partial<import('./theme/paper.js').Paper>,
    *   name?: string,
    *   fit?: boolean,
+   *   dark?: boolean,
    *   onReady?: (parts: { doc: Document, win: Window, root: HTMLElement }) => void
    * }}
    */
@@ -79,6 +85,7 @@
     paper = DEFAULT_PAPER,
     name = '',
     fit = false,
+    dark = false,
     onReady = undefined,
   } = $props()
 
@@ -154,6 +161,11 @@
     if (pageStyle) pageStyle.textContent = text
   })
 
+  $effect(() => {
+    const on = dark
+    if (doc) doc.documentElement.dataset.scheme = on ? 'dark' : 'light'
+  })
+
   /* Fit-to-width, as one number. `zoom` rather than a transform because it is
 	   laid out rather than painted: the frame's own scrollbars stay right, the
 	   rects the page measures for the scroll ladder come back in the frame's
@@ -205,6 +217,7 @@
     const win = frameEl.contentWindow
     if (!d || !win || doc) return // built already; the frame is never reloaded
 
+    d.documentElement.dataset.scheme = dark ? 'dark' : 'light'
     addStyle(d, [frameCss, cvCss, palettesCss, fontsCss, presetsCss].join('\n'))
     // Three more, in cascade order. The paper goes first, because it is the
     // page the two below it are drawn on: the template's own styles are scoped

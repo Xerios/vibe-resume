@@ -14,7 +14,9 @@
 
    There is one ramp here and no dark counterpart. The app's dark mode dresses
    the editor around the sheet; the sheet itself is paper, and stays paper —
-   which is also what it will be when it prints.
+   which is also what it will be when it prints. The one thing that does follow
+   the app is the gutter the sheet floats in — see `[data-scheme='dark']` below,
+   which PreviewFrame sets on this document's <html> from the app's own switch.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
@@ -32,7 +34,8 @@
   --paper: #fff;
 
   /* Not part of any CV palette, and stated once rather than per ramp: the
-	   frame is always light, whatever the app around it is set to. */
+	   sheet is always light, whatever the app around it is set to. Only --bg
+	   and the scrollbar it carries are restated for the dark scheme below. */
   --danger: #b91c1c;
   --prompt: #9a5b00;
   --prompt-bg: #fbf2e2;
@@ -73,6 +76,16 @@
   --page-mb: 12mm;
 
   --theme-fade: background-color 0.22s ease, color 0.22s ease, border-color 0.22s ease;
+}
+
+/* The gutter, in the app's dark scheme. Slate dark step 3, the same step the
+   iframe element itself is drawn on before this document has loaded, so the
+   swap is invisible. The thumb is re-pointed off --muted, which is an ink
+   colour and would vanish against this. */
+:root[data-scheme='dark'] {
+  --bg: #212225;
+  --scroll-thumb: rgba(255, 255, 255, 0.22);
+  --scroll-thumb-hover: rgba(255, 255, 255, 0.38);
 }
 
 /* ── Document ─────────────────────────────────── */

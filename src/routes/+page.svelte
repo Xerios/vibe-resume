@@ -71,6 +71,10 @@
 	   again — how the window behaves rather than what the CV says. On unless
 	   turned off. */
   let scrollSync = $state(read(KEYS.scrollSync) !== 'false')
+  /* The app's colour scheme, mirrored into the preview frame: the gutter around
+	   the sheet follows it, the sheet itself never does. Read from the same key
+	   app.html's pre-paint script set the <html> attribute from. */
+  let dark = $state(read(KEYS.theme) === 'dark')
   let desktop = $state(true)
   let editorWidth = $state(read(KEYS.editorWidth))
   let toastMsg = $state('')
@@ -783,12 +787,13 @@
   }
 
   function toggleTheme() {
-    // The preview sits this out: the sheet is paper, and paper is white.
+    // The sheet sits this out — paper is white — but the frame around it follows.
     const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
     document.documentElement.setAttribute('data-theme', next)
     // The attribute is the app's switch; the class is what Radix's own dark
     // scales are scoped under. Set together, always — see tokens.css.
     document.documentElement.classList.toggle('dark', next === 'dark')
+    dark = next === 'dark'
     syncThemeColor()
     write(KEYS.theme, next)
   }
@@ -1147,6 +1152,7 @@
         {paper}
         name={cvName}
         fit={fitPreview && desktop}
+        {dark}
         onReady={onFrameReady}
       />
     </div>
