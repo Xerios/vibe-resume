@@ -525,16 +525,16 @@ it genuinely has no single owner:
 
 In the app's document:
 
-| File                                                           | Holds                                                             |
-| -------------------------------------------------------------- | ----------------------------------------------------------------- |
-| [app.css](src/app.css)                                         | the index — imports the three below, and nothing else             |
-| [styles/tokens.css](src/lib/styles/tokens.css)                 | the Radix scales and their aliases, the shadows, the shape scale  |
-| [styles/base.css](src/lib/styles/base.css)                     | reset, page background, scrollbars, the `#app` shell              |
-| [styles/controls.css](src/lib/styles/controls.css)             | `.t-btn` and friends — used from six different places             |
-| [styles/print.css](src/lib/styles/print.css)                   | the fallback for a print the app can't intercept                  |
-| [components/codemirror.css](src/lib/components/codemirror.css) | the CodeMirror theme, imported by `YamlEditor.svelte`             |
-| [cv/theme/palettes.css](src/lib/cv/theme/palettes.css)         | the seven ramps — here only so StylePicker can draw a swatch      |
-| [cv/theme/fonts.css](src/lib/cv/theme/fonts.css)               | the six stacks — here for the same reason, one option each        |
+| File                                                           | Holds                                                            |
+| -------------------------------------------------------------- | ---------------------------------------------------------------- |
+| [app.css](src/app.css)                                         | the index — imports the three below, and nothing else            |
+| [styles/tokens.css](src/lib/styles/tokens.css)                 | the Radix scales and their aliases, the shadows, the shape scale |
+| [styles/base.css](src/lib/styles/base.css)                     | reset, page background, scrollbars, the `#app` shell             |
+| [styles/controls.css](src/lib/styles/controls.css)             | `.t-btn` and friends — used from six different places            |
+| [styles/print.css](src/lib/styles/print.css)                   | the fallback for a print the app can't intercept                 |
+| [components/codemirror.css](src/lib/components/codemirror.css) | the CodeMirror theme, imported by `YamlEditor.svelte`            |
+| [cv/theme/palettes.css](src/lib/cv/theme/palettes.css)         | the seven ramps — here only so StylePicker can draw a swatch     |
+| [cv/theme/fonts.css](src/lib/cv/theme/fonts.css)               | the six stacks — here for the same reason, one option each       |
 
 And in the preview frame's, written into it by `PreviewFrame`:
 
@@ -551,25 +551,25 @@ And in the preview frame's, written into it by `PreviewFrame`:
 #### The chrome's palette
 
 The chrome is [Radix Colors](https://www.radix-ui.com/colors), imported from
-`@radix-ui/colors` and never re-typed. A rule spends a scale by *step number*
+`@radix-ui/colors` and never re-typed. A rule spends a scale by _step number_
 rather than through a private vocabulary of role names, because each of the
 twelve steps in every Radix scale has one documented job and does that same job
 in both schemes:
 
-| Step  | For                                             |
-| ----- | ----------------------------------------------- |
-| 1     | app background                                  |
-| 2     | subtle background                               |
-| 3     | UI element background                           |
-| 4     | hovered UI element background                   |
-| 5     | active / selected UI element background         |
-| 6     | subtle borders and separators                   |
-| 7     | UI element border and focus rings               |
-| 8     | hovered UI element border, and the focus ring   |
-| 9     | solid backgrounds                               |
-| 10    | hovered solid backgrounds                       |
-| 11    | low-contrast text                               |
-| 12    | high-contrast text                              |
+| Step | For                                           |
+| ---- | --------------------------------------------- |
+| 1    | app background                                |
+| 2    | subtle background                             |
+| 3    | UI element background                         |
+| 4    | hovered UI element background                 |
+| 5    | active / selected UI element background       |
+| 6    | subtle borders and separators                 |
+| 7    | UI element border and focus rings             |
+| 8    | hovered UI element border, and the focus ring |
+| 9    | solid backgrounds                             |
+| 10   | hovered solid backgrounds                     |
+| 11   | low-contrast text                             |
+| 12   | high-contrast text                            |
 
 That table is the whole design system. Steps 1–8 are backgrounds and borders
 and are not legible as text; 11 and 12 are the only two that carry words; step 9
@@ -594,17 +594,17 @@ saying twice. Amber is the one hue whose step 9 does not take white, which is
 exactly why the amber things here are soft containers rather than solid fills.
 
 **Buttons** are Radix's three variants and nothing else. At rest a `.t-btn` is
-*surface*: step 3, hovering to 4, held down at 5, labelled at 12, with an alpha
+_surface_: step 3, hovering to 4, held down at 5, labelled at 12, with an alpha
 step for its edge because a button lands on the bars, on a panel and inside a
 popover and `--gray-7` would not hold the same weight against all three. A
-toggle that is on is *solid*: step 9 hovering to 10, under `--accent-contrast`.
-The Reconnect button in the detached banner is *outline*: an alpha step 7 edge
+toggle that is on is _solid_: step 9 hovering to 10, under `--accent-contrast`.
+The Reconnect button in the detached banner is _outline_: an alpha step 7 edge
 and step 11 label over whatever is behind it, hovering to the alpha step 3 wash.
 
 **Elevation** is a shadow and nothing else. Radix has no tonal ladder, which is
 the biggest single difference from what was here before: a menu, a side panel
 and the welcome dialog are all step 2, and what says how high one floats is
-`--shadow-1` … `--shadow-6`. They are composed from the *alpha* grays rather
+`--shadow-1` … `--shadow-6`. They are composed from the _alpha_ grays rather
 than from black, so the same six levels read in either scheme — an opaque black
 shadow on a near-black page is invisible, an alpha one still darkens — and each
 carries a 1px alpha ring that holds the floating thing's edge where the blur
@@ -619,7 +619,7 @@ fades out. What the app assigns:
 | `--gray-2` | `--shadow-6` | the welcome dialog                              |
 
 The editor pane takes step 1 — the app-background step, and the same fill
-CodeMirror's own editor takes, since the pane *is* the editor and a second tone
+CodeMirror's own editor takes, since the pane _is_ the editor and a second tone
 there would only draw a seam through it. The preview canvas is step 3 rather
 than step 1 for the opposite reason: it has to read as the desk a white sheet is
 lying on, and steps 1 and 2 are too close to paper in the light scheme to do it.
@@ -627,7 +627,7 @@ lying on, and steps 1 and 2 are too close to paper in the light scheme to do it.
 **Hover states** are the third rule, and they are just the next step up: 3 → 4 →
 5, or 9 → 10 for anything solid. There is no compositing, no opacity, no second
 hover colour per surface — where a control sits on a background it doesn't know
-(a tab in the bar, the scrollbar thumb) it takes an *alpha* step instead, which
+(a tab in the bar, the scrollbar thumb) it takes an _alpha_ step instead, which
 is the same rule with the fill left out.
 
 What is _not_ adopted is shape and type, which Radix Colors has no opinion about
@@ -706,6 +706,29 @@ a change_), so checking one out shows the sheet as it was set, and restoring one
 brings that look back with the words. What a restyle commits is a `style` kind,
 which is what the panel marks it with; it moves no characters, so it shows no
 counts.
+
+#### Comparing
+
+_Compare_ — in the tab bar, on a history row, and in the banner while a
+version is checked out — opens two read-only editors side by side (one over the
+other on a phone) holding any two of: the open file now, the open file at any
+version, or another tab as it was last stored. Nothing is rendered; it is the
+text that is being asked about.
+
+The diff is structural rather than textual, in
+[diff.js](src/lib/cv/format/diff.js). A plain line diff of a CV is honest and
+unreadable: move a section and every line of it is a deletion here and an
+insertion there, with the one word that changed lost in the middle. So both
+texts go through the parser first and it is the _tree_ that is diffed. Blocks
+under one parent are paired by what identifies them — a key by its name, an
+entry by its title, a bullet by its text — then by resemblance for the rest,
+so a reworded bullet is still the same bullet. Pairs that changed order are
+_moved_, and so are pairs found across parents, which is an entry that went to
+another section; both are drawn in blue and left where they are on each side,
+with a click on one bringing the other into view. Only inside a pair does an
+ordinary line diff run, which is what keeps an edit inside a moved block
+visible as an edit. The two panes scroll together through the lines the diff
+paired, the same ladder the editor and the preview share.
 
 ### Persistence
 

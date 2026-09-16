@@ -6,6 +6,7 @@
   import IconInitial from '@iconify-icons/lucide/circle-dot'
   import IconEdit from '@iconify-icons/lucide/dot'
   import IconStyle from '@iconify-icons/lucide/palette'
+  import IconCompare from '@iconify-icons/lucide/git-compare'
   import { formatBytes } from '$lib/cv/state/storage.js'
 
   /** The glyph for each kind of change; anything unrecognised reads as an edit. */
@@ -23,6 +24,8 @@
     doc,
     /** @type {(msg: string) => void} */
     toast,
+    /** Open the compare view with this version on one side and the newest text on the other. @type {(entry: import('$lib/cv/state/doc.svelte.js').HistoryEntry) => void} */
+    onCompare,
   } = $props()
 
   let name = $state('')
@@ -131,6 +134,14 @@
           {/if}
           <span class="hist-time">{ago(entry)}</span>
         </button>
+        <!-- Always drawn rather than on hover, since a finger has no hover.
+				     The newest version is what everything is compared against, so it
+				     has nothing to be compared with. -->
+        {#if !isLatest}
+          <button class="hist-compare" title="Compare with current" aria-label="Compare “{entry.message}” with current" onclick={() => onCompare(entry)}>
+            <Icon icon={IconCompare} width="11" height="11" />
+          </button>
+        {/if}
         <!-- {#if isActive && !isLatest}
 					<button class="hist-restore" onclick={() => doc.restore(entry)}>
 						Restore this version
@@ -219,7 +230,41 @@
   }
 
   .hist-row {
+    display: flex;
+    align-items: stretch;
+    gap: var(--sp-1);
     margin-bottom: var(--hairline);
+  }
+
+  .hist-row .hist-item {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Step 9 at rest — ornament beside the row, like a line number — lifting to
+	   the accent's text step under the pointer. */
+  .hist-compare {
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    background: none;
+    border: var(--hairline) solid transparent;
+    border-radius: var(--corner-xs);
+    cursor: pointer;
+    padding: 0;
+    color: var(--gray-9);
+    transition: var(--hover-fade);
+  }
+
+  .hist-compare:hover,
+  .hist-compare:focus-visible {
+    background: var(--gray-3);
+    color: var(--accent-11);
+  }
+
+  .hist-compare :global([stroke-width]) {
+    stroke-width: 2.25;
   }
 
   .hist-item {

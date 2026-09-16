@@ -8,6 +8,7 @@
   import IconTrash from '@iconify-icons/lucide/trash'
   import IconLayout from '@iconify-icons/lucide/layout-panel-left'
   import IconHistory from '@iconify-icons/lucide/history'
+  import IconCompare from '@iconify-icons/lucide/git-compare'
   import { withKey } from './access-keys.js'
 
   let {
@@ -33,6 +34,8 @@
     historyCount = 0,
     /** @type {() => void} */
     onToggleHistory,
+    /** @type {() => void} */
+    onCompare,
     /** @type {() => void} */
     onSave,
   } = $props()
@@ -312,6 +315,13 @@
   <div class="t-spacer"></div>
 
   <div id="tab-actions">
+    <!-- Compare is a view over two documents rather than a panel over one, so
+	       it opens a dialog instead of taking the column the other two share. -->
+    <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
+    <button class="t-btn" accesskey="c" title={withKey('Compare two documents or versions', 'c')} onclick={onCompare}>
+      <Icon icon={IconCompare} width="12" height="12" />
+      <span class="t-txt"><u>C</u>ompare</span>
+    </button>
     <!-- Beside History because the two are one control between them: they take
 	       turns in the column to the right of the preview. -->
     <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->

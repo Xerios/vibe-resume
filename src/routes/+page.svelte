@@ -1,5 +1,8 @@
 <script>
   import { onMount, tick } from 'svelte'
+  import { pushState } from '$app/navigation'
+  import { page } from '$app/state'
+  import CompareModal from '$lib/components/CompareModal.svelte'
   import HistoryPanel from '$lib/components/HistoryPanel.svelte'
   import StatusBar from '$lib/components/StatusBar.svelte'
   import StylePicker from '$lib/components/StylePicker.svelte'
@@ -97,6 +100,12 @@
   /** @type {ReturnType<typeof setTimeout> | undefined} */
   let toastTimer
   let trashOpen = $state(false)
+  /**
+   * The compare dialog is a history entry rather than a flag — `page.state`
+   * holds its two sides while it is up — so the Back button closes it, which
+   * on a phone is how a dialog is expected to close. See `openCompare`.
+   */
+  const compare = $derived(page.state.compare ?? null)
   /** The browser's deferred install prompt, held until the user asks for it. */
   let installPrompt = $state(/** @type {BeforeInstallPromptEvent | null} */ (null))
 
@@ -931,6 +940,46 @@
     trashOpen = !trashOpen
   }
 
+  /**
+   * Open the compare dialog. With nothing named, the newest text is put beside
+   * the most likely thing to hold it against: the tab next to this one, or —
+   * with only one tab — the version before this one.
+   *
+   * Opening pushes a history entry carrying the two sides, so Back is a way
+   * out, and closing from inside the dialog is the same Back — see `closeCompare`.
+   * @param {import('../app').CompareSource} [left]
+   * @param {import('../app').CompareSource} [right]
+   */
+  function openCompare(left, right) {
+    const id = files.activeId
+    if (!id) return
+    /** @type {import('../app').CompareSource} */
+    const current = { fileId: id, versionKey: null }
+    if (!right) {
+      const neighbour = files.open.find((f) => f.id !== id)
+      const previous = cv.entries[1]
+      right = neighbour ? { fileId: neighbour.id, versionKey: null } : { fileId: id, versionKey: previous?.key ?? null }
+    }
+    pushState('', { compare: { left: left ?? current, right } })
+  }
+
+  /**
+   * Close the dialog by going back over the entry that opened it, so the
+   * history reads the same whether it was the X or the browser that closed it.
+   */
+  function closeCompare() {
+    if (page.state.compare) history.back()
+  }
+
+  /**
+   * A version against what the file says now.
+   * @param {import('$lib/cv/state/doc.svelte.js').HistoryEntry} entry
+   */
+  function compareVersion(entry) {
+    const id = /** @type {string} */ (files.activeId)
+    openCompare({ fileId: id, versionKey: entry.key }, { fileId: id, versionKey: null })
+  }
+
   /** @param {string} id */
   function restoreTab(id) {
     files.restore(id)
@@ -1024,6 +1073,7 @@
     historyOpen={sidePanel === 'history'}
     historyCount={cv.history.length}
     onToggleHistory={() => toggleSidePanel('history')}
+    onCompare={() => openCompare()}
     onSave={saveYaml}
   />
 
@@ -1072,6 +1122,7 @@
           <span>Viewing “{entry?.message}” — editing is paused</span>
           <div class="t-spacer"></div>
           {#if entry}
+            <button class="t-btn" onclick={() => compareVersion(entry)}>Compare</button>
             <button class="t-btn" onclick={() => cv.restore(entry)}>Restore</button>
           {/if}
           <button class="t-btn" onclick={() => cv.viewLatest()}>Back to latest</button>
@@ -1121,7 +1172,7 @@
         onCss={setCss}
       />
     {:else if sidePanel === 'history' && cv.ready}
-      <HistoryPanel doc={cv} {toast} />
+      <HistoryPanel doc={cv} {toast} onCompare={compareVersion} />
     {/if}
   </div>
 
@@ -1142,6 +1193,10 @@
 
 {#if welcomeOpen}
   <WelcomeOverlay onStart={dismissWelcome} />
+{/if}
+
+{#if compare && cv.ready}
+  <CompareModal doc={cv} {files} left={compare.left} right={compare.right} onClose={closeCompare} />
 {/if}
 
 <div id="toast" class:show={toastOn}>{toastMsg}</div>

@@ -289,16 +289,35 @@ export class CvDoc {
 
   /** The text as it stood at the most recent export, or null if there wasn't one. */
   #lastExport() {
-    if (!this.#doc) return null
     for (let i = this.history.length - 1; i >= 0; i--) {
       const entry = this.history[i]
-      if (entry.kind !== 'export') continue
-      return this.#doc
-        .forkAt([frontier(entry)])
-        .getText(TEXT_ID)
-        .toString()
+      if (entry.kind === 'export') return this.textAt(entry)
     }
     return null
+  }
+
+  /**
+   * The text as it stood at a version. Read off a fork, so the live document
+   * is left exactly as it is — attached or not.
+   * @param {HistoryEntry} entry
+   */
+  textAt(entry) {
+    if (!this.#doc) return ''
+    return this.#doc
+      .forkAt([frontier(entry)])
+      .getText(TEXT_ID)
+      .toString()
+  }
+
+  /**
+   * The newest text, whichever version is on screen. While a version is
+   * checked out `yaml` says what is being looked at; this says what the file
+   * is.
+   */
+  headText() {
+    if (!this.#doc) return ''
+    if (!this.#doc.isDetached()) return this.#text()
+    return this.#doc.forkAt(this.#doc.oplogFrontiers()).getText(TEXT_ID).toString()
   }
 
   /**
@@ -738,6 +757,28 @@ export class CvDoc {
     } catch (err) {
       console.warn('[cv] could not take the update from another tab', err)
     }
+  }
+}
+
+/**
+ * The current text of a file that isn't the one being edited, read out of its
+ * stored snapshot — the only place a closed tab's text is. Null when there is
+ * nothing stored or it can't be read. The store trails a live edit in another
+ * browser tab by the settle debounce, which is close enough for a comparison.
+ *
+ * Only safe once `init` has run somewhere, since that is what loads the WASM.
+ * @param {string} fileId
+ */
+export function storedText(fileId) {
+  const stored = read(snapshotKey(fileId))
+  if (!stored) return null
+  try {
+    const doc = new LoroDoc()
+    doc.import(split(stored).snapshot)
+    return cvText(doc).toString()
+  } catch (e) {
+    console.warn('[cv] stored snapshot could not be read', e)
+    return null
   }
 }
 

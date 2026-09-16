@@ -1,11 +1,27 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
+
+/**
+ * One side of a comparison: a file at a version, `null` being its newest text.
+ * Exported so this file is a module, which `declare global` needs it to be.
+ */
+export interface CompareSource {
+  fileId: string
+  versionKey: string | null
+}
+
 declare global {
   namespace App {
     // interface Error {}
     // interface Locals {}
     // interface PageData {}
-    // interface PageState {}
+    /**
+     * Shallow-routing state: the compare dialog is a history entry, so that
+     * Back closes it — which on a phone is how a dialog is expected to close.
+     */
+    interface PageState {
+      compare?: { left: CompareSource; right: CompareSource }
+    }
     // interface Platform {}
   }
 
@@ -31,5 +47,3 @@ declare global {
     beforeinstallprompt: BeforeInstallPromptEvent
   }
 }
-
-export {}

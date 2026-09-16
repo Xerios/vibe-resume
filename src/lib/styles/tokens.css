@@ -64,6 +64,7 @@
 @import '@radix-ui/colors/grass.css';
 @import '@radix-ui/colors/grass-alpha.css';
 @import '@radix-ui/colors/blue.css';
+@import '@radix-ui/colors/blue-alpha.css';
 @import '@radix-ui/colors/purple.css';
 @import '@radix-ui/colors/orange.css';
 @import '@radix-ui/colors/black-alpha.css';
@@ -79,6 +80,7 @@
 @import '@radix-ui/colors/grass-dark.css';
 @import '@radix-ui/colors/grass-dark-alpha.css';
 @import '@radix-ui/colors/blue-dark.css';
+@import '@radix-ui/colors/blue-dark-alpha.css';
 @import '@radix-ui/colors/purple-dark.css';
 @import '@radix-ui/colors/orange-dark.css';
 
@@ -270,6 +272,16 @@
   --cm-diff-add-bg: var(--grass-a4);
   --cm-diff-del-bg: var(--red-a4);
   --cm-diff-del-text: var(--red-11);
+  /* The compare view's two extra readings, and the darker step each wash
+	   deepens to on the very characters that differ. Blue is the one hue the
+	   chrome doesn't already spend on a state, which is why a moved block gets
+	   it: it is neither wrong nor new. */
+  --cm-diff-mod-bg: var(--amber-a4);
+  --cm-diff-mod-range: var(--amber-a7);
+  --cm-diff-add-range: var(--grass-a7);
+  --cm-diff-del-range: var(--red-a7);
+  --cm-diff-move-bg: var(--blue-a3);
+  --cm-diff-move-edge: var(--blue-9);
   --stat-add: var(--grass-11);
   --stat-del: var(--red-11);
 
