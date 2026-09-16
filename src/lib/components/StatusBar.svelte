@@ -9,7 +9,7 @@
   import IconMousePointer2Off from '@iconify-icons/lucide/mouse-pointer-2-off'
   import IconRefreshCw from '@iconify-icons/lucide/refresh-cw'
   import IconSun from '@iconify-icons/lucide/sun'
-  import { withKey } from './access-keys.js'
+  import { shortcut } from './access-keys.js'
 
   let {
     valid = true,
@@ -45,8 +45,7 @@
     <!-- The one thing here that asks rather than reports, so it is the one thing
 	       wearing a colour. It appears only when a newer build is actually waiting. -->
     {#if updateAvailable}
-      <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
-      <button class="sb-btn sb-update" onclick={onUpdate} accesskey="u" title={withKey('A new version is ready — reload to use it', 'u')}>
+      <button class="sb-btn sb-update" onclick={onUpdate} use:shortcut={['u', 'A new version is ready — reload to use it']}>
         <Icon icon={IconRefreshCw} width="12" height="12" />
         <span class="t-txt"><u>U</u>pdate ready</span>
       </button>
@@ -55,13 +54,12 @@
     <!-- Left unlit either way: it is on to begin with, and a switch that is
 	       always highlighted is furniture rather than information. The struck-out
 	       pointer is what says it has been turned off. -->
-    <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
     <button
       class="sb-btn"
       onclick={onToggleHoverSync}
-      accesskey="f"
       aria-pressed={hoverSync}
-      title={withKey(hoverSync ? 'Stop the editor following the pointer over the preview' : 'Follow the pointer over the preview in the editor', 'f')}>
+      use:shortcut={['f', hoverSync ? 'Stop the editor following the pointer over the preview' : 'Follow the pointer over the preview in the editor']}
+    >
       {#if hoverSync}
         <Icon icon={IconMousePointer2} width="12" height="12" />
       {:else}
@@ -72,13 +70,12 @@
 
     <!-- Its neighbour's twin, and unlit on the same grounds: the broken link is
 	       what says the two panes have stopped keeping each other's place. -->
-    <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
     <button
       class="sb-btn"
       onclick={onToggleScrollSync}
-      accesskey="s"
       aria-pressed={scrollSync}
-      title={withKey(scrollSync ? 'Stop the panes scrolling together' : 'Scroll the editor and the preview together', 'y')}>
+      use:shortcut={['s', scrollSync ? 'Stop the panes scrolling together' : 'Scroll the editor and the preview together']}
+    >
       {#if scrollSync}
         <Icon icon={IconLink2} width="12" height="12" />
       {:else}
@@ -87,13 +84,7 @@
       <span class="t-txt"><u>S</u>croll</span>
     </button>
 
-    <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
-    <button
-      class="sb-btn"
-      class:on={sourceHidden}
-      onclick={onToggleSource}
-      accesskey="e"
-      title={withKey(sourceHidden ? 'Show editor' : 'Hide editor (preview only)', 'e')}>
+    <button class="sb-btn" class:on={sourceHidden} onclick={onToggleSource} use:shortcut={['e', sourceHidden ? 'Show editor' : 'Hide editor (preview only)']}>
       {#if sourceHidden}
         <Icon icon={IconEyeOff} width="12" height="12" />
       {:else}
@@ -103,8 +94,7 @@
       <span class="t-txt"><u>E</u>ditor</span>
     </button>
 
-    <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
-    <button class="sb-btn sb-theme" onclick={onToggleTheme} accesskey="k" title={withKey('Toggle dark mode', 'k')}>
+    <button class="sb-btn sb-theme" onclick={onToggleTheme} use:shortcut={['k', 'Toggle dark mode']}>
       <Icon icon={IconMoon} class="icon-moon" width="13" height="13" />
       <Icon icon={IconSun} class="icon-sun" width="13" height="13" />
     </button>

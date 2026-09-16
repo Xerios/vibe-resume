@@ -9,7 +9,7 @@
   import IconLayout from '@iconify-icons/lucide/layout-panel-left'
   import IconHistory from '@iconify-icons/lucide/history'
   import IconCompare from '@iconify-icons/lucide/git-compare'
-  import { withKey } from './access-keys.js'
+  import { shortcut } from './access-keys.js'
   import { fly } from 'svelte/transition'
 
   let {
@@ -65,7 +65,7 @@
     menu?.querySelector('button')?.focus()
 
     /** @param {PointerEvent} e */
-    const onPointerDown = e => {
+    const onPointerDown = (e) => {
       if (!menuGroup?.contains(/** @type {Node | null} */ (e.target))) menuOpen = false
     }
     document.addEventListener('pointerdown', onPointerDown)
@@ -231,10 +231,11 @@
         class:active
         class:dragging={dragId === f.id}
         draggable={editingId !== f.id}
-        ondragstart={e => onTabDragStart(e, f)}
-        ondragover={e => onTabDragOver(e, f)}
+        ondragstart={(e) => onTabDragStart(e, f)}
+        ondragover={(e) => onTabDragOver(e, f)}
         ondrop={onTabDrop}
-        ondragend={() => (dragId = null)}>
+        ondragend={() => (dragId = null)}
+      >
         {#if editingId === f.id}
           <input class="tab-rename" bind:value={editValue} use:focusAndSelect onblur={commitRename} onkeydown={onRenameKeydown} />
         {:else}
@@ -243,7 +244,8 @@
             title="{f.name} — double-click or F2 to rename, drag or Alt+← → to reorder"
             onclick={() => onSelect(f.id)}
             ondblclick={() => startRename(f)}
-            onkeydown={e => onTabKeydown(e, f)}>
+            onkeydown={(e) => onTabKeydown(e, f)}
+          >
             {f.name}
           </button>
           <!-- Everything that can be done to a file is behind this one caret,
@@ -261,7 +263,8 @@
                 aria-label="Actions for {f.name}"
                 title="What can be done to this CV"
                 onclick={() => (menuOpen ? (menuOpen = false) : openMenu())}
-                onkeydown={onMoreKeydown}>
+                onkeydown={onMoreKeydown}
+              >
                 <Icon icon={IconChevron} width="11" height="11" />
               </button>
 
@@ -275,7 +278,8 @@
                   style:top="{menuAt.y}px"
                   onkeydown={onMenuKeydown}
                   onfocusout={onMenuFocusOut}
-                  in:fly={{ y: -8, duration: 200 }}>
+                  in:fly={{ y: -8, duration: 200 }}
+                >
                   <button class="menu-item" role="menuitem" onclick={() => pick(onDuplicate)}>
                     <Icon icon={IconCopy} width="12" height="12" />
                     <span>Duplicate</span>
@@ -305,8 +309,7 @@
   <!-- One way to open a tab, and one button for it: a CV from the template.
 	     Copying this one is a thing done to a file, so it lives in the tab's own
 	     menu with the rest of them. -->
-  <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
-  <button class="tab-new" accesskey="n" title={withKey('New CV from the template', 'n')} onclick={onNew}>
+  <button class="tab-new" use:shortcut={['n', 'New CV from the template']} onclick={onNew}>
     <Icon icon={IconFilePlus} width="12" height="12" />
   </button>
 
@@ -315,20 +318,17 @@
   <div id="tab-actions">
     <!-- Compare is a view over two documents rather than a panel over one, so
 	       it opens a dialog instead of taking the column the other two share. -->
-    <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
-    <button class="t-btn" accesskey="c" title={withKey('Compare two documents or versions', 'c')} onclick={onCompare}>
+    <button class="t-btn" use:shortcut={['c', 'Compare two documents or versions']} onclick={onCompare}>
       <Icon icon={IconCompare} width="12" height="12" />
       <span class="t-txt"><u>C</u>ompare</span>
     </button>
     <!-- Beside History because the two are one control between them: they take
 	       turns in the column to the right of the preview. -->
-    <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
-    <button class="t-btn" class:on={styleOpen} accesskey="t" title={withKey('Template, theme and font', 't')} onclick={onToggleStyle}>
+    <button class="t-btn" class:on={styleOpen} use:shortcut={['t', 'Template, theme and font']} onclick={onToggleStyle}>
       <Icon icon={IconLayout} width="12" height="12" />
       <span class="t-txt"><u>T</u>hemes</span>
     </button>
-    <!-- svelte-ignore a11y_accesskey (accesskey is the mnemonic itself here — see access-keys.js) -->
-    <button class="t-btn" class:on={historyOpen} accesskey="h" title={withKey('Show version history', 'h')} onclick={onToggleHistory}>
+    <button class="t-btn" class:on={historyOpen} use:shortcut={['h', 'Show version history']} onclick={onToggleHistory}>
       <Icon icon={IconHistory} width="12" height="12" />
       <span class="t-txt"><u>H</u>istory</span>
       {#if historyCount}<span class="t-count">{historyCount}</span>{/if}

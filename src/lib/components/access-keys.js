@@ -12,8 +12,16 @@ const ua = typeof navigator === 'undefined' ? '' : navigator.userAgent
 export const ACCESS_CHORD = /Mac|iP(hone|ad|od)/.test(ua) ? 'Ctrl+Alt+' : /Firefox/.test(ua) ? 'Alt+Shift+' : 'Alt+'
 
 /**
- * A control's tooltip with its access key spelled out after it.
- * @param {string} title
- * @param {string} key the letter in the element's own `accesskey`
+ * A control's mnemonic and its tooltip, from one letter: sets `accesskey` and
+ * writes the chord into `title` so the two can never disagree.
+ * @param {HTMLElement} node
+ * @param {[key: string, title: string]} params
  */
-export const withKey = (title, key) => `${title} (${ACCESS_CHORD}${key.toUpperCase()})`
+export function shortcut(node, params) {
+  const apply = (/** @type {[string, string]} */ [key, title]) => {
+    node.accessKey = key
+    node.title = `${title} (${ACCESS_CHORD}${key.toUpperCase()})`
+  }
+  apply(params)
+  return { update: apply }
+}
