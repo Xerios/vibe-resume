@@ -9,27 +9,21 @@
   import IconMousePointer2Off from '@iconify-icons/lucide/mouse-pointer-2-off'
   import IconRefreshCw from '@iconify-icons/lucide/refresh-cw'
   import IconSun from '@iconify-icons/lucide/sun'
+  import { commands } from '$lib/cv/state/commands.js'
+  import { doc, ui } from '$lib/cv/state/state.svelte.js'
+  import { swUpdate } from '$lib/sw-update.svelte.js'
   import { shortcut } from './access-keys.js'
 
-  let {
-    valid = true,
-    /** @type {string} */
-    saveLabel = '',
-    sourceHidden = false,
-    hoverSync = true,
-    scrollSync = true,
-    updateAvailable = false,
-    /** @type {() => void} */
-    onToggleSource,
-    /** @type {() => void} */
-    onToggleHoverSync,
-    /** @type {() => void} */
-    onToggleScrollSync,
-    /** @type {() => void} */
-    onToggleTheme,
-    /** @type {() => void} */
-    onUpdate,
-  } = $props()
+  const saveLabel = $derived.by(() => {
+    if (doc.saveError) return '⚠ not saved'
+    if (doc.isViewingHistory) return 'viewing history'
+    if (!doc.savedAt) return ''
+    const at = doc.savedAt.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    return `saved ${at}`
+  })
 </script>
 
 <!-- The bar that reports rather than asks: whether the YAML parses, and when it
@@ -37,15 +31,15 @@
      shows — rather than what the CV says — keep it company at the far end,
      clear of the toolbar buttons that change the document. -->
 <div id="status-bar">
-  <span id="status" class={valid ? 'ok' : 'err'}>{valid ? '✓ Valid' : '✗ Error'}</span>
+  <span id="status" class={ui.parseError ? 'err' : 'ok'}>{ui.parseError ? '✗ Error' : '✓ Valid'}</span>
   <div class="t-spacer"></div>
   {#if saveLabel}<span id="save-state">{saveLabel}</span>{/if}
 
   <div class="sb-actions">
     <!-- The one thing here that asks rather than reports, so it is the one thing
 	       wearing a colour. It appears only when a newer build is actually waiting. -->
-    {#if updateAvailable}
-      <button class="sb-btn sb-update" onclick={onUpdate} use:shortcut={['u', 'A new version is ready — reload to use it']}>
+    {#if swUpdate.available}
+      <button class="sb-btn sb-update" onclick={() => swUpdate.applyUpdate()} use:shortcut={['u', 'A new version is ready — reload to use it']}>
         <Icon icon={IconRefreshCw} width="12" height="12" />
         <span class="t-txt"><u>U</u>pdate ready</span>
       </button>
@@ -56,11 +50,11 @@
 	       pointer is what says it has been turned off. -->
     <button
       class="sb-btn"
-      onclick={onToggleHoverSync}
-      aria-pressed={hoverSync}
-      use:shortcut={['f', hoverSync ? 'Stop the editor following the pointer over the preview' : 'Follow the pointer over the preview in the editor']}
+      onclick={commands.toggleHoverSync}
+      aria-pressed={ui.hoverSync}
+      use:shortcut={['f', ui.hoverSync ? 'Stop the editor following the pointer over the preview' : 'Follow the pointer over the preview in the editor']}
     >
-      {#if hoverSync}
+      {#if ui.hoverSync}
         <Icon icon={IconMousePointer2} width="12" height="12" />
       {:else}
         <Icon icon={IconMousePointer2Off} width="12" height="12" />
@@ -72,11 +66,11 @@
 	       what says the two panes have stopped keeping each other's place. -->
     <button
       class="sb-btn"
-      onclick={onToggleScrollSync}
-      aria-pressed={scrollSync}
-      use:shortcut={['s', scrollSync ? 'Stop the panes scrolling together' : 'Scroll the editor and the preview together']}
+      onclick={commands.toggleScrollSync}
+      aria-pressed={ui.scrollSync}
+      use:shortcut={['s', ui.scrollSync ? 'Stop the panes scrolling together' : 'Scroll the editor and the preview together']}
     >
-      {#if scrollSync}
+      {#if ui.scrollSync}
         <Icon icon={IconLink2} width="12" height="12" />
       {:else}
         <Icon icon={IconLink2Off} width="12" height="12" />
@@ -84,8 +78,8 @@
       <span class="t-txt"><u>S</u>croll</span>
     </button>
 
-    <button class="sb-btn" class:on={sourceHidden} onclick={onToggleSource} use:shortcut={['e', sourceHidden ? 'Show editor' : 'Hide editor (preview only)']}>
-      {#if sourceHidden}
+    <button class="sb-btn" class:on={ui.sourceHidden} onclick={commands.toggleSource} use:shortcut={['e', ui.sourceHidden ? 'Show editor' : 'Hide editor (preview only)']}>
+      {#if ui.sourceHidden}
         <Icon icon={IconEyeOff} width="12" height="12" />
       {:else}
         <Icon icon={IconEye} width="12" height="12" />
@@ -94,7 +88,7 @@
       <span class="t-txt"><u>E</u>ditor</span>
     </button>
 
-    <button class="sb-btn sb-theme" onclick={onToggleTheme} use:shortcut={['k', 'Toggle dark mode']}>
+    <button class="sb-btn sb-theme" onclick={commands.toggleTheme} use:shortcut={['k', 'Toggle dark mode']}>
       <Icon icon={IconMoon} class="icon-moon" width="13" height="13" />
       <Icon icon={IconSun} class="icon-sun" width="13" height="13" />
     </button>

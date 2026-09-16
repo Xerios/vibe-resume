@@ -7,6 +7,8 @@
   import IconEdit from '@iconify-icons/lucide/dot'
   import IconStyle from '@iconify-icons/lucide/palette'
   import IconCompare from '@iconify-icons/lucide/git-compare'
+  import { commands } from '$lib/cv/state/commands.js'
+  import { doc, ui } from '$lib/cv/state/state.svelte.js'
   import { formatBytes } from '$lib/cv/state/storage.js'
   import { fly } from 'svelte/transition'
 
@@ -19,15 +21,6 @@
     style: IconStyle,
     edit: IconEdit,
   }
-
-  let {
-    /** @type {import('$lib/cv/state/doc.svelte.js').CvDoc} */
-    doc,
-    /** @type {(msg: string) => void} */
-    toast,
-    /** Open the compare view with this version on one side and the version on screen on the other. @type {(entry: import('$lib/cv/state/doc.svelte.js').HistoryEntry) => void} */
-    onCompare,
-  } = $props()
 
   let name = $state('')
   /** Ticks so the "x minutes ago" labels stay honest. */
@@ -43,9 +36,7 @@
   /** @param {SubmitEvent} e */
   function saveCheckpoint(e) {
     e.preventDefault()
-    const label = name.trim()
-    doc.checkpoint(label)
-    toast(label ? `Saved “${label}”` : 'Version saved')
+    commands.checkpoint(name)
     name = ''
   }
 
@@ -96,7 +87,7 @@
   function clearHistory() {
     if (!confirm('Delete every past version? The current text is kept, the rest is gone.')) return
     doc.clearHistory()
-    toast('History cleared')
+    ui.toast('History cleared')
   }
 </script>
 
@@ -139,7 +130,7 @@
 				     The version on screen is what everything is compared against, so it
 				     has nothing to be compared with. -->
         {#if !isActive}
-          <button class="hist-compare" title="Compare with current" aria-label="Compare “{entry.message}” with current" onclick={() => onCompare(entry)}>
+          <button class="hist-compare" title="Compare with current" aria-label="Compare “{entry.message}” with current" onclick={() => commands.compareVersion(entry)}>
             <Icon icon={IconCompare} width="11" height="11" />
           </button>
         {/if}

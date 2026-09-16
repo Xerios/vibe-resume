@@ -1,6 +1,5 @@
 <script>
   import { onMount, tick } from 'svelte'
-  import { pushState } from '$app/navigation'
   import { page } from '$app/state'
   import CompareModal from '$lib/components/CompareModal.svelte'
   import HistoryPanel from '$lib/components/HistoryPanel.svelte'
@@ -12,14 +11,11 @@
   import WelcomeOverlay from '$lib/components/WelcomeOverlay.svelte'
   import YamlEditor from '$lib/components/YamlEditor.svelte'
   import PreviewFrame from '$lib/cv/PreviewFrame.svelte'
-  import { isModified, preset as presetOf, resolvePreset } from '$lib/cv/template/compositions.js'
-  import { FONTS, resolveFont } from '$lib/cv/theme/fonts.js'
   import { liveTemplate } from '$lib/cv/template/live-template.svelte.js'
-  import { ORIENTATIONS, PAPER_SIZES, RUNNING, resolvePaper } from '$lib/cv/theme/paper.js'
-  import { THEMES, resolveTheme } from '$lib/cv/theme/presets.js'
   import { parseCv } from '$lib/cv/template/render.js'
-  import { doc as cv, files, flush, parts, restyle, restylePaper, restyleVariant, start } from '$lib/cv/state/state.svelte.js'
-  import { KEYS, read, write } from '$lib/cv/state/storage.js'
+  import { bindHost, commands } from '$lib/cv/state/commands.js'
+  import { doc as cv, flush, look, parts, start, ui } from '$lib/cv/state/state.svelte.js'
+  import { KEYS, write } from '$lib/cv/state/storage.js'
   import { swUpdate } from '$lib/sw-update.svelte.js'
 
   const PARSE_DEBOUNCE_MS = 250
@@ -43,42 +39,12 @@
 
   /** Last successfully parsed CV. Kept on a parse error so the preview doesn't blank. */
   let parsed = $state(/** @type {any} */ (null))
-  let parseError = $state(/** @type {string | null} */ (null))
   /**
    * Where each value in `parsed` came from — `data-src` path → source line.
    * Only read from event handlers, so it stays off the reactive graph.
    * @type {Map<string, number> | null}
    */
   let srcLines = null
-
-  /** First visit only — dismissing it writes the flag, so it never returns. */
-  let welcomeOpen = $state(read(KEYS.welcomeSeen) !== 'true')
-  /* Style and History share the column to the right of the preview, so opening
-	   one closes the other. Style is what an unopinionated first visit gets: it
-	   is the panel with something to do in it before there is any history. */
-  const savedPanel = read(KEYS.sidePanel, 'style')
-  let sidePanel = $state(savedPanel === 'history' ? 'history' : savedPanel === 'none' ? null : 'style')
-  let sourceHidden = $state(read(KEYS.sourceHidden) === 'true')
-  /* How the preview is looked at rather than anything about the file: scaling a
-	   page to fit the pane changes no CV, so it is a preference of this browser's
-	   and stays out of the document and the history. */
-  let fitPreview = $state(read(KEYS.previewFit) === 'true')
-  /* Whether the pointer resting on the sheet pulls the editor to its line. Same
-	   family as `fitPreview`: how the window behaves rather than what the CV says,
-	   so it stays out of the document and the history. On unless turned off. */
-  let hoverSync = $state(read(KEYS.hoverSync) !== 'false')
-  /* Whether a scroll in either pane drags the other along with it. Same family
-	   again — how the window behaves rather than what the CV says. On unless
-	   turned off. */
-  let scrollSync = $state(read(KEYS.scrollSync) !== 'false')
-  /* The app's colour scheme, mirrored into the preview frame: the gutter around
-	   the sheet follows it, the sheet itself never does. Read from the same key
-	   app.html's pre-paint script set the <html> attribute from. */
-  let dark = $state(read(KEYS.theme) === 'dark')
-  let desktop = $state(true)
-  let editorWidth = $state(read(KEYS.editorWidth))
-  let toastMsg = $state('')
-  let toastOn = $state(false)
 
   let editor = $state(/** @type {YamlEditor | undefined} */ (undefined))
   let frame = $state(/** @type {PreviewFrame | undefined} */ (undefined))
@@ -101,61 +67,38 @@
   /** The preview element the pointer is on, outlined while the editor shows its line. */
   let hoverEl = /** @type {Element | null} */ (null)
   let dragging = false
-  /** @type {ReturnType<typeof setTimeout> | undefined} */
-  let toastTimer
-  let trashOpen = $state(false)
   /**
    * The compare dialog is a history entry rather than a flag — `page.state`
    * holds its two sides while it is up — so the Back button closes it, which
-   * on a phone is how a dialog is expected to close. See `openCompare`.
+   * on a phone is how a dialog is expected to close. See `commands.openCompare`.
    */
   const compare = $derived(page.state.compare ?? null)
-  /** The browser's deferred install prompt, held until the user asks for it. */
-  let installPrompt = $state(/** @type {BeforeInstallPromptEvent | null} */ (null))
 
-  /** Presentation of the active file, defaulted here so the rest can assume a valid id. */
-  const preset = $derived(resolvePreset(files.active?.layout))
-  const theme = $derived(resolveTheme(files.active?.theme))
-  const font = $derived(resolveFont(files.active?.font))
-  const css = $derived(files.active?.css ?? '')
-  const paper = $derived(resolvePaper(files.active?.paper))
   /** The name a running header prints, which is the CV's own rather than the file's. */
   const cvName = $derived(String(parsed?.header?.name ?? ''))
 
-  /* Which variant fills each slot: the preset's choices with the file's own on
-	   top, and then the component those compose to. Composing is cheap — it is
-	   string work over sources already in memory — so it can sit on the reactive
-	   graph beside everything else. */
-  const choices = $derived(parts.composition(files.active))
-  const composed = $derived(parts.compose(choices))
+  /* The component the file's slot choices compose to. Composing is cheap — it
+	   is string work over sources already in memory — so it can sit on the
+	   reactive graph beside everything else. */
+  const composed = $derived(parts.compose(look.choices))
 
   /* The sheet's component, kept compiled. The id is the composition rather than
 	   one template's: changing a variant is a choice and shouldn't sit out the
 	   debounce meant for keystrokes. */
   const tpl = liveTemplate(() => ({
-    id: Object.entries(choices)
+    id: Object.entries(look.choices)
       .map(([slot, variant]) => `${slot}:${variant}`)
       .join('|'),
     source: composed.source,
   }))
 
   /** One banner over the preview, whichever of the two is broken. */
-  const bannerError = $derived(parseError ?? (tpl.error ? `Template — ${tpl.error.message}` : null))
-
-  const saveLabel = $derived.by(() => {
-    if (cv.saveError) return '⚠ not saved'
-    if (cv.isViewingHistory) return 'viewing history'
-    if (!cv.savedAt) return ''
-    const at = cv.savedAt.toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-    return `saved ${at}`
-  })
+  const bannerError = $derived(ui.parseError ?? (tpl.error ? `Template — ${tpl.error.message}` : null))
 
   onMount(() => {
     start()
     cv.bindEditor(text => editor?.replaceAll(text))
+    bindHost({ print: () => frame?.print() ?? false })
 
     const onVisibility = () => {
       if (document.visibilityState === 'hidden') flush()
@@ -184,14 +127,14 @@
     window.launchQueue?.setConsumer(async ({ files: handles }) => {
       for (const handle of handles) {
         const file = await handle.getFile()
-        openImported(file.name, await file.text())
+        commands.openImported(file.name, await file.text())
       }
     })
 
     // Fit-to-width is offered on a screen with room for it and simply not on
     // one without, where the preview is already as wide as the window.
     const wide = window.matchMedia(DESKTOP)
-    const onWidth = () => (desktop = wide.matches)
+    const onWidth = () => (ui.desktop = wide.matches)
     onWidth()
     wide.addEventListener('change', onWidth)
 
@@ -235,7 +178,7 @@
       detachFrame?.()
       resize.disconnect()
       reflow = null
-      clearTimeout(toastTimer)
+      ui.destroy()
       cv.destroy()
     }
   })
@@ -305,11 +248,17 @@
   $effect(() => {
     void tpl.component
     void tpl.css
-    void theme
-    void css
-    void editorWidth
-    void sourceHidden
+    void look.theme
+    void look.css
+    void ui.editorWidth
+    void ui.sourceHidden
     anchorsStale = true
+  })
+
+  // Hover sync switched off: whatever the pointer was last on stays marked
+  // otherwise, with nothing left to come along and move it.
+  $effect(() => {
+    if (!ui.hoverSync) clearHover()
   })
 
   // A tab switch or a version preview swaps the document out and scrolls both
@@ -326,7 +275,7 @@
   /** @param {string} text */
   function reparse(text) {
     const { cv: doc, lines, error } = parseCv(text)
-    parseError = error
+    ui.parseError = error
     // Both or neither: the map has to describe the CV that's on screen, so a
     // broken document leaves the last good pair in place.
     if (doc) {
@@ -413,11 +362,11 @@
     if (previewMoving()) return
     // Outlining an element and pulling the editor to it are both reactions to
     // attention, and there is none while the window is sitting behind another one.
-    if (!hoverSync || !document.hasFocus()) return
+    if (!ui.hoverSync || !document.hasFocus()) return
     const hit = srcTarget(e)
     if (hit?.el === hoverEl) return
     markHover(hit?.el ?? null)
-    if (hit?.line && !sourceHidden) {
+    if (hit?.line && !ui.sourceHidden) {
       // Its own scroll, not one to mirror back into the preview.
       editor?.revealLine(hit.line)
       hush('editor')
@@ -445,12 +394,12 @@
     if (frameWin?.getSelection()?.isCollapsed === false) return
     const hit = srcTarget(e)
     if (!hit?.line) return
-    if (sourceHidden) {
+    if (ui.sourceHidden) {
       // Asking for the line behind a value is asking to edit it: bring the
       // source back first. The pane is kept mounted but `display: none`, so
       // CodeMirror has measured nothing since it went away and has to be told
       // to look again before it can scroll anywhere.
-      setSourceHidden(false)
+      commands.setSourceHidden(false)
       await tick()
       editor?.remeasure()
     }
@@ -604,7 +553,7 @@
 
   /** Whether there is a usable ladder to read, measuring it first if it went stale. */
   function ladderReady() {
-    if (sourceHidden || !frameWin) return false
+    if (ui.sourceHidden || !frameWin) return false
     if (anchorsStale) buildAnchors()
     return anchors.length > 1
   }
@@ -616,7 +565,7 @@
    */
   function onPreviewScroll() {
     previewMovedAt = performance.now()
-    if (!scrollSync || scrollMaster !== 'preview' || hushed('preview') || !ladderReady()) return
+    if (!ui.scrollSync || scrollMaster !== 'preview' || hushed('preview') || !ladderReady()) return
     const sc = scroller()
     if (!sc || !frameWin) return
     hush('editor')
@@ -628,7 +577,7 @@
 
   /** The editor moved — bring what its top line renders to the top of the preview. */
   function onEditorScroll() {
-    if (!scrollSync || scrollMaster !== 'editor' || hushed('editor') || !ladderReady()) return
+    if (!ui.scrollSync || scrollMaster !== 'editor' || hushed('editor') || !ladderReady()) return
     const line = editor?.topLine()
     const sc = scroller()
     if (line == null || !sc) return
@@ -659,7 +608,7 @@
     pendingEditLine = 0
     await tick()
     const sc = scroller()
-    if (sourceHidden || cv.isViewingHistory || !sc || !frameWin) return
+    if (ui.sourceHidden || cv.isViewingHistory || !sc || !frameWin) return
     buildAnchors()
     const el = elementForLine(line)
     if (!el) return
@@ -687,19 +636,14 @@
   function onKeydown(e) {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault()
-      if (cv.isViewingHistory) {
-        toast('Editing is paused while viewing history')
-        return
-      }
-      cv.checkpoint('')
-      toast('Version saved')
+      commands.checkpoint()
     }
     // The sheet lives in a frame, and a frame prints clipped to its box on the
     // page. Ctrl+P has to be taken over so it reaches the same export path as
     // the button rather than producing one cropped page.
     if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
       e.preventDefault()
-      exportPDF()
+      commands.exportPDF()
     }
     // A restyle is a change in the document like an edit is, so Ctrl+Z has to
     // take one back from anywhere — the toolbar, the sheet, the popover. Inside
@@ -713,325 +657,19 @@
     }
   }
 
-  /** @param {string} id */
-  function setPreset(id) {
-    // A preset is a whole set of choices, so taking one drops the overrides
-    // that were sitting on the last one — otherwise half of the look you just
-    // asked for wouldn't arrive.
-    restyle({ layout: id, variants: {} }, `Preset — ${presetOf(id)?.name ?? id}`)
-  }
-
-  /**
-   * @param {string} slotId
-   * @param {string} variantId
-   */
-  function setVariant(slotId, variantId) {
-    const slot = parts.slots.find(s => s.id === slotId)
-    const name = slot?.variants.find(v => v.id === variantId)?.name ?? variantId
-    restyleVariant(slotId, variantId, `${slot?.name ?? slotId} — ${name}`)
-  }
-
-  /** Back to the preset's own choices, whichever axes have been moved off it. */
-  function resetVariants() {
-    restyle({ variants: {} }, 'Blocks — reset')
-  }
-
-  /** @param {string} id */
-  function setTheme(id) {
-    restyle({ theme: id }, `Theme — ${THEMES.find(t => t.id === id)?.name ?? id}`)
-  }
-
-  /** @param {string} id */
-  function setFont(id) {
-    restyle({ font: id }, `Font — ${FONTS.find(f => f.id === id)?.name ?? id}`)
-  }
-
-  /** Every paper axis, by the key it is stored under — for the history's label. */
-  const PAPER_AXES = /** @type {Record<string, { id: string, name: string }[]>} */ ({
-    size: PAPER_SIZES,
-    orientation: ORIENTATIONS,
-    header: RUNNING,
-    footer: RUNNING,
-  })
-
-  /**
-   * Change one thing about the page. Which thing is what the label says, since
-   * `Paper — A4` and `Paper — Footer: Page` are the same axis to a reader and
-   * different ones to the history.
-   * @param {Partial<import('$lib/cv/theme/paper.js').Paper>} patch
-   */
-  function setPaper(patch) {
-    const [key, id] = Object.entries(patch)[0] ?? []
-    if (!key || !id) return
-    const name = PAPER_AXES[key]?.find(o => o.id === id)?.name ?? id
-    const edge = key === 'header' || key === 'footer' ? `${key[0].toUpperCase()}${key.slice(1)}: ` : ''
-    restylePaper(patch, `Paper — ${edge}${name}`)
-  }
-
-  /** Scale the preview to the pane, or stop. Not a restyle — see `fitPreview`. */
-  function toggleFit() {
-    fitPreview = !fitPreview
-    write(KEYS.previewFit, String(fitPreview))
-  }
-
-  /**
-   * The active file's own CSS. Unvalidated by design — it is applied inside the
-   * preview frame, where nothing it says can reach the editor around it.
-   *
-   * The only style that is typed rather than chosen, so its record in the
-   * history waits for a pause the way an edit does — see `recordStyle`.
-   * @param {string} text
-   */
-  function setCss(text) {
-    restyle({ css: text }, 'Custom CSS', true)
-  }
-
-  function toggleTheme() {
-    // The sheet sits this out — paper is white — but the frame around it follows.
-    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
-    document.documentElement.setAttribute('data-theme', next)
-    // The attribute is the app's switch; the class is what Radix's own dark
-    // scales are scoped under. Set together, always — see tokens.css.
-    document.documentElement.classList.toggle('dark', next === 'dark')
-    dark = next === 'dark'
-    syncThemeColor()
-    write(KEYS.theme, next)
-  }
-
-  /**
-   * Keep an installed window's titlebar on the colour of the toolbar beneath it.
-   * Read from the token rather than repeated as a literal — app.html has to spell
-   * the two values out only because it runs before the stylesheet lands.
-   */
-  function syncThemeColor() {
-    const bar = getComputedStyle(document.documentElement).getPropertyValue('--theme-color').trim()
-    if (!bar) return
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bar)
-  }
-
   /** @param {BeforeInstallPromptEvent} e */
   function onInstallPrompt(e) {
     e.preventDefault() // hold it back; the toolbar button decides when to ask
-    installPrompt = e
+    ui.installPrompt = e
   }
 
   function onInstalled() {
-    installPrompt = null
-  }
-
-  async function installApp() {
-    const prompt = installPrompt
-    if (!prompt) return
-    installPrompt = null // single use, accepted or dismissed
-    await prompt.prompt()
-  }
-
-  /** @param {'style' | 'history'} which */
-  async function toggleSidePanel(which) {
-    sidePanel = sidePanel === which ? null : which
-    write(KEYS.sidePanel, sidePanel ?? 'none')
-    await tick()
-  }
-
-  /** @param {boolean} hidden */
-  function setSourceHidden(hidden) {
-    sourceHidden = hidden
-    write(KEYS.sourceHidden, String(hidden))
-  }
-
-  function toggleSource() {
-    setSourceHidden(!sourceHidden)
-  }
-
-  /** Couple the editor to the pointer over the preview, or stop. See `hoverSync`. */
-  function toggleHoverSync() {
-    hoverSync = !hoverSync
-    write(KEYS.hoverSync, String(hoverSync))
-    // Whatever the pointer was last on stays marked otherwise, with nothing
-    // left to come along and move it.
-    if (!hoverSync) clearHover()
-  }
-
-  /** Couple the two panes' scrolling, or let each keep its own place. See `scrollSync`. */
-  function toggleScrollSync() {
-    scrollSync = !scrollSync
-    write(KEYS.scrollSync, String(scrollSync))
-  }
-
-  /** Open a fresh tab holding the shipped template — no snapshot yet, so `CvDoc` seeds one. */
-  function newFile() {
-    const id = files.create()
-    cv.switchTo(id)
-    toast('New CV from template')
-  }
-
-  /**
-   * Open YAML that came from outside the editor — an OS file association today — as
-   * its own tab. Seeded through `switchTo` so the tab's history starts with the
-   * imported text rather than the template plus an overwrite.
-   * @param {string} filename
-   * @param {string} text
-   */
-  function openImported(filename, text) {
-    const id = files.create(filename.replace(/\.(ya?ml)$/i, ''))
-    cv.switchTo(id, text)
-    toast(`Opened ${files.active?.name ?? filename}`)
-  }
-
-  function copyYaml() {
-    navigator.clipboard
-      .writeText(cv.yaml)
-      .then(() => toast('YAML copied to clipboard'))
-      .catch(() => toast('Copy failed — try Ctrl+A, Ctrl+C'))
-  }
-
-  /** Downloads the active file's YAML source as a `.yaml` file. */
-  function saveYaml() {
-    const blob = new Blob([cv.yaml], { type: 'text/yaml' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${files.active?.name ?? 'cv'}.yaml`
-    a.click()
-    URL.revokeObjectURL(url)
-    toast('YAML saved')
-  }
-
-  function exportPDF() {
-    if (parseError) {
-      toast('Fix YAML errors before exporting')
-      return
-    }
-    // Tagged before printing, so the mark in the history sits on exactly the
-    // version that goes to the printer.
-    cv.markExport()
-    // The frame prints itself. Printing the app instead would put the iframe on
-    // the page as a box and crop the CV to it, however many pages it wanted.
-    if (!frame?.print()) toast("Preview isn't ready yet")
-  }
-
-  /** @param {string} id */
-  function selectTab(id) {
-    if (id === files.activeId) return
-    files.switchTo(id)
-    cv.switchTo(id)
-  }
-
-  function duplicateTab() {
-    cv.flush() // capture the latest edits before copying the stored snapshot
-    const id = files.duplicate(/** @type {string} */ (files.activeId))
-    cv.switchTo(id)
-    toast('Tab duplicated')
-  }
-
-  /** @param {string} id */
-  function closeTab(id) {
-    const closingActive = id === files.activeId
-    const name = files.files.find(f => f.id === id)?.name ?? 'File'
-    // An untouched "New CV" has nothing to restore, so it doesn't earn a
-    // place in the trash: drop it outright rather than clutter the bin.
-    if (closingActive && cv.pristine) {
-      cv.switchTo(files.trash(id)) // switching away flushes the old snapshot, so purge after
-      files.purge(id)
-      toast(`Closed “${name}”`)
-      return
-    }
-    const nextId = files.trash(id)
-    if (closingActive) cv.switchTo(nextId)
-    toast(`Moved “${name}” to trash`)
-  }
-
-  /**
-   * @param {string} id
-   * @param {string} name
-   */
-  function renameTab(id, name) {
-    files.rename(id, name)
-  }
-
-  function toggleTrash() {
-    trashOpen = !trashOpen
-  }
-
-  /**
-   * Open the compare dialog. With nothing named, the newest text is put beside
-   * the most likely thing to hold it against: the tab next to this one, or —
-   * with only one tab — the version before this one.
-   *
-   * Opening pushes a history entry carrying the two sides, so Back is a way
-   * out, and closing from inside the dialog is the same Back — see `closeCompare`.
-   * @param {import('../app').CompareSource} [left]
-   * @param {import('../app').CompareSource} [right]
-   */
-  function openCompare(left, right) {
-    const id = files.activeId
-    if (!id) return
-    /** @type {import('../app').CompareSource} */
-    const current = { fileId: id, versionKey: null }
-    if (!right) {
-      const neighbour = files.open.find(f => f.id !== id)
-      const previous = cv.entries[1]
-      right = neighbour ? { fileId: neighbour.id, versionKey: null } : { fileId: id, versionKey: previous?.key ?? null }
-    }
-    pushState('', { compare: { left: left ?? current, right } })
-  }
-
-  /**
-   * Close the dialog by going back over the entry that opened it, so the
-   * history reads the same whether it was the X or the browser that closed it.
-   */
-  function closeCompare() {
-    if (page.state.compare) history.back()
-  }
-
-  /**
-   * A version against what is on screen: the version being previewed, if
-   * there is one and it isn't this same entry, otherwise what the file says now.
-   * @param {import('$lib/cv/state/doc.svelte.js').HistoryEntry} entry
-   */
-  function compareVersion(entry) {
-    const id = /** @type {string} */ (files.activeId)
-    const viewed = cv.viewingKey !== null && cv.viewingKey !== entry.key ? cv.viewingKey : null
-    openCompare({ fileId: id, versionKey: entry.key }, { fileId: id, versionKey: viewed })
-  }
-
-  /** @param {string} id */
-  function restoreTab(id) {
-    files.restore(id)
-    cv.switchTo(id)
-    toast('Restored from trash')
-  }
-
-  /** @param {string} id */
-  function purgeTab(id) {
-    if (!confirm('Delete this file forever? This cannot be undone.')) return
-    files.purge(id)
-    toast('File deleted forever')
-  }
-
-  function emptyTrash() {
-    if (!files.trashed.length) return
-    if (!confirm(`Permanently delete ${files.trashed.length} file(s) from trash? This cannot be undone.`)) return
-    for (const f of files.trashed) files.purge(f.id)
-    toast('Trash emptied')
-  }
-
-  function dismissWelcome() {
-    welcomeOpen = false
-    write(KEYS.welcomeSeen, 'true')
-  }
-
-  /** @param {string} msg */
-  function toast(msg) {
-    toastMsg = msg
-    toastOn = true
-    clearTimeout(toastTimer)
-    toastTimer = setTimeout(() => (toastOn = false), 2200)
+    ui.installPrompt = null
   }
 
   /** @param {number} pct */
   function setWidth(pct) {
-    editorWidth = `${Math.min(78, Math.max(18, pct))}%`
+    ui.editorWidth = `${Math.min(78, Math.max(18, pct))}%`
   }
 
   /** @param {PointerEvent & { currentTarget: HTMLButtonElement }} e */
@@ -1054,7 +692,7 @@
     dragging = false
     e.currentTarget.releasePointerCapture(e.pointerId)
     document.body.classList.remove('resizing')
-    if (editorWidth) write(KEYS.editorWidth, editorWidth)
+    if (ui.editorWidth) write(KEYS.editorWidth, ui.editorWidth)
   }
 
   /** @param {KeyboardEvent} e */
@@ -1064,7 +702,7 @@
     e.preventDefault()
     const current = (split.querySelector('#editor-pane')?.clientWidth ?? 0) / split.clientWidth
     setWidth(current * 100 + step)
-    if (editorWidth) write(KEYS.editorWidth, editorWidth)
+    if (ui.editorWidth) write(KEYS.editorWidth, ui.editorWidth)
   }
 </script>
 
@@ -1073,39 +711,17 @@
 </svelte:head>
 
 <div id="app">
-  <Toolbar
-    trashCount={files.trashed.length}
-    {trashOpen}
-    onCompare={() => openCompare()}
-    onToggleTrash={toggleTrash}
-    onExport={exportPDF}
-    canInstall={!!installPrompt}
-    onInstall={installApp} />
+  <Toolbar />
+  <TabBar />
 
-  <TabBar
-    {files}
-    onSelect={selectTab}
-    onDuplicate={duplicateTab}
-    onClose={closeTab}
-    onRename={renameTab}
-    onNew={newFile}
-    onCopy={copyYaml}
-    styleOpen={sidePanel === 'style'}
-    onToggleStyle={() => toggleSidePanel('style')}
-    historyOpen={sidePanel === 'history'}
-    historyCount={cv.history.length}
-    onToggleHistory={() => toggleSidePanel('history')}
-    onCompare={() => openCompare()}
-    onSave={saveYaml} />
-
-  {#if trashOpen}
-    <TrashPanel {files} onRestore={restoreTab} onPurge={purgeTab} onEmpty={emptyTrash} onClose={toggleTrash} />
+  {#if ui.trashOpen}
+    <TrashPanel />
   {/if}
 
   <!-- The drag width rides on a custom property rather than the pane's own
 	     `width`, so the stacked (narrow-screen) layout can ignore it in CSS. -->
-  <div id="split" bind:this={split} style:--editor-w={editorWidth}>
-    <div id="editor-pane" bind:this={editorPane} class:hidden={sourceHidden}>
+  <div id="split" bind:this={split} style:--editor-w={ui.editorWidth}>
+    <div id="editor-pane" bind:this={editorPane} class:hidden={ui.sourceHidden}>
       {#if cv.ready}
         <!-- Re-keyed when the document is swapped (history cleared, or another
 				     tab's document taken over): the binding is tied to one LoroDoc. -->
@@ -1126,7 +742,7 @@
     <button
       type="button"
       id="divider"
-      class:hidden={sourceHidden}
+      class:hidden={ui.sourceHidden}
       aria-label="Resize editor pane — use the arrow keys"
       onpointerdown={startDrag}
       onpointermove={onDrag}
@@ -1141,7 +757,7 @@
           <span>Viewing “{entry?.message}” — editing is paused</span>
           <div class="t-spacer"></div>
           {#if entry}
-            <button class="t-btn" onclick={() => compareVersion(entry)}>Compare</button>
+            <button class="t-btn" onclick={() => commands.compareVersion(entry)}>Compare</button>
             <button class="t-btn" onclick={() => cv.restore(entry)}>Restore</button>
           {/if}
           <button class="t-btn" onclick={() => cv.viewLatest()}>Back to latest</button>
@@ -1157,66 +773,37 @@
         cv={parsed}
         component={tpl.component}
         templateCss={tpl.css}
-        layout={preset}
-        {theme}
-        {font}
-        {css}
-        {paper}
+        layout={look.preset}
+        theme={look.theme}
+        font={look.font}
+        css={look.css}
+        paper={look.paper}
         name={cvName}
-        fit={fitPreview && desktop}
-        {dark}
+        fit={ui.fitPreview && ui.desktop}
+        dark={ui.dark}
         onReady={onFrameReady} />
     </div>
 
     <!-- The third column, whichever panel is holding it. -->
-    {#if sidePanel === 'style'}
-      <StylePicker
-        slots={parts.slots}
-        {choices}
-        {preset}
-        modified={isModified(files.active, parts.slots)}
-        {theme}
-        {font}
-        {css}
-        onPreset={setPreset}
-        onVariant={setVariant}
-        onReset={resetVariants}
-        onTheme={setTheme}
-        onFont={setFont}
-        {paper}
-        onPaper={setPaper}
-        fit={fitPreview}
-        fitAvailable={desktop}
-        onFit={toggleFit}
-        onCss={setCss} />
-    {:else if sidePanel === 'history' && cv.ready}
-      <HistoryPanel doc={cv} {toast} onCompare={compareVersion} />
+    {#if ui.sidePanel === 'style'}
+      <StylePicker />
+    {:else if ui.sidePanel === 'history' && cv.ready}
+      <HistoryPanel />
     {/if}
   </div>
 
-  <StatusBar
-    valid={!parseError}
-    {saveLabel}
-    {sourceHidden}
-    {hoverSync}
-    {scrollSync}
-    updateAvailable={swUpdate.available}
-    onToggleSource={toggleSource}
-    onToggleHoverSync={toggleHoverSync}
-    onToggleScrollSync={toggleScrollSync}
-    onToggleTheme={toggleTheme}
-    onUpdate={() => swUpdate.applyUpdate()} />
+  <StatusBar />
 </div>
 
-{#if welcomeOpen}
-  <WelcomeOverlay onStart={dismissWelcome} />
+{#if ui.welcomeOpen}
+  <WelcomeOverlay />
 {/if}
 
 {#if compare && cv.ready}
-  <CompareModal doc={cv} {files} left={compare.left} right={compare.right} onClose={closeCompare} />
+  <CompareModal left={compare.left} right={compare.right} />
 {/if}
 
-<div id="toast" class:show={toastOn}>{toastMsg}</div>
+<div id="toast" class:show={ui.toastOn}>{ui.toastMsg}</div>
 
 <style lang="scss">
   /* ── Split ────────────────────────────────────── */

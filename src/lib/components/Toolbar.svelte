@@ -4,53 +4,39 @@
   import IconInstall from '@iconify-icons/lucide/arrow-down-to-line'
   import IconTrash from '@iconify-icons/lucide/trash'
   import IconCompare from '@iconify-icons/lucide/git-compare'
+  import { commands } from '$lib/cv/state/commands.js'
+  import { files, ui } from '$lib/cv/state/state.svelte.js'
   import { shortcut } from './access-keys.js'
-
-  let {
-    /** True only while the browser has an install prompt waiting for us. */
-    canInstall = false,
-    /** How many files are in the trash — none, and the button isn't drawn at all. */
-    trashCount = 0,
-    trashOpen = false,
-    /** @type {() => void} */
-    onCompare,
-    /** @type {() => void} */
-    onToggleTrash,
-    /** @type {() => void} */
-    onExport,
-    /** @type {() => void} */
-    onInstall,
-  } = $props()
 </script>
 
 <div id="toolbar">
   <span class="t-label">Resume - Offline-ready & Local editor</span>
 
   <div class="t-spacer"></div>
-  <button class="t-btn" use:shortcut={['c', 'Compare two documents or versions']} onclick={onCompare}>
+  <button class="t-btn" use:shortcut={['c', 'Compare two documents or versions']} onclick={() => commands.openCompare()}>
     <Icon icon={IconCompare} width="12" height="12" />
     <span class="t-txt"><u>C</u>ompare</span>
   </button>
   <!-- Beside Export because both act on files rather than on the CV in front
 	     of you, and only while there is something in there: an always-present
 	     button for an always-empty bin is a control that never does anything. -->
-  {#if trashCount}
-    <button id="trash-toggle" class="t-btn" class:on={trashOpen} use:shortcut={['t', 'Show the trash']} onclick={onToggleTrash}>
+  {#if files.trashed.length}
+    <button id="trash-toggle" class="t-btn" class:on={ui.trashOpen} use:shortcut={['t', 'Show the trash']} onclick={commands.toggleTrash}>
       <Icon icon={IconTrash} width="12" height="12" />
       <span class="t-txt"><u>T</u>rash</span>
-      <span class="t-count">{trashCount}</span>
+      <span class="t-count">{files.trashed.length}</span>
     </button>
   {/if}
 
-  <button class="t-btn t-btn-pdf" use:shortcut={['x', 'Export the current CV as PDF']} onclick={onExport}>
+  <button class="t-btn t-btn-pdf" use:shortcut={['x', 'Export the current CV as PDF']} onclick={commands.exportPDF}>
     <Icon icon={IconDownload} width="12" height="12" />
     <span class="t-txt">E<u>x</u>port PDF</span>
   </button>
 
   <!-- Only ever shown when the browser has offered us a prompt, which is Chromium
 	     and only until the app is installed. Elsewhere the bar looks as it always did. -->
-  {#if canInstall}
-    <button class="t-btn" onclick={onInstall} use:shortcut={['i', 'Install as an app — runs offline']}>
+  {#if ui.installPrompt}
+    <button class="t-btn" onclick={commands.installApp} use:shortcut={['i', 'Install as an app — runs offline']}>
       <Icon icon={IconInstall} width="12" height="12" />
       <span class="t-txt"><u>I</u>nstall</span>
     </button>

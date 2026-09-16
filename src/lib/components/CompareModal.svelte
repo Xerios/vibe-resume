@@ -11,7 +11,9 @@
   import { wrappedLineIndent } from 'codemirror-wrapped-line-indent'
   import { diffDocuments, mapLine } from '$lib/cv/format/diff.js'
   import { relaxedYaml } from '$lib/cv/format/relaxed-yaml-mode.js'
+  import { commands } from '$lib/cv/state/commands.js'
   import { storedText } from '$lib/cv/state/doc.svelte.js'
+  import { doc, files } from '$lib/cv/state/state.svelte.js'
   import { highlight } from './cm-highlight.js'
   import './codemirror.scss'
 
@@ -23,16 +25,10 @@
    */
 
   let {
-    /** @type {import('$lib/cv/state/doc.svelte.js').CvDoc} */
-    doc,
-    /** @type {import('$lib/cv/state/files.svelte.js').FileManager} */
-    files,
     /** @type {SourceRef} */
     left,
     /** @type {SourceRef} */
     right,
-    /** @type {() => void} */
-    onClose,
   } = $props()
 
   /** How long a pane's own scroll events stay ours after we move it ourselves. */
@@ -353,7 +349,7 @@
   function onKeydown(e) {
     if (e.key === 'Escape') {
       e.preventDefault()
-      onClose()
+      commands.closeCompare()
     }
   }
 </script>
@@ -420,7 +416,7 @@
       <button class="t-btn" title="Swap sides" aria-label="Swap sides" onclick={swap}>
         <Icon icon={IconSwap} width="12" height="12" />
       </button>
-      <button class="t-btn" title="Close (Esc)" aria-label="Close" onclick={onClose}>
+      <button class="t-btn" title="Close (Esc)" aria-label="Close" onclick={commands.closeCompare}>
         <Icon icon={IconClose} width="12" height="12" />
       </button>
     </div>

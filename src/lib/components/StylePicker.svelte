@@ -1,52 +1,15 @@
 <script>
+  import { commands } from '$lib/cv/state/commands.js'
+  import { look, parts, ui } from '$lib/cv/state/state.svelte.js'
   import { PRESETS } from '$lib/cv/template/compositions.js'
   import { FONTS } from '$lib/cv/theme/fonts.js'
-  import { ORIENTATIONS, PAPER_SIZES, RUNNING_SLOTS, resolvePaper } from '$lib/cv/theme/paper.js'
+  import { ORIENTATIONS, PAPER_SIZES, RUNNING_SLOTS } from '$lib/cv/theme/paper.js'
   import { THEMES } from '$lib/cv/theme/presets.js'
   import { KEYS, read, write } from '$lib/cv/state/storage.js'
   import Foldout from './Foldout.svelte'
   import TemplateThumb from './TemplateThumb.svelte'
   import VariantCycle from './VariantCycle.svelte'
   import { fly } from 'svelte/transition'
-
-  let {
-    /** Every slot and its variants, the user's own included. @type {import('$lib/cv/template/slots.js').Registry} */
-    slots,
-    /** Slot id → the variant in use. @type {Record<string, string>} */
-    choices,
-    /** The active file's preset id. @type {string} */
-    preset,
-    /** Whether any axis has been moved off that preset. */
-    modified = false,
-    /** @type {string} */
-    theme,
-    /** @type {string} */
-    font,
-    /** @type {(id: string) => void} */
-    onPreset,
-    /** @type {(slotId: string, variantId: string) => void} */
-    onVariant,
-    /** @type {() => void} */
-    onReset,
-    /** @type {(id: string) => void} */
-    onTheme,
-    /** @type {(id: string) => void} */
-    onFont,
-    /** The page the file prints on. @type {Partial<import('$lib/cv/theme/paper.js').Paper>} */
-    paper,
-    /** @type {(patch: Partial<import('$lib/cv/theme/paper.js').Paper>) => void} */
-    onPaper,
-    /** Whether the preview is scaled to fit a whole page across the pane. */
-    fit = false,
-    /** False where there is no room to fit one — a narrow screen, where the preview is already the width of the window. */
-    fitAvailable = true,
-    /** @type {() => void} */
-    onFit,
-    /** The active file's own CSS — see the editor at the foot of the panel. */
-    css = '',
-    /** @type {(text: string) => void} */
-    onCss,
-  } = $props()
 
   /**
    * Seeded into an empty editor, so the tokens worth overriding are discoverable
@@ -88,14 +51,12 @@
     write(KEYS.styleGroups, JSON.stringify(groups))
   }
 
-  /* Defaulted here as everything else in this panel is, so the buttons below
-	   can just compare ids. The two running-head rows are cycles over an axis
-	   like a block's, so they are drawn by the same control — see RUNNING_SLOTS. */
-  const page = $derived(resolvePaper(paper))
-  const running = $derived({ header: page.header, footer: page.footer })
+  /* The two running-head rows are cycles over an axis like a block's, so they
+	   are drawn by the same control — see RUNNING_SLOTS. */
+  const running = $derived({ header: look.paper.header, footer: look.paper.footer })
 
   /** What the head says the groups below are set to, the way History counts its versions. */
-  const presetName = $derived((PRESETS.find(p => p.id === preset)?.name ?? preset) + (modified ? ' — edited' : ''))
+  const presetName = $derived((PRESETS.find(p => p.id === look.preset)?.name ?? look.preset) + (look.modified ? ' — edited' : ''))
 </script>
 
 <aside id="style-pane" in:fly={{ y: -8, duration: 200 }}>
@@ -112,7 +73,7 @@
     <Foldout label="Preset" open={groups.preset} onToggle={() => toggleGroup('preset')}>
       <div class="layout-grid">
         {#each PRESETS as p (p.id)}
-          <button class="layout-opt" class:on={p.id === preset} title={p.hint} aria-pressed={p.id === preset} onclick={() => onPreset(p.id)}>
+          <button class="layout-opt" class:on={p.id === look.preset} title={p.hint} aria-pressed={p.id === look.preset} onclick={() => commands.setPreset(p.id)}>
             <TemplateThumb id={p.id} />
             <span>{p.name}</span>
           </button>
@@ -125,13 +86,13 @@
 		     which one you want rather than which block. -->
     <Foldout label="Blocks" open={groups.blocks} onToggle={() => toggleGroup('blocks')}>
       {#snippet head()}
-        {#if modified}
-          <button class="blocks-reset" title="Put every block back to what this preset says" onclick={onReset}>reset</button>
+        {#if look.modified}
+          <button class="blocks-reset" title="Put every block back to what this preset says" onclick={commands.resetVariants}>reset</button>
         {/if}
       {/snippet}
       <div class="blocks-list">
-        {#each slots as slot (slot.id)}
-          <VariantCycle {slot} {choices} onPick={onVariant} />
+        {#each parts.slots as slot (slot.id)}
+          <VariantCycle {slot} choices={look.choices} onPick={commands.setVariant} />
         {/each}
       </div>
     </Foldout>
@@ -139,7 +100,7 @@
     <Foldout label="Theme" open={groups.theme} onToggle={() => toggleGroup('theme')}>
       <div class="theme-grid">
         {#each THEMES as t (t.id)}
-          <button class="theme-opt" class:on={t.id === theme} title={t.name} aria-pressed={t.id === theme} onclick={() => onTheme(t.id)} data-cv-theme={t.id}>
+          <button class="theme-opt" class:on={t.id === look.theme} title={t.name} aria-pressed={t.id === look.theme} onclick={() => commands.setTheme(t.id)} data-cv-theme={t.id}>
             <span class="theme-dot"></span>
             <span>{t.name}</span>
           </button>
@@ -153,7 +114,7 @@
     <Foldout label="Font" open={groups.font} onToggle={() => toggleGroup('font')}>
       <div class="font-grid">
         {#each FONTS as f (f.id)}
-          <button class="font-opt" class:on={f.id === font} title={f.hint} aria-pressed={f.id === font} onclick={() => onFont(f.id)} data-cv-font={f.id}>
+          <button class="font-opt" class:on={f.id === look.font} title={f.hint} aria-pressed={f.id === look.font} onclick={() => commands.setFont(f.id)} data-cv-font={f.id}>
             <span class="font-sample">Aa</span>
             <span>{f.name}</span>
           </button>
@@ -172,7 +133,7 @@
     <Foldout label="Paper" open={groups.paper} onToggle={() => toggleGroup('paper')}>
       <div class="paper-grid">
         {#each PAPER_SIZES as s (s.id)}
-          <button class="paper-opt" class:on={s.id === page.size} aria-pressed={s.id === page.size} onclick={() => onPaper({ size: s.id })}>
+          <button class="paper-opt" class:on={s.id === look.paper.size} aria-pressed={s.id === look.paper.size} onclick={() => commands.setPaper({ size: s.id })}>
             {s.name}
           </button>
         {/each}
@@ -181,10 +142,10 @@
         {#each ORIENTATIONS as o (o.id)}
           <button
             class="paper-opt"
-            class:on={o.id === page.orientation}
+            class:on={o.id === look.paper.orientation}
             title={o.hint}
-            aria-pressed={o.id === page.orientation}
-            onclick={() => onPaper({ orientation: o.id })}>
+            aria-pressed={o.id === look.paper.orientation}
+            onclick={() => commands.setPaper({ orientation: o.id })}>
             <span class="paper-shape" class:wide={o.id === 'landscape'}></span>
             {o.name}
           </button>
@@ -192,14 +153,14 @@
       </div>
       <div class="blocks-list paper-runs">
         {#each RUNNING_SLOTS as slot (slot.id)}
-          <VariantCycle {slot} choices={running} onPick={(edge, mode) => onPaper({ [edge]: mode })} />
+          <VariantCycle {slot} choices={running} onPick={(edge, mode) => commands.setPaper({ [edge]: mode })} />
         {/each}
       </div>
-      {#if fitAvailable}
+      {#if ui.desktop}
         <!-- Not part of the file: this is how the preview is looked at, so it
 				     stays out of the document and out of the history. -->
-        <button class="paper-fit" class:on={fit} aria-pressed={fit} title="Scale the preview until a whole page fits across the pane" onclick={onFit}>
-          <span class="paper-tick" aria-hidden="true">{fit ? '✓' : ''}</span>
+        <button class="paper-fit" class:on={ui.fitPreview} aria-pressed={ui.fitPreview} title="Scale the preview until a whole page fits across the pane" onclick={commands.toggleFit}>
+          <span class="paper-tick" aria-hidden="true">{ui.fitPreview ? '✓' : ''}</span>
           Fit page to pane
         </button>
       {/if}
@@ -213,10 +174,10 @@
         spellcheck="false"
         autocapitalize="off"
         autocomplete="off"
-        value={css}
+        value={look.css}
         placeholder={CSS_TEMPLATE}
         aria-label="Custom CSS for this CV"
-        oninput={e => onCss(e.currentTarget.value)}></textarea>
+        oninput={e => commands.setCss(e.currentTarget.value)}></textarea>
       <p class="css-hint">
         Applies to this file only. Override the tokens on <code>#cv-root</code>, or style the sheet directly.
       </p>

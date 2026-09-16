@@ -1,19 +1,8 @@
 <script>
+  import { commands } from '$lib/cv/state/commands.js'
+  import { files } from '$lib/cv/state/state.svelte.js'
   import { relativeTime } from '$lib/cv/state/storage.js'
   import { fly, scale } from 'svelte/transition'
-
-  let {
-    /** @type {import('$lib/cv/state/files.svelte.js').FileManager} */
-    files,
-    /** @type {(id: string) => void} */
-    onRestore,
-    /** @type {(id: string) => void} */
-    onPurge,
-    /** @type {() => void} */
-    onEmpty,
-    /** @type {() => void} */
-    onClose,
-  } = $props()
 
   /** Ticks so the "x minutes ago" labels stay honest. */
   let now = $state(Date.now())
@@ -34,7 +23,7 @@
       const target = /** @type {Element | null} */ (e.target)
       if (node.contains(/** @type {Node | null} */ (target))) return
       if (target?.closest('#trash-toggle')) return
-      onClose()
+      commands.closeTrash()
     }
     document.addEventListener('pointerdown', handle)
     return { destroy: () => document.removeEventListener('pointerdown', handle) }
@@ -42,7 +31,7 @@
 
   /** @param {KeyboardEvent} e */
   function onKeydown(e) {
-    if (e.key === 'Escape') onClose()
+    if (e.key === 'Escape') commands.closeTrash()
   }
 </script>
 
@@ -62,8 +51,8 @@
           <span class="trash-time">deleted {relativeTime(f.deletedAt, now)}</span>
         </div>
         <div class="trash-actions">
-          <button class="t-btn" onclick={() => onRestore(f.id)}>Restore</button>
-          <button class="trash-purge" title="Delete forever" onclick={() => onPurge(f.id)}> Delete </button>
+          <button class="t-btn" onclick={() => commands.restoreTab(f.id)}>Restore</button>
+          <button class="trash-purge" title="Delete forever" onclick={() => commands.purgeTab(f.id)}> Delete </button>
         </div>
       </li>
     {:else}
@@ -73,7 +62,7 @@
 
   {#if files.trashed.length}
     <div class="trash-foot">
-      <button onclick={onEmpty}>Empty trash</button>
+      <button onclick={commands.emptyTrash}>Empty trash</button>
     </div>
   {/if}
 </div>

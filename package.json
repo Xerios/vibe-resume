@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "pnpm check:types && pnpm check:lint && pnpm check:tests",
-    "check:types": "svelte-check --tsconfig ./tsconfig.json",
+    "check:types": "svelte-check",
     "check:lint": "oxlint --deny-warnings",
     "check:tests": "vitest run",
     "check:fmt": "oxfmt --check",

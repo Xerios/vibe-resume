@@ -3,11 +3,7 @@
   import IconCloudOff from '@iconify-icons/lucide/cloud-off'
   import IconHardDrive from '@iconify-icons/lucide/hard-drive'
   import IconShieldCheck from '@iconify-icons/lucide/shield-check'
-
-  let {
-    /** @type {() => void} */
-    onStart,
-  } = $props()
+  import { commands } from '$lib/cv/state/commands.js'
 
   /** @type {HTMLButtonElement | undefined} */
   let startBtn = $state(undefined)
@@ -20,7 +16,7 @@
   // activate it without a window handler racing the button's own click.
   /** @param {KeyboardEvent} e */
   function onKeydown(e) {
-    if (e.key === 'Escape') onStart()
+    if (e.key === 'Escape') commands.dismissWelcome()
   }
 </script>
 
@@ -58,7 +54,7 @@
       </li>
     </ul>
 
-    <button bind:this={startBtn} class="w-start" onclick={onStart}> Start writing </button>
+    <button bind:this={startBtn} class="w-start" onclick={commands.dismissWelcome}> Start writing </button>
 
     <p class="w-foot">Clearing your browser data clears your CVs — export a PDF to keep one.</p>
   </div>

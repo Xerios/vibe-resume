@@ -9,37 +9,10 @@
   import IconLayout from '@iconify-icons/lucide/layout-panel-left'
   import IconHistory from '@iconify-icons/lucide/history'
   import IconCompare from '@iconify-icons/lucide/git-compare'
+  import { commands } from '$lib/cv/state/commands.js'
+  import { doc, files, ui } from '$lib/cv/state/state.svelte.js'
   import { shortcut } from './access-keys.js'
   import { fly } from 'svelte/transition'
-
-  let {
-    /** @type {import('$lib/cv/state/files.svelte.js').FileManager} */
-    files,
-    /** @type {(id: string) => void} */
-    onSelect,
-    /** @type {() => void} */
-    onDuplicate,
-    /** @type {(id: string) => void} */
-    onClose,
-    /** @type {(id: string, name: string) => void} */
-    onRename,
-    /** @type {() => void} */
-    onNew,
-    /** @type {() => void} */
-    onCopy,
-    /** The two panels share the split's third column, so only one is ever on. */
-    styleOpen = false,
-    /** @type {() => void} */
-    onToggleStyle,
-    historyOpen = false,
-    historyCount = 0,
-    /** @type {() => void} */
-    onToggleHistory,
-    /** @type {() => void} */
-    onCompare,
-    /** @type {() => void} */
-    onSave,
-  } = $props()
 
   let editingId = $state(/** @type {string | null} */ (null))
   let editValue = $state('')
@@ -79,7 +52,7 @@
   }
 
   function commitRename() {
-    if (editingId) onRename(editingId, editValue)
+    if (editingId) commands.renameTab(editingId, editValue)
     editingId = null
   }
 
@@ -241,7 +214,7 @@
           <button
             class="tab-select"
             title="{f.name} — double-click or F2 to rename, drag or Alt+← → to reorder"
-            onclick={() => onSelect(f.id)}
+            onclick={() => commands.selectTab(f.id)}
             ondblclick={() => startRename(f)}
             onkeydown={e => onTabKeydown(e, f)}>
             {f.name}
@@ -276,7 +249,7 @@
                   onkeydown={onMenuKeydown}
                   onfocusout={onMenuFocusOut}
                   in:fly={{ y: -8, duration: 200 }}>
-                  <button class="menu-item" role="menuitem" onclick={() => pick(onDuplicate)}>
+                  <button class="menu-item" role="menuitem" onclick={() => pick(commands.duplicateTab)}>
                     <Icon icon={IconCopy} width="12" height="12" />
                     <span>Duplicate</span>
                   </button>
@@ -284,16 +257,16 @@
                     <Icon icon={IconPencil} width="12" height="12" />
                     <span>Rename</span>
                   </button>
-                  <button class="menu-item" role="menuitem" onclick={() => pick(onSave)}>
+                  <button class="menu-item" role="menuitem" onclick={() => pick(commands.saveYaml)}>
                     <Icon icon={IconDownload} width="12" height="12" />
                     <span>Export YAML</span>
                   </button>
-                  <button class="menu-item" role="menuitem" onclick={() => pick(onCompare)}>
+                  <button class="menu-item" role="menuitem" onclick={() => pick(() => commands.openCompare())}>
                     <Icon icon={IconCompare} width="12" height="12" />
                     <span>Compare</span>
                   </button>
                   <div class="menu-sep"></div>
-                  <button class="menu-item danger" role="menuitem" onclick={() => pick(() => onClose(f.id))}>
+                  <button class="menu-item danger" role="menuitem" onclick={() => pick(() => commands.closeTab(f.id))}>
                     <Icon icon={IconTrash} width="12" height="12" />
                     <span>Move to trash</span>
                   </button>
@@ -309,7 +282,7 @@
   <!-- One way to open a tab, and one button for it: a CV from the template.
 	     Copying this one is a thing done to a file, so it lives in the tab's own
 	     menu with the rest of them. -->
-  <button class="tab-new" use:shortcut={['n', 'New CV from the template']} onclick={onNew}>
+  <button class="tab-new" use:shortcut={['n', 'New CV from the template']} onclick={commands.newFile}>
     <Icon icon={IconFilePlus} width="12" height="12" />
   </button>
 
@@ -318,14 +291,14 @@
   <div id="tab-actions">
     <!-- Beside History because the two are one control between them: they take
 	       turns in the column to the right of the preview. -->
-    <button class="t-btn" class:on={styleOpen} use:shortcut={['t', 'Template, theme and font']} onclick={onToggleStyle}>
+    <button class="t-btn" class:on={ui.sidePanel === 'style'} use:shortcut={['t', 'Template, theme and font']} onclick={() => commands.toggleSidePanel('style')}>
       <Icon icon={IconLayout} width="12" height="12" />
       <span class="t-txt"><u>T</u>hemes</span>
     </button>
-    <button class="t-btn" class:on={historyOpen} use:shortcut={['h', 'Show version history']} onclick={onToggleHistory}>
+    <button class="t-btn" class:on={ui.sidePanel === 'history'} use:shortcut={['h', 'Show version history']} onclick={() => commands.toggleSidePanel('history')}>
       <Icon icon={IconHistory} width="12" height="12" />
       <span class="t-txt"><u>H</u>istory</span>
-      {#if historyCount}<span class="t-count">{historyCount}</span>{/if}
+      {#if doc.history.length}<span class="t-count">{doc.history.length}</span>{/if}
     </button>
   </div>
 </div>

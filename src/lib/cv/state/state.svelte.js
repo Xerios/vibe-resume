@@ -1,17 +1,42 @@
 /**
- * The app's state, as three module-level singletons.
+ * The app's state, as module-level singletons: the document, the file
+ * registry, the part registry, and the window's own preferences. `look` is
+ * the active file's presentation read off the first three, defaulted, so the
+ * page and the style panel take it from one place rather than each resolving
+ * it. What the chrome can *do* to all of this is in commands.js.
  *
  * `start` is idempotent: it's safe to call from a page's `onMount` without
  * worrying whether something else already did the work.
  */
 
+import { isModified, resolvePreset } from '../template/compositions.js'
+import { resolveFont } from '../theme/fonts.js'
+import { resolvePaper } from '../theme/paper.js'
+import { resolveTheme } from '../theme/presets.js'
 import { CvDoc } from './doc.svelte.js'
 import { FileManager, styleOf } from './files.svelte.js'
 import { PartManager } from './parts.svelte.js'
+import { UiState } from './ui.svelte.js'
 
 export const doc = new CvDoc()
 export const files = new FileManager()
 export const parts = new PartManager()
+export const ui = new UiState()
+
+/** Presentation of the active file, defaulted here so the rest can assume a valid id. */
+class Look {
+  preset = $derived(resolvePreset(files.active?.layout))
+  theme = $derived(resolveTheme(files.active?.theme))
+  font = $derived(resolveFont(files.active?.font))
+  css = $derived(files.active?.css ?? '')
+  paper = $derived(resolvePaper(files.active?.paper))
+  /** Which variant fills each slot: the preset's choices with the file's own on top. */
+  choices = $derived(parts.composition(files.active))
+  /** Whether any axis has been moved off the preset. */
+  modified = $derived(isModified(files.active, parts.slots))
+}
+
+export const look = new Look()
 
 let started = false
 

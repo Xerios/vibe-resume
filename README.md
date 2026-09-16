@@ -41,6 +41,7 @@ pnpm check      # svelte-check
 | Compiling it           | [src/lib/cv/template/compile-template.js](src/lib/cv/template/compile-template.js) — Svelte, in the browser          |
 | Picking a variant      | `components/{StylePicker,VariantCycle}.svelte` — the popover and the row inside it                                   |
 | Shared state           | [src/lib/cv/state/state.svelte.js](src/lib/cv/state/state.svelte.js) — the document, file registry and part registry |
+| Commands               | [src/lib/cv/state/commands.js](src/lib/cv/state/commands.js) — everything the chrome can do, by name                 |
 | Theme                  | [src/lib/cv/theme/presets.js](src/lib/cv/theme/presets.js) — the palettes, and the CSS beside it                     |
 | Type                   | [src/lib/cv/theme/fonts.js](src/lib/cv/theme/fonts.js) — the font stacks, and the CSS beside it                      |
 | Paper                  | [src/lib/cv/theme/paper.js](src/lib/cv/theme/paper.js) — the page box, and what stands in its margins                |
@@ -84,7 +85,16 @@ a list of what it already says on the screen. Ctrl-Space still answers anywhere.
 
 The document, the file registry and the part registry are module-level
 singletons in [state.svelte.js](src/lib/cv/state/state.svelte.js), built once by
-`start()` on mount rather than inline in the page component.
+`start()` on mount rather than inline in the page component. Beside them sit
+`ui` — the window's own preferences and transient chrome state (which panel is
+up, whether the panes are coupled, the toast), see
+[ui.svelte.js](src/lib/cv/state/ui.svelte.js) — and `look`, the active file's
+presentation resolved to valid ids. The chrome reads all of these directly
+rather than being handed each flag as a prop, and everything it can _do_ is a
+named entry in [commands.js](src/lib/cv/state/commands.js): a toolbar button, a
+menu item and a keyboard shortcut for the same action all call the same
+command. The page keeps only what needs its own DOM — parsing, the
+preview-to-source mapping, scroll sync and the divider drag.
 
 ### Layouts, blocks and presets
 
