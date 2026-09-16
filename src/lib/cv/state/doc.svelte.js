@@ -129,6 +129,12 @@ export class CvDoc {
   style = $state({})
   /** Oldest first. @type {HistoryEntry[]} */
   history = $state([])
+  /**
+   * True while the file is still exactly what "New CV" made: the shipped
+   * template and nothing in its history but the initial version. Such a file
+   * has nothing worth keeping, so closing it skips the trash.
+   */
+  pristine = $derived(this.history.length <= 1 && this.yaml === DEFAULT_YAML)
   /** Key of the entry being previewed, or null when we're on the latest version. */
   viewingKey = $state(/** @type {string | null} */ (null))
   /** What the previewed entry changed, for highlighting in the editor. @type {VersionDiff | null} */

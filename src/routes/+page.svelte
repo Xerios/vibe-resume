@@ -928,6 +928,14 @@
   function closeTab(id) {
     const closingActive = id === files.activeId
     const name = files.files.find((f) => f.id === id)?.name ?? 'File'
+    // An untouched "New CV" has nothing to restore, so it doesn't earn a
+    // place in the trash: drop it outright rather than clutter the bin.
+    if (closingActive && cv.pristine) {
+      cv.switchTo(files.trash(id)) // switching away flushes the old snapshot, so purge after
+      files.purge(id)
+      toast(`Closed “${name}”`)
+      return
+    }
     const nextId = files.trash(id)
     if (closingActive) cv.switchTo(nextId)
     toast(`Moved “${name}” to trash`)
