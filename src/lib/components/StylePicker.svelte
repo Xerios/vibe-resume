@@ -7,6 +7,7 @@
   import Foldout from './Foldout.svelte'
   import TemplateThumb from './TemplateThumb.svelte'
   import VariantCycle from './VariantCycle.svelte'
+  import { fly } from 'svelte/transition'
 
   let {
     /** Every slot and its variants, the user's own included. @type {import('$lib/cv/template/slots.js').Registry} */
@@ -97,7 +98,7 @@
   const presetName = $derived((PRESETS.find(p => p.id === preset)?.name ?? preset) + (modified ? ' — edited' : ''))
 </script>
 
-<aside id="style-pane">
+<aside id="style-pane" in:fly={{ y: -8, duration: 200 }}>
   <div class="style-head">
     <span>Style</span>
     <span class="style-preset" title={presetName}>{presetName}</span>
@@ -272,12 +273,8 @@
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding: var(--sp-3);
     display: flex;
     flex-direction: column;
-    /* Tighter than it was: each group now says where it starts, so the space
-	     between them no longer has to. */
-    gap: var(--sp-3);
   }
 
   .css-edit {

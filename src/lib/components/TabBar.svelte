@@ -10,6 +10,7 @@
   import IconHistory from '@iconify-icons/lucide/history'
   import IconCompare from '@iconify-icons/lucide/git-compare'
   import { withKey } from './access-keys.js'
+  import { fly } from 'svelte/transition'
 
   let {
     /** @type {import('$lib/cv/state/files.svelte.js').FileManager} */
@@ -64,7 +65,7 @@
     menu?.querySelector('button')?.focus()
 
     /** @param {PointerEvent} e */
-    const onPointerDown = (e) => {
+    const onPointerDown = e => {
       if (!menuGroup?.contains(/** @type {Node | null} */ (e.target))) menuOpen = false
     }
     document.addEventListener('pointerdown', onPointerDown)
@@ -230,11 +231,10 @@
         class:active
         class:dragging={dragId === f.id}
         draggable={editingId !== f.id}
-        ondragstart={(e) => onTabDragStart(e, f)}
-        ondragover={(e) => onTabDragOver(e, f)}
+        ondragstart={e => onTabDragStart(e, f)}
+        ondragover={e => onTabDragOver(e, f)}
         ondrop={onTabDrop}
-        ondragend={() => (dragId = null)}
-      >
+        ondragend={() => (dragId = null)}>
         {#if editingId === f.id}
           <input class="tab-rename" bind:value={editValue} use:focusAndSelect onblur={commitRename} onkeydown={onRenameKeydown} />
         {:else}
@@ -243,8 +243,7 @@
             title="{f.name} — double-click or F2 to rename, drag or Alt+← → to reorder"
             onclick={() => onSelect(f.id)}
             ondblclick={() => startRename(f)}
-            onkeydown={(e) => onTabKeydown(e, f)}
-          >
+            onkeydown={e => onTabKeydown(e, f)}>
             {f.name}
           </button>
           <!-- Everything that can be done to a file is behind this one caret,
@@ -262,8 +261,7 @@
                 aria-label="Actions for {f.name}"
                 title="What can be done to this CV"
                 onclick={() => (menuOpen ? (menuOpen = false) : openMenu())}
-                onkeydown={onMoreKeydown}
-              >
+                onkeydown={onMoreKeydown}>
                 <Icon icon={IconChevron} width="11" height="11" />
               </button>
 
@@ -277,7 +275,7 @@
                   style:top="{menuAt.y}px"
                   onkeydown={onMenuKeydown}
                   onfocusout={onMenuFocusOut}
-                >
+                  in:fly={{ y: -8, duration: 200 }}>
                   <button class="menu-item" role="menuitem" onclick={() => pick(onDuplicate)}>
                     <Icon icon={IconCopy} width="12" height="12" />
                     <span>Duplicate</span>
@@ -389,6 +387,7 @@
     border-right: var(--hairline) solid var(--gray-6);
     transition: var(--theme-fade);
     background: var(--bg-dark);
+    border-radius: 5px 5px 0 0;
 
     /* An alpha step rather than a solid one: the tab is a hole in the bar with
 	     nothing of its own behind it, so the hover has to tint whatever is. */
@@ -489,8 +488,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
     background: none;
     border: var(--hairline) dashed var(--gray-7);
     border-radius: var(--corner-xs);

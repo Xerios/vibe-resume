@@ -8,6 +8,7 @@
   import IconStyle from '@iconify-icons/lucide/palette'
   import IconCompare from '@iconify-icons/lucide/git-compare'
   import { formatBytes } from '$lib/cv/state/storage.js'
+  import { fly } from 'svelte/transition'
 
   /** The glyph for each kind of change; anything unrecognised reads as an edit. */
   const MARKS = {
@@ -105,7 +106,7 @@
   <Icon icon={MARKS[kind] ?? IconEdit} class="hist-mark" width="11" height="11" aria-hidden="true" />
 {/snippet}
 
-<aside id="history-pane">
+<aside id="history-pane" in:fly={{ y: -8, duration: 200 }}>
   <div class="hist-head">
     <div class="hist-title">
       <span>History</span>

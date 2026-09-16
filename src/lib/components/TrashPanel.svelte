@@ -1,5 +1,6 @@
 <script>
   import { relativeTime } from '$lib/cv/state/storage.js'
+  import { fly, scale } from 'svelte/transition'
 
   let {
     /** @type {import('$lib/cv/state/files.svelte.js').FileManager} */
@@ -47,7 +48,7 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-<div id="trash-panel" use:clickOutside>
+<div id="trash-panel" use:clickOutside in:fly={{ y: -8, duration: 200 }}>
   <div class="trash-head">
     <span>Trash</span>
     <span>{files.trashed.length} file{files.trashed.length === 1 ? '' : 's'}</span>

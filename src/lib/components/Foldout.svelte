@@ -1,4 +1,6 @@
 <script>
+  import { slide } from 'svelte/transition'
+
   /**
    * One collapsible group, the way an inspector stacks them: a titled bar that
    * is the whole hit target, a caret that turns as it opens, and the contents
@@ -34,7 +36,7 @@
   </div>
 
   {#if open}
-    <div class="fold-body" id={bodyId}>{@render children()}</div>
+    <div class="fold-body" id={bodyId} transition:slide={{ duration: 200 }}>{@render children()}</div>
   {/if}
 </div>
 
@@ -57,8 +59,7 @@
     gap: var(--sp-2);
     padding: var(--sp-1) var(--sp-2);
     background: var(--gray-a3);
-    border: var(--hairline) solid var(--gray-a6);
-    border-radius: var(--corner-xs);
+    border-bottom: var(--hairline) solid var(--gray-a4);
     transition: var(--hover-fade);
 
     &:hover {
