@@ -65,7 +65,7 @@
     menu?.querySelector('button')?.focus()
 
     /** @param {PointerEvent} e */
-    const onPointerDown = (e) => {
+    const onPointerDown = e => {
       if (!menuGroup?.contains(/** @type {Node | null} */ (e.target))) menuOpen = false
     }
     document.addEventListener('pointerdown', onPointerDown)
@@ -231,11 +231,10 @@
         class:active
         class:dragging={dragId === f.id}
         draggable={editingId !== f.id}
-        ondragstart={(e) => onTabDragStart(e, f)}
-        ondragover={(e) => onTabDragOver(e, f)}
+        ondragstart={e => onTabDragStart(e, f)}
+        ondragover={e => onTabDragOver(e, f)}
         ondrop={onTabDrop}
-        ondragend={() => (dragId = null)}
-      >
+        ondragend={() => (dragId = null)}>
         {#if editingId === f.id}
           <input class="tab-rename" bind:value={editValue} use:focusAndSelect onblur={commitRename} onkeydown={onRenameKeydown} />
         {:else}
@@ -244,8 +243,7 @@
             title="{f.name} — double-click or F2 to rename, drag or Alt+← → to reorder"
             onclick={() => onSelect(f.id)}
             ondblclick={() => startRename(f)}
-            onkeydown={(e) => onTabKeydown(e, f)}
-          >
+            onkeydown={e => onTabKeydown(e, f)}>
             {f.name}
           </button>
           <!-- Everything that can be done to a file is behind this one caret,
@@ -263,8 +261,7 @@
                 aria-label="Actions for {f.name}"
                 title="What can be done to this CV"
                 onclick={() => (menuOpen ? (menuOpen = false) : openMenu())}
-                onkeydown={onMoreKeydown}
-              >
+                onkeydown={onMoreKeydown}>
                 <Icon icon={IconChevron} width="11" height="11" />
               </button>
 
@@ -278,8 +275,7 @@
                   style:top="{menuAt.y}px"
                   onkeydown={onMenuKeydown}
                   onfocusout={onMenuFocusOut}
-                  in:fly={{ y: -8, duration: 200 }}
-                >
+                  in:fly={{ y: -8, duration: 200 }}>
                   <button class="menu-item" role="menuitem" onclick={() => pick(onDuplicate)}>
                     <Icon icon={IconCopy} width="12" height="12" />
                     <span>Duplicate</span>
@@ -291,6 +287,10 @@
                   <button class="menu-item" role="menuitem" onclick={() => pick(onSave)}>
                     <Icon icon={IconDownload} width="12" height="12" />
                     <span>Export YAML</span>
+                  </button>
+                  <button class="menu-item" role="menuitem" onclick={() => pick(onCompare)}>
+                    <Icon icon={IconCompare} width="12" height="12" />
+                    <span>Compare</span>
                   </button>
                   <div class="menu-sep"></div>
                   <button class="menu-item danger" role="menuitem" onclick={() => pick(() => onClose(f.id))}>
@@ -316,12 +316,6 @@
   <div class="t-spacer"></div>
 
   <div id="tab-actions">
-    <!-- Compare is a view over two documents rather than a panel over one, so
-	       it opens a dialog instead of taking the column the other two share. -->
-    <button class="t-btn" use:shortcut={['c', 'Compare two documents or versions']} onclick={onCompare}>
-      <Icon icon={IconCompare} width="12" height="12" />
-      <span class="t-txt"><u>C</u>ompare</span>
-    </button>
     <!-- Beside History because the two are one control between them: they take
 	       turns in the column to the right of the preview. -->
     <button class="t-btn" class:on={styleOpen} use:shortcut={['t', 'Template, theme and font']} onclick={onToggleStyle}>

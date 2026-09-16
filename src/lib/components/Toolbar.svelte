@@ -3,6 +3,7 @@
   import IconDownload from '@iconify-icons/lucide/download'
   import IconInstall from '@iconify-icons/lucide/arrow-down-to-line'
   import IconTrash from '@iconify-icons/lucide/trash'
+  import IconCompare from '@iconify-icons/lucide/git-compare'
   import { shortcut } from './access-keys.js'
 
   let {
@@ -11,6 +12,8 @@
     /** How many files are in the trash — none, and the button isn't drawn at all. */
     trashCount = 0,
     trashOpen = false,
+    /** @type {() => void} */
+    onCompare,
     /** @type {() => void} */
     onToggleTrash,
     /** @type {() => void} */
@@ -24,7 +27,10 @@
   <span class="t-label">Resume - Offline-ready & Local editor</span>
 
   <div class="t-spacer"></div>
-
+  <button class="t-btn" use:shortcut={['c', 'Compare two documents or versions']} onclick={onCompare}>
+    <Icon icon={IconCompare} width="12" height="12" />
+    <span class="t-txt"><u>C</u>ompare</span>
+  </button>
   <!-- Beside Export because both act on files rather than on the CV in front
 	     of you, and only while there is something in there: an always-present
 	     button for an always-empty bin is a control that never does anything. -->

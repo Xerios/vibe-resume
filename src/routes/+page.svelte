@@ -155,7 +155,7 @@
 
   onMount(() => {
     start()
-    cv.bindEditor((text) => editor?.replaceAll(text))
+    cv.bindEditor(text => editor?.replaceAll(text))
 
     const onVisibility = () => {
       if (document.visibilityState === 'hidden') flush()
@@ -378,7 +378,7 @@
    */
   function hasOwnText(el) {
     // The element belongs to the frame, so the walker has to come from there.
-    const walk = (el.ownerDocument ?? document).createTreeWalker(el, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, (node) =>
+    const walk = (el.ownerDocument ?? document).createTreeWalker(el, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, node =>
       node.nodeType === Node.TEXT_NODE
         ? node.nodeValue?.trim()
           ? NodeFilter.FILTER_ACCEPT
@@ -490,10 +490,10 @@
   let pendingEditLine = 0
 
   /** @param {"editor" | "preview"} pane */
-  const hush = (pane) => (quiet[pane] = performance.now() + SYNC_QUIET_MS)
+  const hush = pane => (quiet[pane] = performance.now() + SYNC_QUIET_MS)
 
   /** @param {"editor" | "preview"} pane */
-  const hushed = (pane) => performance.now() < quiet[pane]
+  const hushed = pane => performance.now() < quiet[pane]
 
   /** Whether the preview is still moving under the pointer, tail included. */
   const previewMoving = () => performance.now() < previewMovedAt + POINTER_SETTLE_MS
@@ -540,7 +540,7 @@
 
     // One rung per offset: interpolation needs both axes strictly increasing.
     const rungs = found.filter((a, i) => i === 0 || a.y > found[i - 1].y)
-    for (const i of longestRun(rungs.map((a) => a.line))) anchors.push({ y: rungs[i].y, line: rungs[i].line })
+    for (const i of longestRun(rungs.map(a => a.line))) anchors.push({ y: rungs[i].y, line: rungs[i].line })
   }
 
   /**
@@ -726,8 +726,8 @@
    * @param {string} variantId
    */
   function setVariant(slotId, variantId) {
-    const slot = parts.slots.find((s) => s.id === slotId)
-    const name = slot?.variants.find((v) => v.id === variantId)?.name ?? variantId
+    const slot = parts.slots.find(s => s.id === slotId)
+    const name = slot?.variants.find(v => v.id === variantId)?.name ?? variantId
     restyleVariant(slotId, variantId, `${slot?.name ?? slotId} — ${name}`)
   }
 
@@ -738,12 +738,12 @@
 
   /** @param {string} id */
   function setTheme(id) {
-    restyle({ theme: id }, `Theme — ${THEMES.find((t) => t.id === id)?.name ?? id}`)
+    restyle({ theme: id }, `Theme — ${THEMES.find(t => t.id === id)?.name ?? id}`)
   }
 
   /** @param {string} id */
   function setFont(id) {
-    restyle({ font: id }, `Font — ${FONTS.find((f) => f.id === id)?.name ?? id}`)
+    restyle({ font: id }, `Font — ${FONTS.find(f => f.id === id)?.name ?? id}`)
   }
 
   /** Every paper axis, by the key it is stored under — for the history's label. */
@@ -763,7 +763,7 @@
   function setPaper(patch) {
     const [key, id] = Object.entries(patch)[0] ?? []
     if (!key || !id) return
-    const name = PAPER_AXES[key]?.find((o) => o.id === id)?.name ?? id
+    const name = PAPER_AXES[key]?.find(o => o.id === id)?.name ?? id
     const edge = key === 'header' || key === 'footer' ? `${key[0].toUpperCase()}${key.slice(1)}: ` : ''
     restylePaper(patch, `Paper — ${edge}${name}`)
   }
@@ -927,7 +927,7 @@
   /** @param {string} id */
   function closeTab(id) {
     const closingActive = id === files.activeId
-    const name = files.files.find((f) => f.id === id)?.name ?? 'File'
+    const name = files.files.find(f => f.id === id)?.name ?? 'File'
     // An untouched "New CV" has nothing to restore, so it doesn't earn a
     // place in the trash: drop it outright rather than clutter the bin.
     if (closingActive && cv.pristine) {
@@ -969,7 +969,7 @@
     /** @type {import('../app').CompareSource} */
     const current = { fileId: id, versionKey: null }
     if (!right) {
-      const neighbour = files.open.find((f) => f.id !== id)
+      const neighbour = files.open.find(f => f.id !== id)
       const previous = cv.entries[1]
       right = neighbour ? { fileId: neighbour.id, versionKey: null } : { fileId: id, versionKey: previous?.key ?? null }
     }
@@ -1073,7 +1073,14 @@
 </svelte:head>
 
 <div id="app">
-  <Toolbar trashCount={files.trashed.length} {trashOpen} onToggleTrash={toggleTrash} onExport={exportPDF} canInstall={!!installPrompt} onInstall={installApp} />
+  <Toolbar
+    trashCount={files.trashed.length}
+    {trashOpen}
+    onCompare={() => openCompare()}
+    onToggleTrash={toggleTrash}
+    onExport={exportPDF}
+    canInstall={!!installPrompt}
+    onInstall={installApp} />
 
   <TabBar
     {files}
@@ -1089,8 +1096,7 @@
     historyCount={cv.history.length}
     onToggleHistory={() => toggleSidePanel('history')}
     onCompare={() => openCompare()}
-    onSave={saveYaml}
-  />
+    onSave={saveYaml} />
 
   {#if trashOpen}
     <TrashPanel {files} onRestore={restoreTab} onPurge={purgeTab} onEmpty={emptyTrash} onClose={toggleTrash} />
@@ -1110,8 +1116,7 @@
             readOnly={cv.isViewingHistory}
             diff={cv.diff}
             onScroll={onEditorScroll}
-            onEdit={noteEdit}
-          />
+            onEdit={noteEdit} />
         {/key}
       {:else}
         <div id="boot">Loading editor…</div>
@@ -1127,8 +1132,7 @@
       onpointermove={onDrag}
       onpointerup={endDrag}
       onpointercancel={endDrag}
-      onkeydown={onDividerKey}
-    ></button>
+      onkeydown={onDividerKey}></button>
 
     <div id="preview-pane" bind:this={previewPane}>
       {#if cv.isViewingHistory}
@@ -1161,8 +1165,7 @@
         name={cvName}
         fit={fitPreview && desktop}
         {dark}
-        onReady={onFrameReady}
-      />
+        onReady={onFrameReady} />
     </div>
 
     <!-- The third column, whichever panel is holding it. -->
@@ -1185,8 +1188,7 @@
         fit={fitPreview}
         fitAvailable={desktop}
         onFit={toggleFit}
-        onCss={setCss}
-      />
+        onCss={setCss} />
     {:else if sidePanel === 'history' && cv.ready}
       <HistoryPanel doc={cv} {toast} onCompare={compareVersion} />
     {/if}
@@ -1203,8 +1205,7 @@
     onToggleHoverSync={toggleHoverSync}
     onToggleScrollSync={toggleScrollSync}
     onToggleTheme={toggleTheme}
-    onUpdate={() => swUpdate.applyUpdate()}
-  />
+    onUpdate={() => swUpdate.applyUpdate()} />
 </div>
 
 {#if welcomeOpen}
