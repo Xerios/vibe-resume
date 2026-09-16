@@ -127,7 +127,7 @@
       for (const e of tr.effects) if (e.is(setLines)) return decorate(tr.state, e.value)
       return deco.map(tr.changes)
     },
-    provide: (f) => EditorView.decorations.from(f),
+    provide: f => EditorView.decorations.from(f),
   })
 
   /**
@@ -209,16 +209,16 @@
 	   between — the same ladder the editor and the preview share. */
 
   /** @param {'a' | 'b'} side */
-  const hush = (side) => (quiet[side] = performance.now() + SYNC_QUIET_MS)
+  const hush = side => (quiet[side] = performance.now() + SYNC_QUIET_MS)
 
   /** @param {'a' | 'b'} side */
-  const hushed = (side) => performance.now() < quiet[side]
+  const hushed = side => performance.now() < quiet[side]
 
   /** @param {'a' | 'b'} side */
-  const other = (side) => (side === 'a' ? 'b' : 'a')
+  const other = side => (side === 'a' ? 'b' : 'a')
 
   /** @param {'a' | 'b'} side */
-  const viewOf = (side) => (side === 'a' ? viewA : viewB)
+  const viewOf = side => (side === 'a' ? viewA : viewB)
 
   /** @param {'a' | 'b'} side */
   function onScroll(side) {
@@ -301,7 +301,7 @@
     if (!info) return
     if (info.twin !== undefined) centre(other(side), info.twin)
     else if (info.move !== undefined) {
-      const move = current.moves.find((m) => m.id === info.move)
+      const move = current.moves.find(m => m.id === info.move)
       if (move) centre(other(side), move[other(side)][0])
     }
   }
@@ -366,13 +366,13 @@
   {@const live = ref.fileId === files.activeId}
   <div class="cmp-pick">
     {#if side === 'a'}
-      <select bind:this={firstControl} aria-label="Left document" value={ref.fileId} onchange={(e) => setFile(side, e.currentTarget.value)}>
+      <select bind:this={firstControl} aria-label="Left document" value={ref.fileId} onchange={e => setFile(side, e.currentTarget.value)}>
         {#each files.open as f (f.id)}
           <option value={f.id}>{f.name}</option>
         {/each}
       </select>
     {:else}
-      <select aria-label="Right document" value={ref.fileId} onchange={(e) => setFile(side, e.currentTarget.value)}>
+      <select aria-label="Right document" value={ref.fileId} onchange={e => setFile(side, e.currentTarget.value)}>
         {#each files.open as f (f.id)}
           <option value={f.id}>{f.name}</option>
         {/each}
@@ -383,8 +383,7 @@
       value={ref.versionKey ?? ''}
       disabled={!live}
       title={live ? 'Which version of this file' : 'Only the open file has its history loaded'}
-      onchange={(e) => setVersion(side, e.currentTarget.value)}
-    >
+      onchange={e => setVersion(side, e.currentTarget.value)}>
       <option value="">Current</option>
       {#if live}
         {#each doc.entries as entry (entry.key)}
@@ -472,11 +471,11 @@
     align-items: center;
     gap: var(--sp-3);
     height: var(--bar-tool);
-    padding: 0 var(--sp-4);
+    padding: 0 var(--sp-2) 0 var(--sp-4);
     border-bottom: var(--hairline) solid var(--gray-6);
 
     .t-btn {
-      padding: var(--sp-1) var(--sp-2);
+      padding: var(--sp-3) var(--sp-4);
     }
   }
 
