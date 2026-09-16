@@ -972,12 +972,14 @@
   }
 
   /**
-   * A version against what the file says now.
+   * A version against what is on screen: the version being previewed, if
+   * there is one and it isn't this same entry, otherwise what the file says now.
    * @param {import('$lib/cv/state/doc.svelte.js').HistoryEntry} entry
    */
   function compareVersion(entry) {
     const id = /** @type {string} */ (files.activeId)
-    openCompare({ fileId: id, versionKey: entry.key }, { fileId: id, versionKey: null })
+    const viewed = cv.viewingKey !== null && cv.viewingKey !== entry.key ? cv.viewingKey : null
+    openCompare({ fileId: id, versionKey: entry.key }, { fileId: id, versionKey: viewed })
   }
 
   /** @param {string} id */

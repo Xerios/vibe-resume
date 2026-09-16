@@ -24,7 +24,7 @@
     doc,
     /** @type {(msg: string) => void} */
     toast,
-    /** Open the compare view with this version on one side and the newest text on the other. @type {(entry: import('$lib/cv/state/doc.svelte.js').HistoryEntry) => void} */
+    /** Open the compare view with this version on one side and the version on screen on the other. @type {(entry: import('$lib/cv/state/doc.svelte.js').HistoryEntry) => void} */
     onCompare,
   } = $props()
 
@@ -135,9 +135,9 @@
           <span class="hist-time">{ago(entry)}</span>
         </button>
         <!-- Always drawn rather than on hover, since a finger has no hover.
-				     The newest version is what everything is compared against, so it
+				     The version on screen is what everything is compared against, so it
 				     has nothing to be compared with. -->
-        {#if !isLatest}
+        {#if !isActive}
           <button class="hist-compare" title="Compare with current" aria-label="Compare “{entry.message}” with current" onclick={() => onCompare(entry)}>
             <Icon icon={IconCompare} width="11" height="11" />
           </button>
