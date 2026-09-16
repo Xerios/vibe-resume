@@ -117,6 +117,6 @@
 
   /* Indented under its header, so a group that is open says where it ends. */
   .fold-body {
-    padding: var(--sp-3) 0 var(--sp-2) var(--sp-3);
+    padding: var(--sp-3) var(--sp-2) var(--sp-2) var(--sp-3);
   }
 </style>
