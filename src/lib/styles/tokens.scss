@@ -172,11 +172,33 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  --bg-darker: var(--gray-3);
-  --bg-dark: var(--gray-2);
+  /* Two steps between rungs rather than one: slate 1, 2 and 3 are within a
+	   few percent of each other in the light scheme, and a bar drawn one step
+	   off the pane it borders read as the same surface. */
+  --bg-darker: var(--gray-5);
+  --bg-dark: var(--gray-3);
   --bg: var(--gray-1);
   --bg-light: var(--gray-1);
   --bg-lighter: var(--gray-1);
+
+  /* ── Raised controls ────────────────────────── */
+  /* A button is an object on the surface rather than a tint of it: in light
+	   it is a white card with a hairline and a one-pixel drop, in dark a
+	   lighter alpha fill with a highlight along its top edge — the two ways a
+	   scheme has of saying "this stands proud". The hover and press steps
+	   walk the same way the surface variant did, one step per state. */
+  --control-bg: #fff;
+  --control-bg-hover: var(--gray-2);
+  --control-bg-active: var(--gray-3);
+  --control-border: var(--gray-a6);
+  --control-border-hover: var(--gray-a8);
+  --control-shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 1px 0 rgb(0 0 0 / 0.04);
+  /* What a field sinks into: the opposite gesture to the button's drop. */
+  --inset-shadow: inset 0 1px 2px rgb(0 0 0 / 0.06);
+  /* The soft halo around a focused field, under its step 8 edge. */
+  --focus-halo: 0 0 0 3px var(--accent-a4);
+  /* The one-pixel drop a bar casts on the pane below it. */
+  --bar-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
 }
 
 :root[data-theme='dark'] {
@@ -187,6 +209,16 @@
   --bg: var(--gray-3);
   --bg-light: var(--gray-4);
   --bg-lighter: var(--gray-5);
+
+  --control-bg: var(--gray-a4);
+  --control-bg-hover: var(--gray-a5);
+  --control-bg-active: var(--gray-a6);
+  --control-border: var(--gray-a6);
+  --control-border-hover: var(--gray-a8);
+  --control-shadow: inset 0 1px 0 var(--gray-a3), 0 1px 2px rgb(0 0 0 / 0.4);
+  --inset-shadow: inset 0 1px 2px rgb(0 0 0 / 0.35);
+  --focus-halo: 0 0 0 3px var(--accent-a5);
+  --bar-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
 
   /* Restated per scheme because it isn't a step — see --theme-color below. */
   --theme-color: #18191b;

@@ -820,6 +820,11 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    /* The page rung standing in the tray: the shadow along its right edge
+	     is what makes it a sheet of its own rather than a region of the wall. */
+    box-shadow: 1px 0 4px rgb(0 0 0 / 0.06);
+    position: relative;
+    z-index: 1;
     /* The page rung, and the same fill CodeMirror's own editor takes — the
 	     pane *is* the editor, so a second tone here would only draw a seam
 	     through it. The preview canvas beside it is the bottom rung, which is
@@ -849,12 +854,15 @@
 	   at this weight it reads as the seam between two panes, which is what it is. */
   #divider {
     flex-shrink: 0;
-    width: 3px;
-    background: var(--gray-6);
+    width: 5px;
+    /* A strip of the tray between the two panes, ruled on both sides, so
+	     the editor and the sheet each end in an edge of their own. */
+    background: var(--bg-darker);
+    border-left: var(--hairline) solid var(--gray-6);
+    border-right: var(--hairline) solid var(--gray-6);
     cursor: col-resize;
-    transition: background 0.08s;
+    transition: background 0.08s, border-color 0.08s;
     position: relative;
-    border: none;
     padding: 0;
 
     /* Widens the grab target without widening the line. */
@@ -866,6 +874,7 @@
 
     &:hover {
       background: var(--accent-9);
+      border-color: var(--accent-9);
     }
 
     &.hidden {

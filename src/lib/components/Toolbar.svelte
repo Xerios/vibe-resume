@@ -53,6 +53,9 @@
     padding: 0 var(--sp-4);
     background: var(--bg-dark);
     border-bottom: var(--hairline) solid var(--gray-6);
+    /* The bar casts onto the strip below it, so it reads as a lid rather than
+	     as a band of the same wall. */
+    box-shadow: var(--bar-shadow);
     z-index: 10;
     transition: var(--theme-fade);
   }

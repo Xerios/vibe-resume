@@ -312,9 +312,12 @@
     gap: var(--sp-3);
     height: var(--bar-tabs);
     padding: 0 var(--sp-3) 0 0;
-    /* The bottom rung, with the canvas: the tabs are cut into it. */
+    /* The bottom rung, with the canvas: the tabs are cut into it. The rule
+	     under the strip is an inset shadow rather than a border so that the
+	     active tab, which stretches the full height, paints over it and joins
+	     the pane below. */
     background: var(--bg-darker);
-    border-bottom: var(--hairline) solid var(--gray-6);
+    box-shadow: inset 0 calc(-1 * var(--hairline)) 0 var(--gray-6);
     z-index: 9;
     transition: var(--theme-fade);
   }
@@ -353,11 +356,11 @@
     border: none;
     border-right: var(--hairline) solid var(--gray-6);
     transition: var(--theme-fade);
+    /* Resting tabs are the bar's rung; the strip behind them is the one
+	     below, so each is a card standing in a darker tray. */
     background: var(--bg-dark);
     border-radius: 5px 5px 0 0;
 
-    /* An alpha step rather than a solid one: the tab is a hole in the bar with
-	     nothing of its own behind it, so the hover has to tint whatever is. */
     &:hover {
       background: var(--gray-a3);
       transition: var(--hover-fade);
@@ -366,8 +369,11 @@
     &.active {
       background: var(--bg);
       /* The one mark that says which: a rule in the accent at step 9 along the
-		     top edge, inset so it can't add to the height of the bar. */
+		     top edge, inset so it can't add to the height of the bar. Its
+		     background covers the strip's rule, so it runs into the editor. */
       box-shadow: inset 0 2px 0 0 var(--accent-9);
+      position: relative;
+      z-index: 1;
 
       .tab-select {
         color: var(--gray-12);
@@ -490,8 +496,8 @@
     /* A popover is the raised rung, and the shadow says the rest. The ring
 	     inside the shadow holds its edge; a border as well would state it twice. */
     background: var(--bg-light);
-    border-radius: var(--corner-xs);
-    box-shadow: var(--shadow-ring), var(--shadow-md);
+    border-radius: var(--corner-sm);
+    box-shadow: var(--shadow-ring), var(--shadow-lg);
     z-index: 100;
   }
 

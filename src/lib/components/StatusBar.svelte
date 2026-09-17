@@ -105,6 +105,8 @@
     padding: 0 var(--sp-2) 0 var(--sp-4);
     background: var(--bg-dark);
     border-top: var(--hairline) solid var(--gray-6);
+    /* The toolbar's drop, turned over: the bar sits on the panes. */
+    box-shadow: 0 -1px 2px rgb(0 0 0 / 0.05);
     z-index: 8;
     transition: var(--theme-fade);
   }
@@ -126,11 +128,13 @@
     &.ok {
       color: var(--grass-11);
       background: var(--grass-3);
+      box-shadow: inset 0 0 0 var(--hairline) var(--grass-a6);
     }
 
     &.err {
       color: var(--red-11);
       background: var(--red-3);
+      box-shadow: inset 0 0 0 var(--hairline) var(--red-a6);
     }
   }
 

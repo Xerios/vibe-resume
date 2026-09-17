@@ -170,6 +170,10 @@
     flex-shrink: 0;
     padding: var(--sp-3) var(--sp-3);
     border-bottom: var(--hairline) solid var(--gray-6);
+    /* The head is the panel's own toolbar, and casts like one. */
+    box-shadow: var(--bar-shadow);
+    position: relative;
+    z-index: 1;
   }
 
   .hist-title {
@@ -200,11 +204,13 @@
 	       step — rather than the step 6 the panel's own rules take. */
       border: var(--hairline) solid var(--gray-7);
       border-radius: var(--corner-xs);
+      box-shadow: var(--inset-shadow);
       padding: var(--sp-1) var(--sp-3);
 
       &:focus {
         outline: none;
         border-color: var(--accent-8);
+        box-shadow: var(--inset-shadow), var(--focus-halo);
       }
 
       &::placeholder {

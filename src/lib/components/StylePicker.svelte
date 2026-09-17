@@ -208,6 +208,10 @@
     gap: var(--sp-4);
     padding: var(--sp-3) var(--sp-3);
     border-bottom: var(--hairline) solid var(--gray-6);
+    /* The head is the panel's own toolbar, and casts like one. */
+    box-shadow: var(--bar-shadow);
+    position: relative;
+    z-index: 1;
     font-family: var(--sans);
     font-size: var(--ui-fs-2xs);
     font-weight: 600;
@@ -246,6 +250,7 @@
     background: var(--bg);
     border: var(--hairline) solid var(--gray-7);
     border-radius: var(--corner-xs);
+    box-shadow: var(--inset-shadow);
     color: var(--gray-12);
     font-family: var(--mono);
     font-size: var(--ui-fs-sm);
@@ -258,6 +263,7 @@
     &:focus {
       outline: none;
       border-color: var(--accent-8);
+      box-shadow: var(--inset-shadow), var(--focus-halo);
     }
 
     /* The template shows through as the placeholder, so an empty editor still

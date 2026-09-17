@@ -28,9 +28,12 @@
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  background: var(--gray-a3);
-  border: var(--hairline) solid var(--gray-a4);
+  /* The raised-control set from tokens.scss: a card with a drop rather than a
+     tint of the bar, so a button reads as a thing on the surface. */
+  background: var(--control-bg);
+  border: var(--hairline) solid var(--control-border);
   border-radius: var(--corner-xs);
+  box-shadow: var(--control-shadow);
   cursor: pointer;
   font-family: var(--sans);
   font-size: var(--ui-fs-sm);
@@ -42,15 +45,16 @@
   transition: var(--theme-fade);
 
   &:hover:not(:disabled) {
-    background: var(--gray-a4);
-    border-color: var(--gray-a7);
+    background: var(--control-bg-hover);
+    border-color: var(--control-border-hover);
     transition: var(--hover-fade);
   }
 
-  /* Step 5 is the scale's "held down", and it is the whole of the press state:
-     nothing here moves or shrinks on click. */
+  /* Held down is the one state that loses the drop: the button is pressed
+     flat to the surface. Nothing moves or shrinks on click. */
   &:active:not(:disabled) {
-    background: var(--gray-a5);
+    background: var(--control-bg-active);
+    box-shadow: none;
   }
 
   /* Step 8 is the focus-ring step in every Radix scale. */
@@ -70,7 +74,7 @@
   &.on {
     color: var(--accent-contrast);
     background: var(--accent-9);
-    border-color: var(--accent-9);
+    border-color: var(--accent-10);
 
     &:hover:not(:disabled) {
       background: var(--accent-10);
@@ -94,7 +98,7 @@
 .t-btn-pdf {
   color: var(--accent-contrast);
   background: var(--accent-9);
-  border-color: var(--accent-9);
+  border-color: var(--accent-10);
 
   &:hover:not(:disabled) {
     background: var(--accent-10);

@@ -79,8 +79,8 @@
     flex-direction: column;
     background: var(--bg-light);
     border: var(--hairline) solid var(--gray-6);
-    border-radius: var(--corner-xs);
-    box-shadow: var(--shadow-ring), var(--shadow-md);
+    border-radius: var(--corner-sm);
+    box-shadow: var(--shadow-ring), var(--shadow-lg);
     z-index: 100;
     overflow: hidden;
     transition: var(--theme-fade);
@@ -93,7 +93,7 @@
     justify-content: space-between;
     padding: var(--sp-2) var(--sp-4);
     border-bottom: var(--hairline) solid var(--gray-6);
-    background: var(--bg-light);
+    background: var(--bg-dark);
     font-family: var(--sans);
     font-size: var(--ui-fs-2xs);
     font-weight: 600;

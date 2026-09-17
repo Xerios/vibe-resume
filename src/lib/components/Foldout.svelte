@@ -59,7 +59,8 @@
     gap: var(--sp-2);
     padding: var(--sp-1) var(--sp-2);
     background: var(--gray-a3);
-    border-bottom: var(--hairline) solid var(--gray-a4);
+    border-top: var(--hairline) solid var(--gray-a5);
+    border-bottom: var(--hairline) solid var(--gray-a5);
     transition: var(--hover-fade);
 
     &:hover {
