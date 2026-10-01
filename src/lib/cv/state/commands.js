@@ -80,8 +80,10 @@ export const commands = {
   /** @param {string} [source] defaults to the active file */
   duplicateTab(source = /** @type {string} */ (files.activeId)) {
     if (source === files.activeId) doc.flush() // capture the latest edits before copying the stored snapshot
+    const from = files.files.find((f) => f.id === source)?.name
     const id = files.duplicate(source)
     doc.switchTo(id)
+    if (from) doc.checkpoint(`Duplicated from “${from}”`)
     ui.toast('Tab duplicated')
   },
 
@@ -327,6 +329,12 @@ export const commands = {
   toggleFit() {
     ui.fitPreview = !ui.fitPreview
     write(KEYS.previewFit, String(ui.fitPreview))
+  },
+
+  /** Show or hide the PDF export entries in the history list. */
+  toggleHideExports() {
+    ui.hideExports = !ui.hideExports
+    write(KEYS.hideExports, String(ui.hideExports))
   },
 
   /** Couple the editor to the pointer over the preview, or stop. See `ui.hoverSync`. */
