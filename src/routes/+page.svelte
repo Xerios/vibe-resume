@@ -6,7 +6,9 @@
   import IconCheck from '@iconify-icons/lucide/circle-check'
   import { page } from '$app/state'
   import CompareModal from '$lib/components/CompareModal.svelte'
+  import ConvertPromptModal from '$lib/components/ConvertPromptModal.svelte'
   import HistoryPanel from '$lib/components/HistoryPanel.svelte'
+  import PasteModal from '$lib/components/PasteModal.svelte'
   import StatusBar from '$lib/components/StatusBar.svelte'
   import StylePicker from '$lib/components/StylePicker.svelte'
   import Toolbar from '$lib/components/Toolbar.svelte'
@@ -14,6 +16,7 @@
   import WelcomeOverlay from '$lib/components/WelcomeOverlay.svelte'
   import YamlEditor from '$lib/components/YamlEditor.svelte'
   import PreviewFrame from '$lib/cv/PreviewFrame.svelte'
+  import { basicConversion, sourceMarkdown } from '$lib/cv/format/paste.js'
   import { liveTemplate } from '$lib/cv/template/live-template.svelte.js'
   import { bindHost, commands } from '$lib/cv/state/commands.js'
   import { doc as cv, flush, look, parts, start, ui } from '$lib/cv/state/state.svelte.js'
@@ -78,6 +81,32 @@
    * on a phone is how a dialog is expected to close. See `commands.openCompare`.
    */
   const compare = $derived(page.state.compare ?? null)
+
+  /** A paste the editor held back because it isn't the format, while the question is up. */
+  let pasteIssue = $state(/** @type {import('$lib/cv/format/paste.js').PasteIssue | null} */ (null))
+  /** The CV the conversion prompt is built around, while that dialog is up. */
+  let promptSource = $state(/** @type {string | null} */ (null))
+
+  /** @param {import('$lib/cv/format/paste.js').PasteIssue} issue */
+  function holdPaste(issue) {
+    pasteIssue = issue
+  }
+
+  /** @param {'prompt' | 'basic' | 'raw'} choice */
+  function resolvePaste(choice) {
+    const issue = pasteIssue
+    pasteIssue = null
+    if (!issue || !editor) return
+    if (choice === 'prompt') promptSource = sourceMarkdown(issue)
+    else if (choice === 'raw') editor.applyEdit({ from: issue.from, to: issue.to, insert: issue.text })
+    else editor.applyEdit(basicConversion(issue, editor.getText()))
+  }
+
+  /** @param {string} text */
+  function applyConverted(text) {
+    promptSource = null
+    editor?.applyEdit({ from: 0, to: Infinity, insert: text.endsWith('\n') ? text : `${text}\n` })
+  }
 
   /** The name a running header prints, which is the CV's own rather than the file's. */
   const cvName = $derived(String(parsed?.header?.name ?? ''))
@@ -738,7 +767,8 @@
             readOnly={cv.isViewingHistory}
             diff={cv.diff}
             onScroll={onEditorScroll}
-            onEdit={noteEdit} />
+            onEdit={noteEdit}
+            onPasteIssue={holdPaste} />
         {/key}
       {:else}
         <div id="boot">Loading editor…</div>
@@ -814,6 +844,26 @@
 
 {#if ui.welcomeOpen}
   <WelcomeOverlay />
+{/if}
+
+{#if pasteIssue}
+  <PasteModal
+    issue={pasteIssue}
+    onChoose={resolvePaste}
+    onClose={() => {
+      pasteIssue = null
+      editor?.takeFocus()
+    }} />
+{/if}
+
+{#if promptSource !== null}
+  <ConvertPromptModal
+    source={promptSource}
+    onApply={applyConverted}
+    onClose={() => {
+      promptSource = null
+      editor?.takeFocus()
+    }} />
 {/if}
 
 {#if compare && cv.ready}

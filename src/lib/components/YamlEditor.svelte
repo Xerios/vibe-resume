@@ -19,6 +19,7 @@
   } from '@codemirror/view'
   import { wrappedLineIndent } from 'codemirror-wrapped-line-indent'
   import { cvCompletion } from '$lib/cv/format/complete.js'
+  import { classifyPaste } from '$lib/cv/format/paste.js'
   import { lintCv } from '$lib/workers/index.js'
   import { relaxedYaml } from '$lib/cv/format/relaxed-yaml-mode.js'
   import { splitLine } from '$lib/cv/format/relaxed-yaml.js'
@@ -37,6 +38,8 @@
     onScroll = () => {},
     /** A line the user just typed on, for the preview to follow. @type {(line: number) => void} */
     onEdit = () => {},
+    /** A paste that isn't the format, held back for the page to ask about. @type {(issue: import('$lib/cv/format/paste.js').PasteIssue) => void} */
+    onPasteIssue = () => {},
   } = $props()
 
   /** @type {HTMLDivElement} */
@@ -158,6 +161,27 @@
     return Decoration.set(ranges, true)
   }
 
+  /**
+   * Hold back a paste that isn't the format — Markdown, formatted text, or a
+   * whole document that isn't a CV — rather than let it parse into an empty
+   * sheet. Everything else goes through CodeMirror's own handling.
+   */
+  const pasteGuard = EditorView.domEventHandlers({
+    paste(event, v) {
+      const data = event.clipboardData
+      if (!data || v.state.readOnly) return false
+      const text = data.getData('text/plain')
+      const html = data.getData('text/html')
+      const { from, to } = v.state.selection.main
+      const whole = !v.state.sliceDoc(0, from).trim() && !v.state.sliceDoc(to).trim()
+      const kind = classifyPaste(text, html, whole)
+      if (!kind) return false
+      event.preventDefault()
+      onPasteIssue({ kind, text, html, from, to, whole })
+      return true
+    },
+  })
+
   onMount(() => {
     const next = new EditorView({
       parent: host,
@@ -191,6 +215,7 @@
           editable.of(editableExtensions(readOnly)),
           diffHighlight.of(EditorView.decorations.of(diffDecorations(diff))),
           peekField,
+          pasteGuard,
           EditorView.updateListener.of(onUpdate),
           loroExtensions,
         ],
@@ -307,6 +332,30 @@
     view.dispatch({
       changes: { from: 0, to: view.state.doc.length, insert: text },
     })
+  }
+
+  /**
+   * Apply one edit as the user's own — a paste that was held back, or what it
+   * was turned into — and put the caret after it. Offsets are clamped, since
+   * the document may have moved while the question was up.
+   * @param {{ from: number, to: number, insert: string }} edit
+   */
+  export function applyEdit({ from, to, insert }) {
+    if (!view) return
+    const len = view.state.doc.length
+    from = Math.min(Math.max(0, from), len)
+    to = Math.min(Math.max(from, to), len)
+    view.dispatch({
+      changes: { from, to, insert },
+      selection: { anchor: from + insert.length },
+      scrollIntoView: true,
+      userEvent: 'input.paste',
+    })
+    view.focus()
+  }
+
+  export function takeFocus() {
+    view?.focus()
   }
 
   /**
