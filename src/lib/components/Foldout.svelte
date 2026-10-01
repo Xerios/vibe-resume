@@ -1,4 +1,6 @@
 <script>
+  import Icon from '@iconify/svelte'
+  import IconChevron from '@iconify-icons/lucide/chevron-right'
   import { slide } from 'svelte/transition'
 
   /**
@@ -27,7 +29,7 @@
 	     their own can't be nested in the one that folds the group. -->
   <div class="fold-head">
     <button class="fold-btn" aria-expanded={open} aria-controls={bodyId} onclick={onToggle}>
-      <span class="fold-caret" aria-hidden="true">›</span>
+      <Icon icon={IconChevron} class="fold-caret" width="16" height="16" aria-hidden="true" />
       <span class="fold-label">{label}</span>
     </button>
     {#if head}
@@ -41,31 +43,23 @@
 </div>
 
 <style lang="scss">
+  /* ADS's expandable section: a rule above, a full-width header that is the
+     whole hit target, a chevron that turns as it opens. */
   .fold {
     display: flex;
     flex-direction: column;
+    border-bottom: var(--ds-border-width) solid var(--ds-border);
 
-    &.open .fold-caret {
+    &.open :global(.fold-caret) {
       transform: rotate(90deg);
     }
   }
 
-  /* A bar rather than a bare label: it is a thing to press, and the groups
-	   below one another read as a stack of them. Alpha steps, since the panel
-	   is one rung docked and another floating. */
   .fold-head {
     display: flex;
     align-items: center;
-    gap: var(--sp-2);
-    padding: var(--sp-1) var(--sp-2);
-    background: var(--gray-a3);
-    border-top: var(--hairline) solid var(--gray-a5);
-    border-bottom: var(--hairline) solid var(--gray-a5);
-    transition: var(--hover-fade);
-
-    &:hover {
-      background: var(--gray-a4);
-    }
+    gap: var(--ds-space-100);
+    padding: var(--ds-space-050) var(--ds-space-150) var(--ds-space-050) var(--ds-space-100);
   }
 
   .fold-btn {
@@ -73,38 +67,42 @@
     min-width: 0;
     display: flex;
     align-items: center;
-    gap: var(--sp-2);
-    padding: 0;
-    background: none;
+    gap: var(--ds-space-050);
+    height: var(--control-h);
+    padding: 0 var(--ds-space-050);
+    background: var(--ds-background-neutral-subtle);
     border: none;
+    border-radius: var(--ds-radius-small);
     cursor: pointer;
     text-align: left;
+    color: var(--ds-text);
+    transition: var(--hover-fade);
 
-    &:hover .fold-label,
-    &:focus-visible .fold-label {
-      color: var(--gray-12);
+    &:hover {
+      background: var(--ds-background-neutral-subtle-hovered);
+    }
+
+    &:active {
+      background: var(--ds-background-neutral-subtle-pressed);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--ds-border-focused);
+      outline-offset: -2px;
     }
   }
 
-  .fold-caret {
+  /* Drawn by <Icon>, so the class lands on SVG the compiler never sees. */
+  :global(.fold-caret) {
     flex-shrink: 0;
-    width: 9px;
-    font-size: var(--ui-fs-lg);
-    line-height: 1;
-    text-align: center;
-    color: var(--gray-11);
-    transition: transform 0.14s;
+    color: var(--ds-icon-subtle);
+    transition: transform 200ms var(--ease);
   }
 
-  /* The same voice the panel's own head speaks in — these are its sections. */
   .fold-label {
     min-width: 0;
-    font-family: var(--sans);
-    font-size: var(--ui-fs-2xs);
-    font-weight: 600;
-    letter-spacing: 1.8px;
-    text-transform: uppercase;
-    color: var(--gray-11);
+    font: var(--ds-font-heading-xsmall);
+    color: var(--ds-text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -116,8 +114,8 @@
     align-items: center;
   }
 
-  /* Indented under its header, so a group that is open says where it ends. */
+  /* Indented to the label, so a group that is open says where it ends. */
   .fold-body {
-    padding: var(--sp-3) var(--sp-2) var(--sp-2) var(--sp-3);
+    padding: var(--ds-space-050) var(--ds-space-200) var(--ds-space-200);
   }
 </style>

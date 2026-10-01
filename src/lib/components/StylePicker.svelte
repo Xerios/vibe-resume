@@ -1,4 +1,7 @@
 <script>
+  import Icon from '@iconify/svelte'
+  import IconClose from '@iconify-icons/lucide/x'
+  import IconCheck from '@iconify-icons/lucide/check'
   import { commands } from '$lib/cv/state/commands.js'
   import { look, parts, ui } from '$lib/cv/state/state.svelte.js'
   import { PRESETS } from '$lib/cv/template/compositions.js'
@@ -61,8 +64,13 @@
 
 <aside id="style-pane" in:fly={{ y: -8, duration: 200 }}>
   <div class="style-head">
-    <span>Style</span>
-    <span class="style-preset" title={presetName}>{presetName}</span>
+    <div class="style-head-text">
+      <h2>Style</h2>
+      <span class="style-preset" title={presetName}>{presetName}</span>
+    </div>
+    <button class="ds-icon-btn" aria-label="Close style" onclick={() => commands.toggleSidePanel('style')}>
+      <Icon icon={IconClose} width="16" height="16" />
+    </button>
   </div>
 
   <div class="style-body">
@@ -73,7 +81,7 @@
     <Foldout label="Preset" open={groups.preset} onToggle={() => toggleGroup('preset')}>
       <div class="layout-grid">
         {#each PRESETS as p (p.id)}
-          <button class="layout-opt" class:on={p.id === look.preset} title={p.hint} aria-pressed={p.id === look.preset} onclick={() => commands.setPreset(p.id)}>
+          <button class="layout-opt" class:selected={p.id === look.preset} title={p.hint} aria-pressed={p.id === look.preset} onclick={() => commands.setPreset(p.id)}>
             <TemplateThumb id={p.id} />
             <span>{p.name}</span>
           </button>
@@ -87,7 +95,7 @@
     <Foldout label="Blocks" open={groups.blocks} onToggle={() => toggleGroup('blocks')}>
       {#snippet head()}
         {#if look.modified}
-          <button class="blocks-reset" title="Put every block back to what this preset says" onclick={commands.resetVariants}>reset</button>
+          <button class="blocks-reset ds-btn subtle compact" title="Put every block back to what this preset says" onclick={commands.resetVariants}>Reset</button>
         {/if}
       {/snippet}
       <div class="blocks-list">
@@ -100,7 +108,7 @@
     <Foldout label="Theme" open={groups.theme} onToggle={() => toggleGroup('theme')}>
       <div class="theme-grid">
         {#each THEMES as t (t.id)}
-          <button class="theme-opt" class:on={t.id === look.theme} title={t.name} aria-pressed={t.id === look.theme} onclick={() => commands.setTheme(t.id)} data-cv-theme={t.id}>
+          <button class="theme-opt" class:selected={t.id === look.theme} title={t.name} aria-pressed={t.id === look.theme} onclick={() => commands.setTheme(t.id)} data-cv-theme={t.id}>
             <span class="theme-dot"></span>
             <span>{t.name}</span>
           </button>
@@ -114,7 +122,7 @@
     <Foldout label="Font" open={groups.font} onToggle={() => toggleGroup('font')}>
       <div class="font-grid">
         {#each FONTS as f (f.id)}
-          <button class="font-opt" class:on={f.id === look.font} title={f.hint} aria-pressed={f.id === look.font} onclick={() => commands.setFont(f.id)} data-cv-font={f.id}>
+          <button class="font-opt" class:selected={f.id === look.font} title={f.hint} aria-pressed={f.id === look.font} onclick={() => commands.setFont(f.id)} data-cv-font={f.id}>
             <span class="font-sample">Aa</span>
             <span>{f.name}</span>
           </button>
@@ -133,7 +141,7 @@
     <Foldout label="Paper" open={groups.paper} onToggle={() => toggleGroup('paper')}>
       <div class="paper-grid">
         {#each PAPER_SIZES as s (s.id)}
-          <button class="paper-opt" class:on={s.id === look.paper.size} aria-pressed={s.id === look.paper.size} onclick={() => commands.setPaper({ size: s.id })}>
+          <button class="paper-opt" class:selected={s.id === look.paper.size} aria-pressed={s.id === look.paper.size} onclick={() => commands.setPaper({ size: s.id })}>
             {s.name}
           </button>
         {/each}
@@ -142,7 +150,7 @@
         {#each ORIENTATIONS as o (o.id)}
           <button
             class="paper-opt"
-            class:on={o.id === look.paper.orientation}
+            class:selected={o.id === look.paper.orientation}
             title={o.hint}
             aria-pressed={o.id === look.paper.orientation}
             onclick={() => commands.setPaper({ orientation: o.id })}>
@@ -159,8 +167,8 @@
       {#if ui.desktop}
         <!-- Not part of the file: this is how the preview is looked at, so it
 				     stays out of the document and out of the history. -->
-        <button class="paper-fit" class:on={ui.fitPreview} aria-pressed={ui.fitPreview} title="Scale the preview until a whole page fits across the pane" onclick={commands.toggleFit}>
-          <span class="paper-tick" aria-hidden="true">{ui.fitPreview ? '✓' : ''}</span>
+        <button class="paper-fit" class:selected={ui.fitPreview} aria-pressed={ui.fitPreview} title="Scale the preview until a whole page fits across the pane" onclick={commands.toggleFit}>
+          <span class="paper-tick" aria-hidden="true">{#if ui.fitPreview}<Icon icon={IconCheck} width="12" height="12" />{/if}</span>
           Fit page to pane
         </button>
       {/if}
@@ -170,7 +178,7 @@
 		     reach the editor around it, so there is nothing to validate. -->
     <Foldout label="Custom CSS" open={groups.css} onToggle={() => toggleGroup('css')}>
       <textarea
-        class="css-edit"
+        class="css-edit ds-textfield"
         spellcheck="false"
         autocapitalize="off"
         autocomplete="off"
@@ -186,16 +194,15 @@
 </aside>
 
 <style lang="scss">
-  /* The third column of the split, opposite the editor — same shape as the
-	   history panel, which it takes turns with. Docked, it is a bar's rung;
-	   floating (below), it climbs one. */
+  /* The third column of the split, opposite the editor — the same ADS side
+     panel as History, which it takes turns with. */
   #style-pane {
     flex-shrink: 0;
     width: var(--panel-w);
     display: flex;
     flex-direction: column;
-    background: var(--bg-dark);
-    border-left: var(--hairline) solid var(--gray-6);
+    background: var(--ds-surface);
+    border-left: var(--ds-border-width) solid var(--ds-border);
     overflow: hidden;
     transition: var(--theme-fade);
   }
@@ -204,29 +211,30 @@
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: var(--sp-4);
-    padding: var(--sp-3) var(--sp-3);
-    border-bottom: var(--hairline) solid var(--gray-6);
-    /* The head is the panel's own toolbar, and casts like one. */
-    box-shadow: var(--bar-shadow);
-    position: relative;
-    z-index: 1;
-    font-family: var(--sans);
-    font-size: var(--ui-fs-2xs);
-    font-weight: 600;
-    letter-spacing: 1.8px;
-    text-transform: uppercase;
-    color: var(--gray-11);
+    gap: var(--ds-space-100);
+    padding: var(--ds-space-150) var(--ds-space-150) var(--ds-space-150) var(--ds-space-200);
+    border-bottom: var(--ds-border-width) solid var(--ds-border);
   }
 
-  /* The preset in play names what the groups below are set to; it is a value
-	   rather than a label, so it doesn't shout like one. */
+  .style-head-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-space-025);
+
+    h2 {
+      margin: 0;
+      font: var(--ds-font-heading-small);
+      color: var(--ds-text);
+    }
+  }
+
+  /* The preset in play names what the groups below are set to. */
   .style-preset {
     min-width: 0;
-    letter-spacing: 0.5px;
-    text-transform: none;
-    color: var(--gray-11);
+    font: var(--ds-font-body-small);
+    color: var(--ds-text-subtlest);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -246,121 +254,106 @@
     display: block;
     width: 100%;
     height: 132px;
-    padding: var(--sp-3);
-    background: var(--bg);
-    border: var(--hairline) solid var(--gray-7);
-    border-radius: var(--corner-xs);
-    box-shadow: var(--inset-shadow);
-    color: var(--gray-12);
-    font-family: var(--mono);
-    font-size: var(--ui-fs-sm);
-    line-height: 1.55;
+    padding: var(--ds-space-075) var(--ds-space-100);
+    font: var(--ds-font-code);
     tab-size: 2;
     resize: vertical;
     white-space: pre;
     overflow: auto;
-
-    &:focus {
-      outline: none;
-      border-color: var(--accent-8);
-      box-shadow: var(--inset-shadow), var(--focus-halo);
-    }
-
-    /* The template shows through as the placeholder, so an empty editor still
-	     says which tokens are worth reaching for. */
-    &::placeholder {
-      color: var(--gray-10);
-    }
   }
 
   .css-hint {
-    margin: var(--sp-3) 0 0;
-    font-size: var(--ui-fs-sm);
-    line-height: 1.45;
-    color: var(--gray-11);
+    margin: var(--ds-space-100) 0 0;
+    font: var(--ds-font-body-small);
+    color: var(--ds-text-subtlest);
 
     code {
       font-family: var(--mono);
-      font-size: var(--ui-fs-2xs);
-      color: var(--gray-12);
-    }
-  }
-
-  .blocks-reset {
-    padding: 0;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-family: var(--sans);
-    font-size: var(--ui-fs-2xs);
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    /* Step 11, because this is accent used as *text* — step 9 is a fill, and
-		   Radix does not guarantee it legible at 9px on a step 2 panel. */
-    color: var(--accent-11);
-
-    &:hover {
-      color: var(--accent-12);
+      color: var(--ds-text);
+      background: var(--ds-background-neutral);
+      border-radius: var(--ds-radius-small);
+      padding: 0 var(--ds-space-025);
     }
   }
 
   .blocks-list {
     display: flex;
     flex-direction: column;
-    gap: var(--sp-2);
+    gap: var(--ds-space-050);
   }
 
   .layout-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: var(--sp-1);
+    gap: var(--ds-space-100);
   }
 
-  /* Every option here is a control on a panel that is one rung docked and
-	   another floating, so the fills are alpha steps — see controls.scss. */
+  /* Every option here is a selectable card: the raised surface at rest, and
+     ADS's selected border and fill once chosen. The border is always drawn,
+     transparent at rest, so picking one doesn't shift the grid. */
+  .layout-opt,
+  .theme-opt,
+  .font-opt,
+  .paper-opt,
+  .paper-fit {
+    background: var(--ds-surface-raised);
+    border: var(--ds-border-width-selected) solid transparent;
+    border-radius: var(--ds-radius-medium);
+    box-shadow: var(--ds-shadow-raised);
+    cursor: pointer;
+    font: var(--ds-font-body);
+    color: var(--ds-text);
+    transition: var(--hover-fade);
+
+    &:hover {
+      background: var(--ds-surface-raised-hovered);
+    }
+
+    &:active {
+      background: var(--ds-surface-raised-pressed);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--ds-border-focused);
+      outline-offset: 2px;
+    }
+
+    &.selected {
+      background: var(--ds-background-selected);
+      border-color: var(--ds-border-selected);
+      color: var(--ds-text-selected);
+      box-shadow: none;
+
+      &:hover {
+        background: var(--ds-background-selected-hovered);
+      }
+    }
+  }
+
   .layout-opt {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--sp-1);
-    padding: var(--sp-2) var(--sp-1);
-    background: var(--gray-a3);
-    border: var(--hairline) solid var(--gray-a4);
-    border-radius: var(--corner-xs);
-    cursor: pointer;
-    font-family: var(--sans);
-    font-size: var(--ui-fs-2xs);
-    font-weight: 600;
-    letter-spacing: 0.3px;
-    color: var(--gray-12);
-    transition: var(--hover-fade);
-
-    &:hover {
-      background: var(--gray-a4);
-      border-color: var(--gray-a7);
-    }
-
-    &.on {
-      border-color: var(--accent-9);
-      color: var(--accent-contrast);
-      background: var(--accent-9);
-    }
+    gap: var(--ds-space-050);
+    padding: var(--ds-space-075) var(--ds-space-050);
+    font: var(--ds-font-body-small);
+    font-weight: var(--ds-font-weight-medium);
   }
 
   .theme-grid,
   .font-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: var(--sp-1);
+    gap: var(--ds-space-100);
   }
 
   /* One row per question — the sizes, then the two orientations — rather than
-	   one grid of six, so that neither reads as an answer to the other. */
+     one grid of six, so that neither reads as an answer to the other. */
   .paper-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: var(--sp-1);
-    margin-bottom: var(--sp-1);
+    gap: var(--ds-space-100);
+    margin-bottom: var(--ds-space-100);
 
     &.two {
       grid-template-columns: repeat(2, 1fr);
@@ -368,7 +361,7 @@
   }
 
   .paper-runs {
-    margin-top: var(--sp-4);
+    margin-top: var(--ds-space-150);
   }
 
   .theme-opt,
@@ -376,33 +369,9 @@
   .paper-opt {
     display: flex;
     align-items: center;
-    gap: var(--sp-3);
-    padding: var(--sp-1) var(--sp-3);
-    background: var(--gray-a3);
-    border: var(--hairline) solid var(--gray-a4);
-    border-radius: var(--corner-xs);
-    cursor: pointer;
-    font-family: var(--sans);
-    font-size: var(--ui-fs-sm);
-    font-weight: 550;
-    color: var(--gray-12);
-    transition: var(--hover-fade);
-  }
-
-  .theme-opt,
-  .font-opt,
-  .paper-opt,
-  .paper-fit {
-    &:hover {
-      background: var(--gray-a4);
-      border-color: var(--gray-a7);
-    }
-
-    &.on {
-      border-color: var(--accent-9);
-      color: var(--accent-contrast);
-      background: var(--accent-9);
-    }
+    gap: var(--ds-space-100);
+    min-height: var(--control-h);
+    padding: var(--ds-space-050) var(--ds-space-100);
   }
 
   .paper-opt {
@@ -410,56 +379,57 @@
   }
 
   /* The page, at the shape the button is offering. Drawn rather than named,
-	   because which way round it goes is the whole answer. */
+     because which way round it goes is the whole answer. */
   .paper-shape {
     flex-shrink: 0;
-    width: 8px;
-    height: 11px;
-    border: var(--hairline) solid currentColor;
-    opacity: 0.75;
+    width: 9px;
+    height: 12px;
+    border: 1.5px solid currentColor;
+    border-radius: 1px;
 
     &.wide {
-      width: 11px;
-      height: 8px;
+      width: 12px;
+      height: 9px;
     }
   }
 
-  /* Same face as the options above it, but it answers a different kind of
-	   question — on or off, and about the pane rather than about the file — so
-	   it is a full-width row with a tick rather than one of a pair. */
+  /* On or off, and about the pane rather than about the file — so it is a
+     full-width row with a checkbox rather than one of a pair. */
   .paper-fit {
     display: flex;
     align-items: center;
-    gap: var(--sp-3);
+    gap: var(--ds-space-100);
     width: 100%;
-    margin-top: var(--sp-4);
-    padding: var(--sp-1) var(--sp-3);
-    background: var(--gray-a3);
-    border: var(--hairline) solid var(--gray-a4);
-    border-radius: var(--corner-xs);
-    cursor: pointer;
-    font-family: var(--sans);
-    font-size: var(--ui-fs-sm);
-    font-weight: 550;
-    color: var(--gray-12);
-    transition: var(--hover-fade);
+    min-height: var(--control-h);
+    margin-top: var(--ds-space-150);
+    padding: var(--ds-space-050) var(--ds-space-100);
   }
 
+  /* An ADS checkbox: a 2px-bordered square that fills with the brand colour. */
   .paper-tick {
     flex-shrink: 0;
-    width: 11px;
-    text-align: center;
-    color: currentColor;
+    display: grid;
+    place-items: center;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--ds-border-input);
+    border-radius: 2px;
+    color: var(--ds-text-inverse);
+
+    .selected & {
+      background: var(--ds-background-brand-bold);
+      border-color: var(--ds-background-brand-bold);
+    }
   }
 
   /* The specimen, in the stack the option's own `data-cv-font` declares. The
-	   name beside it stays in the picker's type, so the two read as label and
-	   sample rather than as one mixed line. */
+     name beside it stays in the picker's type, so the two read as label and
+     sample rather than as one mixed line. */
   .font-sample {
     flex-shrink: 0;
-    width: 17px;
+    width: 20px;
     font-family: var(--f-sans);
-    font-size: var(--ui-fs-lg);
+    font-size: 16px;
     font-weight: 600;
     line-height: 1;
     text-align: center;
@@ -467,38 +437,36 @@
   }
 
   /* Accent over the sheet colour it sits on, so a swatch previews the pairing.
-	   The tokens come from the `data-cv-theme` on the option itself (palettes.css).
+     The tokens come from the `data-cv-theme` on the option itself (palettes.css).
 
-	   The light ramp whatever the app is set to, because that is what the sheet
-	   renders from — a swatch that darkened with the chrome would be advertising
-	   a CV the preview can no longer produce. Square like everything else here;
-	   the CV's palette is data the chrome displays, not part of the chrome. */
+     The light ramp whatever the app is set to, because that is what the sheet
+     renders from — a swatch that darkened with the chrome would be advertising
+     a CV the preview can no longer produce. */
   .theme-dot {
     flex-shrink: 0;
-    width: 12px;
-    height: 12px;
-    border-radius: var(--corner-xs);
+    width: 16px;
+    height: 16px;
+    border-radius: var(--ds-radius-full);
     background: var(--t-accent-l);
     box-shadow:
-      inset 0 0 0 3px var(--t-paper-l),
-      inset 0 0 0 4px var(--t-accent-l);
+      inset 0 0 0 4px var(--t-paper-l),
+      inset 0 0 0 5px var(--t-accent-l);
   }
 
   /* Stacked layout: there is no third column to sit in, so the panel lifts out
-	   of the flow as an overlay, like the history and trash panels — and takes
-	   the popover's rung and shadow with it. */
+     of the flow onto the overlay surface, like History and Trash. */
   @media (max-width: 900px) {
     #style-pane {
       position: fixed;
-      top: var(--overlay-top);
-      right: var(--sp-3);
+      top: calc(var(--overlay-top) + var(--ds-space-100));
+      right: var(--ds-space-100);
       /* Clear of the status bar, which is fixed to the foot of the shell. */
-      bottom: var(--bar-status);
-      width: min(var(--panel-w), calc(100vw - 2 * var(--sp-3)));
-      background: var(--bg-light);
-      border: var(--hairline) solid var(--gray-6);
-      border-radius: var(--corner-xs);
-      box-shadow: var(--shadow-ring), var(--shadow-md);
+      bottom: calc(var(--bar-status) + var(--ds-space-100));
+      width: min(var(--panel-w), calc(100vw - 2 * var(--ds-space-100)));
+      background: var(--ds-surface-overlay);
+      border: none;
+      border-radius: var(--ds-radius-large);
+      box-shadow: var(--ds-shadow-overlay);
       z-index: 100;
     }
   }

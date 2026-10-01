@@ -21,19 +21,19 @@
    for both. The lint, fold and completion rules stay the editor's own. Each of
    the three prefixes is written once and the rules nest under it.
 
-   Colours come from the --cm-* tokens in src/lib/styles/tokens.scss, from the
-   surface ladder where a surface is a surface, and from the Radix steps
-   directly for the rest.
+   Colours come from the --cm-* tokens in src/lib/styles/tokens.scss, and from
+   the ADS tokens beside them for everything that is chrome rather than syntax:
+   the surface, the gutter, and the tooltips, which are drawn as ADS menus.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :is(#cm-wrap, .cm-host) {
-  /* The editor is the page — the same rung as the pane it fills, so no seam. */
+  /* The editor is the page — the same surface as the pane it fills, so no seam. */
   .cm-editor {
     height: 100%;
-    background: var(--bg);
-    color: var(--gray-12);
+    background: var(--ds-surface);
+    color: var(--ds-text);
     font-family: var(--mono);
-    font-size: var(--ui-fs-md);
+    font-size: 13px;
     transition: var(--theme-fade);
 
     &.cm-focused {
@@ -59,18 +59,16 @@
   }
 
   .cm-content {
-    caret-color: var(--accent-9);
+    caret-color: var(--ds-border-focused);
   }
 
-  /* One rung down from the page: a gutter is a strip beside the text, not
-     part of it. */
+  /* The page's own surface with a rule beside it, as ADS's code block draws
+     its line numbers: ornament beside the line, in the subtlest text. */
   .cm-gutters {
     transition: var(--theme-fade);
-    background: var(--bg-dark);
-    border-right: var(--hairline) solid var(--gray-6);
-    /* Step 9, one below the two text steps, and deliberately: a line number is
-       ornament beside the line, not something anyone reads a run of. */
-    color: var(--gray-9);
+    background: var(--ds-surface);
+    border-right: var(--ds-border-width) solid var(--ds-border);
+    color: var(--ds-text-subtlest);
   }
 
   .cm-lineNumbers .cm-gutterElement {
@@ -84,12 +82,12 @@
 
   .cm-activeLineGutter {
     background: var(--cm-active);
-    color: var(--accent-11);
+    color: var(--ds-text);
   }
 
   .cm-cursor,
   .cm-dropCursor {
-    border-left-color: var(--accent-9);
+    border-left-color: var(--ds-border-focused);
     border-left-width: 2px;
   }
 
@@ -110,7 +108,7 @@
 
     .cm-cmp-range {
       background: var(--cm-diff-add-range);
-      border-radius: 2px;
+      border-radius: var(--ds-radius-small);
     }
   }
 
@@ -119,7 +117,7 @@
 
     .cm-cmp-range {
       background: var(--cm-diff-del-range);
-      border-radius: 2px;
+      border-radius: var(--ds-radius-small);
     }
   }
 
@@ -128,7 +126,7 @@
 
     .cm-cmp-range {
       background: var(--cm-diff-mod-range);
-      border-radius: 2px;
+      border-radius: var(--ds-radius-small);
     }
   }
 
@@ -151,14 +149,14 @@
   /* Highlights what a previewed version changed, relative to just before it. */
   .cm-diff-added {
     background: var(--cm-diff-add-bg);
-    border-radius: 2px;
+    border-radius: var(--ds-radius-small);
   }
 
   .cm-diff-removed {
     background: var(--cm-diff-del-bg);
     color: var(--cm-diff-del-text);
     text-decoration: line-through;
-    border-radius: 2px;
+    border-radius: var(--ds-radius-small);
     white-space: pre-wrap;
   }
 
@@ -167,19 +165,19 @@
      point of it, since the pointer is over on the other pane. */
   .cm-peek-line {
     background: var(--cm-peek);
-    box-shadow: inset 2px 0 0 var(--accent-9);
+    box-shadow: inset 2px 0 0 var(--ds-border-selected);
   }
 
   /* Every other run of whatever's selected — renaming a key shows its twins. */
   .cm-selectionMatch {
     background: var(--cm-match);
-    border-radius: 2px;
+    border-radius: var(--ds-radius-small);
   }
 
   /* ── Folding ──────────────────────────────────── */
   .cm-foldGutter .cm-gutterElement {
     padding: 0 5px 0 1px;
-    color: var(--gray-11);
+    color: var(--ds-icon-subtle);
     opacity: 0.5;
     transition:
       opacity 0.12s ease,
@@ -187,16 +185,16 @@
 
     &:hover {
       opacity: 1;
-      color: var(--accent-11);
+      color: var(--ds-icon-brand);
     }
   }
 
-  /* A control on the page, so an alpha step like every other control. */
+  /* A control on the page: the neutral fill every default button takes. */
   .cm-foldPlaceholder {
-    background: var(--gray-a3);
-    border: var(--hairline) solid var(--gray-6);
-    color: var(--gray-11);
-    border-radius: var(--corner-xs);
+    background: var(--ds-background-neutral);
+    border: none;
+    color: var(--ds-text-subtle);
+    border-radius: var(--ds-radius-small);
     margin: 0 2px;
     padding: 0 5px;
   }
@@ -278,22 +276,20 @@
     background: var(--cm-hint);
   }
 
-  /* A tooltip floats over the page, so it takes the raised rung and the
-     popover shadow like every other menu in the chrome. */
+  /* A tooltip floats over the page, so it takes the overlay surface and its
+     shadow like every other menu in the chrome. */
   .cm-tooltip.cm-tooltip-lint {
-    background: var(--bg-light);
-    border: var(--hairline) solid var(--gray-6);
-    border-radius: var(--corner-xs);
-    box-shadow: var(--shadow-ring), var(--shadow-md);
+    background: var(--ds-surface-overlay);
+    border: none;
+    border-radius: var(--ds-radius-medium);
+    box-shadow: var(--ds-shadow-overlay);
     overflow: hidden;
   }
 
   .cm-diagnostic {
-    font-family: var(--mono);
-    font-size: var(--ui-fs-md);
-    line-height: 1.5;
-    color: var(--gray-12);
-    padding: 5px 8px;
+    font: var(--ds-font-body);
+    color: var(--ds-text);
+    padding: var(--ds-space-100) var(--ds-space-150);
     margin: 0;
     max-width: 320px;
   }
@@ -311,7 +307,7 @@
   }
 
   .cm-diagnosticSource {
-    color: var(--gray-11);
+    color: var(--ds-text-subtlest);
   }
 
   /* ── Completion ───────────────────────────────── */
@@ -320,31 +316,36 @@
      so the same id prefix reaches it — and has to, since the base theme's own
      colours are scoped under a generated `&light`/`&dark` class. */
   .cm-tooltip.cm-tooltip-autocomplete {
-    background: var(--bg-light);
-    border: var(--hairline) solid var(--gray-6);
-    border-radius: var(--corner-xs);
-    box-shadow: var(--shadow-ring), var(--shadow-md);
+    background: var(--ds-surface-overlay);
+    border: none;
+    border-radius: var(--ds-radius-medium);
+    box-shadow: var(--ds-shadow-overlay);
     overflow: hidden;
     font-family: var(--mono);
-    font-size: var(--ui-fs-md);
+    font-size: 13px;
   }
 
   .cm-tooltip-autocomplete > ul {
     max-height: 16em;
     font-family: inherit;
 
+    padding: var(--ds-space-050) 0;
+
     > li {
       display: flex;
       align-items: baseline;
-      gap: 6px;
-      padding: 3px 8px;
-      line-height: 1.5;
-      color: var(--gray-12);
+      gap: var(--ds-space-100);
+      padding: var(--ds-space-050) var(--ds-space-150);
+      line-height: 20px;
+      color: var(--ds-text);
+      position: relative;
 
-      /* Selected, not hovered: step 5 is the scale's own word for that. */
+      /* The highlighted entry is an ADS menu's selected item: the selected
+         fill and the bar down its leading edge. */
       &[aria-selected] {
-        background: var(--accent-5);
-        color: var(--accent-12);
+        background: var(--ds-background-selected);
+        color: var(--ds-text-selected);
+        box-shadow: inset 2px 0 0 var(--ds-border-selected);
       }
     }
   }
@@ -353,15 +354,14 @@
   .cm-completionMatchedText {
     text-decoration: none;
     font-weight: 700;
-    color: var(--accent-11);
+    color: var(--ds-text-brand);
   }
 
   .cm-completionDetail {
     margin-left: auto;
     padding-left: 12px;
-    font-style: normal;
-    font-size: var(--ui-fs-sm);
-    color: var(--gray-11);
+    font: var(--ds-font-body-small);
+    color: var(--ds-text-subtlest);
   }
 
   /* Three kinds of thing, three marks: a key, one of a closed set of values, and
@@ -391,25 +391,23 @@
 
   /* The line about the selected entry, off to the side. */
   .cm-tooltip.cm-completionInfo {
-    background: var(--bg-light);
-    border: var(--hairline) solid var(--gray-6);
-    border-radius: var(--corner-xs);
-    box-shadow: var(--shadow-ring), var(--shadow-md);
-    padding: 5px 8px;
-    max-width: 260px;
-    font-family: var(--mono);
-    font-size: var(--ui-fs-md);
-    line-height: 1.5;
-    color: var(--gray-11);
+    background: var(--ds-surface-overlay);
+    border: none;
+    border-radius: var(--ds-radius-medium);
+    box-shadow: var(--ds-shadow-overlay);
+    padding: var(--ds-space-100) var(--ds-space-150);
+    max-width: 280px;
+    font: var(--ds-font-body);
+    color: var(--ds-text-subtle);
   }
 
   /* A section skeleton lands with its fields marked; Tab steps through them. */
   .cm-snippetField {
     background: var(--cm-match);
-    border-radius: 2px;
+    border-radius: var(--ds-radius-small);
   }
 
   .cm-snippetFieldPosition {
-    border-left-color: var(--accent-9);
+    border-left-color: var(--ds-border-focused);
   }
 }

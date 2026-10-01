@@ -7,6 +7,7 @@
   import IconEdit from '@iconify-icons/lucide/dot'
   import IconStyle from '@iconify-icons/lucide/palette'
   import IconCompare from '@iconify-icons/lucide/git-compare'
+  import IconClose from '@iconify-icons/lucide/x'
   import { commands } from '$lib/cv/state/commands.js'
   import { doc } from '$lib/cv/state/state.svelte.js'
   import { formatBytes } from '$lib/cv/state/storage.js'
@@ -89,18 +90,22 @@
 <!-- One glyph per kind of moment, so the list can be read down the left edge:
      a dot is a plain edit, everything else is something the user asked for. -->
 {#snippet mark(/** @type {import('$lib/cv/state/doc.svelte.js').ChangeKind} */ kind)}
-  <Icon icon={MARKS[kind] ?? IconEdit} class="hist-mark" width="11" height="11" aria-hidden="true" />
+  <Icon icon={MARKS[kind] ?? IconEdit} class="hist-mark" width="16" height="16" aria-hidden="true" />
 {/snippet}
 
 <aside id="history-pane" in:fly={{ y: -8, duration: 200 }}>
   <div class="hist-head">
     <div class="hist-title">
-      <span>History</span>
-      <span>{doc.history.length} version{doc.history.length === 1 ? '' : 's'}</span>
+      <h2>History</h2>
+      <span class="ds-badge">{doc.history.length}</span>
+      <div class="ds-spacer"></div>
+      <button class="ds-icon-btn" aria-label="Close history" onclick={() => commands.toggleSidePanel('history')}>
+        <Icon icon={IconClose} width="16" height="16" />
+      </button>
     </div>
     <form class="hist-form" onsubmit={saveCheckpoint}>
-      <input bind:value={name} placeholder="Name this version…" maxlength="60" disabled={doc.isViewingHistory} />
-      <button class="t-btn" type="submit" disabled={doc.isViewingHistory}>Save</button>
+      <input class="ds-textfield compact" bind:value={name} placeholder="Name this version…" maxlength="60" disabled={doc.isViewingHistory} />
+      <button class="ds-btn" type="submit" disabled={doc.isViewingHistory}>Save</button>
     </form>
   </div>
 
@@ -113,6 +118,7 @@
         <button class="hist-item kind-{entry.kind}" class:active={isActive} class:latest={isLatest} title={tooltip(entry)} onclick={() => select(entry)}>
           {@render mark(entry.kind)}
           <span class="hist-msg">{entry.message}</span>
+          {#if entry.kind === 'export'}<span class="ds-lozenge moved">PDF</span>{/if}
           {#if stats}
             <span class="hist-stats">
               {#if stats.added}<span class="stat-add">+{stats.added}</span>{/if}
@@ -125,8 +131,8 @@
 				     The version on screen is what everything is compared against, so it
 				     has nothing to be compared with. -->
         {#if !isActive}
-          <button class="hist-compare" title="Compare with current" aria-label="Compare “{entry.message}” with current" onclick={() => commands.compareVersion(entry)}>
-            <Icon icon={IconCompare} width="11" height="11" />
+          <button class="hist-compare ds-icon-btn compact" title="Compare with current" aria-label="Compare “{entry.message}” with current" onclick={() => commands.compareVersion(entry)}>
+            <Icon icon={IconCompare} width="16" height="16" />
           </button>
         {/if}
         <!-- {#if isActive && !isLatest}
@@ -148,68 +154,46 @@
 </aside>
 
 <style lang="scss">
-  /* Docked, the panel is a bar's rung; floating (below), it climbs one. */
+  /* An ADS side panel: the page's surface, a rule along the edge it shares
+     with the preview, a header row with a title and a close button. */
   #history-pane {
     flex-shrink: 0;
     width: var(--panel-w);
     display: flex;
     flex-direction: column;
-    background: var(--bg-dark);
-    border-left: var(--hairline) solid var(--gray-6);
+    background: var(--ds-surface);
+    border-left: var(--ds-border-width) solid var(--ds-border);
     overflow: hidden;
     transition: var(--theme-fade);
   }
 
   .hist-head {
     flex-shrink: 0;
-    padding: var(--sp-3) var(--sp-3);
-    border-bottom: var(--hairline) solid var(--gray-6);
-    /* The head is the panel's own toolbar, and casts like one. */
-    box-shadow: var(--bar-shadow);
-    position: relative;
-    z-index: 1;
+    padding: var(--ds-space-150) var(--ds-space-150) var(--ds-space-200) var(--ds-space-200);
+    border-bottom: var(--ds-border-width) solid var(--ds-border);
   }
 
   .hist-title {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    font-family: var(--sans);
-    font-size: var(--ui-fs-2xs);
-    font-weight: 600;
-    letter-spacing: 1.8px;
-    text-transform: uppercase;
-    color: var(--gray-11);
-    margin-bottom: var(--sp-3);
+    gap: var(--ds-space-100);
+    margin-bottom: var(--ds-space-150);
+
+    h2 {
+      margin: 0;
+      font: var(--ds-font-heading-small);
+      color: var(--ds-text);
+    }
   }
 
   .hist-form {
     display: flex;
-    gap: var(--sp-2);
+    gap: var(--ds-space-100);
+    padding-right: var(--ds-space-050);
 
     input {
       flex: 1;
       min-width: 0;
-      font-family: var(--sans);
-      font-size: var(--ui-fs-sm);
-      color: var(--gray-12);
-      background: var(--bg);
-      /* A field is an interactive element, so its edge is step 7 — the border
-	       step — rather than the step 6 the panel's own rules take. */
-      border: var(--hairline) solid var(--gray-7);
-      border-radius: var(--corner-xs);
-      box-shadow: var(--inset-shadow);
-      padding: var(--sp-1) var(--sp-3);
-
-      &:focus {
-        outline: none;
-        border-color: var(--accent-8);
-        box-shadow: var(--inset-shadow), var(--focus-halo);
-      }
-
-      &::placeholder {
-        color: var(--gray-10);
-      }
     }
   }
 
@@ -218,15 +202,15 @@
     overflow-y: auto;
     min-height: 0;
     margin: 0;
-    padding: var(--sp-1);
+    padding: var(--ds-space-100);
     list-style: none;
   }
 
   .hist-row {
     display: flex;
-    align-items: stretch;
-    gap: var(--sp-1);
-    margin-bottom: var(--hairline);
+    align-items: center;
+    gap: var(--ds-space-050);
+    margin-bottom: var(--ds-space-025);
 
     .hist-item {
       flex: 1;
@@ -234,136 +218,107 @@
     }
   }
 
-  /* Step 9 at rest — ornament beside the row, like a line number — lifting to
-	   the accent's text step under the pointer. */
   .hist-compare {
-    flex-shrink: 0;
-    display: grid;
-    place-items: center;
-    width: 22px;
-    background: none;
-    border: var(--hairline) solid transparent;
-    border-radius: var(--corner-xs);
-    cursor: pointer;
-    padding: 0;
-    color: var(--gray-9);
-    transition: var(--hover-fade);
-
-    &:hover,
-    &:focus-visible {
-      background: var(--gray-a3);
-      color: var(--accent-11);
-    }
-
-    :global([stroke-width]) {
-      stroke-width: 2.25;
-    }
+    color: var(--ds-icon-subtle);
   }
 
   .hist-item {
     display: flex;
-    align-items: baseline;
-    gap: var(--sp-3);
+    align-items: center;
+    gap: var(--ds-space-100);
     width: 100%;
+    min-height: 36px;
     text-align: left;
-    background: none;
-    border: var(--hairline) solid transparent;
-    border-radius: var(--corner-xs);
+    background: var(--ds-background-neutral-subtle);
+    border: none;
+    border-radius: var(--ds-radius-small);
     cursor: pointer;
-    padding: var(--sp-1) var(--sp-3);
-    font-family: var(--sans);
-    color: var(--gray-12);
+    padding: var(--ds-space-075) var(--ds-space-100);
+    font: var(--ds-font-body);
+    color: var(--ds-text);
     position: relative;
     transition: var(--hover-fade);
 
-    /* An alpha step: the panel is one rung docked and another floating. */
     &:hover {
-      background: var(--gray-a3);
+      background: var(--ds-background-neutral-subtle-hovered);
     }
 
-    /* The row being previewed is *selected*, which is step 5's one job — and it
-	     is the accent's step 5, because which version is on screen is the panel's
-	     whole subject. Step 12 of the same scale is the text that goes on it. */
+    &:active {
+      background: var(--ds-background-neutral-subtle-pressed);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--ds-border-focused);
+      outline-offset: -2px;
+    }
+
+    /* The version on screen: ADS's selected fill, with the selected bar down
+       the leading edge as its side navigation draws the current item. */
     &.active {
-      border-color: transparent;
-      background: var(--accent-5);
-      color: var(--accent-12);
+      background: var(--ds-background-selected);
+      color: var(--ds-text-selected);
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: var(--ds-space-050) auto var(--ds-space-050) 0;
+        width: var(--ds-border-width-selected);
+        border-radius: var(--ds-radius-small);
+        background: var(--ds-border-selected);
+      }
+
+      &:hover {
+        background: var(--ds-background-selected-hovered);
+      }
+
+      .hist-msg,
+      :global(.hist-mark) {
+        color: var(--ds-text-selected);
+      }
     }
 
-    /* Kinds, quietest first: an ordinary edit is background noise, a named version
-	     is a marker, and an export is the CV leaving the app — the loudest of the
-	     three, so its rule comes last and wins over `.latest` on the same row. */
-    &.kind-edit .hist-msg {
-      font-weight: 500;
-      color: var(--gray-11);
+    /* Kinds, quietest first: an ordinary edit or a restyle is background
+       noise, a named version is a marker, and an export is the CV leaving the
+       app and carries a lozenge to say so. */
+    &.kind-edit .hist-msg,
+    &.kind-style .hist-msg {
+      color: var(--ds-text-subtle);
+    }
+
+    &.kind-checkpoint,
+    &.kind-initial,
+    &.kind-restore,
+    &.kind-export {
+      .hist-msg {
+        font-weight: var(--ds-font-weight-semibold);
+      }
     }
 
     &.kind-checkpoint :global(.hist-mark),
     &.kind-initial :global(.hist-mark),
-    &.kind-restore :global(.hist-mark) {
-      color: var(--accent-11);
-    }
-
-    /* A restyle changed no text, so it reads as quietly as an edit does — the
-	     glyph is what says which of the two it was. */
-    &.kind-style .hist-msg {
-      font-weight: 500;
-      color: var(--gray-11);
-    }
-
+    &.kind-restore :global(.hist-mark),
     &.kind-style :global(.hist-mark) {
-      color: var(--accent-11);
+      color: var(--ds-icon-brand);
     }
 
-    &.latest .hist-msg {
-      color: var(--accent-11);
-    }
-
-    &.kind-export {
-      background: var(--amber-3);
-      border-color: transparent;
-
-      &.active {
-        background: var(--accent-5);
-      }
-
-      :global(.hist-mark),
-      .hist-msg {
-        color: var(--amber-11);
-      }
-
-      &.active :global(.hist-mark),
-      &.active .hist-msg {
-        color: var(--accent-12);
-      }
-
-      .hist-msg {
-        font-weight: 700;
-        letter-spacing: 0.2px;
-      }
+    &.kind-export :global(.hist-mark) {
+      color: var(--ds-icon-warning);
     }
   }
 
   /* Drawn by <Icon>, so the class lands on SVG the compiler never sees. */
   :global(.hist-mark) {
     flex-shrink: 0;
-    align-self: center;
-    color: var(--gray-11);
-  }
-
-  :global(.hist-mark [stroke-width]) {
-    stroke-width: 2.25;
+    color: var(--ds-icon-subtle);
   }
 
   .hist-stats {
     flex-shrink: 0;
     display: flex;
-    gap: var(--sp-2);
-    font-family: var(--mono);
-    font-size: var(--ui-fs-2xs);
-    font-weight: 600;
+    gap: var(--ds-space-050);
+    font: var(--ds-font-body-small);
+    font-weight: var(--ds-font-weight-semibold);
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.2px;
   }
 
   .stat-add {
@@ -377,9 +332,6 @@
   .hist-msg {
     flex: 1;
     min-width: 0;
-    font-size: var(--ui-fs-sm);
-    font-weight: 600;
-    line-height: 1.35;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -387,48 +339,43 @@
 
   .hist-time {
     flex-shrink: 0;
-    font-family: var(--mono);
-    font-size: var(--ui-fs-2xs);
-    color: var(--gray-11);
+    font: var(--ds-font-body-small);
+    color: var(--ds-text-subtlest);
   }
 
   .hist-empty {
-    font-family: var(--sans);
-    font-size: var(--ui-fs-sm);
-    color: var(--gray-11);
-    padding: var(--sp-6) var(--sp-3);
-    line-height: 1.6;
+    font: var(--ds-font-body);
+    color: var(--ds-text-subtlest);
+    padding: var(--ds-space-300) var(--ds-space-100);
+    text-align: center;
   }
 
   .hist-foot {
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: var(--sp-4);
-    padding: var(--sp-2) var(--sp-3);
-    border-top: var(--hairline) solid var(--gray-6);
-    font-family: var(--mono);
-    font-size: var(--ui-fs-2xs);
-    color: var(--gray-11);
+    gap: var(--ds-space-100);
+    padding: var(--ds-space-100) var(--ds-space-200);
+    border-top: var(--ds-border-width) solid var(--ds-border);
+    font: var(--ds-font-body-small);
+    color: var(--ds-text-subtlest);
   }
 
   /* Stacked layout: there is no third column to sit in, so the panel lifts out
-	   of the flow as an overlay, like the trash panel — and takes the popover's
-	   rung and shadow with it. Anchored on the tokens the bars are drawn from,
-	   so it can't drift from them when the density moves. */
+     of the flow onto the overlay surface, like the trash popup. Anchored on
+     the tokens the bars are drawn from, so it can't drift from them. */
   @media (max-width: 900px) {
     #history-pane {
       position: fixed;
-      top: var(--overlay-top);
-      right: var(--sp-3);
+      top: calc(var(--overlay-top) + var(--ds-space-100));
+      right: var(--ds-space-100);
       /* Clear of the status bar, which is fixed to the foot of the shell. */
-      bottom: var(--bar-status);
-      width: min(var(--panel-w), calc(100vw - 2 * var(--sp-3)));
-      background: var(--bg-light);
-      border: var(--hairline) solid var(--gray-6);
-      border-radius: var(--corner-xs);
-      box-shadow: var(--shadow-ring), var(--shadow-md);
+      bottom: calc(var(--bar-status) + var(--ds-space-100));
+      width: min(var(--panel-w), calc(100vw - 2 * var(--ds-space-100)));
+      background: var(--ds-surface-overlay);
+      border: none;
+      border-radius: var(--ds-radius-large);
+      box-shadow: var(--ds-shadow-overlay);
       z-index: 100;
     }
   }

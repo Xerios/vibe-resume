@@ -39,9 +39,10 @@
   --danger: #b91c1c;
   --prompt: #9a5b00;
   --prompt-bg: #fbf2e2;
-  /* Slate 5 spelled out — the app's --bg-darker, which the iframe element
-	   and the tab strip above it are drawn on, so the gutter is the same tray. */
-  --bg: #e0e1e6;
+  /* ADS's sunken surface spelled out — the app's --ds-surface-sunken, which
+	   the iframe element and the pane around it are drawn on, so the gutter is
+	   the same canvas. */
+  --bg: #f7f8f9;
   --scroll-thumb: color-mix(in srgb, var(--muted) 36%, transparent);
   --scroll-thumb-hover: color-mix(in srgb, var(--accent) 62%, transparent);
 
@@ -80,12 +81,12 @@
   --theme-fade: background-color 0.22s ease, color 0.22s ease, border-color 0.22s ease;
 }
 
-/* The gutter, in the app's dark scheme. Slate dark step 1, the same step the
-   iframe element itself is drawn on before this document has loaded, so the
-   swap is invisible. The thumb is re-pointed off --muted, which is an ink
+/* The gutter, in the app's dark scheme. ADS's dark sunken surface, the same
+   colour the iframe element itself is drawn on before this document has
+   loaded, so the swap is invisible. The thumb is re-pointed off --muted, which is an ink
    colour and would vanish against this. */
 :root[data-scheme='dark'] {
-  --bg: #111113;
+  --bg: #161a1d;
   --scroll-thumb: rgba(255, 255, 255, 0.22);
   --scroll-thumb-hover: rgba(255, 255, 255, 0.38);
 }

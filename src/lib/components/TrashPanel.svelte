@@ -1,4 +1,6 @@
 <script>
+  import Icon from '@iconify/svelte'
+  import IconClose from '@iconify-icons/lucide/x'
   import { commands } from '$lib/cv/state/commands.js'
   import { files } from '$lib/cv/state/state.svelte.js'
   import { relativeTime } from '$lib/cv/state/storage.js'
@@ -39,8 +41,12 @@
 
 <div id="trash-panel" use:clickOutside in:fly={{ y: -8, duration: 200 }}>
   <div class="trash-head">
-    <span>Trash</span>
-    <span>{files.trashed.length} file{files.trashed.length === 1 ? '' : 's'}</span>
+    <h2 class="trash-title">Trash</h2>
+    <span class="ds-badge">{files.trashed.length}</span>
+    <div class="ds-spacer"></div>
+    <button class="ds-icon-btn compact" aria-label="Close trash" onclick={commands.closeTrash}>
+      <Icon icon={IconClose} width="16" height="16" />
+    </button>
   </div>
 
   <ul class="trash-list">
@@ -51,8 +57,8 @@
           <span class="trash-time">deleted {relativeTime(f.deletedAt, now)}</span>
         </div>
         <div class="trash-actions">
-          <button class="t-btn" onclick={() => commands.restoreTab(f.id)}>Restore</button>
-          <button class="trash-purge" title="Delete forever" onclick={() => commands.purgeTab(f.id)}> Delete </button>
+          <button class="ds-btn compact" onclick={() => commands.restoreTab(f.id)}>Restore</button>
+          <button class="ds-btn subtle compact trash-purge" title="Delete forever" onclick={() => commands.purgeTab(f.id)}>Delete</button>
         </div>
       </li>
     {:else}
@@ -62,19 +68,18 @@
 </div>
 
 <style lang="scss">
-  /* A popover: the raised rung, and the popover shadow to reinforce it. */
+  /* An ADS popup: the overlay surface and its shadow, a header row, a list. */
   #trash-panel {
     position: fixed;
-    top: var(--overlay-top);
-    right: var(--sp-4);
-    width: 252px;
+    top: calc(var(--overlay-top) + var(--ds-space-100));
+    right: var(--ds-space-200);
+    width: var(--panel-w);
     max-height: 60vh;
     display: flex;
     flex-direction: column;
-    background: var(--bg-light);
-    border: var(--hairline) solid var(--gray-6);
-    border-radius: var(--corner-sm);
-    box-shadow: var(--shadow-ring), var(--shadow-lg);
+    background: var(--ds-surface-overlay);
+    border-radius: var(--ds-radius-large);
+    box-shadow: var(--ds-shadow-overlay);
     z-index: 100;
     overflow: hidden;
     transition: var(--theme-fade);
@@ -84,16 +89,14 @@
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: var(--sp-2) var(--sp-4);
-    border-bottom: var(--hairline) solid var(--gray-6);
-    background: var(--bg-dark);
-    font-family: var(--sans);
-    font-size: var(--ui-fs-2xs);
-    font-weight: 600;
-    letter-spacing: 1.8px;
-    text-transform: uppercase;
-    color: var(--gray-11);
+    gap: var(--ds-space-100);
+    padding: var(--ds-space-150) var(--ds-space-150) var(--ds-space-100) var(--ds-space-200);
+  }
+
+  .trash-title {
+    margin: 0;
+    font: var(--ds-font-heading-small);
+    color: var(--ds-text);
   }
 
   .trash-list {
@@ -101,7 +104,7 @@
     overflow-y: auto;
     min-height: 0;
     margin: 0;
-    padding: var(--sp-1);
+    padding: 0 var(--ds-space-100) var(--ds-space-100);
     list-style: none;
   }
 
@@ -109,75 +112,61 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--sp-4);
-    padding: var(--sp-2) var(--sp-3);
-    border-radius: var(--corner-xs);
+    gap: var(--ds-space-150);
+    padding: var(--ds-space-100);
+    border-radius: var(--ds-radius-small);
+    transition: var(--hover-fade);
 
-    /* An alpha step: a solid 3 would sink below the raised rung it is on. */
     &:hover {
-      background: var(--gray-a3);
+      background: var(--ds-background-neutral-subtle-hovered);
     }
   }
 
   .trash-info {
     display: flex;
     flex-direction: column;
-    gap: var(--sp-1);
+    gap: var(--ds-space-025);
     min-width: 0;
   }
 
   .trash-name {
-    font-size: var(--ui-fs-sm);
-    font-weight: 600;
-    color: var(--gray-12);
+    font: var(--ds-font-body);
+    font-weight: var(--ds-font-weight-medium);
+    color: var(--ds-text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .trash-time {
-    font-family: var(--mono);
-    font-size: var(--ui-fs-2xs);
-    color: var(--gray-11);
+    font: var(--ds-font-body-small);
+    color: var(--ds-text-subtlest);
   }
 
   .trash-actions {
     flex-shrink: 0;
     display: flex;
-    gap: var(--sp-1);
+    gap: var(--ds-space-050);
   }
 
-  /* Not a .t-btn: deleting forever should not look like the Restore button
-	   sitting next to it, so it is bare until approached and then goes red. */
+  /* Deleting forever should not look like the Restore button beside it: it is
+     a subtle button in the danger text colour, and only fills when approached. */
   .trash-purge {
-    background: none;
-    border: var(--hairline) solid var(--gray-a4);
-    border-radius: var(--corner-xs);
-    cursor: pointer;
-    font-family: var(--sans);
-    font-size: var(--ui-fs-sm);
-    font-weight: 550;
-    color: var(--gray-11);
-    padding: var(--sp-1) var(--sp-3);
-    transition: var(--hover-fade);
+    color: var(--ds-text-danger);
 
-    &:hover {
-      background: var(--red-9);
-      border-color: var(--red-9);
-      color: var(--accent-contrast);
+    &:hover:not(:disabled) {
+      background: var(--ds-background-danger);
     }
 
-    &:active {
-      background: var(--red-10);
-      border-color: var(--red-10);
+    &:active:not(:disabled) {
+      background: var(--ds-background-danger-hovered);
     }
   }
 
   .trash-empty {
-    font-family: var(--sans);
-    font-size: var(--ui-fs-sm);
-    color: var(--gray-11);
-    padding: var(--sp-6) var(--sp-3);
-    line-height: 1.6;
+    font: var(--ds-font-body);
+    color: var(--ds-text-subtlest);
+    padding: var(--ds-space-300) var(--ds-space-100);
+    text-align: center;
   }
 </style>

@@ -31,17 +31,17 @@
      shows — rather than what the CV says — keep it company at the far end,
      clear of the toolbar buttons that change the document. -->
 <div id="status-bar">
-  <span id="status" class={ui.parseError ? 'err' : 'ok'}>{ui.parseError ? '✗ Error' : '✓ Valid'}</span>
-  <div class="t-spacer"></div>
+  <span id="status" class="ds-lozenge {ui.parseError ? 'removed' : 'success'}">{ui.parseError ? 'YAML error' : 'Valid'}</span>
+  <div class="ds-spacer"></div>
   {#if saveLabel}<span id="save-state">{saveLabel}</span>{/if}
 
   <div class="sb-actions">
     <!-- The one thing here that asks rather than reports, so it is the one thing
 	       wearing a colour. It appears only when a newer build is actually waiting. -->
     {#if swUpdate.available}
-      <button class="sb-btn sb-update" onclick={() => swUpdate.applyUpdate()} use:shortcut={['u', 'A new version is ready — reload to use it']}>
-        <Icon icon={IconRefreshCw} width="12" height="12" />
-        <span class="t-txt"><u>U</u>pdate ready</span>
+      <button class="ds-btn compact sb-update" onclick={() => swUpdate.applyUpdate()} use:shortcut={['u', 'A new version is ready — reload to use it']}>
+        <Icon icon={IconRefreshCw} width="16" height="16" />
+        <span class="ds-txt"><u>U</u>pdate ready</span>
       </button>
     {/if}
 
@@ -49,205 +49,102 @@
 	       always highlighted is furniture rather than information. The struck-out
 	       pointer is what says it has been turned off. -->
     <button
-      class="sb-btn"
+      class="ds-btn subtle compact sb-btn"
       onclick={commands.toggleHoverSync}
       aria-pressed={ui.hoverSync}
       use:shortcut={['f', ui.hoverSync ? 'Stop the editor following the pointer over the preview' : 'Follow the pointer over the preview in the editor']}
     >
       {#if ui.hoverSync}
-        <Icon icon={IconMousePointer2} width="12" height="12" />
+        <Icon icon={IconMousePointer2} width="16" height="16" />
       {:else}
-        <Icon icon={IconMousePointer2Off} width="12" height="12" />
+        <Icon icon={IconMousePointer2Off} width="16" height="16" />
       {/if}
-      <span class="t-txt"><u>F</u>ollow</span>
+      <span class="ds-txt"><u>F</u>ollow</span>
     </button>
 
     <!-- Its neighbour's twin, and unlit on the same grounds: the broken link is
 	       what says the two panes have stopped keeping each other's place. -->
     <button
-      class="sb-btn"
+      class="ds-btn subtle compact sb-btn"
       onclick={commands.toggleScrollSync}
       aria-pressed={ui.scrollSync}
       use:shortcut={['s', ui.scrollSync ? 'Stop the panes scrolling together' : 'Scroll the editor and the preview together']}
     >
       {#if ui.scrollSync}
-        <Icon icon={IconLink2} width="12" height="12" />
+        <Icon icon={IconLink2} width="16" height="16" />
       {:else}
-        <Icon icon={IconLink2Off} width="12" height="12" />
+        <Icon icon={IconLink2Off} width="16" height="16" />
       {/if}
-      <span class="t-txt"><u>S</u>croll</span>
+      <span class="ds-txt"><u>S</u>croll</span>
     </button>
 
-    <button class="sb-btn" class:on={ui.sourceHidden} onclick={commands.toggleSource} use:shortcut={['e', ui.sourceHidden ? 'Show editor' : 'Hide editor (preview only)']}>
+    <button class="ds-btn subtle compact sb-btn" class:selected={ui.sourceHidden} onclick={commands.toggleSource} use:shortcut={['e', ui.sourceHidden ? 'Show editor' : 'Hide editor (preview only)']}>
       {#if ui.sourceHidden}
-        <Icon icon={IconEyeOff} width="12" height="12" />
+        <Icon icon={IconEyeOff} width="16" height="16" />
       {:else}
-        <Icon icon={IconEye} width="12" height="12" />
+        <Icon icon={IconEye} width="16" height="16" />
       {/if}
       <!-- One letter, two labels: the mnemonic stays put wherever the toggle is. -->
-      <span class="t-txt"><u>E</u>ditor</span>
+      <span class="ds-txt"><u>E</u>ditor</span>
     </button>
 
-    <button class="sb-btn sb-theme" onclick={commands.toggleTheme} use:shortcut={['k', 'Toggle dark mode']}>
-      <Icon icon={IconMoon} class="icon-moon" width="13" height="13" />
-      <Icon icon={IconSun} class="icon-sun" width="13" height="13" />
+    <button class="ds-icon-btn compact sb-theme" aria-label="Toggle dark mode" onclick={commands.toggleTheme} use:shortcut={['k', 'Toggle dark mode']}>
+      <Icon icon={IconMoon} class="icon-moon" width="16" height="16" />
+      <Icon icon={IconSun} class="icon-sun" width="16" height="16" />
     </button>
   </div>
 </div>
 
 <style lang="scss">
+  /* A footer strip on the page's surface: it reports, in the small body text,
+     and its switches are compact subtle buttons that only fill on approach. */
   #status-bar {
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    gap: var(--sp-4);
+    gap: var(--ds-space-150);
     height: var(--bar-status);
-    padding: 0 var(--sp-2) 0 var(--sp-4);
-    background: var(--bg-dark);
-    border-top: var(--hairline) solid var(--gray-6);
-    /* The toolbar's drop, turned over: the bar sits on the panes. */
-    box-shadow: 0 -1px 2px rgb(0 0 0 / 0.05);
+    padding: 0 var(--ds-space-100) 0 var(--ds-space-200);
+    background: var(--ds-surface);
+    border-top: var(--ds-border-width) solid var(--ds-border);
     z-index: 8;
     transition: var(--theme-fade);
   }
 
-  #status {
-    font-family: var(--mono);
-    font-size: var(--ui-fs-2xs);
-    font-weight: 600;
-    letter-spacing: 0.4px;
-    text-transform: uppercase;
-    padding: 0 var(--sp-2);
-    border-radius: var(--corner-xs);
-    transition: var(--theme-fade);
-
-    /* Two soft containers: step 3 as the fill, step 11 as the word on it. That
-	     pair is Radix's whole answer to a tinted badge — 3 is the background step
-	     and 11 is guaranteed legible on it — and it holds in both schemes, so
-	     neither pill needs a dark branch of its own. */
-    &.ok {
-      color: var(--grass-11);
-      background: var(--grass-3);
-      box-shadow: inset 0 0 0 var(--hairline) var(--grass-a6);
-    }
-
-    &.err {
-      color: var(--red-11);
-      background: var(--red-3);
-      box-shadow: inset 0 0 0 var(--hairline) var(--red-a6);
-    }
-  }
-
   #save-state {
-    font-family: var(--mono);
-    font-size: var(--ui-fs-2xs);
-    letter-spacing: 0.3px;
-    color: var(--gray-11);
+    font: var(--ds-font-body-small);
+    color: var(--ds-text-subtlest);
     white-space: nowrap;
   }
 
   .sb-actions {
     display: flex;
     align-items: center;
-    gap: var(--sp-1);
+    gap: var(--ds-space-025);
   }
 
-  /* Not a .t-btn: a filled button is too much furniture for a bar this thin, so
-	   these are bare and take a surface only on approach. */
   .sb-btn {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-2);
-    background: none;
-    border: none;
-    border-radius: var(--corner-xs);
-    cursor: pointer;
-    font-family: var(--sans);
-    font-size: var(--ui-fs-sm);
-    font-weight: 550;
-    color: var(--gray-11);
-    white-space: nowrap;
-    padding: var(--sp-1) var(--sp-3);
-    transition: var(--theme-fade);
-
-    /* Bare until approached, and then the same alpha steps every other control
-	     here walks: 3 on hover, 4 held down. The label climbs from the
-	     low-contrast text step to the high-contrast one at the same time. */
-    &:hover {
-      background: var(--gray-a3);
-      color: var(--gray-12);
-      transition: var(--hover-fade);
-    }
-
-    &:active {
-      background: var(--gray-a4);
-    }
-
-    &.on {
-      background: var(--accent-9);
-      color: var(--accent-contrast);
-
-      &:hover {
-        background: var(--accent-10);
-        color: var(--accent-contrast);
-      }
-    }
-
-    /* Drawn by <Icon>, so the elements are ones the compiler never sees. */
-    :global([stroke-width]) {
-      stroke-width: 2.25;
-    }
+    font: var(--ds-font-body-small);
+    font-weight: var(--ds-font-weight-medium);
   }
 
-  /* Amber, as everywhere else something wants attention without being wrong — the
-	   detached-history banner wears the same 3/11 pair. Amber is the one hue
-	   whose step 9 does not take white, which is exactly why the soft container
-	   rather than the solid fill is the right way to spend it. */
+  /* ADS's warning appearance: the one thing here that asks rather than
+     reports, and only there when a newer build is actually waiting. */
   .sb-update {
-    background: var(--amber-3);
-    color: var(--amber-11);
-    border: none;
-    padding: 0 var(--sp-2);
-    margin-right: var(--sp-1);
-    animation: sb-update-pulse 2.4s ease-in-out infinite;
+    background: var(--ds-background-warning-bold);
+    color: var(--ds-text-warning-inverse);
+    font: var(--ds-font-body-small);
+    font-weight: var(--ds-font-weight-medium);
+    margin-right: var(--ds-space-050);
 
-    /* Stated after `.sb-btn:hover`, whose colours it has to win against. */
-    &:hover {
-      background: var(--amber-4);
-      color: var(--amber-11);
-    }
-
-    &:active {
-      background: var(--amber-5);
+    &:hover:not(:disabled),
+    &:active:not(:disabled) {
+      background: var(--ds-background-warning-bold);
+      filter: brightness(0.95);
     }
   }
 
-  /* A halo that breathes rather than blinks: enough to catch the eye returning to
-	   the window, not enough to sit in the corner of it nagging. */
-  @keyframes sb-update-pulse {
-    0%,
-    100% {
-      box-shadow: 0 0 0 0 var(--amber-a7);
-    }
-
-    50% {
-      box-shadow: 0 0 0 3px var(--amber-a7);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .sb-update {
-      animation: none;
-    }
-  }
-
-  /* Moon and sun are denser shapes, and were always drawn lighter than the
-	   rest of the chrome. */
-  .sb-theme :global([stroke-width]) {
-    stroke-width: 2;
-  }
-
-  /* One toggle, two glyphs: the ramp in force decides which is drawn. */
+  /* One toggle, two glyphs: the scheme in force decides which is drawn. */
   :global(.icon-moon) {
     display: block;
   }
@@ -264,16 +161,10 @@
     display: block;
   }
 
-  /* Phone width, as everywhere else in the chrome: the word the icon beside it
-	   already says drops out. */
   @media (max-width: 640px) {
     #status-bar {
-      gap: var(--sp-3);
-      padding: 0 var(--sp-2) 0 var(--sp-3);
-    }
-
-    .sb-btn .t-txt {
-      display: none;
+      gap: var(--ds-space-100);
+      padding: 0 var(--ds-space-050) 0 var(--ds-space-100);
     }
   }
 </style>

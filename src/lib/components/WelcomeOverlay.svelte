@@ -3,6 +3,8 @@
   import IconCloudOff from '@iconify-icons/lucide/cloud-off'
   import IconHardDrive from '@iconify-icons/lucide/hard-drive'
   import IconShieldCheck from '@iconify-icons/lucide/shield-check'
+  import IconClose from '@iconify-icons/lucide/x'
+  import logo from '$lib/assets/favicon.svg'
   import { commands } from '$lib/cv/state/commands.js'
 
   /** @type {HTMLButtonElement | undefined} */
@@ -18,45 +20,79 @@
   function onKeydown(e) {
     if (e.key === 'Escape') commands.dismissWelcome()
   }
+
+  /**
+   * A click on the backdrop closes the dialog — but only one that also *began*
+   * there, so a drag that starts inside the card (selecting text, say) and is
+   * let go of outside it doesn't.
+   */
+  let downOnBackdrop = false
+
 </script>
 
 <svelte:window onkeydown={onKeydown} />
 
 <!-- Not a <dialog>: nothing underneath is interactive yet, and the backdrop is
      part of the dimming rather than a separate layer to keep in sync. -->
-<div id="welcome" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
+<!-- The keyboard way out is Escape, on the window above. -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<div
+  id="welcome"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="welcome-title"
+  tabindex="-1"
+  onpointerdown={e => (downOnBackdrop = e.target === e.currentTarget)}
+  onclick={e => {
+    if (downOnBackdrop && e.target === e.currentTarget) commands.dismissWelcome()
+  }}>
+  <!-- An ADS modal: header with title and close, body, footer with the action. -->
   <div class="w-card">
-    <p class="w-eyebrow">Resume Editor</p>
-    <h1 id="welcome-title">Write your CV in plain text.</h1>
+    <header class="w-head">
+      <img src={logo} alt="" width="32" height="32" />
+      <h1 id="welcome-title">Write your CV in plain text</h1>
+      <button class="ds-icon-btn" aria-label="Close" onclick={commands.dismissWelcome}>
+        <Icon icon={IconClose} width="16" height="16" />
+      </button>
+    </header>
 
-    <p class="w-lede">
-      An offline-ready, local-first editor. Nothing is sent to a server — every keystroke, version and export is processed on your own machine.
-    </p>
+    <div class="w-body">
+      <p class="w-lede">
+        An offline-ready, local-first editor. Nothing is sent to a server — every keystroke, version and export is processed on your own machine.
+      </p>
 
-    <ul class="w-points">
-      <li>
-        <Icon icon={IconCloudOff} width="14" height="14" />
-        <span>
-          <strong>No account, no upload.</strong> There is no backend to send your CV to.
-        </span>
-      </li>
-      <li>
-        <Icon icon={IconHardDrive} width="14" height="14" />
-        <span>
-          <strong>Stored in this browser.</strong> Your documents and their version history stay in local storage.
-        </span>
-      </li>
-      <li>
-        <Icon icon={IconShieldCheck} width="14" height="14" />
-        <span>
-          <strong>Works offline.</strong> Install it and it keeps working with the network switched off.
-        </span>
-      </li>
-    </ul>
+      <ul class="w-points">
+        <li>
+          <span class="w-icon"><Icon icon={IconCloudOff} width="16" height="16" /></span>
+          <span>
+            <strong>No account, no upload</strong>
+            There is no backend to send your CV to.
+          </span>
+        </li>
+        <li>
+          <span class="w-icon"><Icon icon={IconHardDrive} width="16" height="16" /></span>
+          <span>
+            <strong>Stored in this browser</strong>
+            Your documents and their version history stay in local storage.
+          </span>
+        </li>
+        <li>
+          <span class="w-icon"><Icon icon={IconShieldCheck} width="16" height="16" /></span>
+          <span>
+            <strong>Works offline</strong>
+            Install it and it keeps working with the network switched off.
+          </span>
+        </li>
+      </ul>
 
-    <button bind:this={startBtn} class="w-start" onclick={commands.dismissWelcome}> Start writing </button>
+      <div class="ds-section-message warning">
+        <span>Clearing your browser data clears your CVs — export a PDF to keep one.</span>
+      </div>
+    </div>
 
-    <p class="w-foot">Clearing your browser data clears your CVs — export a PDF to keep one.</p>
+    <footer class="w-foot">
+      <button bind:this={startBtn} class="ds-btn primary" onclick={commands.dismissWelcome}>Start writing</button>
+    </footer>
   </div>
 </div>
 
@@ -68,116 +104,96 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: var(--sp-6);
-    /* Radix's overlay: black alpha, the one scale that does not flip with the
-	     scheme — a scrim darkens what is behind it either way round. */
-    background: var(--overlay);
-    backdrop-filter: blur(2px);
-    animation: w-fade 0.25s ease;
+    padding: var(--ds-space-200);
+    background: var(--ds-blanket);
+    animation: w-fade 200ms var(--ease);
   }
 
-  /* A dialog is the top rung, under the largest shadow. */
+  /* ADS's small modal: 400px, the overlay surface, the large radius. */
   .w-card {
-    width: min(430px, 100%);
+    width: min(480px, 100%);
     max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--ds-surface-overlay);
+    border-radius: var(--ds-radius-large);
+    box-shadow: var(--ds-shadow-overlay);
+    animation: w-rise 300ms var(--ease);
+  }
+
+  .w-head {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-150);
+    padding: var(--ds-space-300) var(--ds-space-300) var(--ds-space-200);
+
+    img {
+      flex-shrink: 0;
+      border-radius: var(--ds-radius-medium);
+    }
+
+    h1 {
+      flex: 1;
+      margin: 0;
+      font: var(--ds-font-heading-medium);
+      color: var(--ds-text);
+    }
+  }
+
+  .w-body {
     overflow-y: auto;
-    padding: var(--sp-6) var(--sp-6) var(--sp-5);
-    background: var(--bg-lighter);
-    border-radius: var(--corner-md);
-    box-shadow: var(--shadow-ring), var(--shadow-xl);
-    animation: w-rise 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .w-eyebrow {
-    margin: 0 0 var(--sp-3);
-    font-family: var(--sans);
-    font-size: var(--ui-fs-2xs);
-    font-weight: 600;
-    letter-spacing: 1.8px;
-    text-transform: uppercase;
-    color: var(--accent-11);
-  }
-
-  h1 {
-    margin: 0 0 var(--sp-4);
-    font-family: var(--sans);
-    font-size: var(--ui-fs-2xl);
-    font-weight: 650;
-    line-height: 1.25;
-    color: var(--gray-12);
+    padding: var(--ds-space-025) var(--ds-space-300);
   }
 
   .w-lede {
-    margin: 0 0 var(--sp-5);
-    font-family: var(--sans);
-    font-size: var(--ui-fs-lg);
-    line-height: 1.6;
-    color: var(--gray-11);
+    margin: 0 0 var(--ds-space-300);
+    font: var(--ds-font-body);
+    color: var(--ds-text);
   }
 
   .w-points {
-    margin: 0 0 var(--sp-6);
+    margin: 0 0 var(--ds-space-300);
     padding: 0;
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: var(--sp-4);
+    gap: var(--ds-space-200);
 
     li {
       display: flex;
       align-items: flex-start;
-      gap: var(--sp-3);
-      font-family: var(--sans);
-      font-size: var(--ui-fs-md);
-      line-height: 1.55;
-      color: var(--gray-11);
-
-      :global(svg) {
-        flex-shrink: 0;
-        margin-top: 2px;
-        color: var(--accent-11);
-      }
-    }
-
-    /* Iconify's lucide ships at stroke-width 2; the chrome runs bolder. */
-    :global([stroke-width]) {
-      stroke-width: 2.25;
+      gap: var(--ds-space-150);
+      font: var(--ds-font-body);
+      color: var(--ds-text-subtle);
     }
 
     strong {
-      font-weight: 620;
-      color: var(--gray-12);
+      display: block;
+      font: var(--ds-font-heading-xsmall);
+      color: var(--ds-text);
+      margin-bottom: var(--ds-space-025);
     }
   }
 
-  /* The only way out of the overlay, so it is lit rather than bare — the same
-	   weight Export carries in the toolbar. */
-  .w-start {
-    width: 100%;
-    padding: var(--sp-3);
-    background: var(--accent-9);
-    border: none;
-    border-radius: var(--corner-xs);
-    cursor: pointer;
-    font-family: var(--sans);
-    font-size: var(--ui-fs-md);
-    font-weight: 600;
-    letter-spacing: 0.4px;
-    color: var(--accent-contrast);
-    transition: var(--hover-fade);
-
-    &:hover {
-      background: var(--accent-10);
-    }
+  /* An icon tile, the way ADS lists features: the brand icon on the palest
+     brand fill. */
+  .w-icon {
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--ds-radius-medium);
+    background: var(--ds-background-selected);
+    color: var(--ds-icon-brand);
   }
 
   .w-foot {
-    margin: var(--sp-5) 0 0;
-    font-family: var(--mono);
-    font-size: var(--ui-fs-2xs);
-    line-height: 1.6;
-    text-align: center;
-    color: var(--gray-11);
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--ds-space-100);
+    padding: var(--ds-space-300);
   }
 
   @keyframes w-fade {
@@ -189,7 +205,7 @@
   @keyframes w-rise {
     from {
       opacity: 0;
-      transform: translateY(10px);
+      transform: translateY(16px);
     }
   }
 

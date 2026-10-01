@@ -352,6 +352,14 @@
       commands.closeCompare()
     }
   }
+
+  /**
+   * A click on the backdrop closes the dialog — but only one that also *began*
+   * there, so a drag that starts inside the card (selecting text, say) and is
+   * let go of outside it doesn't.
+   */
+  let downOnBackdrop = false
+
 </script>
 
 <svelte:window onkeydown={onKeydown} />
@@ -362,19 +370,20 @@
   {@const live = ref.fileId === files.activeId}
   <div class="cmp-pick">
     {#if side === 'a'}
-      <select bind:this={firstControl} aria-label="Left document" value={ref.fileId} onchange={e => setFile(side, e.currentTarget.value)}>
+      <select class="ds-select compact" bind:this={firstControl} aria-label="Left document" value={ref.fileId} onchange={e => setFile(side, e.currentTarget.value)}>
         {#each files.open as f (f.id)}
           <option value={f.id}>{f.name}</option>
         {/each}
       </select>
     {:else}
-      <select aria-label="Right document" value={ref.fileId} onchange={e => setFile(side, e.currentTarget.value)}>
+      <select class="ds-select compact" aria-label="Right document" value={ref.fileId} onchange={e => setFile(side, e.currentTarget.value)}>
         {#each files.open as f (f.id)}
           <option value={f.id}>{f.name}</option>
         {/each}
       </select>
     {/if}
     <select
+      class="ds-select compact"
       aria-label="{side === 'a' ? 'Left' : 'Right'} version"
       value={ref.versionKey ?? ''}
       disabled={!live}
@@ -390,36 +399,46 @@
   </div>
 {/snippet}
 
-<div id="compare" role="dialog" aria-modal="true" aria-labelledby="compare-title">
+<!-- The keyboard way out is Escape, on the window above. -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<div
+  id="compare"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="compare-title"
+  tabindex="-1"
+  onpointerdown={e => (downOnBackdrop = e.target === e.currentTarget)}
+  onclick={e => {
+    if (downOnBackdrop && e.target === e.currentTarget) commands.closeCompare()
+  }}>
   <div class="cmp-card">
-    <div class="cmp-bar">
-      <span id="compare-title" class="cmp-title">Compare</span>
+    <header class="cmp-bar">
+      <h2 id="compare-title" class="cmp-title">Compare</h2>
 
       <!-- The tally doubles as the legend: each figure is set in the wash its
 			     lines are drawn with. -->
       <span class="cmp-counts" aria-live="polite">
-        <span class="c-add" title="Lines added">+{diff.counts.added}</span>
-        <span class="c-del" title="Lines removed">−{diff.counts.removed}</span>
-        <span class="c-mod" title="Lines changed">~{diff.counts.changed}</span>
-        <span class="c-mov" title="Blocks moved">↕{diff.counts.moved}</span>
+        <span class="ds-lozenge success" title="Lines added">+{diff.counts.added} added</span>
+        <span class="ds-lozenge removed" title="Lines removed">−{diff.counts.removed} removed</span>
+        <span class="ds-lozenge moved" title="Lines changed">~{diff.counts.changed} changed</span>
+        <span class="ds-lozenge information" title="Blocks moved">↕{diff.counts.moved} moved</span>
       </span>
 
-      <div class="t-spacer"></div>
+      <div class="ds-spacer"></div>
 
       <span class="cmp-step">{diff.hunks.length ? `${hunkAt < 0 ? '–' : hunkAt + 1} / ${diff.hunks.length}` : 'No differences'}</span>
-      <button class="t-btn" title="Previous change" aria-label="Previous change" disabled={!diff.hunks.length} onclick={() => step(-1)}>
-        <Icon icon={IconPrev} width="12" height="12" />
+      <div class="cmp-nav">
+        <button class="ds-icon-btn" title="Previous change" aria-label="Previous change" disabled={!diff.hunks.length} onclick={() => step(-1)}>
+          <Icon icon={IconPrev} width="16" height="16" />
+        </button>
+        <button class="ds-icon-btn" title="Next change" aria-label="Next change" disabled={!diff.hunks.length} onclick={() => step(1)}>
+          <Icon icon={IconNext} width="16" height="16" />
+        </button>
+      </div>
+      <button class="ds-icon-btn" title="Close (Esc)" aria-label="Close" onclick={commands.closeCompare}>
+        <Icon icon={IconClose} width="16" height="16" />
       </button>
-      <button class="t-btn" title="Next change" aria-label="Next change" disabled={!diff.hunks.length} onclick={() => step(1)}>
-        <Icon icon={IconNext} width="12" height="12" />
-      </button>
-      <button class="t-btn" title="Swap sides" aria-label="Swap sides" onclick={swap}>
-        <Icon icon={IconSwap} width="12" height="12" />
-      </button>
-      <button class="t-btn" title="Close (Esc)" aria-label="Close" onclick={commands.closeCompare}>
-        <Icon icon={IconClose} width="12" height="12" />
-      </button>
-    </div>
+    </header>
 
     <div class="cmp-body">
       <div class="cmp-col">
@@ -431,6 +450,14 @@
         <div class="cm-host" bind:this={hostB}></div>
       </div>
     </div>
+
+    <footer class="cmp-foot">
+      <button class="ds-btn subtle" onclick={swap}>
+        <Icon icon={IconSwap} width="16" height="16" />
+        Swap sides
+      </button>
+      <button class="ds-btn primary" onclick={commands.closeCompare}>Done</button>
+    </footer>
   </div>
 </div>
 
@@ -442,79 +469,55 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: var(--sp-6);
-    background: var(--overlay);
-    backdrop-filter: blur(2px);
-    animation: cmp-fade 0.2s ease;
+    padding: var(--ds-space-500) var(--ds-space-300);
+    background: var(--ds-blanket);
+    animation: cmp-fade 200ms var(--ease);
   }
 
-  /* A dialog is the top rung, under the largest shadow. */
+  /* ADS's x-large modal: header, a body that takes the room, a footer. */
   .cmp-card {
     display: flex;
     flex-direction: column;
     width: min(1400px, 100%);
-    height: min(92vh, 100%);
+    height: 100%;
     overflow: hidden;
-    background: var(--bg-lighter);
-    border-radius: var(--corner-md);
-    box-shadow: var(--shadow-ring), var(--shadow-xl);
-    animation: cmp-rise 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+    background: var(--ds-surface-overlay);
+    border-radius: var(--ds-radius-large);
+    box-shadow: var(--ds-shadow-overlay);
+    animation: cmp-rise 300ms var(--ease);
   }
 
   .cmp-bar {
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    gap: var(--sp-3);
-    height: var(--bar-tool);
-    padding: 0 var(--sp-2) 0 var(--sp-4);
-    border-bottom: var(--hairline) solid var(--gray-6);
-
-    .t-btn {
-      padding: var(--sp-3) var(--sp-4);
-    }
+    gap: var(--ds-space-150);
+    padding: var(--ds-space-300) var(--ds-space-300) var(--ds-space-200);
   }
 
   .cmp-title {
-    font-family: var(--sans);
-    font-size: var(--ui-fs-2xs);
-    font-weight: 600;
-    letter-spacing: 1.8px;
-    text-transform: uppercase;
-    color: var(--gray-11);
+    margin: 0 var(--ds-space-100) 0 0;
+    font: var(--ds-font-heading-medium);
+    color: var(--ds-text);
   }
 
   .cmp-counts {
     display: flex;
-    gap: var(--sp-3);
-    font-family: var(--mono);
-    font-size: var(--ui-fs-xs);
-    font-weight: 600;
+    flex-wrap: wrap;
+    gap: var(--ds-space-050);
     font-variant-numeric: tabular-nums;
-  }
-
-  .c-add {
-    color: var(--stat-add);
-  }
-
-  .c-del {
-    color: var(--stat-del);
-  }
-
-  .c-mod {
-    color: var(--amber-11);
-  }
-
-  .c-mov {
-    color: var(--blue-11);
   }
 
   .cmp-step {
-    font-family: var(--mono);
-    font-size: var(--ui-fs-xs);
+    font: var(--ds-font-body-small);
     font-variant-numeric: tabular-nums;
-    color: var(--gray-11);
+    color: var(--ds-text-subtlest);
     white-space: nowrap;
+  }
+
+  .cmp-nav {
+    display: flex;
+    gap: var(--ds-space-025);
   }
 
   .cmp-body {
@@ -522,6 +525,10 @@
     min-height: 0;
     display: grid;
     grid-template-columns: 1fr 1fr;
+    margin: 0 var(--ds-space-300);
+    border: var(--ds-border-width) solid var(--ds-border);
+    border-radius: var(--ds-radius-medium);
+    overflow: hidden;
   }
 
   .cmp-col {
@@ -529,43 +536,28 @@
     flex-direction: column;
     min-width: 0;
     min-height: 0;
+    background: var(--ds-surface);
 
     & + & {
-      border-left: var(--hairline) solid var(--gray-6);
+      border-left: var(--ds-border-width) solid var(--ds-border);
     }
   }
 
   .cmp-pick {
     flex-shrink: 0;
     display: flex;
-    gap: var(--sp-2);
-    padding: var(--sp-2) var(--sp-3);
-    border-bottom: var(--hairline) solid var(--gray-6);
+    gap: var(--ds-space-100);
+    padding: var(--ds-space-100);
+    border-bottom: var(--ds-border-width) solid var(--ds-border);
+    background: var(--ds-surface-sunken);
 
-    /* A field is an interactive element, so its edge is step 7. The version
-	     picker takes what room the file picker leaves. */
+    /* The version picker takes what room the file picker leaves. */
     select {
       min-width: 0;
       flex: 1;
-      font-family: var(--sans);
-      font-size: var(--ui-fs-sm);
-      color: var(--gray-12);
-      background: var(--bg);
-      border: var(--hairline) solid var(--gray-7);
-      border-radius: var(--corner-xs);
-      padding: var(--sp-1) var(--sp-2);
 
       &:first-child {
         flex: 0 1 40%;
-      }
-
-      &:focus {
-        outline: none;
-        border-color: var(--accent-8);
-      }
-
-      &:disabled {
-        opacity: 0.5;
       }
     }
   }
@@ -574,6 +566,14 @@
     flex: 1;
     min-height: 0;
     overflow: hidden;
+  }
+
+  .cmp-foot {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--ds-space-100);
+    padding: var(--ds-space-300);
   }
 
   @keyframes cmp-fade {
@@ -585,7 +585,7 @@
   @keyframes cmp-rise {
     from {
       opacity: 0;
-      transform: translateY(10px);
+      transform: translateY(16px);
     }
   }
 
@@ -597,7 +597,7 @@
   }
 
   /* Stacked: one document over the other, each with its picker over it, so
-	   which is which is never in doubt while scrolling. */
+     which is which is never in doubt while scrolling. */
   @media (max-width: 900px) {
     .cmp-body {
       grid-template-columns: 1fr;
@@ -606,7 +606,11 @@
 
     .cmp-col + .cmp-col {
       border-left: none;
-      border-top: var(--hairline) solid var(--gray-6);
+      border-top: var(--ds-border-width) solid var(--ds-border);
+    }
+
+    .cmp-counts {
+      display: none;
     }
   }
 
@@ -617,18 +621,19 @@
     }
 
     .cmp-card {
-      width: 100%;
-      height: 100%;
       border-radius: 0;
     }
 
-    .cmp-bar {
-      padding: 0 var(--sp-3);
-      gap: var(--sp-2);
+    .cmp-bar,
+    .cmp-foot {
+      padding: var(--ds-space-150);
     }
 
-    .cmp-title {
-      display: none;
+    .cmp-body {
+      margin: 0;
+      border-radius: 0;
+      border-left: none;
+      border-right: none;
     }
   }
 </style>

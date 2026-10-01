@@ -1,5 +1,9 @@
 <script>
   import { onMount, tick } from 'svelte'
+  import Icon from '@iconify/svelte'
+  import IconInfo from '@iconify-icons/lucide/info'
+  import IconAlert from '@iconify-icons/lucide/circle-alert'
+  import IconCheck from '@iconify-icons/lucide/circle-check'
   import { page } from '$app/state'
   import CompareModal from '$lib/components/CompareModal.svelte'
   import HistoryPanel from '$lib/components/HistoryPanel.svelte'
@@ -753,19 +757,28 @@
     <div id="preview-pane" bind:this={previewPane}>
       {#if cv.isViewingHistory}
         {@const entry = cv.viewingEntry}
-        <div id="detached-banner">
-          <span>Viewing “{entry?.message}” — editing is paused</span>
-          <div class="t-spacer"></div>
-          {#if entry}
-            <button class="t-btn" onclick={() => commands.compareVersion(entry)}>Compare</button>
-            <button class="t-btn" onclick={() => cv.restore(entry)}>Restore</button>
-          {/if}
-          <button class="t-btn" onclick={() => cv.viewLatest()}>Back to latest</button>
+        <div id="detached-banner" class="ds-section-message">
+          <Icon icon={IconInfo} width="24" height="24" />
+          <div class="banner-body">
+            <div class="ds-section-message-title">Viewing “{entry?.message}”</div>
+            <div>Editing is paused while you look at an earlier version.</div>
+            <div class="banner-actions">
+              {#if entry}
+                <button class="ds-btn compact" onclick={() => cv.restore(entry)}>Restore this version</button>
+                <button class="ds-btn subtle compact" onclick={() => commands.compareVersion(entry)}>Compare</button>
+              {/if}
+              <button class="ds-btn subtle compact" onclick={() => cv.viewLatest()}>Back to latest</button>
+            </div>
+          </div>
         </div>
       {:else if bannerError}
         <!-- A part that doesn't compile leaves nothing to render at all. -->
-        <div id="error-banner">
-          <span>⚠ {bannerError}</span>
+        <div id="error-banner" class="ds-section-message danger">
+          <Icon icon={IconAlert} width="24" height="24" />
+          <div class="banner-body">
+            <div class="ds-section-message-title">The template didn’t compile</div>
+            <pre>{bannerError}</pre>
+          </div>
         </div>
       {/if}
       <PreviewFrame
@@ -803,7 +816,11 @@
   <CompareModal left={compare.left} right={compare.right} />
 {/if}
 
-<div id="toast" class:show={ui.toastOn}>{ui.toastMsg}</div>
+<!-- An ADS flag: bottom-left, on the overlay surface, with an icon. -->
+<div id="toast" class:show={ui.toastOn} role="status">
+  <span class="toast-icon"><Icon icon={IconCheck} width="24" height="24" /></span>
+  <span>{ui.toastMsg}</span>
+</div>
 
 <style lang="scss">
   /* ── Split ────────────────────────────────────── */
@@ -820,20 +837,16 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    /* The page rung standing in the tray: the shadow along its right edge
-	     is what makes it a sheet of its own rather than a region of the wall. */
-    box-shadow: 1px 0 4px rgb(0 0 0 / 0.06);
     position: relative;
     z-index: 1;
-    /* The page rung, and the same fill CodeMirror's own editor takes — the
-	     pane *is* the editor, so a second tone here would only draw a seam
-	     through it. The preview canvas beside it is the bottom rung, which is
-	     what separates the two in either scheme. */
-    background: var(--bg);
+    /* The page's surface, and the same fill CodeMirror's own editor takes —
+       the pane *is* the editor. The preview beside it is the sunken surface,
+       which is what separates the two in either scheme. */
+    background: var(--ds-surface);
     transition: var(--theme-fade);
 
     /* Kept mounted (not removed) so the Loro/CodeMirror binding stays alive —
-	     Reset and Restore apply text through it even while it's out of view. */
+       Reset and Restore apply text through it even while it's out of view. */
     &.hidden {
       display: none;
     }
@@ -844,37 +857,37 @@
     align-items: center;
     justify-content: center;
     height: 100%;
-    font-family: var(--mono);
-    font-size: var(--ui-fs-sm);
-    color: var(--gray-11);
+    font: var(--ds-font-body);
+    color: var(--ds-text-subtlest);
   }
 
   /* ── Divider ──────────────────────────────────── */
-  /* A rule that can be dragged rather than a bar that happens to be draggable:
-	   at this weight it reads as the seam between two panes, which is what it is. */
+  /* A one-pixel rule that can be dragged, which turns into the focus colour,
+     two pixels wide, while it is being approached — ADS's resize handle. */
   #divider {
     flex-shrink: 0;
-    width: 5px;
-    /* A strip of the tray between the two panes, ruled on both sides, so
-	     the editor and the sheet each end in an edge of their own. */
-    background: var(--bg-darker);
-    border-left: var(--hairline) solid var(--gray-6);
-    border-right: var(--hairline) solid var(--gray-6);
+    width: var(--ds-border-width);
+    background: var(--ds-border);
+    border: none;
     cursor: col-resize;
-    transition: background 0.08s, border-color 0.08s;
+    transition: background-color 100ms var(--ease), box-shadow 100ms var(--ease);
     position: relative;
+    z-index: 2;
     padding: 0;
 
     /* Widens the grab target without widening the line. */
     &::after {
       content: '';
       position: absolute;
-      inset: 0 -5px;
+      inset: 0 -6px;
     }
 
-    &:hover {
-      background: var(--accent-9);
-      border-color: var(--accent-9);
+    &:hover,
+    &:focus-visible,
+    &:active {
+      outline: none;
+      background: var(--ds-border-focused);
+      box-shadow: 0 0 0 1px var(--ds-border-focused);
     }
 
     &.hidden {
@@ -884,113 +897,95 @@
 
   /* ── Preview ──────────────────────────────────── */
   /* A column rather than a scroller: the frame does its own scrolling, so all
-	   this pane holds is the banners stacked above it. That also retires the
-	   `position: sticky` they used to need to stay put over a moving sheet. */
+     this pane holds is the messages stacked above it. */
   #preview-pane {
     flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: var(--bg-darker);
+    background: var(--ds-surface-sunken);
     min-width: 0;
     transition: var(--theme-fade);
   }
 
   /* Mid-drag the pointer is the divider's, wherever it happens to be. The
-	   class is put on <body>, which the compiler can't see from in here. */
+     class is put on <body>, which the compiler can't see from in here. */
   :global(body.resizing) #preview-pane {
     pointer-events: none;
   }
 
-  /* Both banners are the soft container Radix builds out of a hue: step 3 as
-	   the fill, step 6 as the rule under it, step 11 as the words. Red for what
-	   is wrong, amber for what only wants attention. */
-  #error-banner {
+  /* Both messages are ADS section messages, inset from the pane's edges so
+     they read as cards laid over the canvas. */
+  #error-banner,
+  #detached-banner {
     flex-shrink: 0;
-    display: flex;
-    align-items: baseline;
-    gap: var(--sp-5);
-    background: var(--red-3);
-    border-bottom: var(--hairline) solid var(--red-6);
-    color: var(--red-11);
-    font-family: var(--mono);
-    font-size: var(--ui-fs-sm);
-    padding: var(--sp-2) var(--sp-6);
-    white-space: pre-wrap;
-    word-break: break-all;
+    margin: var(--ds-space-200) var(--ds-space-200) 0;
+    z-index: 6;
+  }
 
-    span {
-      flex: 1;
-      min-width: 0;
+  .banner-body {
+    flex: 1;
+    min-width: 0;
+
+    pre {
+      margin: var(--ds-space-050) 0 0;
+      font: var(--ds-font-code);
+      white-space: pre-wrap;
+      word-break: break-word;
     }
   }
 
-  #detached-banner {
-    flex-shrink: 0;
+  .banner-actions {
     display: flex;
-    align-items: center;
-    gap: var(--sp-5);
-    background: var(--amber-3);
-    border-bottom: var(--hairline) solid var(--amber-6);
-    color: var(--amber-11);
-    font-family: var(--mono);
-    font-size: var(--ui-fs-sm);
-    font-weight: 600;
-    padding: var(--sp-2) var(--sp-6);
-    z-index: 6;
-
-    /* The shared button, restated in the banner's own hue: Radix's *outline*
-	     variant, which is a step 7 alpha edge and a step 11 label over whatever is
-	     behind it, hovering to the step 3 alpha wash rather than to a fill. */
-    .t-btn {
-      background: none;
-      border: var(--hairline) solid var(--amber-a7);
-      color: var(--amber-11);
-      padding: var(--sp-1) var(--sp-3);
-
-      &:hover {
-        background: var(--amber-a3);
-        border-color: var(--amber-a8);
-        color: var(--amber-11);
-      }
-    }
+    flex-wrap: wrap;
+    gap: var(--ds-space-100);
+    margin-top: var(--ds-space-150);
   }
 
   /* ── Toast ────────────────────────────────────── */
   #toast {
     position: fixed;
-    bottom: calc(var(--bar-status) + var(--sp-5));
-    left: 50%;
-    transform: translateX(-50%) translateY(10px);
-    /* The two ends of the gray scale, swapped over: step 12 as the fill and
-	     step 1 as the text. Nothing else in the chrome is drawn that way round,
-	     which is what makes a transient message read as laid over the app
-	     rather than as part of it. */
-    background: var(--gray-12);
-    color: var(--gray-1);
-    font-family: var(--sans);
-    font-size: var(--ui-fs-sm);
-    font-weight: 500;
-    padding: var(--sp-3) var(--sp-5);
-    border-radius: var(--corner-xs);
-    box-shadow: var(--shadow-ring), var(--shadow-md);
+    bottom: calc(var(--bar-status) + var(--ds-space-300));
+    left: var(--ds-space-400);
+    display: flex;
+    align-items: flex-start;
+    gap: var(--ds-space-200);
+    width: min(400px, calc(100vw - 2 * var(--ds-space-200)));
+    padding: var(--ds-space-200);
+    background: var(--ds-surface-overlay);
+    color: var(--ds-text);
+    font: var(--ds-font-body);
+    font-weight: var(--ds-font-weight-medium);
+    border-radius: var(--ds-radius-medium);
+    box-shadow: var(--ds-shadow-overlay);
     opacity: 0;
+    transform: translateY(16px);
     transition:
-      opacity 0.2s,
-      transform 0.2s;
+      opacity 200ms var(--ease),
+      transform 300ms var(--ease);
     pointer-events: none;
     z-index: 999;
 
+    span:last-child {
+      padding-top: 2px;
+    }
+
     &.show {
       opacity: 1;
-      transform: translateX(-50%) translateY(0);
+      transform: translateY(0);
     }
+  }
+
+  .toast-icon {
+    flex-shrink: 0;
+    display: flex;
+    color: var(--ds-icon-success);
   }
 
   /* ── Narrow screens ───────────────────────────── */
   /* Below roughly an 820px sheet plus a usable editor, the split stops paying
-	   for itself side by side and stacks instead: editor over preview, with the
-	   history panel lifted out of the flow as an overlay (see HistoryPanel). */
+     for itself side by side and stacks instead: editor over preview, with the
+     side panels lifted out of the flow as overlays (see HistoryPanel). */
   @media (max-width: 900px) {
     #split {
       flex-direction: column;
@@ -1002,6 +997,7 @@
       min-width: 0;
       height: 45%;
       min-height: 120px;
+      border-bottom: var(--ds-border-width) solid var(--ds-border);
     }
 
     #preview-pane {
@@ -1017,6 +1013,10 @@
   @media (max-width: 640px) {
     #editor-pane {
       height: 50%;
+    }
+
+    #toast {
+      left: var(--ds-space-200);
     }
   }
 </style>

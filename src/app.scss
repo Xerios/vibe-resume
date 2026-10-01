@@ -26,11 +26,9 @@
    each font option in the face it offers from the stacks in the other.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Order matters: tokens define what the other two spend — the Radix scales, the
-   surface ladder and the shadows, see the header of tokens.scss. Tokens has to
-   come first for a second reason too: it opens with the plain-CSS @imports of
-   the Radix files, which Sass passes through untouched and Vite then inlines,
-   and a CSS @import is only valid ahead of every other rule. */
+/* Order matters: tokens define what the other two spend — the ADS colour,
+   elevation, space and type tokens, see the header of tokens.scss — and
+   controls holds the shared `.ds-*` components every bar and panel uses. */
 @use './lib/styles/tokens';
 @use './lib/styles/base';
 @use './lib/styles/controls';

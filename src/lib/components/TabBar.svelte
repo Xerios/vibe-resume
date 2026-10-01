@@ -226,7 +226,7 @@
         ondragend={() => (dragId = null)}
       >
         {#if editingId === f.id}
-          <input class="tab-rename" bind:value={editValue} use:focusAndSelect onblur={commitRename} onkeydown={onRenameKeydown} />
+          <input class="tab-rename ds-textfield compact" bind:value={editValue} use:focusAndSelect onblur={commitRename} onkeydown={onRenameKeydown} />
         {:else}
           <button
             class="tab-select"
@@ -245,7 +245,7 @@
           {#if active}
             <div class="tab-menu-group" bind:this={menuGroup}>
               <button
-                class="tab-more"
+                class="tab-more ds-icon-btn compact"
                 bind:this={moreBtn}
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
@@ -254,12 +254,12 @@
                 onclick={() => (menuOpen ? (menuOpen = false) : openMenu())}
                 onkeydown={onMoreKeydown}
               >
-                <Icon icon={IconChevron} width="11" height="11" />
+                <Icon icon={IconChevron} width="16" height="16" />
               </button>
 
               {#if menuOpen}
                 <div
-                  class="tab-menu"
+                  class="tab-menu ds-menu"
                   role="menu"
                   tabindex="-1"
                   bind:this={menu}
@@ -269,25 +269,25 @@
                   onfocusout={onMenuFocusOut}
                   in:fly={{ y: -8, duration: 200 }}
                 >
-                  <button class="menu-item" role="menuitem" onclick={() => pick(commands.duplicateTab)}>
-                    <Icon icon={IconCopy} width="12" height="12" />
+                  <button class="ds-menu-item" role="menuitem" onclick={() => pick(commands.duplicateTab)}>
+                    <Icon icon={IconCopy} width="16" height="16" />
                     <span>Duplicate</span>
                   </button>
-                  <button class="menu-item" role="menuitem" onclick={() => pick(() => startRename(f))}>
-                    <Icon icon={IconPencil} width="12" height="12" />
+                  <button class="ds-menu-item" role="menuitem" onclick={() => pick(() => startRename(f))}>
+                    <Icon icon={IconPencil} width="16" height="16" />
                     <span>Rename</span>
                   </button>
-                  <button class="menu-item" role="menuitem" onclick={() => pick(commands.saveYaml)}>
-                    <Icon icon={IconDownload} width="12" height="12" />
+                  <button class="ds-menu-item" role="menuitem" onclick={() => pick(commands.saveYaml)}>
+                    <Icon icon={IconDownload} width="16" height="16" />
                     <span>Export YAML</span>
                   </button>
-                  <button class="menu-item" role="menuitem" onclick={() => pick(() => commands.openCompare())}>
-                    <Icon icon={IconCompare} width="12" height="12" />
+                  <button class="ds-menu-item" role="menuitem" onclick={() => pick(() => commands.openCompare())}>
+                    <Icon icon={IconCompare} width="16" height="16" />
                     <span>Compare</span>
                   </button>
-                  <div class="menu-sep"></div>
-                  <button class="menu-item danger" role="menuitem" onclick={() => pick(() => commands.closeTab(f.id))}>
-                    <Icon icon={IconTrash} width="12" height="12" />
+                  <div class="ds-menu-sep"></div>
+                  <button class="ds-menu-item danger" role="menuitem" onclick={() => pick(() => commands.closeTab(f.id))}>
+                    <Icon icon={IconTrash} width="16" height="16" />
                     <span>Move to trash</span>
                   </button>
                 </div>
@@ -302,64 +302,68 @@
   <!-- One way to open a tab, and one button for it: a CV from the template.
 	     Copying this one is a thing done to a file, so it lives in the tab's own
 	     menu with the rest of them. -->
-  <button class="tab-new" use:shortcut={['n', 'New CV from the template']} onclick={commands.newFile}>
-    <Icon icon={IconFilePlus} width="12" height="12" />
+  <button class="tab-new ds-btn subtle" use:shortcut={['n', 'New CV from the template']} onclick={commands.newFile}>
+    <Icon icon={IconFilePlus} width="16" height="16" />
+    <span class="ds-txt"><u>N</u>ew CV</span>
   </button>
 
-  <div class="t-spacer"></div>
+  <div class="ds-spacer"></div>
 
   <div id="tab-actions">
     <!-- Beside History because the two are one control between them: they take
 	       turns in the column to the right of the preview. -->
     <button
-      class="t-btn"
-      class:on={ui.sidePanel === 'style'}
+      class="ds-btn subtle"
+      class:selected={ui.sidePanel === 'style'}
       use:shortcut={['t', 'Template, theme and font']}
       onclick={() => commands.toggleSidePanel('style')}
     >
-      <Icon icon={IconLayout} width="12" height="12" />
-      <span class="t-txt"><u>T</u>hemes</span>
+      <Icon icon={IconLayout} width="16" height="16" />
+      <span class="ds-txt"><u>T</u>hemes</span>
     </button>
     <button
-      class="t-btn"
-      class:on={ui.sidePanel === 'history'}
+      class="ds-btn subtle"
+      class:selected={ui.sidePanel === 'history'}
       use:shortcut={['h', 'Show version history']}
       onclick={() => commands.toggleSidePanel('history')}
     >
-      <Icon icon={IconHistory} width="12" height="12" />
-      <span class="t-txt"><u>H</u>istory</span>
-      {#if doc.history.length}<span class="t-count">{doc.history.length}</span>{/if}
+      <Icon icon={IconHistory} width="16" height="16" />
+      <span class="ds-txt"><u>H</u>istory</span>
+      {#if doc.history.length}<span class="ds-badge">{doc.history.length}</span>{/if}
     </button>
   </div>
 </div>
 
 <style lang="scss">
+  /* File tabs on a sunken strip. The open file's tab is lifted onto the
+     editor's surface and joined to it — bordered on three sides, open at the
+     bottom — with the brand colour along its top edge; the rest sit back in
+     the strip until hovered. */
   #tabbar {
     flex-shrink: 0;
     position: relative;
     display: flex;
     align-items: stretch;
-    gap: var(--sp-3);
+    gap: var(--ds-space-100);
     height: var(--bar-tabs);
-    padding: 0 var(--sp-3) 0 0;
-    /* The bottom rung, with the canvas: the tabs are cut into it. The rule
-	     under the strip is an inset shadow rather than a border so that the
-	     active tab, which stretches the full height, paints over it and joins
-	     the pane below. */
-    background: var(--bg-darker);
-    box-shadow: inset 0 calc(-1 * var(--hairline)) 0 var(--gray-6);
+    padding: 0 var(--ds-space-200) 0 var(--ds-space-100);
+    background: var(--ds-surface-sunken);
+    /* The strip's bottom rule. An inset shadow rather than a border so the
+       active tab, which overlaps it by a pixel, can paint over it. */
+    box-shadow: inset 0 calc(-1 * var(--ds-border-width)) 0 var(--ds-border);
     z-index: 9;
     transition: var(--theme-fade);
   }
 
   /* Sized to its tabs and no wider, so the control that opens another one sits
-	   against the last of them rather than across the bar. Shrinks — and scrolls —
-	   only once there are more tabs than room. Its scrollbar is hidden: a bar
-	   this thin leaves no room for one that isn't overlaid. */
+     against the last of them rather than across the bar. Shrinks — and scrolls —
+     only once there are more tabs than room. Its scrollbar is hidden: a strip
+     this thin leaves no room for one that isn't overlaid. */
   #tabs {
     flex: 0 1 auto;
     display: flex;
-    align-items: stretch;
+    align-items: flex-end;
+    gap: var(--ds-space-025);
     min-width: 0;
     overflow-x: auto;
     scrollbar-width: none;
@@ -373,51 +377,53 @@
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    gap: var(--sp-2);
+    gap: var(--ds-space-050);
   }
 
-  /* Full-height cells divided by a rule rather than pills floating in a bar:
-	   the tabs are a strip of the window, and the active one is a hole cut
-	   through to the pane below it — the same rung as the editor. */
   .tab {
     flex-shrink: 0;
+    position: relative;
     display: flex;
     align-items: center;
-    border: none;
-    border-right: var(--hairline) solid var(--gray-6);
-    transition: var(--theme-fade);
-    /* Resting tabs are the bar's rung; the strip behind them is the one
-	     below, so each is a card standing in a darker tray. */
-    background: var(--bg-dark);
-    border-radius: 5px 5px 0 0;
+    gap: var(--ds-space-025);
+    height: calc(var(--bar-tabs) - var(--ds-space-075));
+    padding: 0 var(--ds-space-075) 0 var(--ds-space-100);
+    color: var(--ds-text-subtle);
+    /* A resting tab is still a tab: the neutral fill and a hairline on three
+       sides, so its shape reads against the strip without competing with the
+       one that is open. */
+    background: var(--ds-background-neutral);
+    border: var(--ds-border-width) solid var(--ds-border);
+    border-bottom: none;
+    border-radius: var(--ds-radius-large) var(--ds-radius-large) 0 0;
+    transition: var(--hover-fade);
 
-    &:hover {
-      background: var(--gray-a3);
-      transition: var(--hover-fade);
+    &:hover:not(.active) {
+      color: var(--ds-text);
+      background: var(--ds-background-neutral-hovered);
     }
 
     &.active {
-      background: var(--bg);
-      /* The one mark that says which: a rule in the accent at step 9 along the
-		     top edge, inset so it can't add to the height of the bar. Its
-		     background covers the strip's rule, so it runs into the editor. */
-      box-shadow: inset 0 2px 0 0 var(--accent-9);
-      position: relative;
+      color: var(--ds-text);
+      background: var(--ds-surface);
+      /* The brand edge is the top border itself, doubled by an inset shadow,
+         so it follows the rounded corners down into the side borders rather
+         than stopping short of them. */
+      border-top-color: var(--ds-border-selected);
+      box-shadow: inset 0 var(--ds-border-width) 0 var(--ds-border-selected);
+      /* Down over the strip's rule, so the tab runs into the editor below. */
+      height: calc(var(--bar-tabs) - var(--ds-space-075) + var(--ds-border-width));
+      margin-bottom: calc(-1 * var(--ds-border-width));
       z-index: 1;
-
-      .tab-select {
-        color: var(--gray-12);
-        font-weight: 600;
-      }
     }
 
     /* No caret alongside to balance the label against. */
     &:not(.active) .tab-select {
-      padding-right: var(--sp-4);
+      padding-right: var(--ds-space-075);
     }
 
     /* The tab in hand, while the row rearranges itself around it. Faded rather
-	     than lifted: it is still in the row, in the place it would land. */
+       than lifted: it is still in the row, in the place it would land. */
     &.dragging {
       opacity: 0.5;
     }
@@ -425,33 +431,28 @@
 
   .tab-select {
     display: block;
-    max-width: 150px;
+    max-width: 180px;
+    height: var(--control-h);
     background: none;
     border: none;
+    border-radius: var(--ds-radius-small);
     cursor: pointer;
-    font-family: var(--sans);
-    font-size: var(--ui-fs-sm);
-    color: var(--gray-11);
-    padding: 0 var(--sp-1) 0 var(--sp-4);
+    font: var(--ds-font-body);
+    font-weight: var(--ds-font-weight-medium);
+    color: inherit;
+    padding: 0 var(--ds-space-050);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+
+    &:focus-visible {
+      outline: 2px solid var(--ds-border-focused);
+      outline-offset: -2px;
+    }
   }
 
   .tab-rename {
-    max-width: 150px;
-    font-family: var(--sans);
-    font-size: var(--ui-fs-sm);
-    color: var(--gray-12);
-    background: var(--bg);
-    border: var(--hairline) solid var(--accent-8);
-    border-radius: var(--corner-xs);
-    margin: var(--sp-1) var(--sp-2) var(--sp-1) var(--sp-3);
-    padding: var(--sp-1) var(--sp-2);
-
-    &:focus {
-      outline: none;
-    }
+    width: 180px;
   }
 
   /* ── What can be done to this file ────────────── */
@@ -460,127 +461,26 @@
     align-items: center;
   }
 
-  .tab-more {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    margin-right: var(--sp-2);
-    background: none;
-    border: none;
-    border-radius: var(--corner-xs);
-    cursor: pointer;
-    color: var(--gray-11);
-    padding: 0;
-
-    &:hover,
-    &[aria-expanded='true'] {
-      background: var(--accent-9);
-      color: var(--accent-contrast);
-    }
-  }
-
   /* ── Open another tab ─────────────────────────── */
-  /* Square, and the width of the gutter it sits in. Dashed while it is only an
-	   offer; solid and lit once it is being taken. */
   .tab-new {
-    flex-shrink: 0;
     align-self: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    background: none;
-    border: var(--hairline) dashed var(--gray-7);
-    border-radius: var(--corner-xs);
-    cursor: pointer;
-    color: var(--gray-11);
-    padding: 0;
-    transition: var(--hover-fade);
-
-    &:hover,
-    &:focus-visible {
-      background: var(--accent-9);
-      border-style: solid;
-      border-color: var(--accent-9);
-      color: var(--accent-contrast);
-    }
-  }
-
-  /* Matches the weight .t-btn gives its icons; the glyphs are drawn by <Icon>,
-	   so the compiler never sees the elements to scope them. */
-  .tab-new :global([stroke-width]),
-  .tab-more :global([stroke-width]) {
-    stroke-width: 2.25;
   }
 
   /* Fixed, and placed where the caret was — see `menuAt`. */
   .tab-menu {
     position: fixed;
-    display: flex;
-    flex-direction: column;
-    padding: var(--sp-1);
-    /* A popover is the raised rung, and the shadow says the rest. The ring
-	     inside the shadow holds its edge; a border as well would state it twice. */
-    background: var(--bg-light);
-    border-radius: var(--corner-sm);
-    box-shadow: var(--shadow-ring), var(--shadow-lg);
     z-index: 100;
-  }
-
-  .menu-item {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-3);
-    width: 100%;
-    background: none;
-    border: none;
-    border-radius: var(--corner-xs);
-    cursor: pointer;
-    font-family: var(--sans);
-    font-size: var(--ui-fs-sm);
-    font-weight: 550;
-    color: var(--gray-12);
-    text-align: left;
-    white-space: nowrap;
-    padding: var(--sp-2) var(--sp-4) var(--sp-2) var(--sp-3);
-    transition: var(--hover-fade);
-
-    /* The highlighted row of a menu is the solid step, not a soft one: it is
-	     pointing at what Enter will do, and that wants the full-strength hue. */
-    &:hover,
-    &:focus-visible {
-      background: var(--accent-9);
-      color: var(--accent-contrast);
-      outline: none;
-    }
-
-    /* Same shape in red, because red 9 takes the same contrast colour. */
-    &.danger:hover,
-    &.danger:focus-visible {
-      background: var(--red-9);
-      color: var(--accent-contrast);
-    }
-  }
-
-  .menu-sep {
-    height: var(--hairline);
-    margin: var(--sp-1) var(--sp-2);
-    background: var(--gray-6);
   }
 
   @media (max-width: 640px) {
     #tabbar {
-      gap: var(--sp-2);
-      padding: 0 var(--sp-2) 0 0;
+      gap: var(--ds-space-050);
+      padding: 0 var(--ds-space-100) 0 0;
     }
 
     .tab-select,
     .tab-rename {
-      max-width: 104px;
+      max-width: 112px;
     }
   }
 </style>

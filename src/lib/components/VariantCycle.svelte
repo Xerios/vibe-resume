@@ -1,4 +1,9 @@
 <script>
+  import Icon from '@iconify/svelte'
+  import IconLeft from '@iconify-icons/lucide/chevron-left'
+  import IconRight from '@iconify-icons/lucide/chevron-right'
+  import IconDown from '@iconify-icons/lucide/chevron-down'
+
   /**
    * One axis, as a control: `‹ Chips ›`.
    *
@@ -27,7 +32,7 @@
   let nameBtn = $state(/** @type {HTMLButtonElement | undefined} */ (undefined))
   let menu = $state(/** @type {HTMLDivElement | undefined} */ (undefined))
 
-  const current = $derived(slot.variants.find(v => v.id === choices[slot.id]) ?? slot.variants[0])
+  const current = $derived(slot.variants.find((v) => v.id === choices[slot.id]) ?? slot.variants[0])
 
   /**
    * Wraps. A slot has three or four variants, and stopping at the last one
@@ -55,11 +60,10 @@
   // leaving the row, and hands focus back to the name that opened it.
   $effect(() => {
     if (!open) return
-    /** @type {HTMLElement | null | undefined} */
-    menu?.querySelector('[aria-selected="true"]')?.focus()
+    ;/** @type {HTMLElement | null | undefined} */ (menu?.querySelector('[aria-selected="true"]'))?.focus()
 
     /** @param {PointerEvent} e */
-    const onPointerDown = e => {
+    const onPointerDown = (e) => {
       if (!row?.contains(/** @type {Node | null} */ (e.target))) open = false
     }
     document.addEventListener('pointerdown', onPointerDown)
@@ -117,7 +121,9 @@
   <span class="vc-slot" id="{id}-label">{slot.name}</span>
   <div class="vc-cycle">
     <!-- Mouse-only: the keyboard has Left/Right on the name for the same thing. -->
-    <button class="vc-arrow" tabindex="-1" aria-hidden="true" onclick={() => step(-1)}>‹</button>
+    <button class="vc-arrow" tabindex="-1" aria-hidden="true" onclick={() => step(-1)}>
+      <Icon icon={IconLeft} width="16" height="16" />
+    </button>
     <button
       class="vc-name"
       bind:this={nameBtn}
@@ -126,10 +132,14 @@
       aria-expanded={open}
       aria-controls={open ? `${id}-list` : undefined}
       onclick={() => (open ? close() : (open = true))}
-      onkeydown={onNameKeydown}>
-      {current.name}
+      onkeydown={onNameKeydown}
+    >
+      <span class="vc-name-text">{current.name}</span>
+      <Icon icon={IconDown} width="16" height="16" />
     </button>
-    <button class="vc-arrow" tabindex="-1" aria-hidden="true" onclick={() => step(1)}>›</button>
+    <button class="vc-arrow" tabindex="-1" aria-hidden="true" onclick={() => step(1)}>
+      <Icon icon={IconRight} width="16" height="16" />
+    </button>
   </div>
 
   {#if open}
@@ -137,23 +147,25 @@
          anchored to something — a block in the sheet, or a list of axes — and
          growing would move everything under it out from under the pointer. -->
     <div
-      class="vc-menu"
+      class="vc-menu ds-menu"
       class:left={menuAlign === 'left'}
       id="{id}-list"
       role="listbox"
       aria-labelledby="{id}-label"
       tabindex="-1"
       bind:this={menu}
-      onkeydown={onMenuKeydown}>
+      onkeydown={onMenuKeydown}
+    >
       {#each slot.variants as v (v.id)}
         <button
-          class="vc-opt"
-          class:on={v.id === current.id}
+          class="vc-opt ds-menu-item"
+          class:selected={v.id === current.id}
           role="option"
           tabindex="-1"
           aria-selected={v.id === current.id}
           aria-describedby="{id}-{v.id}-hint"
-          onclick={() => pick(v.id)}>
+          onclick={() => pick(v.id)}
+        >
           <span class="vc-opt-name">
             {v.name}{#if v.edited}<span class="vc-edited" title="Edited">*</span>{/if}
           </span>
@@ -169,98 +181,125 @@
     position: relative;
     display: flex;
     align-items: center;
-    gap: var(--sp-4);
+    gap: var(--ds-space-100);
+    min-height: var(--control-h);
   }
 
   .vc-slot {
     flex: 1;
-    font-family: var(--sans);
-    font-size: var(--ui-fs-2xs);
-    font-weight: 600;
-    letter-spacing: 1.2px;
-    text-transform: uppercase;
-    color: var(--gray-11);
+    min-width: 0;
+    font: var(--ds-font-body);
+    color: var(--ds-text-subtle);
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  /* Three cells in one box, hairline-divided — the segmented control the rest
-	   of the chrome's grouped buttons are drawn as. Alpha steps throughout, since
-	   the panel it sits in is a different rung docked and floating. */
+  /* A field, so it reads as something to set: the input surface inside the
+     input border, the way ADS draws a select. The arrows are segments of it,
+     divided off by the same border, either side of the value and its chevron. */
   .vc-cycle {
     display: flex;
     align-items: stretch;
-    background: var(--gray-a3);
-    border: var(--hairline) solid var(--gray-a4);
-    border-radius: var(--corner-xs);
+    height: var(--control-h);
+    background: var(--ds-background-input);
+    border: var(--ds-border-width) solid var(--ds-border-input);
+    border-radius: var(--ds-radius-small);
     overflow: hidden;
+    transition: var(--hover-fade);
+
+    &:hover {
+      background: var(--ds-background-input-hovered);
+    }
+
+    &:focus-within {
+      border-color: var(--ds-border-focused);
+      box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-border-focused);
+    }
   }
 
   .vc-arrow,
-  .vc-name,
-  .vc-opt {
+  .vc-name {
+    display: flex;
+    align-items: center;
+    padding: 0;
     background: none;
     border: none;
     cursor: pointer;
-    font-family: var(--sans);
-    font-size: var(--ui-fs-sm);
-    font-weight: 600;
-    color: var(--gray-12);
+    font: var(--ds-font-body);
     transition: var(--hover-fade);
-  }
-
-  .vc-arrow {
-    padding: 0 var(--sp-3);
-    font-size: var(--ui-fs-lg);
-    line-height: 1;
-    color: var(--gray-11);
 
     &:hover {
-      background: var(--accent-9);
-      color: var(--accent-contrast);
+      background: var(--ds-background-neutral-subtle-hovered);
     }
 
     &:active {
-      background: var(--accent-10);
+      background: var(--ds-background-neutral-subtle-pressed);
+    }
+  }
+
+  .vc-arrow {
+    justify-content: center;
+    width: 24px;
+    color: var(--ds-icon-subtle);
+
+    &:first-child {
+      border-right: var(--ds-border-width) solid var(--ds-border);
+    }
+
+    &:last-child {
+      border-left: var(--ds-border-width) solid var(--ds-border);
+    }
+
+    &:hover {
+      color: var(--ds-icon);
     }
   }
 
   .vc-name {
-    min-width: 78px;
-    padding: var(--sp-1) var(--sp-2);
-    border-left: var(--hairline) solid var(--gray-a6);
-    border-right: var(--hairline) solid var(--gray-a6);
-    text-align: center;
-    white-space: nowrap;
+    gap: var(--ds-space-050);
+    /* One width for every row, so the fields line up down the panel; a long
+       name ellipsises rather than pushing its row out of the column. */
+    width: 136px;
+    min-width: 0;
+    justify-content: space-between;
+    padding: 0 var(--ds-space-050) 0 var(--ds-space-100);
+    color: var(--ds-text);
 
-    &:hover,
+    :global(svg) {
+      flex-shrink: 0;
+      color: var(--ds-icon);
+    }
+
     &[aria-expanded='true'] {
-      background: var(--gray-a4);
-      color: var(--gray-12);
+      background: var(--ds-background-selected);
+      color: var(--ds-text-selected);
+
+      :global(svg) {
+        color: var(--ds-icon-selected);
+      }
     }
 
     &:focus-visible {
-      outline: 2px solid var(--accent-9);
-      outline-offset: -2px;
+      outline: none;
     }
   }
 
-  /* The raised rung under the popover shadow, like every other menu. */
+  .vc-name-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Over the rows around it rather than pushing them apart. */
   .vc-menu {
     position: absolute;
-    top: calc(100% + var(--sp-1));
+    top: calc(100% + var(--ds-space-050));
     right: 0;
     z-index: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 128px;
-    max-width: 240px;
-    padding: var(--sp-1);
-    background: var(--bg-light);
-    border: var(--hairline) solid var(--gray-6);
-    border-radius: var(--corner-xs);
-    box-shadow: var(--shadow-ring), var(--shadow-md);
+    min-width: 200px;
+    max-width: 280px;
     outline: none;
-    gap: var(--sp-2);
 
     &.left {
       right: auto;
@@ -268,45 +307,26 @@
     }
   }
 
+  /* A menu item with a description: the name on the body line, the hint
+     under it in the subtlest small text. */
   .vc-opt {
-    display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 1px;
-    padding: var(--sp-1) var(--sp-3);
-    border-radius: var(--corner-xs);
-    text-align: left;
-
-    &:hover,
-    &:focus-visible {
-      background: var(--gray-a3);
-      color: var(--gray-12);
-      outline: none;
-    }
-
-    &.on {
-      background: var(--accent-9);
-      color: var(--accent-contrast);
-
-      .vc-opt-hint {
-        color: inherit;
-        opacity: 0.8;
-      }
-    }
-
-    &.on:focus-visible {
-      background: var(--accent-10);
-    }
+    gap: var(--ds-space-025);
+    white-space: normal;
   }
 
   .vc-opt-name {
     white-space: nowrap;
-    font-size: var(--ui-fs-md);
   }
 
   .vc-opt-hint {
-    font-weight: 400;
-    color: var(--gray-11);
-    line-height: 1.3;
+    font: var(--ds-font-body-small);
+    color: var(--ds-text-subtlest);
+  }
+
+  .vc-edited {
+    color: var(--ds-text-warning);
+    margin-left: var(--ds-space-025);
   }
 </style>

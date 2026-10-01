@@ -276,8 +276,8 @@
     min-height: 0;
     display: block;
     border: 0;
-    /* The canvas rung, as the pane behind it: this element is the app's. */
-    background: var(--bg-darker);
+    /* The sunken surface, as the pane behind it: this element is the app's. */
+    background: var(--ds-surface-sunken);
     color-scheme: auto;
   }
 </style>

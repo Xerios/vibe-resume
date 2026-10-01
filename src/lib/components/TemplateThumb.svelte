@@ -145,7 +145,7 @@
 
   /* The accent parts — rules, timeline dots, the logo on a chip. */
   .rule {
-    fill: var(--accent-9);
+    fill: var(--ds-icon-brand);
   }
 
   /* Outlined rather than filled, the way the templates they stand for are. */

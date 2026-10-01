@@ -325,9 +325,6 @@ export const commands = {
     // The sheet sits this out — paper is white — but the frame around it follows.
     const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
     document.documentElement.setAttribute('data-theme', next)
-    // The attribute is the app's switch; the class is what Radix's own dark
-    // scales are scoped under. Set together, always — see tokens.css.
-    document.documentElement.classList.toggle('dark', next === 'dark')
     ui.dark = next === 'dark'
     syncThemeColor()
     write(KEYS.theme, next)
