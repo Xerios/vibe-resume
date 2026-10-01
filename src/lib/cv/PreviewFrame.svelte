@@ -6,15 +6,13 @@
    * one stylesheet for two unrelated things: a chrome rule could reach the
    * sheet, and a sheet rule could reach the chrome. An iframe makes that
    * impossible in both directions — nothing crosses, custom properties
-   * included — which is what lets a file carry arbitrary CSS of its own
-   * without any of it being able to break the editor around it.
+   * included.
    *
    * The frame's stylesheets are imported as text and written into its head:
    * frame.css declares what the sheet spends, then cv.css, the theme ramps and
-   * the font stacks, then two empty style elements — one for whatever the
-   * active template's own style block compiled to, one for the file's own CSS,
-   * in that order. Editing either is a `textContent` assignment — no rebuild,
-   * and no way for a half-typed rule to escape.
+   * the font stacks, then an empty style element for whatever the active
+   * template's own style block compiled to. Changing it is a `textContent`
+   * assignment — no rebuild.
    *
    * The sheet itself is `mount()`ed rather than rendered here, since it has to
    * land in the frame's document. Its props are a $state object, so mutating
@@ -35,10 +33,9 @@
   /**
    * `cv` is null until the first successful parse and `component` until the
    * first successful compile; `templateCss` is what that template's style
-   * block came to, and `css` the active file's own, applied last in the
-   * cascade inside the frame. `layout`, `theme` and `font` are only ids: each
-   * lands on `#cv-root` as a data attribute, where the frame's own stylesheets
-   * — and a file's custom CSS — are what give it meaning.
+   * block came to. `layout`, `theme` and `font` are only ids: each lands on
+   * `#cv-root` as a data attribute, where the frame's own stylesheets are what
+   * give it meaning.
    *
    * `onReady` is handed the frame's document, window and `#cv-root` once they
    * exist — the page binds its preview listeners in there, since nothing
@@ -57,7 +54,7 @@
    * `dark` is the app's colour scheme, which the frame can't see for itself.
    * Only the gutter around the sheet follows it — the sheet stays paper — so it
    * lands on the frame's `<html>` rather than on `#cv-root`, out of reach of
-   * the palettes and a file's own CSS.
+   * the palettes.
    *
    * @type {{
    *   cv?: any,
@@ -66,7 +63,6 @@
    *   layout?: string,
    *   theme?: string,
    *   font?: string,
-   *   css?: string,
    *   paper?: Partial<import('./theme/paper.js').Paper>,
    *   name?: string,
    *   fit?: boolean,
@@ -81,7 +77,6 @@
     layout = DEFAULT_PRESET,
     theme = DEFAULT_THEME,
     font = DEFAULT_FONT,
-    css = '',
     paper = DEFAULT_PAPER,
     name = '',
     fit = false,
@@ -104,7 +99,6 @@
   let root = $state(/** @type {HTMLElement | null} */ (null))
   let pageStyle = $state(/** @type {HTMLStyleElement | null} */ (null))
   let templateStyle = $state(/** @type {HTMLStyleElement | null} */ (null))
-  let userStyle = $state(/** @type {HTMLStyleElement | null} */ (null))
   let sheet = /** @type {Record<string, any> | null} */ (null)
 
   /** The page box and its margin boxes, as CSS. Rebuilt whenever either moves. */
@@ -198,11 +192,6 @@
     if (templateStyle) templateStyle.textContent = text
   })
 
-  $effect(() => {
-    const text = css
-    if (userStyle) userStyle.textContent = text
-  })
-
   onDestroy(() => {
     if (sheet) unmount(sheet)
   })
@@ -219,13 +208,11 @@
 
     d.documentElement.dataset.scheme = dark ? 'dark' : 'light'
     addStyle(d, [frameCss, cvCss, palettesCss, fontsCss, presetsCss].join('\n'))
-    // Three more, in cascade order. The paper goes first, because it is the
-    // page the two below it are drawn on: the template's own styles are scoped
-    // by the compiler and outrank cv.css on specificity alone, but the file's
-    // CSS is written by hand and has only its position to win on.
+    // Two more, in cascade order. The paper goes first, because it is the page
+    // the template is drawn on; the template's own styles are scoped by the
+    // compiler and outrank cv.css on specificity alone.
     pageStyle = addStyle(d, pageCss)
     templateStyle = addStyle(d, templateCss)
-    userStyle = addStyle(d, css)
 
     const el = d.createElement('div')
     el.id = 'cv-root'

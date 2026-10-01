@@ -203,18 +203,18 @@ describe('the shipped document', () => {
     const cv = tree(DEFAULT_YAML)
     expect(cv.header.contact).toContain('+1 555 010 1234')
     expect(cv.sections.map((/** @type {any} */ s) => s.type)).toEqual([
-      'summary',
-      'skills',
-      'experience',
-      'projects',
-      'education',
-      'certifications',
-      'languages',
+      'text',
+      'groups',
+      'entries',
+      'entries',
+      'entries',
+      'records',
+      'levels',
       'list',
-      'oss',
+      'table',
     ])
     expect(cv.sections.find((/** @type {any} */ s) => s.type === 'list').inline).toBe(true)
-    expect(cv.sections.find((/** @type {any} */ s) => s.type === 'oss').hasHeader).toBe(false)
+    expect(cv.sections.find((/** @type {any} */ s) => s.type === 'table').columns).toBeUndefined()
   })
 })
 

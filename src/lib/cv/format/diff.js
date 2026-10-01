@@ -332,14 +332,14 @@ function identity(value) {
   if (Array.isArray(value)) return null
   if (typeof value !== 'object') return String(value).trim()
   const v = /** @type {Record<string, unknown>} */ (value)
-  for (const k of ['title', 'name', 'text', 'company', 'school']) {
+  for (const k of ['title', 'name', 'text', 'org', 'company', 'school']) {
     if (typeof v[k] === 'string' && v[k].trim()) return `${typeof v.type === 'string' ? `${v.type}|` : ''}${k}=${v[k].trim()}`
   }
   return null
 }
 
 /** The name `identity` keys an entry by, as the entry spells it. */
-const NAMED_RE = /^(?:[^|=]*\|)?(?:title|name|text|company|school)=/
+const NAMED_RE = /^(?:[^|=]*\|)?(?:title|name|text|org|company|school)=/
 
 /**
  * What a node is called, as a reader would say it: an entry by its title or

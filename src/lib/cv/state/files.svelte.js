@@ -10,7 +10,6 @@ import { KEYS, read, remove, snapshotKey, write } from './storage.js'
  * @property {Record<string, string>} [variants]  slot id → variant id, on top of the preset's
  * @property {string} [theme]            palette id from presets.js; absent means the default
  * @property {string} [font]             font id from fonts.js; absent means the default
- * @property {string} [css]              the file's own CSS, applied last inside the preview frame
  * @property {import('../theme/paper.js').Paper} [paper]  the page box it prints on; absent means A4 portrait
  */
 
@@ -80,7 +79,6 @@ export class FileManager {
         variants: source.variants,
         theme: source.theme,
         font: source.font,
-        css: source.css,
         paper: source.paper,
       },
     ]
@@ -182,9 +180,7 @@ export class FileManager {
    * Restyle a file. Ids are stored as given and validated on the way out
    * (`resolvePreset` / `resolveSlots` / `resolveTheme` / `resolveFont`), so a
    * preset or variant that later disappears degrades to the default instead of
-   * rendering nothing. Custom CSS gets no validation at all: it is applied
-   * inside the preview frame, where the worst a broken rule can do is make the
-   * sheet look wrong.
+   * rendering nothing.
    *
    * Not the way to restyle the file being edited: that is `restyle` in
    * state.svelte.js, which writes here *and* records the change in the
@@ -192,7 +188,7 @@ export class FileManager {
    * back into when an undo or a restore moves the style from that end.
    *
    * @param {string} id
-   * @param {{ layout?: string, variants?: Record<string, string>, theme?: string, font?: string, css?: string, paper?: import('../theme/paper.js').Paper }} style
+   * @param {{ layout?: string, variants?: Record<string, string>, theme?: string, font?: string, paper?: import('../theme/paper.js').Paper }} style
    */
   setStyle(id, style) {
     this.files = this.files.map((f) => (f.id === id ? { ...f, ...style } : f))
@@ -309,5 +305,5 @@ const newId = () => Math.random().toString(36).slice(2, 10)
  * @returns {Record<string, any>}
  */
 export function styleOf(file) {
-  return { layout: file?.layout, variants: file?.variants, theme: file?.theme, font: file?.font, css: file?.css, paper: file?.paper }
+  return { layout: file?.layout, variants: file?.variants, theme: file?.theme, font: file?.font, paper: file?.paper }
 }

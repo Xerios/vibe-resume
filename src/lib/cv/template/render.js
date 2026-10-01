@@ -1,3 +1,4 @@
+import { migrateTree } from '../format/migrate.js'
 import { parse } from '../format/relaxed-yaml.js'
 
 /**
@@ -16,6 +17,9 @@ import { parse } from '../format/relaxed-yaml.js'
  * `title: Summary` and a `bullets:` block both want the line you'd click to
  * edit them, not wherever the value happens to begin.
  *
+ * A document in the old section types — an earlier version being looked at in
+ * the history — is read as the current ones, so it still renders.
+ *
  * @param {string} yaml
  * @returns {{ cv: any, lines: Map<string, number>, error: null } | { cv: null, lines: null, error: string }}
  */
@@ -23,5 +27,5 @@ export function parseCv(yaml) {
   const { value, lines, diagnostics } = parse(yaml)
   if (!value || typeof value !== 'object') return { cv: null, lines: null, error: 'Document is empty' }
   const broken = diagnostics.find((d) => d.severity === 'error')
-  return broken ? { cv: null, lines: null, error: broken.message } : { cv: value, lines, error: null }
+  return broken ? { cv: null, lines: null, error: broken.message } : { cv: migrateTree(value), lines, error: null }
 }

@@ -5,7 +5,7 @@
    Only the first paragraph grows. The rest stay where cv.css put them, which
    is what keeps the contrast — a whole summary set at 15px is not a lede, it
    is just a bigger summary. */
-.sec-summary p:first-of-type {
+.sec-text p:first-of-type {
   max-width: 66ch;
   margin-bottom: 9px;
   font-size: var(--cv-fs-2xl);
@@ -14,6 +14,6 @@
   color: var(--ink);
 }
 
-.sec-summary p:first-of-type strong {
+.sec-text p:first-of-type strong {
   color: var(--accent-deep);
 }

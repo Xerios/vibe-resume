@@ -8,12 +8,12 @@ header:
     - [linkedin.com/in/example](https://linkedin.com/in/example)
     - [example.dev](https://example.dev)
 sections:
-  - type: text
+  - type: summary
     title: Summary
     paragraphs:
       - Full-stack engineer with **10+ years** of experience building web applications end to end. Comfortable across frontend, backend, and infrastructure, with a track record of shipping products from prototype to production. I care about clean, maintainable code and enjoy mentoring other developers.
 
-  - type: groups
+  - type: skills
     title: Core Skills
     blocks:
       - title: Full-Stack Core
@@ -39,12 +39,12 @@ sections:
           - text: Analytics: Google Analytics, Mixpanel · Python, Go
           - text: Accessibility: WCAG 2.2, ARIA
 
-  - type: entries
+  - type: experience
     title: Experience
     items:
       - subtype: job
         title: Senior Full-Stack Engineer
-        org: Acme Corp
+        company: Acme Corp
         dates: 03/2020 – Present
         sub: B2B SaaS platform — Springfield (remote)
         bullets:
@@ -56,7 +56,7 @@ sections:
 
       - subtype: job
         title: Full-Stack Developer
-        org: Globex Inc
+        company: Globex Inc
         dates: 06/2016 – 02/2020
         sub: E-commerce platform — Shelbyville
         bullets:
@@ -67,7 +67,7 @@ sections:
 
       - subtype: job
         title: Junior Developer
-        org: Initech
+        company: Initech
         dates: 07/2014 – 05/2016
         sub: Internal tools team — Capital City
         bullets:
@@ -81,7 +81,7 @@ sections:
           - **Umbrella Startups** — Freelance developer; built small business websites and internal tools. _WordPress, PHP._
           - **University Tech Club** — Volunteer developer; maintained club website and event registration system. _HTML, CSS, JavaScript._
 
-  - type: entries
+  - type: projects
     title: Projects
     items:
       - title: [dashboard-kit](https://example.dev/dashboard-kit)
@@ -96,15 +96,15 @@ sections:
         sub: Chat-driven deployments for small teams — approvals, rollbacks and an audit trail.
         stack: Go, PostgreSQL, Docker
 
-  - type: entries
+  - type: education
     title: Education
     items:
       - title: BSc Computer Science
-        org: Springfield University
+        school: Springfield University
         dates: 2010 – 2014
         sub: Graduated with honours — thesis on distributed systems.
 
-  - type: records
+  - type: certifications
     title: Certifications & Permits
     items:
       - name: AWS Certified Solutions Architect – Associate
@@ -118,7 +118,7 @@ sections:
         issuer: State of Springfield
         dates: 2012
 
-  - type: levels
+  - type: languages
     title: Languages
     items:
       - name: English
@@ -138,12 +138,13 @@ sections:
       - Trail running
       - Chess
 
-  - type: table
+  - type: oss
     title: Open Source
-    items:
+    hasHeader: false
+    projects:
       - name: [example-toolkit](https://github.com/github/example-toolkit)
-        value: ★ 120
+        stars: ★ 120
         desc: Utility library for common frontend patterns
       - name: [cli-helper](https://github.com/github/cli-helper)
-        value: ★ 45
+        stars: ★ 45
         desc: Command-line tool for scaffolding projects

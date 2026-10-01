@@ -107,7 +107,7 @@ export function techIcon(name) {
  * quietly fills none, which is the signal a variant needs to fall back to
  * printing the words instead.
  *
- * @param {any} item  a `languages` entry — `{ name, level?, rating? }`
+ * @param {any} item  a `levels` entry — `{ name, level?, rating? }`
  * @returns {number} 0–5
  */
 export function levelRating(item) {

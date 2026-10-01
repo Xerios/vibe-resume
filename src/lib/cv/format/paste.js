@@ -9,7 +9,7 @@
  * those; the editor asks before inserting it.
  *
  * What it offers instead is deliberately dumb. `basicConversion` makes each
- * heading a `summary` section and each line a paragraph, and nothing more: a CV
+ * heading a `text` section and each line a paragraph, and nothing more: a CV
  * has no fixed shape to recognise, so anything cleverer would guess wrong in
  * ways that are harder to notice than a page of paragraphs. The faithful
  * conversion is the prompt, which hands the job to whichever assistant the
@@ -182,7 +182,7 @@ const scalar = (s, item) => (needsQuotes(s, item) ? `'${s.replace(/'/g, "''")}'`
 function sectionsYaml(sections) {
   return sections
     .map(({ title, paras }) => {
-      const out = ['  - type: summary']
+      const out = ['  - type: text']
       if (title) out.push(`    title: ${scalar(title, false)}`)
       out.push('    paragraphs:')
       for (const p of paras) out.push(`      - ${scalar(p, true)}`)
@@ -367,17 +367,15 @@ Rules:
 
 Structure:
 The document is a \`header\` — \`name\`, \`role\` and \`contact\`, a list of lines such as location, phone, email and links — and a list of \`sections\`. Each section has a \`type\`, a \`title\` and its content:
-- summary: \`paragraphs\`, a list of paragraphs
-- skills: \`blocks\`, each a \`title\` and \`rows\` of { tier (optional), text }
-- experience: \`items\` of { title, company, dates, sub, bullets, stack } — \`sub\` is one line of context such as the team or the location, \`stack\` a comma-separated list of technologies. Older roles can share one item with \`subtype: earlier\`, a \`title\` and \`items\` of one-line strings.
-- education: \`items\` of { title, school, dates, sub, bullets }
-- projects: \`items\` of { title, dates, sub, bullets, stack }
-- certifications: \`items\` of { name, issuer, dates, note }
-- languages: \`items\` of { name, level, note }
+- text: \`paragraphs\`, a list of paragraphs — a summary, a profile
+- groups: \`blocks\`, each a \`title\` and \`rows\` of { tier (optional), text } — skills
+- entries: \`items\` of { title, org, dates, sub, bullets, stack } — roles, degrees, projects; one section each. \`org\` is the company or the school, \`sub\` one line of context such as the team or the location, \`stack\` a comma-separated list of technologies. Older roles can share one item with \`subtype: earlier\`, a \`title\` and \`items\` of one-line strings.
 - list: \`items\` of plain strings; add \`inline: true\` for short ones such as interests
-- oss: \`projects\` of { name, stars, desc }
+- levels: \`items\` of { name, level, note } — languages
+- records: \`items\` of { name, issuer, dates, note } — certifications, licences
+- table: \`items\` of { name, value, desc }, with optional \`columns\`, a list of three headings — open-source projects with their stars, say
 
-Use the types that fit, in my CV's order. Anything that fits none of them goes in a \`summary\` or a \`list\`.
+Use the types that fit, in my CV's order. Anything that fits none of them goes in a \`text\` or a \`list\`.
 
 An example of the format — its content is placeholder, only the shape matters:
 

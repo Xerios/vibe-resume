@@ -8,8 +8,8 @@
    instead.
 
    The overlap with src/lib/styles/tokens.css is the point of the frame rather
-   than an oversight. These are its declared inputs — the short list a file's
-   custom CSS overrides to restyle the sheet, and the reason app CSS can no
+   than an oversight. These are its declared inputs — the short list the themes
+   and blocks re-point to restyle the sheet, and the reason app CSS can no
    longer reach in to do it by accident.
 
    There is one ramp here and no dark counterpart. The app's dark mode dresses
@@ -51,8 +51,8 @@
 
   /* The sheet's type ladder, anchored on --cv-fs-lg: that is what .sheet is set
 	   in, and every other step is read against it. cv.css and the blocks spend
-	   these rather than stating a size, so a file's custom CSS can re-point one
-	   step and have every block that uses it follow.
+	   these rather than stating a size, so a variant can re-point one step and
+	   have every block that uses it follow.
 
 	   The two display steps are the name only, which is the one piece of the
 	   sheet far enough off the ladder to need its own. The app's chrome is on a
@@ -105,7 +105,7 @@ body {
 }
 
 /* The sheet's font stack is spent here rather than on `body`, so that pointing
-   --sans somewhere else from a file's custom CSS — which lands on #cv-root —
+   --sans somewhere else on #cv-root — which is where presets.css does it —
    actually changes the type. Set on `body` it would resolve against the ramp
    an ancestor saw, and nothing would move. */
 #cv-root {

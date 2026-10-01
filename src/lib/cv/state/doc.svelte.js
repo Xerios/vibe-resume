@@ -4,13 +4,14 @@ import { LoroDoc, UndoManager } from 'loro-crdt/web'
 // straight from the wasm-bindgen module — it is the same instance either way.
 import initWasm from 'loro-crdt/web/loro_wasm.js'
 import DEFAULT_YAML from '../default-cv.yaml?raw'
+import { migrateCv } from '../format/migrate.js'
 import { touchedParts } from '../format/touched.js'
 import { base64ToBytes, bytesToBase64, read, remove, snapshotKey, write } from './storage.js'
 
 const TEXT_ID = 'yaml'
 const TAGS_ID = 'checkpoints'
 /**
- * The file's presentation — preset, block variants, theme, font, custom CSS.
+ * The file's presentation — preset, block variants, theme, font, paper.
  * It used to live only in the file registry, on the grounds that restyling is
  * not an edit; it is here as well now, because "not an edit" was the wrong
  * reading. Changing how a CV looks is a change to the CV, and the things a
@@ -24,8 +25,8 @@ const TAGS_ID = 'checkpoints'
  */
 const STYLE_ID = 'style'
 
-/** @type {readonly ('layout' | 'variants' | 'theme' | 'font' | 'css' | 'paper')[]} */
-const STYLE_KEYS = ['layout', 'variants', 'theme', 'font', 'css', 'paper']
+/** @type {readonly ('layout' | 'variants' | 'theme' | 'font' | 'paper')[]} */
+const STYLE_KEYS = ['layout', 'variants', 'theme', 'font', 'paper']
 
 /** Commits made by naming a version, kept out of the undo stack. */
 const TAG_ORIGIN = 'cv-tag'
@@ -58,13 +59,6 @@ const MERGE_WINDOW_SECONDS = 45
 
 /** Debounce for the work that follows an edit: history rebuild and persistence. */
 const SETTLE_MS = 400
-
-/**
- * Debounce for a style that is *typed* rather than chosen. Loro never merges
- * anything into a change that carries a message, so a commit per keystroke in
- * the custom-CSS box would be a history entry per keystroke.
- */
-const STYLE_SETTLE_MS = 700
 
 let wasmReady = /** @type {Promise<unknown> | null} */ (null)
 
@@ -195,10 +189,6 @@ export class CvDoc {
   #baseStyle = {}
   /** Where that copy comes from, and where a change made in here is mirrored back to. @type {StyleHost | null} */
   #styleHost = null
-  /** A typed style change waiting out `STYLE_SETTLE_MS`. @type {{ style: Record<string, any>, label: string, axis: string } | null} */
-  #pendingStyle = null
-  /** @type {ReturnType<typeof setTimeout> | undefined} */
-  #styleTimer
 
   /** @param {string} fileId */
   async init(fileId) {
@@ -267,7 +257,6 @@ export class CvDoc {
 
   /** Persist right now, skipping the debounce. Used when the tab is going away. */
   flush() {
-    this.#flushStyle()
     if (this.#settleTimer) {
       clearTimeout(this.#settleTimer)
       this.#settleTimer = null
@@ -362,9 +351,6 @@ export class CvDoc {
    * this is the copy that goes into the document, which is what puts a restyle
    * in the history and on the undo stack.
    *
-   * `defer` is for the one style that is typed rather than chosen: custom CSS
-   * arrives a keystroke at a time.
-   *
    * `axis` is which part of the presentation moved — the preset, the theme, one
    * slot's variant. A run of restyles reads as one line in the history rather
    * than as one per click, and the axes are what that line is named by; see
@@ -373,33 +359,21 @@ export class CvDoc {
    * @param {Record<string, any>} style
    * @param {string} label   what the entry reads as, e.g. `Entry — Card`
    * @param {string} axis    what it moved, e.g. `theme`
-   * @param {boolean} [defer]
    */
-  recordStyle(style, label, axis, defer = false) {
+  recordStyle(style, label, axis) {
     if (!this.#doc || this.isViewingHistory) return
-    if (defer) {
-      this.#pendingStyle = { style, label, axis }
-      clearTimeout(this.#styleTimer)
-      this.#styleTimer = setTimeout(() => this.#flushStyle(), STYLE_SETTLE_MS)
-      return
-    }
-    // A choice made while a typed one is still waiting commits that one first,
-    // so the two land as the two changes they were rather than as one.
-    this.#flushStyle()
     this.#commitStyle(style, label, axis)
   }
 
-  /** Take back the last change, whether it was typed or chosen. */
+  /** Take back the last change. */
   undo() {
     if (!this.#undo || this.isViewingHistory) return false
-    this.#flushStyle()
     return this.#undo.undo()
   }
 
   /** Put back the last thing `undo` took. */
   redo() {
     if (!this.#undo || this.isViewingHistory) return false
-    this.#flushStyle()
     return this.#undo.redo()
   }
 
@@ -410,7 +384,6 @@ export class CvDoc {
    */
   view(entry) {
     if (!this.#doc) return
-    this.#flushStyle() // a typed style still pending belongs to the head, not to this
     this.#doc.checkout([frontier(entry)])
     this.viewingKey = entry.key
     this.yaml = this.#text()
@@ -438,7 +411,10 @@ export class CvDoc {
   restore(entry) {
     if (!this.#doc) return
     const fork = this.#doc.forkAt([frontier(entry)])
-    const text = fork.getText(TEXT_ID).toString()
+    // A version from before the section types were renamed comes back in the
+    // current ones — restoring it shouldn't bring back a format that is gone.
+    const old = fork.getText(TEXT_ID).toString()
+    const text = migrateCv(old) ?? old
     const style = fork.getMap(STYLE_ID).toJSON()
     this.viewLatest()
 
@@ -508,15 +484,6 @@ export class CvDoc {
     this.#syncStyle()
     this.#refreshHistory()
     this.#scheduleSettle()
-  }
-
-  /** Commit whatever `recordStyle` is holding on a debounce. */
-  #flushStyle() {
-    clearTimeout(this.#styleTimer)
-    this.#styleTimer = undefined
-    const pending = this.#pendingStyle
-    this.#pendingStyle = null
-    if (pending) this.#commitStyle(pending.style, pending.label, pending.axis)
   }
 
   /**
@@ -772,6 +739,7 @@ export class CvDoc {
         doc.import(snapshot)
         if (cvText(doc).toString().length > 0) {
           this.#epoch = epoch
+          upgrade(doc)
           return doc
         }
       } catch (e) {
@@ -785,7 +753,7 @@ export class CvDoc {
   #seed(text) {
     const doc = new LoroDoc()
     doc.setRecordTimestamp(true) // history entries are worthless without a time
-    cvText(doc).update(text)
+    cvText(doc).update(migrateCv(text) ?? text)
     doc.setChangeMergeInterval(0)
     doc.commit({ message: stampKind('initial', 'Initial version') })
     return doc
@@ -894,6 +862,19 @@ export class CvDoc {
       console.warn('[cv] could not take the update from another tab', err)
     }
   }
+}
+
+/**
+ * Bring a stored document written in the old section types up to date, as a
+ * change of its own — so the history says what happened, and the version
+ * before it is still there to compare against or go back to.
+ * @param {LoroDoc} doc
+ */
+function upgrade(doc) {
+  const next = migrateCv(cvText(doc).toString())
+  if (next === null) return
+  cvText(doc).update(next)
+  doc.commit({ message: stampKind('checkpoint', 'Updated to the new section types') })
 }
 
 /**

@@ -21,8 +21,7 @@
  *
  * A template is the user's own code and it runs in the app's realm, not the
  * preview frame's — `mount()` takes a component, and a component can only come
- * from the realm that compiled it. That is a real difference from the file's
- * custom CSS, which the frame contains completely. The trade is deliberate: the
+ * from the realm that compiled it. The trade is deliberate: the
  * alternative is a second Svelte runtime inside the frame, and two runtimes
  * cannot share one component.
  */

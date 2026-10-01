@@ -15,14 +15,14 @@
  * - a **value**, past a `key:` — but only for the handful of keys with a closed
  *   set of answers. `title`, `level` and `tier` are prose and get nothing.
  * - a **section skeleton**, wherever a new section can start: the whole shape of
- *   an `experience` or a `languages` block, as a snippet with its fields marked.
+ *   an `entries` or a `levels` block, as a snippet with its fields marked.
  *
  * Everything hinges on `spotAt`, which walks the lines above the cursor the way
  * the parser does and says which mapping the cursor's line belongs to. It reads
  * lines through the same `splitLine` as the parser and the tokenizer, so what
  * counts as a key here is what counts as one everywhere else. The document
  * itself is parsed too, for the one thing indentation can't say: which of the
- * nine types the enclosing section is, and therefore what its entries hold.
+ * seven types the enclosing section is, and therefore what its entries hold.
  */
 
 import { autocompletion, snippetCompletion } from '@codemirror/autocomplete'
@@ -46,7 +46,7 @@ const KEY_INFO = {
   name: 'What this is called.',
   role: 'The line under your name.',
   contact: 'One line each — where you are, a number, some links.',
-  type: 'Which of the nine kinds of section this is.',
+  type: 'Which of the seven kinds of section this is.',
   title: 'The heading, or the entry’s own title.',
   rail: 'Put this section in the sidebar rail, or keep it out of one.',
   paragraphs: 'One paragraph per entry.',
@@ -55,23 +55,21 @@ const KEY_INFO = {
   tier: 'A label in front of the row — Expert, Working, Familiar.',
   text: 'The skills on this row.',
   items: 'The entries in this section.',
-  projects: 'One repository each.',
   subtype: 'Only `earlier`, which folds a run of old roles into one list.',
-  company: 'Who the role was for.',
-  school: 'Where the qualification is from.',
+  org: 'Who it was for, or where it is from — a company, a school.',
   dates: 'The span, written however you like.',
   sub: 'A line of context under the title.',
   sideNote: 'A short note set against the entry.',
   bullets: 'What you did, one line each.',
   stack: 'The tech — comma-separated, or a list.',
   inline: 'Set the items as pills on one line.',
-  hasHeader: 'Draw a header row above the projects.',
+  columns: 'A heading for each column, in order. Leave it out for no header row.',
   level: 'Free text — Native, C2, Professional working.',
   note: 'A short aside.',
   rating: 'The level out of five, for when the words can’t be read as one.',
   issuer: 'Who granted it.',
-  stars: 'The star count, as it should print.',
-  desc: 'One line about the project.',
+  value: 'A short figure for the middle column — a star count, a score.',
+  desc: 'One line about it.',
 }
 
 /** @type {{ label: string, info: string }[]} */
@@ -93,7 +91,6 @@ const VALUES = {
   ],
   rail: BOOLEANS,
   inline: BOOLEANS,
-  hasHeader: BOOLEANS,
   rating: [1, 2, 3, 4, 5].map((n) => ({ label: String(n), info: `${n} out of five.` })),
 }
 
@@ -112,9 +109,9 @@ const VALUES = {
  * @type {Record<string, string[]>}
  */
 const SKELETONS = {
-  summary: ['type: summary', '\ttitle: #{Summary}', '\tparagraphs:', '\t\t- #{A sentence or two about what you do.}'],
-  skills: [
-    'type: skills',
+  text: ['type: text', '\ttitle: #{Summary}', '\tparagraphs:', '\t\t- #{A sentence or two about what you do.}'],
+  groups: [
+    'type: groups',
     '\ttitle: #{Core Skills}',
     '\tblocks:',
     '\t\t- title: #{Group}',
@@ -122,46 +119,29 @@ const SKELETONS = {
     '\t\t\t\t- tier: #{Expert}',
     '\t\t\t\t\ttext: #{The skills on this row}',
   ],
-  experience: [
-    'type: experience',
+  entries: [
+    'type: entries',
     '\ttitle: #{Experience}',
     '\titems:',
     '\t\t- title: #{Role}',
-    '\t\t\tcompany: #{Company}',
+    '\t\t\torg: #{Company}',
     '\t\t\tdates: #{03/2020 – Present}',
     '\t\t\tsub: #{What the company does — where}',
     '\t\t\tbullets:',
     '\t\t\t\t- #{Something you did, and what came of it.}',
     '\t\t\tstack: #{React, Node.js, PostgreSQL}',
   ],
-  education: [
-    'type: education',
-    '\ttitle: #{Education}',
-    '\titems:',
-    '\t\t- title: #{BSc Computer Science}',
-    '\t\t\tschool: #{University}',
-    '\t\t\tdates: #{2010 – 2014}',
-  ],
-  projects: [
-    'type: projects',
-    '\ttitle: #{Projects}',
-    '\titems:',
-    '\t\t- title: #{project-name}',
-    '\t\t\tdates: #{2023}',
-    '\t\t\tsub: #{What it is, in a line.}',
-    '\t\t\tstack: #{TypeScript, Svelte}',
-  ],
   list: ['type: list', '\ttitle: #{Interests}', '\tinline: true', '\titems:', '\t\t- #{Something}'],
-  languages: ['type: languages', '\ttitle: #{Languages}', '\titems:', '\t\t- name: #{English}', '\t\t\tlevel: #{Native}'],
-  certifications: [
-    'type: certifications',
+  levels: ['type: levels', '\ttitle: #{Languages}', '\titems:', '\t\t- name: #{English}', '\t\t\tlevel: #{Native}'],
+  records: [
+    'type: records',
     '\ttitle: #{Certifications}',
     '\titems:',
     '\t\t- name: #{What it certifies}',
     '\t\t\tissuer: #{Who granted it}',
     '\t\t\tdates: #{2023}',
   ],
-  oss: ['type: oss', '\ttitle: #{Open Source}', '\tprojects:', '\t\t- name: #{repo-name}', '\t\t\tstars: #{★ 120}', '\t\t\tdesc: #{What it does}'],
+  table: ['type: table', '\ttitle: #{Open Source}', '\titems:', '\t\t- name: #{repo-name}', '\t\t\tvalue: #{★ 120}', '\t\t\tdesc: #{What it does}'],
 }
 
 /**
@@ -209,7 +189,7 @@ const opensBlock = (/** @type {{ value: number, text: string }} */ l) => l.value
  * The lines above are walked the way the parser walks them — a stack of open
  * mappings and sequences, keyed by the column they sit at — and what comes back
  * is the path of the mapping the cursor's line would join. That is all the
- * schema needs: `sections.2.items.0` says a key here is an experience entry's
+ * schema needs: `sections.2.items.0` says a key here belongs to an entry's
  * key, whatever the text on the line currently reads as.
  *
  * Null means there is nothing to offer at all: inside a comment, inside a `|`
@@ -338,8 +318,8 @@ export function keysAt(path, doc) {
   if (seg.length === 2) return spec ? [...SECTION_KEYS, spec.holds, ...(spec.extra ?? [])] : SECTION_KEYS
   if (!spec || seg[2] !== spec.holds) return null
   if (seg.length === 4) return spec.item
-  // `skills` is the one type with a level below its entries.
-  if (seg.length === 6 && seg[4] === 'rows' && spec === SECTIONS.skills) return ROW_KEYS
+  // `groups` is the one type with a level below its entries.
+  if (seg.length === 6 && seg[4] === 'rows' && spec === SECTIONS.groups) return ROW_KEYS
   return null
 }
 

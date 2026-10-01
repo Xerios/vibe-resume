@@ -132,16 +132,16 @@
   flex: 1;
 }
 
-.sec-summary p {
+.sec-text p {
   margin: 0 0 8px;
 }
 
-.sec-summary p:last-child {
+.sec-text p:last-child {
   margin-bottom: 0;
   color: var(--muted);
 }
 
-.sec-summary strong {
+.sec-text strong {
   color: var(--ink);
   font-weight: 700;
 }
@@ -298,13 +298,12 @@ ul.bullets li::before {
   font-style: normal;
 }
 
-/* ── Education, projects and lists ─────────────
-   Education and Projects are built out of the same `.job` block Experience is:
-   a title, something it belongs to, dates, a line of context and bullets. Only
-   the wrapping section differs — `.sec-education`, `.sec-projects` — which is
-   what a template selects on when it wants to tell the three apart. The `.co`
-   span carries a school as readily as a company, and a project's title is
-   often a link, so it keeps the colour rather than taking the browser's. */
+/* ── Entries and lists ─────────────────────────
+   A role, a degree and a project are one `entries` section and one `.job`
+   block: a title, something it belongs to, dates, a line of context and
+   bullets. The `.co` span carries a school as readily as a company, and a
+   project's title is often a link, so it keeps the colour rather than taking
+   the browser's. */
 
 .job-title a {
   color: inherit;
@@ -445,13 +444,13 @@ ul.bullets li::before {
   white-space: nowrap;
 }
 
-table.oss {
+table.cv-table {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--cv-fs-md);
 }
 
-table.oss thead th {
+table.cv-table thead th {
   font-family: var(--mono);
   font-size: var(--cv-fs-2xs);
   letter-spacing: 1px;
@@ -462,28 +461,28 @@ table.oss thead th {
   border-bottom: 1.5px solid var(--accent);
 }
 
-table.oss td {
+table.cv-table td {
   padding: 5px 9px;
   border-bottom: 1px solid var(--line);
   vertical-align: top;
 }
 
-table.oss tr:last-child td {
+table.cv-table tr:last-child td {
   border-bottom: none;
 }
 
-table.oss .proj {
+table.cv-table .label {
   font-weight: 700;
   color: var(--accent-deep);
   white-space: nowrap;
 }
 
-table.oss .proj a {
+table.cv-table .label a {
   color: inherit;
   text-decoration: none;
 }
 
-table.oss .proj a:hover {
+table.cv-table .label a:hover {
   text-decoration: underline;
 }
 
@@ -533,7 +532,7 @@ table.oss .proj a:hover {
   .tag,
   .lang-row,
   .cert,
-  table.oss tr {
+  table.cv-table tr {
     break-inside: avoid;
   }
 
@@ -561,7 +560,7 @@ table.oss .proj a:hover {
 
   /* A table that outgrows the page reprints its header on the next one
 	   rather than stranding it at the bottom of this one. */
-  table.oss thead {
+  table.cv-table thead {
     display: table-header-group;
     break-after: avoid;
   }

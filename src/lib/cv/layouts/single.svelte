@@ -1,5 +1,5 @@
 <!--
-	Single column — the skeleton most composed sheets are built from: the markup for all nine
+	Single column — the skeleton most composed sheets are built from: the markup for all seven
 	section types, and one snippet per slot that a block variant can replace.
 
 	This file is a complete, working template on its own — it is what `classic`
@@ -13,13 +13,13 @@
 
 	  head()                 header        the top of the sheet
 	  secHead(sec, path)     sectionHead   a section's title
-	  summaryBody(sec, path) summary       the summary paragraphs
+	  summaryBody(sec, path) summary       a `text` section's paragraphs
 	  entry(item, path)      entry         one role, degree or project
-	  skillsBody(sec, path)  skills        the skill groups
+	  skillsBody(sec, path)  skills        a `groups` section's blocks
 	  stackLine(item, path)  stack         an entry's tools
 	  listBody(sec, path)    list          a `list` section's items
-	  langBody(sec, path)    languages     a `languages` section's rows
-	  certBody(sec, path)    certifications  a `certifications` section's rows
+	  langBody(sec, path)    languages     a `levels` section's rows
+	  certBody(sec, path)    certifications  a `records` section's rows
 	  body()                 page          the arrangement of the whole sheet
 
 	`data-slot` names the block a piece of the sheet was rendered by, so a
@@ -59,8 +59,8 @@
         <!-- The space before each of these is written as `{' '}`: Svelte trims
              whitespace at the start of a block, and a newline here would be
              dropped rather than collapsed to the separator it looks like. -->
-        {@html md(item.title)}{#if item.company || item.school}{' '}<span class="co" data-src={item.company ? `${path}.company` : `${path}.school`}
-            >| {@html md(item.company ?? item.school)}</span
+        {@html md(item.title)}{#if item.org}{' '}<span class="co" data-src="{path}.org"
+            >| {@html md(item.org)}</span
           >{/if}{#if item.sideNote}{' '}<span class="side-note" data-src="{path}.sideNote">{@html md(item.sideNote)}</span>{/if}
       </p>
       {#if item.dates}<span class="job-dates" data-src="{path}.dates">{@html md(item.dates)}</span>{/if}
@@ -171,28 +171,18 @@
 {/snippet}
 
 {#snippet block(/** @type {any} */ sec, /** @type {string} */ path)}
-  {#if sec.type === 'summary'}
-    <section class="sec-summary" data-slot="summary" data-src={path}>
+  {#if sec.type === 'text'}
+    <section class="sec-text" data-slot="summary" data-src={path}>
       {@render secHead(sec, path)}
       {@render summaryBody(sec, path)}
     </section>
-  {:else if sec.type === 'skills'}
-    <section class="sec-skills" data-src={path}>
+  {:else if sec.type === 'groups'}
+    <section class="sec-groups" data-src={path}>
       {@render secHead(sec, path)}
       {@render skillsBody(sec, path)}
     </section>
-  {:else if sec.type === 'experience'}
-    <section class="sec-experience" data-src={path}>
-      {@render secHead(sec, path)}
-      {@render entries(sec, path)}
-    </section>
-  {:else if sec.type === 'education'}
-    <section class="sec-education" data-src={path}>
-      {@render secHead(sec, path)}
-      {@render entries(sec, path)}
-    </section>
-  {:else if sec.type === 'projects'}
-    <section class="sec-projects" data-src={path}>
+  {:else if sec.type === 'entries'}
+    <section class="sec-entries" data-src={path}>
       {@render secHead(sec, path)}
       {@render entries(sec, path)}
     </section>
@@ -201,35 +191,35 @@
       {@render secHead(sec, path)}
       {@render listBody(sec, path)}
     </section>
-  {:else if sec.type === 'languages'}
-    <section class="sec-languages" data-src={path}>
+  {:else if sec.type === 'levels'}
+    <section class="sec-levels" data-src={path}>
       {@render secHead(sec, path)}
       {@render langBody(sec, path)}
     </section>
-  {:else if sec.type === 'certifications'}
-    <section class="sec-certifications" data-src={path}>
+  {:else if sec.type === 'records'}
+    <section class="sec-records" data-src={path}>
       {@render secHead(sec, path)}
       {@render certBody(sec, path)}
     </section>
-  {:else if sec.type === 'oss'}
-    <section class="sec-oss" data-src={path}>
+  {:else if sec.type === 'table'}
+    <section class="sec-table" data-src={path}>
       {@render secHead(sec, path)}
-      <table class="oss">
-        {#if sec.hasHeader}
+      <table class="cv-table">
+        {#if list(sec.columns).length}
           <thead>
             <tr>
-              <th>Project</th>
-              <th>Stars / Users</th>
-              <th>Description</th>
+              {#each list(sec.columns) as col, k}
+                <th data-src="{path}.columns.{k}">{@html md(col)}</th>
+              {/each}
             </tr>
           </thead>
         {/if}
         <tbody>
-          {#each list(sec.projects) as p, i}
-            <tr data-src="{path}.projects.{i}">
-              <td class="proj" data-src="{path}.projects.{i}.name">{@html md(p.name)}</td>
-              <td class="stars" data-src="{path}.projects.{i}.stars">{@html md(p.stars)}</td>
-              <td data-src="{path}.projects.{i}.desc">{@html md(p.desc)}</td>
+          {#each list(sec.items) as row, i}
+            <tr data-src="{path}.items.{i}">
+              <td class="label" data-src="{path}.items.{i}.name">{@html md(row.name)}</td>
+              <td class="value" data-src="{path}.items.{i}.value">{@html md(row.value)}</td>
+              <td data-src="{path}.items.{i}.desc">{@html md(row.desc)}</td>
             </tr>
           {/each}
         </tbody>

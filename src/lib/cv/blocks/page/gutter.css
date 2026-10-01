@@ -12,12 +12,12 @@
    gives back what the indent takes rather than running off the page. */
 .sec-list ul.bullets,
 .sec-list .tags,
-.sec-languages .lang-list,
-.sec-certifications .cert-list,
-.sec-oss table.oss {
+.sec-levels .lang-list,
+.sec-records .cert-list,
+.sec-table table.cv-table {
   margin-left: var(--gutter);
 }
 
-.sec-oss table.oss {
+.sec-table table.cv-table {
   width: calc(100% - var(--gutter));
 }

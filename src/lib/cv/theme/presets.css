@@ -43,8 +43,7 @@
    in exactly what it was set in before.
 
    Declared on #cv-root rather than on `body` for the reason frame.css gives
-   for putting `font-family` there: this is the element a file's own CSS lands
-   on, and it is applied after this, so overriding --sans by hand still wins. */
+   for putting `font-family` there. */
 
 #cv-root {
   --sans: var(--f-sans, 'Inter', 'Segoe UI', -apple-system, system-ui, Roboto, Helvetica, Arial, sans-serif);

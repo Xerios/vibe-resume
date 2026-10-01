@@ -276,18 +276,6 @@ export const commands = {
     restylePaper(patch, `Paper — ${edge}${name}`)
   },
 
-  /**
-   * The active file's own CSS. Unvalidated by design — it is applied inside the
-   * preview frame, where nothing it says can reach the editor around it.
-   *
-   * The only style that is typed rather than chosen, so its record in the
-   * history waits for a pause the way an edit does — see `recordStyle`.
-   * @param {string} text
-   */
-  setCss(text) {
-    restyle({ css: text }, 'Custom CSS', true)
-  },
-
   /* ── View ──────────────────────────────────────────────────────────────── */
 
   /** @param {'style' | 'history'} which */

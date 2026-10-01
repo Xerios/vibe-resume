@@ -28,7 +28,6 @@ class Look {
   preset = $derived(resolvePreset(files.active?.layout))
   theme = $derived(resolveTheme(files.active?.theme))
   font = $derived(resolveFont(files.active?.font))
-  css = $derived(files.active?.css ?? '')
   paper = $derived(resolvePaper(files.active?.paper))
   /** Which variant fills each slot: the preset's choices with the file's own on top. */
   choices = $derived(parts.composition(files.active))
@@ -82,15 +81,14 @@ export function flush() {
  * entry for a run of restyles is named by — see `recordStyle`. Two goes at the
  * theme read as the last theme; a theme and then a font read as both.
  *
- * @param {{ layout?: string, variants?: Record<string, string>, theme?: string, font?: string, css?: string, paper?: import('../theme/paper.js').Paper }} patch
+ * @param {{ layout?: string, variants?: Record<string, string>, theme?: string, font?: string, paper?: import('../theme/paper.js').Paper }} patch
  * @param {string} label   what the history entry reads as, e.g. `Theme — Plum`
- * @param {boolean} [defer]  for a style that is typed rather than chosen
  */
-export function restyle(patch, label, defer) {
+export function restyle(patch, label) {
   const id = files.activeId
   if (!id) return
   files.setStyle(id, patch)
-  doc.recordStyle(styleOf(files.active), label, Object.keys(patch).sort().join('+'), defer)
+  doc.recordStyle(styleOf(files.active), label, Object.keys(patch).sort().join('+'))
 }
 
 /**

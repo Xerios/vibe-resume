@@ -87,20 +87,20 @@ describe('basicConversion', () => {
 
   it('puts new sections before a later top-level key', () => {
     const doc = 'sections:\n  - type: list\n    items:\n      - a\n\nheader:\n  name: X\n'
-    const edit = appendSections(doc, '  - type: summary\n    paragraphs:\n      - b')
+    const edit = appendSections(doc, '  - type: text\n    paragraphs:\n      - b')
     const next = doc.slice(0, edit.from) + edit.insert + doc.slice(edit.to)
     expect(parse(next).value).toEqual({
       sections: [
         { type: 'list', items: ['a'] },
-        { type: 'summary', paragraphs: ['b'] },
+        { type: 'text', paragraphs: ['b'] },
       ],
       header: { name: 'X' },
     })
   })
 
   it('starts a list when there is none', () => {
-    const edit = appendSections('header:\n  name: X\n', '  - type: summary')
-    expect(parse('header:\n  name: X\n'.slice(0, edit.from) + edit.insert).value.sections).toEqual([{ type: 'summary' }])
+    const edit = appendSections('header:\n  name: X\n', '  - type: text')
+    expect(parse('header:\n  name: X\n'.slice(0, edit.from) + edit.insert).value.sections).toEqual([{ type: 'text' }])
   })
 })
 

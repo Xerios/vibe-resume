@@ -222,11 +222,11 @@ The theme is still pure data — a ramp of eight colours, declared in
 [palettes.css](src/lib/cv/theme/palettes.css) and spent by one block in
 [presets.css](src/lib/cv/theme/presets.css) that re-points the frame's tokens at it.
 `data-cv-layout` is still set on `#cv-root` too, carrying the preset's id, but
-nothing shipped selects on it any more: it is there for a file's own CSS to hook.
+nothing shipped selects on it any more.
 
 #### Restyling is a change
 
-Preset, block variants, theme, font and a file's own CSS used to live only in
+Preset, block variants, theme, font and paper used to live only in
 the file registry, on the grounds that restyling is not an edit. That was the
 wrong reading: changing how a CV looks is a change to the CV, and the things a
 change gets here — a line in the version history, a place on the undo stack, and
@@ -252,10 +252,7 @@ The map holds only what has changed since the document was adopted; everything
 else falls through to the registry's copy as it stood then, which is what makes
 undoing the first change of a session land on what was there before it rather
 than on nothing. Two details follow from what a change _is_: the commit carries a
-`style` kind, so the history panel can mark it, and the one style that is typed
-rather than chosen — custom CSS — waits out a debounce before it is recorded,
-because Loro never merges a commit that carries a message and the alternative is
-one history entry per keystroke.
+`style` kind, so the history panel can mark it.
 
 #### Compiling one
 
@@ -288,10 +285,8 @@ editor page with nothing to render, and there is no longer a page in the app to
 fix it from; clearing the `cv-editor:parts:v1` entry in `localStorage` is what
 recovers it. And a part is the user's own code running in the app's realm
 rather than the frame's, because `mount()` takes a component and a component
-can only come from the realm that compiled it. That is a real difference from
-the file's custom CSS, which the frame contains completely; the alternative is
-a second Svelte runtime inside the frame, and two runtimes cannot share one
-component.
+can only come from the realm that compiled it; the alternative is a second
+Svelte runtime inside the frame, and two runtimes cannot share one component.
 
 The sheet does not follow the app into dark mode. It is paper: it renders light
 on screen, prints exactly what it showed, and the app's dark toggle dresses only
@@ -354,7 +349,7 @@ built out of, and how it paginates. A layout and its variants add to that and
 override parts of it from the composed style block, which the compiler scopes —
 so their rules outrank the base on specificity alone, whatever order they land
 in. The two rail layouts render a rail and a main column — Sidebar puts the rail
-on the left, Rail right mirrors it — with skills, lists and languages going to
+on the left, Rail right mirrors it — with groups, lists and levels going to
 the rail, and any section can opt in or out with `rail: true` / `rail: false`. A
 rail is a third of a measure, so those layouts also carry the rules that make
 what lands in one survive it: the two-up grids fold to a single `minmax(0, 1fr)`
@@ -390,7 +385,7 @@ so `- Some text: more` stays a string.
 Everything else follows from taking values verbatim. A `#` only opens a comment
 at the head of a line, so `ranked # 1` and `#fff` are ordinary text. Indentation
 nests, and a tab in it is an error. Every scalar is a string except a bare `true`
-or `false`, which have to stay boolean because `inline`, `hasHeader` and `rail`
+or `false`, which have to stay boolean because `inline` and `rail`
 are tested for truthiness and the string `'false'` is true. `|` and `>` still
 open a block. Flow collections, anchors, aliases, tags and `---` are gone — `[`
 is just a bracket now.
@@ -425,25 +420,22 @@ key and then text — none of which needs a parse tree.
 #### What a CV is made of
 
 A document is a header and a list of sections, and a section's `type` is what
-decides how it renders. There are nine, all of them understood by every
+decides how it renders. There are seven, each named after the shape of what it
+holds rather than what a CV usually puts in it, all of them understood by every
 layout, so switching preset can never lose one:
 
-| `type`           | Holds                                                                           |
-| ---------------- | ------------------------------------------------------------------------------- |
-| `summary`        | `paragraphs`                                                                    |
-| `skills`         | `blocks`, each a `title` and `rows` of `{ tier?, text }`                        |
-| `experience`     | `items` of `{ title, company, dates, sub, bullets, stack }`                     |
-| `education`      | `items` of `{ title, school, dates, sub?, bullets? }`                           |
-| `projects`       | `items` of `{ title, dates?, sub?, bullets?, stack? }`                          |
-| `list`           | `items` of plain strings — `inline: true` sets them as pills on one line        |
-| `languages`      | `items` of `{ name, level?, note?, rating? }`                                   |
-| `certifications` | `items` of `{ name, issuer?, dates?, note? }` — certificates, licences, permits |
-| `oss`            | `projects` of `{ name, stars, desc }`, with an optional table header            |
+| `type`    | Holds                                                                               | Usually         |
+| --------- | ----------------------------------------------------------------------------------- | --------------- |
+| `text`    | `paragraphs`                                                                        | a summary       |
+| `groups`  | `blocks`, each a `title` and `rows` of `{ tier?, text }`                            | skills          |
+| `entries` | `items` of `{ title, org?, dates?, sub?, bullets?, stack? }`                        | roles, degrees  |
+| `list`    | `items` of plain strings — `inline: true` sets them as pills on one line            | interests       |
+| `levels`  | `items` of `{ name, level?, note?, rating? }`                                       | languages       |
+| `records` | `items` of `{ name, issuer?, dates?, note? }`                                       | certifications  |
+| `table`   | `items` of `{ name, value, desc }`, with `columns` — a list of headings — optional   | open source     |
 
-The two newest are the two a `list` section used to have to stand in for, and
-both are there because the shape was doing work the strings couldn't. A
-certificate is a name, an issuer and a date, which is what lets Grid, Cards and
-Compact set the three of them differently. A language is a name and a level, and
+A record is a name, an issuer and a date, which is what lets Grid, Cards and
+Compact set the three of them differently. A level is a name and a level, and
 `level` is deliberately free text — `Native`, `C2` and `Professional working` are
 all how somebody writes one — so `levelRating` in
 [template-api.js](src/lib/cv/template/template-api.js) is what reads any of them as a
@@ -452,12 +444,19 @@ can't read comes back as 0, and that is the signal for those variants to print
 the words after all rather than an empty meter. `rating: 1–5` says it outright
 for anything the table doesn't cover.
 
-Experience, education and projects are the same block underneath — `.job` in
-cv.css — because a degree and a role are the same shape: a title, something it
-belongs to, dates, a line of context and some bullets. Only the section around
-them differs, which is what a layout selects on when it wants to tell the
-three apart. An `experience` item can also say `subtype: earlier`, which renders
-a run of older roles as one titled list with no dates of its own.
+Experience, education and projects are all `entries`, because a degree and a
+role are the same shape: a title, something it belongs to (`org`), dates, a line
+of context and some bullets — `.job` in cv.css. The section's title is what
+tells them apart. An item can also say `subtype: earlier`, which renders a run
+of older roles as one titled list with no dates of its own.
+
+Documents written before the types were renamed — `summary`, `skills`,
+`experience`, `education`, `projects`, `languages`, `certifications`, `oss`,
+with `company`/`school`, `stars` and `hasHeader` — are rewritten when they are
+opened, imported or restored, by [migrate.js](src/lib/cv/format/migrate.js). The
+rewrite is line by line, so comments and layout survive it, and it lands in the
+history as a named version of its own. An older version viewed from the history
+is read through the same table, so it still renders.
 
 An unknown `type` renders as a red line naming itself rather than as nothing, so
 a typo in the YAML is visible in the preview instead of silently dropping a
@@ -507,9 +506,7 @@ None of them is downloaded. A web font would mean either a CDN this app doesn't
 have or a few hundred kilobytes of precache per family, and a CV that renders in
 whatever the reader's machine substituted is worse than one set in a face that
 is certainly installed — so each is a stack of faces that ship with an operating
-system, ending in the generic the browser can always satisfy. A file's own CSS
-still overrides `--sans` by hand: it is applied after presets.css and lands on
-the same element.
+system, ending in the generic the browser can always satisfy.
 
 ### Keyboard
 
@@ -562,7 +559,6 @@ And in the preview frame's, written into it by `PreviewFrame`:
 | [cv/theme/fonts.css](src/lib/cv/theme/fonts.css)       | the same six stacks, likewise                                |
 | [cv/theme/presets.css](src/lib/cv/theme/presets.css)   | the ramp and the stack selected on `#cv-root`                |
 | the active template's compiled style block             | scoped by the compiler, so it can't reach anything else      |
-| the active file's own CSS                              | whatever you typed into the Style popover, applied last      |
 
 #### The chrome's palette
 
@@ -627,9 +623,8 @@ injected with `{@html}` on top of that. Scoped selectors would reach neither.
 ### The preview frame
 
 The sheet renders inside a same-origin `srcdoc` iframe rather than in the app's
-own DOM. That is what makes a file's custom CSS safe to allow at all: nothing
-crosses the boundary in either direction, custom properties included, so the
-worst a rule can do is make the CV look wrong. It also means the frame has to
+own DOM. Nothing crosses the boundary in either direction, custom properties
+included, so the app's styles can't reach the sheet by accident. It also means the frame has to
 declare everything the sheet spends — `frame.css` is that list, and the overlap
 with `tokens.scss` is the point rather than an oversight.
 

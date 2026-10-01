@@ -48,20 +48,20 @@ describe('where the cursor is', () => {
   })
 
   it('takes a section’s type from the document, not from the indentation', () => {
-    expect(keys('sections:\n  - type: languages\n    it|')).toEqual(['type', 'title', 'rail', 'items'])
-    expect(keys('sections:\n  - type: oss\n    pr|')).toEqual(['type', 'title', 'rail', 'projects', 'hasHeader'])
+    expect(keys('sections:\n  - type: levels\n    it|')).toEqual(['type', 'title', 'rail', 'items'])
+    expect(keys('sections:\n  - type: table\n    co|')).toEqual(['type', 'title', 'rail', 'items', 'columns'])
   })
 
   it('reaches an entry inside a section', () => {
-    expect(keys('sections:\n  - type: languages\n    items:\n      - name: English\n        le|')).toEqual(['name', 'level', 'note', 'rating'])
+    expect(keys('sections:\n  - type: levels\n    items:\n      - name: English\n        le|')).toEqual(['name', 'level', 'note', 'rating'])
   })
 
-  it('reaches a row inside a skills block', () => {
-    expect(keys('sections:\n  - type: skills\n    blocks:\n      - title: Core\n        rows:\n          - ti|')).toEqual(['tier', 'text'])
+  it('reaches a row inside a groups block', () => {
+    expect(keys('sections:\n  - type: groups\n    blocks:\n      - title: Core\n        rows:\n          - ti|')).toEqual(['tier', 'text'])
   })
 
   it('counts the items above it, so the second entry is not the first', () => {
-    const at = spot('sections:\n  - type: languages\n    items:\n      - name: English\n      - na|')
+    const at = spot('sections:\n  - type: levels\n    items:\n      - name: English\n      - na|')
     expect(at?.path).toBe('sections.0.items.1')
   })
 
@@ -75,7 +75,7 @@ describe('where the cursor is', () => {
 
   it('offers nothing where the content is prose', () => {
     expect(keys('sections:\n  - type: list\n    items:\n      - Che|')).toBeNull()
-    expect(keys('sections:\n  - type: summary\n    paragraphs:\n      - Full-|')).toBeNull()
+    expect(keys('sections:\n  - type: text\n    paragraphs:\n      - Full-|')).toBeNull()
     expect(keys('header:\n  contact:\n    - Springfield|')).toBeNull()
   })
 
@@ -97,16 +97,16 @@ describe('what it offers', () => {
     expect(again?.options.find((o) => o.label === 'name')?.apply).toBe('name')
   })
 
-  it('offers the nine types as values of `type:`, and nothing for prose', () => {
-    expect(labels('sections:\n  - type: |')).toEqual(['summary', 'skills', 'experience', 'education', 'projects', 'list', 'languages', 'certifications', 'oss'])
+  it('offers the seven types as values of `type:`, and nothing for prose', () => {
+    expect(labels('sections:\n  - type: |')).toEqual(['text', 'groups', 'entries', 'list', 'levels', 'records', 'table'])
     expect(labels('sections:\n  - type: list\n    title: |')).toBeNull()
   })
 
   it('offers a whole section where one can start, and not inside one', () => {
-    expect(labels('sections:\n  |')).toContain('experience section')
-    expect(labels('sections:\n  - |')).toContain('experience section')
+    expect(labels('sections:\n  |')).toContain('entries section')
+    expect(labels('sections:\n  - |')).toContain('entries section')
     // The section already knows what it is; a skeleton here would nest one.
-    expect(labels('sections:\n  - type: experience\n    |')).not.toContain('experience section')
+    expect(labels('sections:\n  - type: entries\n    |')).not.toContain('entries section')
   })
 
   it('sinks a key the entry already carries below the ones it is missing', () => {
@@ -118,7 +118,7 @@ describe('what it offers', () => {
 
   it('opens with nothing typed where a key is still missing', () => {
     expect(labels('header:\n  |', false)).toEqual(['name', 'role', 'contact'])
-    expect(labels('sections:\n  - |', false)).toContain('experience section')
+    expect(labels('sections:\n  - |', false)).toContain('entries section')
   })
 
   it('stays quiet with nothing typed once the mapping says everything it can', () => {
@@ -128,8 +128,8 @@ describe('what it offers', () => {
   })
 
   it('opens a closed set of values as soon as the `: ` is there', () => {
-    expect(labels('sections:\n  - type: |', false)).toContain('experience')
-    expect(labels('sections:\n  - type: experience\n    items:\n      - subtype: |', false)).toEqual(['job', 'earlier'])
+    expect(labels('sections:\n  - type: |', false)).toContain('entries')
+    expect(labels('sections:\n  - type: entries\n    items:\n      - subtype: |', false)).toEqual(['job', 'earlier'])
     expect(labels('sections:\n  - type: list\n    inline: |', false)).toEqual(['true', 'false'])
     // Prose keeps its silence — there is no set of answers to offer.
     expect(labels('sections:\n  - type: list\n    title: |', false)).toBeNull()

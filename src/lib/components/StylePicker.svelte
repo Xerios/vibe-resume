@@ -14,23 +14,8 @@
   import VariantCycle from './VariantCycle.svelte'
   import { fly } from 'svelte/transition'
 
-  /**
-   * Seeded into an empty editor, so the tokens worth overriding are discoverable
-   * without having to read frame.css to find out what they are called.
-   */
-  const CSS_TEMPLATE = `#cv-root {
-	--sans: Georgia, 'Times New Roman', serif;
-	--accent: #157c75;
-	--ink: #15211f;
-	--paper: #ffffff;
-}
-`
-
-  /**
-   * Which groups start folded open. Everything but the CSS editor, which is
-   * the one thing here most files never touch.
-   */
-  const GROUPS_OPEN = { preset: true, blocks: true, theme: true, font: true, paper: true, css: false }
+  /** Which groups start folded open — all of them. */
+  const GROUPS_OPEN = { preset: true, blocks: true, theme: true, font: true, paper: true }
 
   /**
    * The panel comes back the shape it was left in. Read over the defaults
@@ -162,23 +147,6 @@
         {/each}
       </div>
     </Foldout>
-
-    <!-- Anything at all, applied last inside the preview frame. It can't
-		     reach the editor around it, so there is nothing to validate. -->
-    <Foldout label="Custom CSS" open={groups.css} onToggle={() => toggleGroup('css')}>
-      <textarea
-        class="css-edit ds-textfield"
-        spellcheck="false"
-        autocapitalize="off"
-        autocomplete="off"
-        value={look.css}
-        placeholder={CSS_TEMPLATE}
-        aria-label="Custom CSS for this CV"
-        oninput={(e) => commands.setCss(e.currentTarget.value)}></textarea>
-      <p class="css-hint">
-        Applies to this file only. Override the tokens on <code>#cv-root</code>, or style the sheet directly.
-      </p>
-    </Foldout>
   </div>
 </aside>
 
@@ -237,32 +205,6 @@
     overscroll-behavior: contain;
     display: flex;
     flex-direction: column;
-  }
-
-  .css-edit {
-    display: block;
-    width: 100%;
-    height: 132px;
-    padding: var(--ds-space-075) var(--ds-space-100);
-    font: var(--ds-font-code);
-    tab-size: 2;
-    resize: vertical;
-    white-space: pre;
-    overflow: auto;
-  }
-
-  .css-hint {
-    margin: var(--ds-space-100) 0 0;
-    font: var(--ds-font-body-small);
-    color: var(--ds-text-subtlest);
-
-    code {
-      font-family: var(--mono);
-      color: var(--ds-text);
-      background: var(--ds-background-neutral);
-      border-radius: var(--ds-radius-small);
-      padding: 0 var(--ds-space-025);
-    }
   }
 
   .blocks-list {

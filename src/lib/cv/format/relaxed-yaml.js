@@ -29,7 +29,7 @@
  * parser says so as a hint rather than removing them behind the writer's back.
  *
  * Everything is a string except bare `true` and `false`. Those have to stay
- * boolean — `inline`, `hasHeader` and `rail` are tested for truthiness, and the
+ * boolean — `inline` and `rail` are tested for truthiness, and the
  * string `'false'` is true. Numbers don't need the same care: `md`, `techs` and
  * `levelRating` all coerce, so `dates: 2023` reads the same either way.
  *

@@ -283,7 +283,6 @@
     void tpl.component
     void tpl.css
     void look.theme
-    void look.css
     void ui.editorWidth
     void ui.sourceHidden
     anchorsStale = true
@@ -823,7 +822,6 @@
         layout={look.preset}
         theme={look.theme}
         font={look.font}
-        css={look.css}
         paper={look.paper}
         name={cvName}
         fit={ui.fitPreview && ui.desktop}

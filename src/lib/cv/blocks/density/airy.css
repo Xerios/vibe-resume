@@ -13,6 +13,6 @@
 }
 
 /* The one table on the sheet, softened to match. */
-table.oss thead th {
+table.cv-table thead th {
   border-bottom-color: var(--line);
 }

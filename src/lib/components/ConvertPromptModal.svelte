@@ -66,7 +66,7 @@
     </li>
     <li>
       <strong>Paste the reply here.</strong>
-      <textarea class="reply" rows="8" spellcheck="false" placeholder={'header:\n  name: …\nsections:\n  - type: summary'} bind:value={reply}></textarea>
+      <textarea class="reply" rows="8" spellcheck="false" placeholder={'header:\n  name: …\nsections:\n  - type: text'} bind:value={reply}></textarea>
       {#if reply.trim() && !valid}
         <p class="error">That isn’t a CV in this format yet — it needs a header or sections. Paste the whole reply, or ask the assistant to fix it.</p>
       {/if}

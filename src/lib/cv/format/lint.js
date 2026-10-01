@@ -28,20 +28,18 @@ import { parse, splitLine } from './relaxed-yaml.js'
  * @type {Record<string, { holds: string, item: string[] | null, extra?: string[] }>}
  */
 export const SECTIONS = {
-  summary: { holds: 'paragraphs', item: null },
-  skills: { holds: 'blocks', item: ['title', 'rows'] },
-  experience: { holds: 'items', item: ['subtype', 'title', 'company', 'dates', 'sub', 'sideNote', 'bullets', 'stack', 'items'] },
-  education: { holds: 'items', item: ['title', 'school', 'dates', 'sub', 'sideNote', 'bullets'] },
-  projects: { holds: 'items', item: ['title', 'dates', 'sub', 'sideNote', 'bullets', 'stack'] },
+  text: { holds: 'paragraphs', item: null },
+  groups: { holds: 'blocks', item: ['title', 'rows'] },
+  entries: { holds: 'items', item: ['subtype', 'title', 'org', 'dates', 'sub', 'sideNote', 'bullets', 'stack', 'items'] },
   list: { holds: 'items', item: null, extra: ['inline'] },
-  languages: { holds: 'items', item: ['name', 'level', 'note', 'rating'] },
-  certifications: { holds: 'items', item: ['name', 'issuer', 'dates', 'note'] },
-  oss: { holds: 'projects', item: ['name', 'stars', 'desc'], extra: ['hasHeader'] },
+  levels: { holds: 'items', item: ['name', 'level', 'note', 'rating'] },
+  records: { holds: 'items', item: ['name', 'issuer', 'dates', 'note'] },
+  table: { holds: 'items', item: ['name', 'value', 'desc'], extra: ['columns'] },
 }
 
 /** The keys any section may carry, whatever its type. */
 export const SECTION_KEYS = ['type', 'title', 'rail']
-/** A `skills` block's rows, which are a level deeper than anything else gets. */
+/** A `groups` block's rows, which are a level deeper than anything else gets. */
 export const ROW_KEYS = ['tier', 'text']
 /** The document itself. */
 export const ROOT_KEYS = ['header', 'sections']
@@ -163,6 +161,8 @@ export function lintCv(text) {
 
     checkKeys(sec, path, [...SECTION_KEYS, spec.holds, ...(spec.extra ?? [])], `a \`${type}\` section`)
 
+    if (Array.isArray(sec.columns)) checkTextList(sec.columns, `${path}.columns`)
+
     const content = sec[spec.holds]
     if (content === undefined || content === null) {
       say(path, 'line', `A \`${type}\` section holds its content under \`${spec.holds}:\`.`)
@@ -189,12 +189,12 @@ export function lintCv(text) {
       for (const key of Object.keys(item)) {
         if (TEXT_LISTS.has(key) && Array.isArray(item[key])) checkTextList(item[key], `${itemPath}.${key}`)
       }
-      // `skills` is the one type with a level below its entries.
-      if (type === 'skills' && Array.isArray(item.rows)) {
+      // `groups` is the one type with a level below its entries.
+      if (type === 'groups' && Array.isArray(item.rows)) {
         item.rows.forEach((/** @type {unknown} */ row, /** @type {number} */ k) => {
           const rowPath = `${itemPath}.rows.${k}`
-          if (isMap(row)) checkKeys(row, rowPath, ROW_KEYS, 'a skills row')
-          else say(rowPath, 'line', 'A skills row is a mapping — `text:`, and `tier:` in front of it if you want one.')
+          if (isMap(row)) checkKeys(row, rowPath, ROW_KEYS, 'a groups row')
+          else say(rowPath, 'line', 'A groups row is a mapping — `text:`, and `tier:` in front of it if you want one.')
         })
       }
     })

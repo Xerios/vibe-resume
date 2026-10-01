@@ -27,7 +27,7 @@ describe('the shipped document', () => {
 
   it('uses every type the table knows about', () => {
     expect(new Set(Object.keys(SECTIONS))).toEqual(
-      new Set(/** @type {string[]} */ (['summary', 'skills', 'experience', 'projects', 'education', 'certifications', 'languages', 'list', 'oss'])),
+      new Set(/** @type {string[]} */ (['text', 'groups', 'entries', 'records', 'levels', 'list', 'table'])),
     )
   })
 })
@@ -40,7 +40,7 @@ describe('sections', () => {
   })
 
   it('says where a section keeps its content', () => {
-    expect(messages(doc('type: experience\ntitle: Work'))).toEqual([expect.stringContaining('holds its content under `items:`')])
+    expect(messages(doc('type: entries\ntitle: Work'))).toEqual([expect.stringContaining('holds its content under `items:`')])
   })
 
   it('flags a key nothing renders', () => {
@@ -50,44 +50,44 @@ describe('sections', () => {
   })
 
   it('flags a key nothing renders on an entry', () => {
-    expect(messages(doc('type: languages\ntitle: Languages\nitems:\n  - name: English\n    fluency: Native'))).toEqual([
+    expect(messages(doc('type: levels\ntitle: Languages\nitems:\n  - name: English\n    fluency: Native'))).toEqual([
       expect.stringContaining('Nothing renders `fluency`'),
     ])
   })
 
-  it('reaches the rows inside a skills block', () => {
-    expect(messages(doc('type: skills\ntitle: Skills\nblocks:\n  - title: Core\n    rows:\n      - txt: Go'))).toEqual([
+  it('reaches the rows inside a groups block', () => {
+    expect(messages(doc('type: groups\ntitle: Skills\nblocks:\n  - title: Core\n    rows:\n      - txt: Go'))).toEqual([
       expect.stringContaining('Nothing renders `txt`'),
     ])
   })
 
   it('wants a list where a list belongs', () => {
-    expect(messages(doc('type: summary\ntitle: Summary\nparagraphs: one line'))).toEqual([expect.stringContaining('`paragraphs` has to be a list')])
+    expect(messages(doc('type: text\ntitle: Summary\nparagraphs: one line'))).toEqual([expect.stringContaining('`paragraphs` has to be a list')])
   })
 
   it('says nothing about a section it understands', () => {
-    expect(lintCv(doc('type: oss\ntitle: Open Source\nhasHeader: false\nrail: true\nprojects:\n  - name: kit\n    stars: 12\n    desc: A kit'))).toEqual([])
+    expect(lintCv(doc('type: table\ntitle: Open Source\ncolumns:\n  - Project\n  - Stars\n  - About\nrail: true\nitems:\n  - name: kit\n    value: 12\n    desc: A kit'))).toEqual([])
   })
 })
 
 describe('the line that reads as a key', () => {
   it('catches a bullet that turned into a mapping', () => {
-    const d = only(doc('type: experience\ntitle: Work\nitems:\n  - title: Dev\n    bullets:\n      - Analytics: Mixpanel, GA'))
+    const d = only(doc('type: entries\ntitle: Work\nitems:\n  - title: Dev\n    bullets:\n      - Analytics: Mixpanel, GA'))
     expect(d.message).toMatch(/`Analytics:` at the start of this line reads as a key.*single quotes/s)
   })
 
   it('leaves the quoted form alone', () => {
-    expect(lintCv(doc("type: experience\ntitle: Work\nitems:\n  - title: Dev\n    bullets:\n      - 'Analytics: Mixpanel, GA'"))).toEqual([])
+    expect(lintCv(doc("type: entries\ntitle: Work\nitems:\n  - title: Dev\n    bullets:\n      - 'Analytics: Mixpanel, GA'"))).toEqual([])
   })
 
   it('catches it in a summary, a plain list and the contact block', () => {
-    expect(messages(doc('type: summary\ntitle: Summary\nparagraphs:\n  - Note: hello'))).toHaveLength(1)
+    expect(messages(doc('type: text\ntitle: Summary\nparagraphs:\n  - Note: hello'))).toHaveLength(1)
     expect(messages(doc('type: list\ntitle: Interests\nitems:\n  - Chess: online'))).toHaveLength(1)
     expect(messages('header:\n  contact:\n    - Email: jo@example.dev\n')).toHaveLength(1)
   })
 
   it('leaves a colon that is not at the start of the line alone', () => {
-    expect(lintCv(doc('type: summary\ntitle: Summary\nparagraphs:\n  - Two words: still prose'))).toEqual([])
+    expect(lintCv(doc('type: text\ntitle: Summary\nparagraphs:\n  - Two words: still prose'))).toEqual([])
   })
 })
 
