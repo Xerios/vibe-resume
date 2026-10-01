@@ -14,6 +14,7 @@
 
 import { pushState } from '$app/navigation'
 import { page } from '$app/state'
+import { toStrictYaml } from '../format/strict-yaml.js'
 import { preset as presetOf } from '../template/compositions.js'
 import { FONTS } from '../theme/fonts.js'
 import { ORIENTATIONS, PAPER_SIZES, RUNNING } from '../theme/paper.js'
@@ -137,6 +138,7 @@ export const commands = {
 
   /**
    * Downloads a file's YAML source as a `.yaml` file — the active one unless told otherwise.
+   * The editor's relaxed dialect is rewritten as standard YAML on the way out.
    * @param {string} [id]
    */
   saveYaml(id = files.activeId ?? undefined) {
@@ -146,7 +148,7 @@ export const commands = {
       ui.toast('Nothing to save')
       return
     }
-    const blob = new Blob([text], { type: 'text/yaml' })
+    const blob = new Blob([toStrictYaml(text)], { type: 'text/yaml' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
