@@ -9,8 +9,10 @@
   import IconMousePointer2Off from '@iconify-icons/lucide/mouse-pointer-2-off'
   import IconRefreshCw from '@iconify-icons/lucide/refresh-cw'
   import IconSun from '@iconify-icons/lucide/sun'
+  import IconCompare from '@iconify-icons/lucide/git-compare'
+  import IconTrash from '@iconify-icons/lucide/trash'
   import { commands } from '$lib/cv/state/commands.js'
-  import { doc, ui } from '$lib/cv/state/state.svelte.js'
+  import { doc, files, ui } from '$lib/cv/state/state.svelte.js'
   import { swUpdate } from '$lib/sw-update.svelte.js'
   import { shortcut } from './access-keys.js'
 
@@ -26,14 +28,38 @@
   })
 </script>
 
-<!-- The bar that reports rather than asks: whether the YAML parses, and when it
-     was last written to storage. The switches that decide what the window
-     shows — rather than what the CV says — keep it company at the far end,
-     clear of the toolbar buttons that change the document. -->
+<!-- The bar that reports: on the left, when the file was last written to
+     storage — and, only while there is one, that the YAML doesn't parse. On
+     the right, the two things done across files (Compare, Trash), then the
+     switches that decide what the window shows rather than what the CV says. -->
 <div id="status-bar">
-  <span id="status" class="ds-lozenge {ui.parseError ? 'removed' : 'success'}">{ui.parseError ? 'YAML error' : 'Valid'}</span>
+  {#if ui.parseError}<span id="status" class="ds-lozenge removed">YAML error</span>{/if}
+  {#if saveLabel}<span id="save-state" class:err={doc.saveError}>{saveLabel}</span>{/if}
   <div class="ds-spacer"></div>
-  {#if saveLabel}<span id="save-state">{saveLabel}</span>{/if}
+
+  <div class="sb-actions">
+    <button class="ds-btn subtle compact sb-btn" use:shortcut={['c', 'Compare two documents or versions']} onclick={() => commands.openCompare()}>
+      <Icon icon={IconCompare} width="16" height="16" />
+      <span class="ds-txt"><u>C</u>ompare</span>
+    </button>
+    <!-- Only while there is something in there: an always-present button for an
+	       always-empty bin is a control that never does anything. -->
+    {#if files.trashed.length}
+      <button
+        id="trash-toggle"
+        class="ds-btn subtle compact sb-btn"
+        class:selected={ui.trashOpen}
+        use:shortcut={['t', 'Show the trash']}
+        onclick={commands.toggleTrash}
+      >
+        <Icon icon={IconTrash} width="16" height="16" />
+        <span class="ds-txt"><u>T</u>rash</span>
+        <span class="ds-badge">{files.trashed.length}</span>
+      </button>
+    {/if}
+  </div>
+
+  <span class="sb-sep" aria-hidden="true"></span>
 
   <div class="sb-actions">
     <!-- The one thing here that asks rather than reports, so it is the one thing
@@ -115,6 +141,18 @@
     font: var(--ds-font-body-small);
     color: var(--ds-text-subtlest);
     white-space: nowrap;
+
+    &.err {
+      color: var(--ds-text-danger);
+    }
+  }
+
+  /* Between the file actions and the view switches. */
+  .sb-sep {
+    flex-shrink: 0;
+    width: var(--ds-border-width);
+    height: 16px;
+    background: var(--ds-border);
   }
 
   .sb-actions {

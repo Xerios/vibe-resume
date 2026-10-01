@@ -39,7 +39,7 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-<div id="trash-panel" use:clickOutside in:fly={{ y: -8, duration: 200 }}>
+<div id="trash-panel" use:clickOutside in:fly={{ y: 8, duration: 200 }}>
   <div class="trash-head">
     <h2 class="trash-title">Trash</h2>
     <span class="ds-badge">{files.trashed.length}</span>
@@ -68,10 +68,11 @@
 </div>
 
 <style lang="scss">
-  /* An ADS popup: the overlay surface and its shadow, a header row, a list. */
+  /* An ADS popup: the overlay surface and its shadow, a header row, a list.
+     It opens upward from the Trash button in the status bar. */
   #trash-panel {
     position: fixed;
-    top: calc(var(--overlay-top) + var(--ds-space-100));
+    bottom: calc(var(--bar-status) + var(--ds-space-100));
     right: var(--ds-space-200);
     width: var(--panel-w);
     max-height: 60vh;

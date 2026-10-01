@@ -9,7 +9,6 @@
   import HistoryPanel from '$lib/components/HistoryPanel.svelte'
   import StatusBar from '$lib/components/StatusBar.svelte'
   import StylePicker from '$lib/components/StylePicker.svelte'
-  import TabBar from '$lib/components/TabBar.svelte'
   import Toolbar from '$lib/components/Toolbar.svelte'
   import TrashPanel from '$lib/components/TrashPanel.svelte'
   import WelcomeOverlay from '$lib/components/WelcomeOverlay.svelte'
@@ -716,7 +715,6 @@
 
 <div id="app">
   <Toolbar />
-  <TabBar />
 
   {#if ui.trashOpen}
     <TrashPanel />

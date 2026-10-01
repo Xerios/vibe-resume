@@ -1,41 +1,54 @@
 <script>
   import Icon from '@iconify/svelte'
   import IconDownload from '@iconify-icons/lucide/download'
+  import IconHistory from '@iconify-icons/lucide/history'
   import IconInstall from '@iconify-icons/lucide/arrow-down-to-line'
-  import IconTrash from '@iconify-icons/lucide/trash'
-  import IconCompare from '@iconify-icons/lucide/git-compare'
+  import IconLayout from '@iconify-icons/lucide/layout-panel-left'
   import logo from '$lib/assets/favicon.svg'
   import { commands } from '$lib/cv/state/commands.js'
-  import { files, ui } from '$lib/cv/state/state.svelte.js'
+  import { doc, ui } from '$lib/cv/state/state.svelte.js'
   import { shortcut } from './access-keys.js'
+  import TabBar from './TabBar.svelte'
 </script>
 
-<!-- ADS top navigation: the product on the left, its actions on the right, and
-     the one primary action last. -->
+<!-- One bar across the top: the files on the left, the product in the
+     middle, the two panels and the one primary action on the right. The two
+     sides share what is left over equally, which is what keeps the name in
+     the middle; it gives up its subtitle, then its name, then its logo as the
+     bar narrows. -->
 <header id="toolbar">
+  <div class="t-side t-left">
+    <TabBar />
+  </div>
+
   <div class="t-product">
     <img class="t-logo" src={logo} alt="" width="24" height="24" />
     <span class="t-title">Resume</span>
     <span class="t-subtitle">Offline-ready &amp; local editor</span>
   </div>
 
-  <div class="ds-spacer"></div>
-
-  <nav class="t-actions" aria-label="Document actions">
-    <button class="ds-btn subtle" use:shortcut={['c', 'Compare two documents or versions']} onclick={() => commands.openCompare()}>
-      <Icon icon={IconCompare} width="16" height="16" />
-      <span class="ds-txt"><u>C</u>ompare</span>
+  <nav class="t-side t-right" aria-label="Panels and export">
+    <!-- Beside History because the two are one control between them: they take
+	       turns in the column to the right of the preview. -->
+    <button
+      class="ds-btn subtle"
+      class:selected={ui.sidePanel === 'style'}
+      use:shortcut={['t', 'Template, theme and font']}
+      onclick={() => commands.toggleSidePanel('style')}
+    >
+      <Icon icon={IconLayout} width="16" height="16" />
+      <span class="ds-txt"><u>T</u>hemes</span>
     </button>
-    <!-- Beside Export because both act on files rather than on the CV in front
-	       of you, and only while there is something in there: an always-present
-	       button for an always-empty bin is a control that never does anything. -->
-    {#if files.trashed.length}
-      <button id="trash-toggle" class="ds-btn subtle" class:selected={ui.trashOpen} use:shortcut={['t', 'Show the trash']} onclick={commands.toggleTrash}>
-        <Icon icon={IconTrash} width="16" height="16" />
-        <span class="ds-txt"><u>T</u>rash</span>
-        <span class="ds-badge">{files.trashed.length}</span>
-      </button>
-    {/if}
+    <button
+      class="ds-btn subtle"
+      class:selected={ui.sidePanel === 'history'}
+      use:shortcut={['h', 'Show version history']}
+      onclick={() => commands.toggleSidePanel('history')}
+    >
+      <Icon icon={IconHistory} width="16" height="16" />
+      <span class="ds-txt"><u>H</u>istory</span>
+      {#if doc.history.length}<span class="ds-badge">{doc.history.length}</span>{/if}
+    </button>
 
     <!-- Only ever shown when the browser has offered us a prompt, which is Chromium
 	       and only until the app is installed. Elsewhere the bar looks as it always did. -->
@@ -57,22 +70,46 @@
   #toolbar {
     flex-shrink: 0;
     display: flex;
-    align-items: center;
-    gap: var(--ds-space-200);
+    align-items: stretch;
     height: var(--bar-tool);
-    padding: 0 var(--ds-space-200) 0 var(--ds-space-150);
-    background: var(--ds-surface);
-    border-bottom: var(--ds-border-width) solid var(--ds-border);
+    background: var(--ds-surface-sunken);
+    /* The bar's bottom rule. An inset shadow rather than a border so the open
+       tab, which stands on the bar's bottom edge, paints over it. */
+    box-shadow: inset 0 calc(-1 * var(--ds-border-width)) 0 var(--ds-border);
     z-index: 10;
     transition: var(--theme-fade);
+    /* The product name answers to the bar's width, not the window's. */
+    container: topbar / inline-size;
+  }
+
+  /* Equal shares of what the middle leaves: that is what centres it. */
+  .t-side {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+  }
+
+  .t-left {
+    align-items: stretch;
+  }
+
+  /* Never clipped: the buttons keep their width, and the tabs scroll instead. */
+  .t-right {
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--ds-space-100);
+    min-width: max-content;
+    padding: 0 var(--ds-space-200) 0 var(--ds-space-100);
   }
 
   .t-product {
+    flex: 0 1 auto;
+    min-width: 0;
     display: flex;
     align-items: center;
     gap: var(--ds-space-100);
-    min-width: 0;
-    padding: 0 var(--ds-space-050);
+    padding: 0 var(--ds-space-200);
+    overflow: hidden;
   }
 
   .t-logo {
@@ -95,32 +132,42 @@
     border-left: var(--ds-border-width) solid var(--ds-border);
   }
 
-  .t-actions {
-    display: flex;
-    align-items: center;
-    gap: var(--ds-space-100);
-  }
-
-  @media (max-width: 900px) {
+  /* The name gives way a piece at a time as the bar narrows: subtitle, then
+     title, then the logo. At phone width the buttons drop to their icons
+     (controls.scss), which frees room for the logo again, until even that
+     goes on the narrowest screens. */
+  @container topbar (max-width: 1080px) {
     .t-subtitle {
       display: none;
     }
   }
 
-  /* At phone width the bar keeps only what can't be inferred: the product
-	   name is the page title again. */
-  @media (max-width: 640px) {
-    #toolbar {
-      gap: var(--ds-space-100);
-      padding: 0 var(--ds-space-100);
-    }
-
+  @container topbar (max-width: 880px) {
     .t-title {
       display: none;
     }
+  }
 
-    .t-actions {
+  @container topbar (min-width: 641px) and (max-width: 780px) {
+    .t-product {
+      display: none;
+    }
+  }
+
+  @container topbar (max-width: 360px) {
+    .t-product {
+      display: none;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .t-product {
+      padding: 0 var(--ds-space-100);
+    }
+
+    .t-right {
       gap: var(--ds-space-050);
+      padding: 0 var(--ds-space-100) 0 var(--ds-space-050);
     }
   }
 </style>

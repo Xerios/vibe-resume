@@ -6,11 +6,9 @@
   import IconFilePlus from '@iconify-icons/lucide/file-plus'
   import IconPencil from '@iconify-icons/lucide/pencil'
   import IconTrash from '@iconify-icons/lucide/trash'
-  import IconLayout from '@iconify-icons/lucide/layout-panel-left'
-  import IconHistory from '@iconify-icons/lucide/history'
   import IconCompare from '@iconify-icons/lucide/git-compare'
   import { commands } from '$lib/cv/state/commands.js'
-  import { doc, files, ui } from '$lib/cv/state/state.svelte.js'
+  import { files } from '$lib/cv/state/state.svelte.js'
   import { shortcut } from './access-keys.js'
   import { fly } from 'svelte/transition'
 
@@ -306,53 +304,21 @@
     <Icon icon={IconFilePlus} width="16" height="16" />
     <span class="ds-txt"><u>N</u>ew CV</span>
   </button>
-
-  <div class="ds-spacer"></div>
-
-  <div id="tab-actions">
-    <!-- Beside History because the two are one control between them: they take
-	       turns in the column to the right of the preview. -->
-    <button
-      class="ds-btn subtle"
-      class:selected={ui.sidePanel === 'style'}
-      use:shortcut={['t', 'Template, theme and font']}
-      onclick={() => commands.toggleSidePanel('style')}
-    >
-      <Icon icon={IconLayout} width="16" height="16" />
-      <span class="ds-txt"><u>T</u>hemes</span>
-    </button>
-    <button
-      class="ds-btn subtle"
-      class:selected={ui.sidePanel === 'history'}
-      use:shortcut={['h', 'Show version history']}
-      onclick={() => commands.toggleSidePanel('history')}
-    >
-      <Icon icon={IconHistory} width="16" height="16" />
-      <span class="ds-txt"><u>H</u>istory</span>
-      {#if doc.history.length}<span class="ds-badge">{doc.history.length}</span>{/if}
-    </button>
-  </div>
 </div>
 
 <style lang="scss">
-  /* File tabs on a sunken strip. The open file's tab is lifted onto the
-     editor's surface and joined to it — bordered on three sides, open at the
-     bottom — with the brand colour along its top edge; the rest sit back in
-     the strip until hovered. */
+  /* The tabs, at the left of the top bar and standing on its bottom edge. The
+     open file's tab is lifted onto the editor's surface and joined to it —
+     bordered on three sides, open at the bottom, over the bar's rule — with
+     the brand colour along its top edge; the rest sit back in the bar. */
   #tabbar {
-    flex-shrink: 0;
     position: relative;
     display: flex;
     align-items: stretch;
     gap: var(--ds-space-100);
-    height: var(--bar-tabs);
-    padding: 0 var(--ds-space-200) 0 var(--ds-space-100);
-    background: var(--ds-surface-sunken);
-    /* The strip's bottom rule. An inset shadow rather than a border so the
-       active tab, which overlaps it by a pixel, can paint over it. */
-    box-shadow: inset 0 calc(-1 * var(--ds-border-width)) 0 var(--ds-border);
-    z-index: 9;
-    transition: var(--theme-fade);
+    min-width: 0;
+    height: 100%;
+    padding-left: var(--ds-space-100);
   }
 
   /* Sized to its tabs and no wider, so the control that opens another one sits
@@ -373,20 +339,13 @@
     }
   }
 
-  #tab-actions {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    gap: var(--ds-space-050);
-  }
-
   .tab {
     flex-shrink: 0;
     position: relative;
     display: flex;
     align-items: center;
     gap: var(--ds-space-025);
-    height: calc(var(--bar-tabs) - var(--ds-space-075));
+    height: calc(var(--bar-tool) - var(--ds-space-150));
     padding: 0 var(--ds-space-075) 0 var(--ds-space-100);
     color: var(--ds-text-subtle);
     /* A resting tab is still a tab: the neutral fill and a hairline on three
@@ -411,9 +370,8 @@
          than stopping short of them. */
       border-top-color: var(--ds-border-selected);
       box-shadow: inset 0 var(--ds-border-width) 0 var(--ds-border-selected);
-      /* Down over the strip's rule, so the tab runs into the editor below. */
-      height: calc(var(--bar-tabs) - var(--ds-space-075) + var(--ds-border-width));
-      margin-bottom: calc(-1 * var(--ds-border-width));
+      /* Opaque, and on the bar's bottom edge, so it covers the bar's rule and
+         runs into the editor below. */
       z-index: 1;
     }
 
@@ -463,6 +421,7 @@
 
   /* ── Open another tab ─────────────────────────── */
   .tab-new {
+    flex-shrink: 0;
     align-self: center;
   }
 
@@ -475,7 +434,7 @@
   @media (max-width: 640px) {
     #tabbar {
       gap: var(--ds-space-050);
-      padding: 0 var(--ds-space-100) 0 0;
+      padding-left: var(--ds-space-050);
     }
 
     .tab-select,

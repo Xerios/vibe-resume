@@ -5,10 +5,11 @@
    Everything that belongs to one piece of UI is styled where that piece is
    written, in the component's own <style> block:
 
-     Toolbar.svelte      #toolbar and the CV label
-     StatusBar.svelte    #status-bar, #status, #save-state, .sb-* — the source
-                         and dark-mode toggles among them
-     TabBar.svelte       #tabbar, .tab*, .tab-new*, .new-*, the export button
+     Toolbar.svelte      #toolbar: the tabs, the product name, the panel
+                         buttons and Export
+     StatusBar.svelte    #status-bar, #status, #save-state, .sb-* — Compare,
+                         Trash, and the source and dark-mode toggles
+     TabBar.svelte       #tabbar, .tab*, .tab-new* — the tabs, inside #toolbar
      TrashPanel.svelte   #trash-panel, .trash-*
      WelcomeOverlay.svelte  #welcome, .w-*
      StylePicker.svelte  #style-pane, .style-*, .layout-*, .theme-*, .font-*

@@ -316,16 +316,15 @@
   --ds-font-weight-bold: 700;
 
   /* ── The app's own measures ─────────────────── */
-  /* The three bars: ADS's top navigation height, its tab track, and a footer
-     with room for a compact button. */
-  --bar-tool: 56px;
-  --bar-tabs: 40px;
+  /* The two bars: one across the top that carries the tabs, the product name
+     and the panel buttons, and a footer with room for a compact button. */
+  --bar-tool: 48px;
   --bar-status: 32px;
   --panel-w: 320px;
-  /* Where a popover hanging off the chrome starts: the two bars above it, plus
-     their rules. Derived so the panels that float can't drift from the bars
-     they hang under. */
-  --overlay-top: calc(var(--bar-tool) + var(--bar-tabs) + 1px);
+  /* Where a popover hanging off the chrome starts: the bar above it, plus its
+     rule. Derived so the panels that float can't drift from the bar they hang
+     under. */
+  --overlay-top: calc(var(--bar-tool) + 1px);
   --control-h: 32px;
   --control-h-compact: 24px;
   --field-h: 40px;
