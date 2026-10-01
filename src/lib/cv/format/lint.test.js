@@ -106,6 +106,30 @@ describe('the document itself', () => {
   })
 })
 
+describe('date formats', () => {
+  const jobs = (/** @type {string[]} */ dates) => doc(`type: entries\nitems:\n${dates.map((d) => `  - title: Dev\n    dates: ${d}`).join('\n')}`)
+
+  it('points at the one written differently from the rest', () => {
+    const text = jobs(['03/2020 – Present', '06/2016 – 02/2020', 'Mar 2014 – May 2016'])
+    const d = only(text)
+    expect(d.severity).toBe('info')
+    expect(text.slice(d.from, d.to)).toBe('Mar 2014 – May 2016')
+    expect(d.message).toContain('`03/2020`')
+  })
+
+  it('catches a range that switches halfway', () => {
+    expect(messages(jobs(['03/2020 – Present', '06/2016 – Feb 2020']))).toHaveLength(1)
+  })
+
+  it('lets a bare year sit beside months', () => {
+    expect(messages(jobs(['03/2020 – Present', '2010 – 2014', '2016-2020']))).toEqual([])
+  })
+
+  it('leaves what it cannot read alone', () => {
+    expect(messages(jobs(['Summer 2019', 'mars 2020 – présent', '03/2020 – 05/2021']))).toEqual([])
+  })
+})
+
 describe('ranges', () => {
   it('underlines the key it is talking about, not the whole line', () => {
     const text = 'header:\n  nickname: Jo\n'

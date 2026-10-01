@@ -50,6 +50,35 @@ const TEXT_LISTS = new Set(['bullets', 'stack', 'items'])
 const TYPES = Object.keys(SECTIONS)
 
 /**
+ * The ways a CV writes a month, each with the example a message shows. A bare
+ * year isn't among them: it is a coarser date, not another spelling of one, and
+ * a degree in `2010 – 2014` beside a job in `03/2020 – Present` is normal.
+ * Anything not recognised — another language, `Summer 2019` — is left alone.
+ * @type {[RegExp, string][]}
+ */
+const DATE_FORMATS = [
+  [/^\d{1,2}\/\d{4}$/, '03/2020'],
+  [/^\d{1,2}\.\d{4}$/, '03.2020'],
+  [/^\d{4}-\d{1,2}$/, '2020-03'],
+  [/^(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\.?\s+\d{4}$/i, 'Mar 2020'],
+  [/^(?:january|february|march|april|june|july|august|september|october|november|december)\s+\d{4}$/i, 'March 2020'],
+]
+
+/** The two ends of a range: a dash with room around it, an en or em dash, or a word. */
+const RANGE_SPLIT = /\s*[–—]\s*|\s+-\s+|\s+(?:to|until)\s+/i
+
+/**
+ * The month formats a `dates` value is written in, as their examples.
+ * @param {unknown} value
+ */
+const dateFormats = (value) =>
+  String(value)
+    .replace(/[*_`]/g, '')
+    .split(RANGE_SPLIT)
+    .map((part) => DATE_FORMATS.find(([re]) => re.test(part.trim()))?.[1])
+    .filter((f) => f !== undefined)
+
+/**
  * @param {unknown} v
  * @returns {v is Record<string, unknown>}
  */
@@ -142,6 +171,9 @@ export function lintCv(text) {
   }
 
   const sections = Array.isArray(cv.sections) ? cv.sections : []
+  /** Every `dates` value, for the consistency check once the walk is done. */
+  /** @type {{ path: string, formats: string[] }[]} */
+  const dated = []
   sections.forEach((sec, i) => {
     const path = `sections.${i}`
     if (!isMap(sec)) {
@@ -186,6 +218,9 @@ export function lintCv(text) {
         return
       }
       checkKeys(item, itemPath, /** @type {string[]} */ (spec.item), `a \`${type}\` entry`)
+      if (item.dates != null && !isMap(item.dates) && !Array.isArray(item.dates)) {
+        dated.push({ path: `${itemPath}.dates`, formats: dateFormats(item.dates) })
+      }
       for (const key of Object.keys(item)) {
         if (TEXT_LISTS.has(key) && Array.isArray(item[key])) checkTextList(item[key], `${itemPath}.${key}`)
       }
@@ -200,7 +235,33 @@ export function lintCv(text) {
     })
   })
 
+  checkDates(dated, say)
   return sorted(out)
+}
+
+/**
+ * One way of writing a month throughout. A résumé parser reads dates off the
+ * printed text, and a document that switches between `03/2020` and
+ * `March 2021` is the one most likely to get a range wrong. The format most of
+ * the document uses is the one to keep; a tie goes to whichever came first.
+ *
+ * @param {{ path: string, formats: string[] }[]} dated
+ * @param {(path: string, part: 'value', message: string, severity: 'info') => void} say
+ */
+function checkDates(dated, say) {
+  /** @type {Map<string, number>} */
+  const counts = new Map()
+  for (const { formats } of dated) for (const f of formats) counts.set(f, (counts.get(f) ?? 0) + 1)
+  if (counts.size < 2) return
+  let main = ''
+  for (const [f, n] of counts) if (n > (counts.get(main) ?? 0)) main = f
+
+  for (const { path, formats } of dated) {
+    const odd = formats.find((f) => f !== main)
+    if (odd) {
+      say(path, 'value', `Most dates here read like \`${main}\`; this one reads like \`${odd}\`. One format throughout is easier for résumé parsers to read.`, 'info')
+    }
+  }
 }
 
 /** @param {import('@codemirror/lint').Diagnostic[]} list */
