@@ -18,6 +18,7 @@ import { preset as presetOf } from '../template/compositions.js'
 import { FONTS } from '../theme/fonts.js'
 import { ORIENTATIONS, PAPER_SIZES, RUNNING } from '../theme/paper.js'
 import { THEMES } from '../theme/presets.js'
+import { storedText } from './doc.svelte.js'
 import { doc, files, parts, restyle, restylePaper, restyleVariant, ui } from './state.svelte.js'
 import { KEYS, write } from './storage.js'
 
@@ -73,9 +74,10 @@ export const commands = {
     doc.switchTo(id)
   },
 
-  duplicateTab() {
-    doc.flush() // capture the latest edits before copying the stored snapshot
-    const id = files.duplicate(/** @type {string} */ (files.activeId))
+  /** @param {string} [source] defaults to the active file */
+  duplicateTab(source = /** @type {string} */ (files.activeId)) {
+    if (source === files.activeId) doc.flush() // capture the latest edits before copying the stored snapshot
+    const id = files.duplicate(source)
     doc.switchTo(id)
     ui.toast('Tab duplicated')
   },
@@ -133,13 +135,22 @@ export const commands = {
       .catch(() => ui.toast('Copy failed — try Ctrl+A, Ctrl+C'))
   },
 
-  /** Downloads the active file's YAML source as a `.yaml` file. */
-  saveYaml() {
-    const blob = new Blob([doc.yaml], { type: 'text/yaml' })
+  /**
+   * Downloads a file's YAML source as a `.yaml` file — the active one unless told otherwise.
+   * @param {string} [id]
+   */
+  saveYaml(id = files.activeId ?? undefined) {
+    const isActive = id === files.activeId
+    const text = isActive ? doc.yaml : id ? storedText(id) : null
+    if (text == null) {
+      ui.toast('Nothing to save')
+      return
+    }
+    const blob = new Blob([text], { type: 'text/yaml' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${files.active?.name ?? 'cv'}.yaml`
+    a.download = `${(isActive ? files.active : files.files.find((f) => f.id === id))?.name ?? 'cv'}.yaml`
     a.click()
     URL.revokeObjectURL(url)
     ui.toast('YAML saved')

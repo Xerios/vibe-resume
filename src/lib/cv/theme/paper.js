@@ -73,7 +73,7 @@ export const RUNNING = [
  */
 
 /** @type {Paper} */
-export const DEFAULT_PAPER = { size: 'a4', orientation: 'portrait', header: 'none', footer: 'none' }
+export const DEFAULT_PAPER = { size: 'a4', orientation: 'portrait', header: 'name', footer: 'page' }
 
 /** The margins the sheet has always printed with, now stated once. In mm. */
 const MARGIN_X = 13
