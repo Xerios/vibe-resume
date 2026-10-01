@@ -27,7 +27,6 @@
    * let go of outside it doesn't.
    */
   let downOnBackdrop = false
-
 </script>
 
 <svelte:window onkeydown={onKeydown} />
@@ -57,9 +56,7 @@
     </header>
 
     <div class="w-body">
-      <p class="w-lede">
-        An offline-ready, local-first editor. Nothing is sent to a server — every keystroke, version and export is processed on your own machine.
-      </p>
+      <p class="w-lede">An offline-ready, local-first editor. Nothing is sent to a server.</p>
 
       <ul class="w-points">
         <li>
@@ -73,20 +70,20 @@
           <span class="w-icon"><Icon icon={IconHardDrive} width="16" height="16" /></span>
           <span>
             <strong>Stored in this browser</strong>
-            Your documents and their version history stay in local storage.
+            Your documents and history stay in local storage.
           </span>
         </li>
         <li>
           <span class="w-icon"><Icon icon={IconShieldCheck} width="16" height="16" /></span>
           <span>
             <strong>Works offline</strong>
-            Install it and it keeps working with the network switched off.
+            Install and it keeps working with the network switched off.
           </span>
         </li>
       </ul>
 
       <div class="ds-section-message warning">
-        <span>Clearing your browser data clears your CVs — export a PDF to keep one.</span>
+        <span>Clearing your browser data clears your CVs.</span>
       </div>
     </div>
 

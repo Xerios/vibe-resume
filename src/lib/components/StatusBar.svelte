@@ -29,20 +29,12 @@
   })
 </script>
 
-<!-- The bar that reports: on the left, when the file was last written to
-     storage — and, only while there is one, that the YAML doesn't parse. On
-     the right, the two things done across files (Compare, Trash), then the
-     switches that decide what the window shows rather than what the CV says. -->
+<!-- The bar that reports. On the left, the two things done across files
+     (Compare, Trash), then when the file was last written to storage — and, only
+     while there is one, that the YAML doesn't parse. On the right, the switches
+     that decide what the window shows rather than what the CV says. -->
 <div id="status-bar">
-  {#if ui.parseError}<span id="status" class="ds-lozenge removed">YAML error</span>{/if}
-  {#if saveLabel}<span id="save-state" class:err={doc.saveError}>{saveLabel}</span>{/if}
-  <div class="ds-spacer"></div>
-
   <div class="sb-actions">
-    <button class="ds-btn subtle compact sb-btn" use:shortcut={['c', 'Compare two documents or versions']} onclick={() => commands.openCompare()}>
-      <Icon icon={IconCompare} width="16" height="16" />
-      <span class="ds-txt"><u>C</u>ompare</span>
-    </button>
     <!-- Only while there is something in there: an always-present button for an
 	       always-empty bin is a control that never does anything. -->
     {#if files.trashed.length}
@@ -51,8 +43,7 @@
         class="ds-btn subtle compact sb-btn"
         class:selected={ui.trashOpen}
         use:shortcut={['t', 'Show the trash']}
-        onclick={commands.toggleTrash}
-      >
+        onclick={commands.toggleTrash}>
         <Icon icon={IconTrash} width="16" height="16" />
         <span class="ds-txt"><u>T</u>rash</span>
         <span class="ds-badge">{files.trashed.length}</span>
@@ -61,6 +52,10 @@
   </div>
 
   <span class="sb-sep" aria-hidden="true"></span>
+
+  {#if ui.parseError}<span id="status" class="ds-lozenge removed">YAML error</span>{/if}
+  {#if saveLabel}<span id="save-state" class:err={doc.saveError}>{saveLabel}</span>{/if}
+  <div class="ds-spacer"></div>
 
   <div class="sb-actions">
     <!-- The one thing here that asks rather than reports, so it is the one thing
@@ -79,8 +74,7 @@
       class="ds-btn subtle compact sb-btn"
       onclick={commands.toggleHoverSync}
       aria-pressed={ui.hoverSync}
-      use:shortcut={['f', ui.hoverSync ? 'Stop the editor following the pointer over the preview' : 'Follow the pointer over the preview in the editor']}
-    >
+      use:shortcut={['f', ui.hoverSync ? 'Stop the editor following the pointer over the preview' : 'Follow the pointer over the preview in the editor']}>
       {#if ui.hoverSync}
         <Icon icon={IconMousePointer2} width="16" height="16" />
       {:else}
@@ -95,8 +89,7 @@
       class="ds-btn subtle compact sb-btn"
       onclick={commands.toggleScrollSync}
       aria-pressed={ui.scrollSync}
-      use:shortcut={['s', ui.scrollSync ? 'Stop the panes scrolling together' : 'Scroll the editor and the preview together']}
-    >
+      use:shortcut={['s', ui.scrollSync ? 'Stop the panes scrolling together' : 'Scroll the editor and the preview together']}>
       {#if ui.scrollSync}
         <Icon icon={IconLink2} width="16" height="16" />
       {:else}
@@ -113,8 +106,7 @@
         class:selected={ui.fitPreview}
         onclick={commands.toggleFit}
         aria-pressed={ui.fitPreview}
-        use:shortcut={['p', 'Scale the preview until a whole page fits across the pane']}
-      >
+        use:shortcut={['p', 'Scale the preview until a whole page fits across the pane']}>
         <Icon icon={IconMaximize} width="16" height="16" />
         <span class="ds-txt">Fit <u>P</u>age</span>
       </button>
@@ -124,8 +116,7 @@
       class="ds-btn subtle compact sb-btn"
       class:selected={ui.sourceHidden}
       onclick={commands.toggleSource}
-      use:shortcut={['e', ui.sourceHidden ? 'Show editor' : 'Hide editor (preview only)']}
-    >
+      use:shortcut={['e', ui.sourceHidden ? 'Show editor' : 'Hide editor (preview only)']}>
       {#if ui.sourceHidden}
         <Icon icon={IconEyeOff} width="16" height="16" />
       {:else}
@@ -168,7 +159,7 @@
     }
   }
 
-  /* Between the file actions and the view switches. */
+  /* Between the file actions and the status. */
   .sb-sep {
     flex-shrink: 0;
     width: var(--ds-border-width);

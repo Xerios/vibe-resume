@@ -24,8 +24,8 @@ export class UiState {
   sourceHidden = $state(read(KEYS.sourceHidden) === 'true')
   /* How the preview is looked at rather than anything about the file: scaling a
 	   page to fit the pane changes no CV, so it is a preference of this browser's
-	   and stays out of the document and the history. */
-  fitPreview = $state(read(KEYS.previewFit) === 'true')
+	   and stays out of the document and the history. On unless turned off. */
+  fitPreview = $state(read(KEYS.previewFit) !== 'false')
   /* Whether the pointer resting on the sheet pulls the editor to its line. Same
 	   family as `fitPreview`: how the window behaves rather than what the CV says.
 	   On unless turned off. */

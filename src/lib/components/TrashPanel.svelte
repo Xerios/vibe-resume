@@ -73,7 +73,7 @@
   #trash-panel {
     position: fixed;
     bottom: calc(var(--bar-status) + var(--ds-space-100));
-    right: var(--ds-space-200);
+    left: var(--ds-space-100);
     width: var(--panel-w);
     max-height: 60vh;
     display: flex;

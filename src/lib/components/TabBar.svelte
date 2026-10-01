@@ -3,13 +3,11 @@
   import IconChevron from '@iconify-icons/lucide/chevron-down'
   import IconCopy from '@iconify-icons/lucide/copy'
   import IconDownload from '@iconify-icons/lucide/download'
-  import IconFilePlus from '@iconify-icons/lucide/file-plus'
   import IconPencil from '@iconify-icons/lucide/pencil'
   import IconTrash from '@iconify-icons/lucide/trash'
   import IconCompare from '@iconify-icons/lucide/git-compare'
   import { commands } from '$lib/cv/state/commands.js'
   import { files } from '$lib/cv/state/state.svelte.js'
-  import { shortcut } from './access-keys.js'
   import { fly } from 'svelte/transition'
 
   let editingId = $state(/** @type {string | null} */ (null))
@@ -45,7 +43,7 @@
     menu?.querySelector('button')?.focus()
 
     /** @param {PointerEvent} e */
-    const onPointerDown = e => {
+    const onPointerDown = (e) => {
       if (!inMenu(/** @type {Node | null} */ (e.target))) menuOpen = false
     }
     document.addEventListener('pointerdown', onPointerDown)
@@ -210,6 +208,15 @@
     items[(at + step + items.length) % items.length]?.focus()
   }
 
+  /**
+   * Only the bare bar counts — not a tab, whose own double-click renames it.
+   * @param {MouseEvent} e
+   */
+  function onBarDblClick(e) {
+    const target = /** @type {HTMLElement} */ (e.target)
+    if (target === e.currentTarget || target.id === 'tabs') commands.newFile()
+  }
+
   /** @param {FocusEvent} e */
   function onMenuFocusOut(e) {
     const next = /** @type {Node | null} */ (e.relatedTarget)
@@ -217,7 +224,10 @@
   }
 </script>
 
-<div id="tabbar">
+<!-- The empty bar beside the tabs opens a new one on a double-click, as in a
+     browser. The Menu in the toolbar has New CV for the keyboard. -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div id="tabbar" ondblclick={onBarDblClick}>
   <!-- Only the tabs scroll: everything after them stays reachable however
 	     many files are open, and on however narrow a screen. Scrolling them takes
 	     the menu down with it, since it is placed where the caret was. -->
@@ -235,11 +245,12 @@
         class:active
         class:dragging={dragId === f.id}
         draggable={editingId !== f.id}
-        ondragstart={e => onTabDragStart(e, f)}
-        ondragover={e => onTabDragOver(e, f)}
+        ondragstart={(e) => onTabDragStart(e, f)}
+        ondragover={(e) => onTabDragOver(e, f)}
         ondrop={onTabDrop}
-        oncontextmenu={e => onTabContextMenu(e, f)}
-        ondragend={() => (dragId = null)}>
+        oncontextmenu={(e) => onTabContextMenu(e, f)}
+        ondragend={() => (dragId = null)}
+      >
         {#if editingId === f.id}
           <input class="tab-rename ds-textfield compact" bind:value={editValue} use:focusAndSelect onblur={commitRename} onkeydown={onRenameKeydown} />
         {:else}
@@ -248,7 +259,8 @@
             title="{f.name} — double-click or F2 to rename, drag or Alt+← → to reorder"
             onclick={() => commands.selectTab(f.id)}
             ondblclick={() => startRename(f)}
-            onkeydown={e => onTabKeydown(e, f)}>
+            onkeydown={(e) => onTabKeydown(e, f)}
+          >
             {f.name}
           </button>
           <!-- Everything that can be done to a file is behind this one caret,
@@ -266,10 +278,10 @@
                 aria-label="Actions for {f.name}"
                 title="What can be done to this CV"
                 onclick={() => (menuOpen && menuId === f.id ? (menuOpen = false) : openMenu())}
-                onkeydown={onMoreKeydown}>
+                onkeydown={onMoreKeydown}
+              >
                 <Icon icon={IconChevron} width="16" height="16" />
               </button>
-
             </div>
           {/if}
         {/if}
@@ -277,49 +289,52 @@
     {/each}
   </div>
 
-  <!-- One way to open a tab, and one button for it: a CV from the template.
-	     Copying this one is a thing done to a file, so it lives in the tab's own
-	     menu with the rest of them. -->
-  <button class="tab-new ds-btn subtle" use:shortcut={['n', 'New CV from the template']} onclick={commands.newFile}>
-    <Icon icon={IconFilePlus} width="16" height="16" />
-    <span class="ds-txt"><u>N</u>ew CV</span>
-  </button>
-
-      {#if menuOpen && menuFile}
+  {#if menuOpen && menuFile}
     {@const f = menuFile}
-        <div
-          class="tab-menu ds-menu"
-          role="menu"
-          tabindex="-1"
-          bind:this={menu}
-          style:left="{menuAt.x}px"
-          style:top="{menuAt.y}px"
-          onkeydown={onMenuKeydown}
-          onfocusout={onMenuFocusOut}
-          in:fly={{ y: -8, duration: 200 }}>
-          <button class="ds-menu-item" role="menuitem" onclick={() => pick(() => commands.duplicateTab(f.id))}>
-            <Icon icon={IconCopy} width="16" height="16" />
-            <span>Duplicate</span>
-          </button>
-          <button class="ds-menu-item" role="menuitem" onclick={() => pick(() => startRename(f))}>
-            <Icon icon={IconPencil} width="16" height="16" />
-            <span>Rename</span>
-          </button>
-          <button class="ds-menu-item" role="menuitem" onclick={() => pick(() => commands.saveYaml(f.id))}>
-            <Icon icon={IconDownload} width="16" height="16" />
-            <span>Export YAML</span>
-          </button>
-          <button class="ds-menu-item" role="menuitem" onclick={() => pick(() => commands.openCompare({ fileId: f.id, versionKey: null }, f.id === files.activeId ? undefined : { fileId: /** @type {string} */ (files.activeId), versionKey: null }))}>
-            <Icon icon={IconCompare} width="16" height="16" />
-            <span>Compare</span>
-          </button>
-          <div class="ds-menu-sep"></div>
-          <button class="ds-menu-item danger" role="menuitem" onclick={() => pick(() => commands.closeTab(f.id))}>
-            <Icon icon={IconTrash} width="16" height="16" />
-            <span>Move to trash</span>
-          </button>
-        </div>
-      {/if}
+    <div
+      class="tab-menu ds-menu"
+      role="menu"
+      tabindex="-1"
+      bind:this={menu}
+      style:left="{menuAt.x}px"
+      style:top="{menuAt.y}px"
+      onkeydown={onMenuKeydown}
+      onfocusout={onMenuFocusOut}
+      in:fly={{ y: -8, duration: 200 }}
+    >
+      <button class="ds-menu-item" role="menuitem" onclick={() => pick(() => commands.duplicateTab(f.id))}>
+        <Icon icon={IconCopy} width="16" height="16" />
+        <span>Duplicate</span>
+      </button>
+      <button class="ds-menu-item" role="menuitem" onclick={() => pick(() => startRename(f))}>
+        <Icon icon={IconPencil} width="16" height="16" />
+        <span>Rename</span>
+      </button>
+      <button class="ds-menu-item" role="menuitem" onclick={() => pick(() => commands.saveYaml(f.id))}>
+        <Icon icon={IconDownload} width="16" height="16" />
+        <span>Export YAML</span>
+      </button>
+      <button
+        class="ds-menu-item"
+        role="menuitem"
+        onclick={() =>
+          pick(() =>
+            commands.openCompare(
+              { fileId: f.id, versionKey: null },
+              f.id === files.activeId ? undefined : { fileId: /** @type {string} */ (files.activeId), versionKey: null },
+            ),
+          )}
+      >
+        <Icon icon={IconCompare} width="16" height="16" />
+        <span>Compare</span>
+      </button>
+      <div class="ds-menu-sep"></div>
+      <button class="ds-menu-item danger" role="menuitem" onclick={() => pick(() => commands.closeTab(f.id))}>
+        <Icon icon={IconTrash} width="16" height="16" />
+        <span>Move to trash</span>
+      </button>
+    </div>
+  {/if}
 </div>
 
 <style lang="scss">
@@ -327,7 +342,10 @@
      open file's tab is lifted onto the editor's surface and joined to it —
      bordered on three sides, open at the bottom, over the bar's rule — with
      the brand colour along its top edge; the rest sit back in the bar. */
+  /* Fills the left of the bar, so the space past the last tab is its own and
+     takes the double-click. */
   #tabbar {
+    flex: 1 1 auto;
     position: relative;
     display: flex;
     align-items: stretch;
@@ -427,12 +445,6 @@
   .tab-menu-group {
     display: flex;
     align-items: center;
-  }
-
-  /* ── Open another tab ─────────────────────────── */
-  .tab-new {
-    flex-shrink: 0;
-    align-self: flex-end;
   }
 
   /* Fixed, and placed where the caret was — see `menuAt`. */

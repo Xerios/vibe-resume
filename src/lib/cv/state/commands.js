@@ -341,6 +341,10 @@ export const commands = {
     write(KEYS.theme, next)
   },
 
+  showWelcome() {
+    ui.welcomeOpen = true
+  },
+
   dismissWelcome() {
     ui.welcomeOpen = false
     write(KEYS.welcomeSeen, 'true')
