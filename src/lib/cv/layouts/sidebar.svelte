@@ -9,7 +9,7 @@
 	`body` is the one snippet that differs.
 -->
 <script>
-  import { list, md, sections, techs } from '@cv'
+  import { contact, list, md, sections, techs } from '@cv'
 
   /** @type {{ cv: any }} */
   let { cv } = $props()
@@ -231,7 +231,7 @@
       <p class="role" data-src="header.role">{@html md(cv.header?.role)}</p>
     </div>
     <div class="contact">
-      {#each list(cv.header?.contact) as line, i}{#if i > 0}<br />{/if}<span data-src="header.contact.{i}">{@html md(line)}</span>{/each}
+      {#each list(cv.header?.contact) as line, i}{#if i > 0}<br />{/if}<span data-src="header.contact.{i}">{@html contact(line)}</span>{/each}
     </div>
   </header>
 {/snippet}

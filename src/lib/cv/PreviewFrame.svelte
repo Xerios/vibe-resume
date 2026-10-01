@@ -20,6 +20,7 @@
    */
   import { mount, onDestroy, unmount } from 'svelte'
   import CvFrameBody from './CvFrameBody.svelte'
+  import { docMeta } from './template/doc-meta.js'
   import { DEFAULT_PRESET } from './template/compositions.js'
   import { DEFAULT_FONT } from './theme/fonts.js'
   import { DEFAULT_PAPER, pageWidthPx, paperCss } from './theme/paper.js'
@@ -99,7 +100,11 @@
   let root = $state(/** @type {HTMLElement | null} */ (null))
   let pageStyle = $state(/** @type {HTMLStyleElement | null} */ (null))
   let templateStyle = $state(/** @type {HTMLStyleElement | null} */ (null))
+  let head = $state(/** @type {{ title: HTMLTitleElement, author: HTMLMetaElement, description: HTMLMetaElement, keywords: HTMLMetaElement } | null} */ (null))
   let sheet = /** @type {Record<string, any> | null} */ (null)
+
+  /** What the sheet says about itself — the PDF's title among it. See doc-meta.js. */
+  const meta = $derived(docMeta(cv))
 
   /** The page box and its margin boxes, as CSS. Rebuilt whenever either moves. */
   const pageCss = $derived(paperCss(paper, name))
@@ -153,6 +158,15 @@
   $effect(() => {
     const text = pageCss
     if (pageStyle) pageStyle.textContent = text
+  })
+
+  $effect(() => {
+    const { title, author, description, keywords } = meta
+    if (!head) return
+    head.title.textContent = title
+    head.author.content = author
+    head.description.content = description
+    head.keywords.content = keywords.join(', ')
   })
 
   $effect(() => {
@@ -213,6 +227,12 @@
     // compiler and outrank cv.css on specificity alone.
     pageStyle = addStyle(d, pageCss)
     templateStyle = addStyle(d, templateCss)
+    head = {
+      title: d.head.appendChild(d.createElement('title')),
+      author: addMeta(d, 'author'),
+      description: addMeta(d, 'description'),
+      keywords: addMeta(d, 'keywords'),
+    }
 
     const el = d.createElement('div')
     el.id = 'cv-root'
@@ -239,6 +259,17 @@
   }
 
   /**
+   * @param {Document} d
+   * @param {string} key
+   */
+  function addMeta(d, key) {
+    const el = d.createElement('meta')
+    el.name = key
+    d.head.appendChild(el)
+    return el
+  }
+
+  /**
    * Print the sheet. It is a document of its own now, so the print has to go to
    * the frame: printing the app would get this iframe clipped to its box on the
    * page rather than the CV flowed across as many pages as it needs.
@@ -247,7 +278,15 @@
     const win = frameEl?.contentWindow
     if (!win) return false
     win.focus() // some browsers print the top document without this
-    win.print()
+    // The frame's title is the PDF's Title, but the name the save dialog
+    // offers comes from the tab's. `print()` blocks until the dialog closes.
+    const appTitle = document.title
+    document.title = meta.title
+    try {
+      win.print()
+    } finally {
+      document.title = appTitle
+    }
     return true
   }
 </script>

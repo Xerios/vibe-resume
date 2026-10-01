@@ -31,3 +31,13 @@ vite.config.ts.timestamp-*
 .claude/scheduled_tasks.json
 .claude/skills
 .claude/workflows
+.bash_profile
+.bashrc
+.gitconfig
+.gitmodules
+.idea
+.mcp.json
+.profile
+.ripgreprc
+.zprofile
+.zshrc
