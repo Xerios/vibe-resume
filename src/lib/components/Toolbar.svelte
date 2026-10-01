@@ -260,13 +260,6 @@
     z-index: 100;
   }
 
-  .t-menu-head {
-    display: flex;
-    align-items: center;
-    gap: var(--ds-space-100);
-    padding: var(--ds-space-100) var(--ds-space-200);
-  }
-
   @media (max-width: 640px) {
     .t-pdf {
       display: inline;

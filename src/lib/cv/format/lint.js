@@ -16,6 +16,7 @@
  * escape hatch quotes still have.
  */
 
+import { DATE_FORMATS, RANGE_SPLIT } from './dates.js'
 import { parse, splitLine } from './relaxed-yaml.js'
 
 /**
@@ -48,24 +49,6 @@ export const HEADER_KEYS = ['name', 'role', 'contact']
 const TEXT_LISTS = new Set(['bullets', 'stack', 'items'])
 
 const TYPES = Object.keys(SECTIONS)
-
-/**
- * The ways a CV writes a month, each with the example a message shows. A bare
- * year isn't among them: it is a coarser date, not another spelling of one, and
- * a degree in `2010 – 2014` beside a job in `03/2020 – Present` is normal.
- * Anything not recognised — another language, `Summer 2019` — is left alone.
- * @type {[RegExp, string][]}
- */
-const DATE_FORMATS = [
-  [/^\d{1,2}\/\d{4}$/, '03/2020'],
-  [/^\d{1,2}\.\d{4}$/, '03.2020'],
-  [/^\d{4}-\d{1,2}$/, '2020-03'],
-  [/^(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\.?\s+\d{4}$/i, 'Mar 2020'],
-  [/^(?:january|february|march|april|june|july|august|september|october|november|december)\s+\d{4}$/i, 'March 2020'],
-]
-
-/** The two ends of a range: a dash with room around it, an en or em dash, or a word. */
-const RANGE_SPLIT = /\s*[–—]\s*|\s+-\s+|\s+(?:to|until)\s+/i
 
 /**
  * The month formats a `dates` value is written in, as their examples.

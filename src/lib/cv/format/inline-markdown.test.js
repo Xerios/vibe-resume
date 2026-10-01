@@ -7,7 +7,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { inlineRuns } from './inline-markdown.js'
+import { contactRuns, dateRuns, inlineRuns } from './inline-markdown.js'
 
 /**
  * Each run as `token:text`, with plain runs left bare.
@@ -62,6 +62,80 @@ describe('links', () => {
   })
 })
 
+describe('autolinks', () => {
+  it('marks a bare address as a link, with the scheme the page drops as markup', () => {
+    expect(runs('https://github.com/x')).toEqual(['cvMdMark cvMdLink:https://', 'cvMdLink:github.com/x'])
+    expect(runs('see www.x.dev/a.')).toEqual(['see ', 'cvMdLink:www.x.dev/a', '.'])
+    expect(runs('ftp://x.dev')).toEqual(['cvMdLink:ftp://x.dev'])
+    expect(runs('mail jo.doe@x.dev, today')).toEqual(['mail ', 'cvMdLink:jo.doe@x.dev', ', today'])
+    expect(runs('<https://x.dev>')).toEqual(['cvMdMark:<', 'cvMdMark cvMdLink:https://', 'cvMdLink:x.dev', 'cvMdMark:>'])
+  })
+
+  it('leaves what marked would not link alone', () => {
+    expect(runs('github.com/x')).toEqual(['github.com/x'])
+    expect(runs('the web')).toEqual(['the web'])
+    expect(runs('@handle')).toEqual(['@handle'])
+    expect(runs('[site](https://x.dev)')).toEqual(['cvMdMark:[', 'cvMdLink:site', 'cvMdMark:](', 'cvMdUrl:https://x.dev)'])
+    expect(runs('[https://x.dev](u)')).toEqual(['cvMdMark:[', 'cvMdLink:https://x.dev', 'cvMdMark:](', 'cvMdUrl:u)'])
+  })
+
+  it('reads the markdown around one', () => {
+    expect(runs('**https://x.dev**')).toEqual(['cvMdMark:**', 'cvMdMark cvMdLink:https://', 'cvMdStrong cvMdLink:x.dev', 'cvMdMark:**'])
+    expect(runs('https://x.dev/a_b_c')).toEqual(['cvMdMark cvMdLink:https://', 'cvMdLink:x.dev/a_b_c'])
+  })
+})
+
+/**
+ * A contact line's runs, the same way.
+ * @param {string} text
+ */
+function contact(text) {
+  return contactRuns(text).map((r) => {
+    const s = text.slice(r.from, r.to)
+    return r.token ? `${r.token}:${s}` : s
+  })
+}
+
+describe('contact lines', () => {
+  it('marks a phone number as the link it becomes', () => {
+    expect(contact('+1 555 010 1234')).toEqual(['cvMdLink:+1 555 010 1234'])
+    expect(contact('Mobile phone: (555) 010-1234 ')).toEqual(['Mobile phone: ', 'cvMdLink:(555) 010-1234', ' '])
+    expect(contact("'+1 555 010 1234'")).toEqual(["'", 'cvMdLink:+1 555 010 1234', "'"])
+  })
+
+  it('reads anything else as any other value', () => {
+    expect(contact('10115 Berlin')).toEqual(['10115 Berlin'])
+    expect(contact('2016-2020')).toEqual(['2016-2020'])
+    expect(contact('jo@x.dev')).toEqual(['cvMdLink:jo@x.dev'])
+  })
+})
+
+/**
+ * A `dates` value's runs, the same way.
+ * @param {string} text
+ */
+function dates(text) {
+  return dateRuns(text).map((r) => {
+    const s = text.slice(r.from, r.to)
+    return r.token ? `${r.token}:${s}` : s
+  })
+}
+
+describe('dates', () => {
+  it('marks each end of a range that reads as a date', () => {
+    expect(dates('03/2020 – Present')).toEqual(['cvDate:03/2020', ' – ', 'cvDate:Present'])
+    expect(dates('Mar 2020 to Jan 2021 ')).toEqual(['cvDate:Mar 2020', ' to ', 'cvDate:Jan 2021', ' '])
+    expect(dates('2014–2016')).toEqual(['cvDate:2014', '–', 'cvDate:2016'])
+    expect(dates('2021')).toEqual(['cvDate:2021'])
+    expect(dates("'2020-03 - now'")).toEqual(["'", 'cvDate:2020-03', ' - ', 'cvDate:now', "'"])
+  })
+
+  it('reads an end that is not a date as any other value', () => {
+    expect(dates('Summer 2019 – **2020**')).toEqual(['Summer 2019', ' – ', 'cvMdMark:**', 'cvMdStrong:2020', 'cvMdMark:**'])
+    expect(dates('2019-2020')).toEqual(['2019-2020'])
+  })
+})
+
 describe('html tags', () => {
   it('takes a whole tag as one run', () => {
     expect(runs('one<br>two')).toEqual(['one', 'cvMdHtml:<br>', 'two'])
@@ -98,6 +172,7 @@ describe('the runs themselves', () => {
     '**Umbrella Startups** — Freelance developer. _WordPress, PHP._',
     'plain text with no markup at all',
     'Senior dev<br>Remote, since **2020**',
+    'at https://x.dev/a. or jo@x.dev',
     '',
   ]
 

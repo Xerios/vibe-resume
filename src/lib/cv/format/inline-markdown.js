@@ -7,6 +7,10 @@
  * the tokenizer paints each one; the delimiter rules are the ones marked
  * follows, so nothing here can promise a link the page won't produce.
  *
+ * marked also links what it recognises on its own — a bare web address or mail
+ * address, or one in `<…>` — and those are runs here too, out of the same rules
+ * (autolink.js). The `https://` the page leaves off is marked as markup.
+ *
  * Runs are contiguous and cover the whole range asked for. A run's `token` is a
  * space-separated list of token names — nesting concatenates, so the `a` in
  * `[**a**](u)` comes out as `cvMdLink cvMdStrong` — and is `''` for plain text.
@@ -19,8 +23,14 @@
  * @property {string} token space-separated token names, or '' for plain text
  */
 
-/** Characters that could open something. Everything else is prose. */
+import { ANGLE_RE, EMAIL_CHAR, SCHEME_RE, emailAt, phoneNumber, urlAt } from './autolink.js'
+import { RANGE_SPLIT, isDate } from './dates.js'
+
+/** Characters that could open something. Everything else is prose, or an autolink. */
 const OPENERS = '[!`*_~<'
+
+/** Characters a bare web address can start with — `http`, `ftp`, `www.`. */
+const URL_OPENERS = 'hHfFw'
 
 /** A link or an image: one line, a bare destination, an optional title. */
 const LINK_RE = /^(!?\[)([^\]]*)(\]\()([^\s)]*(?:\s+"[^"\n]*")?\))/
@@ -88,6 +98,24 @@ function push(out, from, to, token) {
 const join = (base, name) => (base ? base + ' ' + name : name)
 
 /**
+ * An address the page links on its own, as runs: the `https://` it won't print
+ * is markup, but still part of the link, so the underline runs unbroken.
+ * @param {string} text
+ * @param {number} from
+ * @param {number} to
+ * @param {string} base
+ * @returns {Run[]}
+ */
+function autolink(text, from, to, base) {
+  const scheme = from + (SCHEME_RE.exec(text.slice(from, to))?.[0].length ?? 0)
+  /** @type {Run[]} */
+  const out = []
+  push(out, from, scheme, 'cvMdMark cvMdLink')
+  push(out, scheme, to, join(base, 'cvMdLink'))
+  return out
+}
+
+/**
  * Split `[from, to)` of `text` into runs.
  * @param {string} text
  * @param {number} [from]
@@ -100,16 +128,25 @@ export function inlineRuns(text, from = 0, to = text.length, base = '') {
   const out = []
   let plain = from
 
+  // marked doesn't autolink inside a link's own label.
+  const auto = !base.split(' ').includes('cvMdLink')
+  const mail = auto && text.slice(from, to).includes('@')
+
   for (let i = from; i < to; i++) {
-    if (!OPENERS.includes(text[i])) continue
+    const ch = text[i]
+    const bare =
+      auto && (URL_OPENERS.includes(ch) || (mail && EMAIL_CHAR.test(ch) && (i === from || !EMAIL_CHAR.test(text[i - 1]))))
+    if (!bare && !OPENERS.includes(ch)) continue
 
     /** @type {Run[] | null} */
     let runs = null
 
     const slice = text.slice(i, to)
-    const code = text[i] === '`' && CODE_RE.exec(slice)
-    const link = (text[i] === '[' || (text[i] === '!' && text[i + 1] === '[')) && LINK_RE.exec(slice)
-    const html = text[i] === '<' && HTML_RE.exec(slice)
+    const code = ch === '`' && CODE_RE.exec(slice)
+    const link = (ch === '[' || (ch === '!' && text[i + 1] === '[')) && LINK_RE.exec(slice)
+    const html = ch === '<' && HTML_RE.exec(slice)
+    const angle = auto && !html && ch === '<' && ANGLE_RE.exec(slice)
+    const url = bare ? urlAt(slice) || emailAt(slice) : 0
 
     if (code) {
       const [all, ticks, body] = code
@@ -129,10 +166,15 @@ export function inlineRuns(text, from = 0, to = text.length, base = '') {
       ]
     } else if (html) {
       runs = [{ from: i, to: i + html[0].length, token: 'cvMdHtml' }]
-    } else if (text[i] === '*' || text[i] === '_' || text[i] === '~') {
+    } else if (angle) {
+      const end = i + angle[0].length
+      runs = [{ from: i, to: i + 1, token: 'cvMdMark' }, ...autolink(text, i + 1, end - 1, base), { from: end - 1, to: end, token: 'cvMdMark' }]
+    } else if (url) {
+      runs = autolink(text, i, i + url, base)
+    } else if (ch === '*' || ch === '_' || ch === '~') {
       const em = emphasisAt(text, i, to)
       if (em) {
-        const name = text[i] === '~' ? 'cvMdStrike' : em.token
+        const name = ch === '~' ? 'cvMdStrike' : em.token
         runs = [
           { from: i, to: em.body, token: 'cvMdMark' },
           ...inlineRuns(text, em.body, em.end, join(base, name)),
@@ -149,5 +191,83 @@ export function inlineRuns(text, from = 0, to = text.length, base = '') {
   }
 
   push(out, plain, to, base)
+  return out
+}
+
+/**
+ * The stretch of `[from, to)` inside a pair of wrapping quotes, or the whole of
+ * it. A legacy document quotes its numbers and its dates; the page reads what
+ * is inside.
+ * @param {string} text
+ * @param {number} from
+ * @param {number} to
+ * @returns {[number, number]}
+ */
+function unquoted(text, from, to) {
+  const q = /^(['"])(.*)\1\s*$/.exec(text.slice(from, to))
+  return q ? [from + 1, from + 1 + q[2].length] : [from, to]
+}
+
+/**
+ * A contact line's runs. The same as any value's, except that a line which is a
+ * phone number has the number marked as the link `contact` makes of it — and
+ * only here, because only the contact block gets one.
+ * @param {string} text
+ * @param {number} [from]
+ * @param {number} [to]
+ * @returns {Run[]}
+ */
+export function contactRuns(text, from = 0, to = text.length) {
+  const [start, stop] = unquoted(text, from, to)
+  const tel = phoneNumber(text.slice(start, stop))
+  if (!tel) return inlineRuns(text, from, to)
+
+  const at = start + tel.lead.length
+  const end = at + tel.number.length
+  const out = inlineRuns(text, from, at)
+  out.push({ from: at, to: end, token: 'cvMdLink' })
+  push(out, end, to, '')
+  return out
+}
+
+/** RANGE_SPLIT, to walk every separator in a value rather than split on them. */
+const RANGE_SPLIT_ALL = new RegExp(RANGE_SPLIT.source, 'gi')
+
+/**
+ * A `dates` value's runs: each end of the range that reads as a date — the same
+ * test the lint makes — is a `cvDate`; an end that doesn't is read as any other
+ * value, markdown and all.
+ * @param {string} text
+ * @param {number} [from]
+ * @param {number} [to]
+ * @returns {Run[]}
+ */
+export function dateRuns(text, from = 0, to = text.length) {
+  const [start, stop] = unquoted(text, from, to)
+  /** @type {Run[]} */
+  const out = []
+  push(out, from, start, '')
+
+  /** @param {number} a @param {number} b */
+  const part = (a, b) => {
+    const s = text.slice(a, b)
+    const lead = a + s.length - s.trimStart().length
+    const tail = b - (s.length - s.trimEnd().length)
+    if (lead < tail && isDate(text.slice(lead, tail))) {
+      push(out, a, lead, '')
+      push(out, lead, tail, 'cvDate')
+      push(out, tail, b, '')
+    } else out.push(...inlineRuns(text, a, b))
+  }
+
+  let at = start
+  for (const m of text.slice(start, stop).matchAll(RANGE_SPLIT_ALL)) {
+    const sep = start + (m.index ?? 0)
+    part(at, sep)
+    push(out, sep, sep + m[0].length, '')
+    at = sep + m[0].length
+  }
+  part(at, stop)
+  push(out, stop, to, '')
   return out
 }

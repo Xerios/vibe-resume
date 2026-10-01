@@ -11,6 +11,12 @@ describe('contact', () => {
     expect(contact('jane@example.com')).toBe('<a href="mailto:jane@example.com">jane@example.com</a>')
   })
 
+  it('prints a bare web address without its scheme', () => {
+    expect(contact('https://github.com/x')).toBe('<a target="_blank" rel="noopener" href="https://github.com/x">github.com/x</a>')
+    expect(md('see <https://x.dev>.')).toBe('see <a target="_blank" rel="noopener" href="https://x.dev">x.dev</a>.')
+    expect(md('[https://x.dev](https://x.dev)')).toContain('>https://x.dev</a>')
+  })
+
   it('leaves anything that only contains digits alone', () => {
     expect(contact('Springfield, USA')).toBe(md('Springfield, USA'))
     expect(contact('10115 Berlin')).toBe('10115 Berlin')

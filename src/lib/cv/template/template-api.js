@@ -14,8 +14,22 @@
  * a number the meter variants can draw.
  */
 
-import { marked } from 'marked'
+import { Marked } from 'marked'
+import { displayUrl, phoneNumber } from '../format/autolink.js'
 import { ICON_ALIASES, ICON_BODIES } from '../theme/tech-icons.js'
+
+/**
+ * Its own instance, so that what it does to an autolink stays out of every
+ * other caller of marked's. A bare `https://github.com/x` prints as
+ * `github.com/x` — the link still goes where it says, and the page doesn't
+ * spend a column on the scheme. A link with a label of its own is left as
+ * written.
+ */
+const inline = new Marked({
+  walkTokens(token) {
+    if (token.type === 'link' && token.autolink) token.text = displayUrl(token.text)
+  },
+})
 
 /**
  * Inline Markdown → HTML. Links get target/rel, which marked won't add itself.
@@ -25,38 +39,25 @@ import { ICON_ALIASES, ICON_BODIES } from '../theme/tech-icons.js'
  */
 export function md(text) {
   if (!text) return ''
-  const html = marked.parseInline(String(text).trim())
+  const html = inline.parseInline(String(text).trim())
   // Not on mail and phone links: those hand off to an app, and a new tab would
   // only be left open and blank behind it.
   return String(html).replace(/<a href="(?!mailto:|tel:)/g, '<a target="_blank" rel="noopener" href="')
 }
 
 /**
- * A phone number with nothing else on the line but an optional `Label:` in
- * front — which is how a contact line holds one.
- */
-const PHONE_RE = /^(\s*(?:[^\d+(:[\]]*:\s*)?)(\+?[\d\s().-]+?)\s*$/
-
-/**
  * One line of the header's contact block, with a phone number made a `tel:`
- * link. A mail address needs nothing — `md` already links it, as `marked` does
- * any bare address — but nothing in Markdown recognises a number, and a link is
- * what survives into the PDF as something a parser can be sure of.
- *
- * Only a line that is the number is read as one, so a postcode in an address
- * stays text; and it takes 9 digits, or 7 behind a `+`, so a year range like
- * `2016-2020` does too. 15 is the most E.164 allows.
+ * link. A mail address or a web address needs nothing — `md` already links
+ * both, as `marked` does — but nothing in Markdown recognises a number, and a
+ * link is what survives into the PDF as something a parser can be sure of.
+ * Which lines count as a number is `phoneNumber`'s call.
  *
  * @param {unknown} line
  */
 export function contact(line) {
   const text = String(line ?? '')
-  const m = PHONE_RE.exec(text)
-  const digits = m ? m[2].replace(/\D/g, '') : ''
-  const number = m ? m[2].trim() : ''
-  const plus = number.startsWith('+')
-  if (!m || digits.length < (plus ? 7 : 9) || digits.length > 15) return md(text)
-  return md(`${m[1]}[${number}](tel:${plus ? '+' : ''}${digits})`)
+  const tel = phoneNumber(text)
+  return md(tel ? `${tel.lead}[${tel.number}](${tel.href})` : text)
 }
 
 /**

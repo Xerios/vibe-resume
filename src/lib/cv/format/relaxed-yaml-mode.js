@@ -14,7 +14,7 @@
 
 import { LanguageSupport, StreamLanguage, foldService } from '@codemirror/language'
 import { tags as t } from '@lezer/highlight'
-import { inlineRuns } from './inline-markdown.js'
+import { contactRuns, dateRuns, inlineRuns } from './inline-markdown.js'
 import { splitLine } from './relaxed-yaml.js'
 
 /**
@@ -24,6 +24,9 @@ import { splitLine } from './relaxed-yaml.js'
  * @property {boolean} opens that line ended on a `key:` or a bare `-`, so the next one steps in
  * @property {string} base   token the value on this line is made of, under its markdown
  * @property {number} md     column that value starts at, or -1 when the line has no value
+ * @property {number} contact indent of the `contact:` the lines below belong to, or -1
+ * @property {'' | 'contact' | 'dates'} kind a value read for more than its markdown: a contact line, which
+ *   can be a phone number, or a `dates` value
  */
 
 const tokenTable = {
@@ -46,6 +49,11 @@ const tokenTable = {
   cvMdCode: t.monospace,
   cvMdStrike: t.strikethrough,
   cvMdHtml: t.special(t.content),
+
+  // Each end of a `dates` value that reads as one.
+  cvDate: t.number,
+  // What a section or an entry is — the value of `type` or `subtype`.
+  cvType: [t.typeName, t.strong],
 }
 
 /**
@@ -69,7 +77,8 @@ function quoted(s) {
  * @param {State} state
  */
 function value(stream, state) {
-  const run = inlineRuns(stream.string, state.md).find((r) => r.to > stream.pos)
+  const runs = state.kind === 'contact' ? contactRuns : state.kind === 'dates' ? dateRuns : inlineRuns
+  const run = runs(stream.string, state.md).find((r) => r.to > stream.pos)
   if (!run) {
     stream.skipToEnd()
     return state.base
@@ -82,7 +91,7 @@ function value(stream, state) {
 const parser = {
   name: 'relaxed-yaml',
 
-  startState: () => ({ block: -1, indent: 0, opens: false, base: 'cvText', md: -1 }),
+  startState: () => ({ block: -1, indent: 0, opens: false, base: 'cvText', md: -1, contact: -1, kind: '' }),
 
   token(stream, state) {
     const line = stream.string
@@ -95,6 +104,7 @@ const parser = {
 
     if (stream.sol()) {
       state.md = -1 // this line's value hasn't been reached yet
+      state.kind = ''
       // Inside a `|` or `>` body everything is content until the indent comes back.
       if (state.block >= 0) {
         if (blank || p.indent > state.block) {
@@ -111,6 +121,9 @@ const parser = {
       }
       if (!blank && p.comment < 0) {
         state.indent = p.indent
+        // The contact block runs until the indent comes back to its key.
+        if (state.contact >= 0 && p.indent <= state.contact) state.contact = -1
+        if (p.key === 'contact' && p.value < 0) state.contact = p.indent
         state.opens = (p.key !== null && p.value < 0) || (p.dashes.length > 0 && p.content >= line.length)
       }
       if (stream.eatSpace()) return null
@@ -153,8 +166,15 @@ const parser = {
         stream.skipToEnd()
         return 'cvBool'
       }
+      // A name from a closed set, so there is no markdown in it to read.
+      if (p.key === 'type' || p.key === 'subtype') {
+        stream.skipToEnd()
+        return 'cvType'
+      }
       state.base = quoted(rest) ? 'cvString' : 'cvText'
       state.md = at
+      if (p.key === 'dates') state.kind = 'dates'
+      else if (state.contact >= 0 && p.key === null && p.dashes.length > 0) state.kind = 'contact'
     }
     return value(stream, state)
   },

@@ -4,9 +4,10 @@ header:
   contact:
     - Springfield, USA
     - +1 555 010 1234
-    - [github.com/example](https://github.com/example)
-    - [linkedin.com/in/example](https://linkedin.com/in/example)
-    - [example.dev](https://example.dev)
+    - john.doe@example.com
+    - https://github.com/example
+    - https://linkedin.com/in/example
+    - https://example.dev
 sections:
   - type: summary
     title: Summary

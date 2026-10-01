@@ -69,4 +69,48 @@ describe('markdown inside a value', () => {
     expect(paint('odd: it is **true**\n')).toEqual(['odd=propertyName definition', ': =punctuation', '**=punctuation', 'true=strong', '**=punctuation'])
     expect(paint('flag: true\n')).toEqual(['flag=propertyName definition', ': =punctuation', 'true=bool'])
   })
+
+  it('marks a phone number only in the contact block', () => {
+    const doc = 'header:\n  contact:\n    - +1 555 010 1234\n    - https://x.dev\n  role: +1 555 010 1234\n'
+    expect(paint(doc)).toEqual([
+      'header=propertyName definition',
+      ':=punctuation',
+      'contact=propertyName definition',
+      ':=punctuation',
+      '- =punctuation',
+      '+1 555 010 1234=link',
+      '- =punctuation',
+      'https://=punctuation link',
+      'x.dev=link',
+      'role=propertyName definition',
+      ': =punctuation',
+    ])
+  })
+
+  it('colours the dates in a dates value, and nowhere else', () => {
+    expect(paint('- dates: 2020 – Present\n  title: 2020\n')).toEqual([
+      '- =punctuation',
+      'dates=propertyName definition',
+      ': =punctuation',
+      '2020=number',
+      'Present=number',
+      'title=propertyName definition',
+      ': =punctuation',
+    ])
+  })
+
+  it('picks out what a section or an entry is', () => {
+    expect(paint('- type: entries\n  items:\n    - subtype: earlier\n')).toEqual([
+      '- =punctuation',
+      'type=propertyName definition',
+      ': =punctuation',
+      'entries=typeName strong',
+      'items=propertyName definition',
+      ':=punctuation',
+      '- =punctuation',
+      'subtype=propertyName definition',
+      ': =punctuation',
+      'earlier=typeName strong',
+    ])
+  })
 })
