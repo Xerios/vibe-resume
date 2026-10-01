@@ -67,7 +67,7 @@
       for (const e of tr.effects) if (e.is(setPeek)) deco = e.value === null ? Decoration.none : Decoration.set([peekMark.range(e.value)])
       return deco
     },
-    provide: (f) => EditorView.decorations.from(f),
+    provide: f => EditorView.decorations.from(f),
   })
 
   /**
@@ -104,14 +104,14 @@
     const starts = []
     forEachDiagnostic(state, (d, from, to) => {
       if (d.severity !== 'error') return
-      for (let pos = from; ;) {
+      for (let pos = from; ; ) {
         const line = state.doc.lineAt(pos)
         if (starts[starts.length - 1] !== line.from) starts.push(line.from)
         if (line.to >= to) break
         pos = line.to + 1
       }
     })
-    return Decoration.set(starts.map((at) => errorLineMark.range(at)))
+    return Decoration.set(starts.map(at => errorLineMark.range(at)))
   }
 
   /** Recomputed whenever the linter reports, and remapped as the text moves. */
@@ -123,11 +123,11 @@
       }
       /** @param {import('@codemirror/view').ViewUpdate} update */
       update(update) {
-        const relinted = update.transactions.some((tr) => tr.effects.some((e) => e.is(setDiagnosticsEffect)))
+        const relinted = update.transactions.some(tr => tr.effects.some(e => e.is(setDiagnosticsEffect)))
         if (update.docChanged || relinted) this.decorations = errorLines(update.state)
       }
     },
-    { decorations: (v) => v.decorations },
+    { decorations: v => v.decorations },
   )
 
   class RemovedText extends WidgetType {
@@ -155,8 +155,8 @@
   function diffDecorations(d) {
     if (!d || (d.added.length === 0 && d.removed.length === 0)) return Decoration.none
     const ranges = [
-      ...d.added.filter((r) => r.to > r.from).map((r) => Decoration.mark({ class: 'cm-diff-added' }).range(r.from, r.to)),
-      ...d.removed.map((r) => Decoration.widget({ widget: new RemovedText(r.text), side: -1 }).range(r.at)),
+      ...d.added.filter(r => r.to > r.from).map(r => Decoration.mark({ class: 'cm-diff-added' }).range(r.from, r.to)),
+      ...d.removed.map(r => Decoration.widget({ widget: new RemovedText(r.text), side: -1 }).range(r.at)),
     ]
     return Decoration.set(ranges, true)
   }
@@ -214,6 +214,7 @@
           errorLineHighlight,
           editable.of(editableExtensions(readOnly)),
           diffHighlight.of(EditorView.decorations.of(diffDecorations(diff))),
+          EditorView.contentAttributes.of({ spellcheck: 'true' }),
           peekField,
           pasteGuard,
           EditorView.updateListener.of(onUpdate),
@@ -242,7 +243,7 @@
    */
   function onUpdate(update) {
     if (!update.docChanged) return
-    if (!update.transactions.some((tr) => tr.annotation(Transaction.userEvent))) return
+    if (!update.transactions.some(tr => tr.annotation(Transaction.userEvent))) return
     let head = -1
     update.changes.iterChanges((_fromA, _toA, _fromB, toB) => (head = toB))
     if (head >= 0) onEdit(update.state.doc.lineAt(head).number)

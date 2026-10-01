@@ -15,6 +15,7 @@
 import { pushState } from '$app/navigation'
 import { page } from '$app/state'
 import { toStrictYaml } from '../format/strict-yaml.js'
+import { docMeta } from '../template/doc-meta.js'
 import { preset as presetOf } from '../template/compositions.js'
 import { FONTS } from '../theme/fonts.js'
 import { ORIENTATIONS, PAPER_SIZES, RUNNING } from '../theme/paper.js'
@@ -27,10 +28,11 @@ import { KEYS, write } from './storage.js'
  * What the page lends the commands — see `bindHost`.
  * @typedef {object} Host
  * @property {() => boolean} print  print the preview frame; false if it isn't up yet
+ * @property {() => any} printed  the parsed CV the frame is showing, as a plain object
  */
 
 /** @type {Host} */
-let host = { print: () => false }
+let host = { print: () => false, printed: () => null }
 
 /** Lend the page's frame to `exportPDF`. @param {Host} h */
 export function bindHost(h) {
@@ -166,9 +168,26 @@ export const commands = {
     // Tagged before printing, so the mark in the history sits on exactly the
     // version that goes to the printer.
     doc.markExport()
+    // Taken before the print, which is what dates the PDF: the file the
+    // browser writes has to be newer than this to be the one that shows it.
+    const yaml = doc.yaml
+    const previous = ui.pdfExport
+    const cv = host.printed()
+    const snapshot = {
+      cv,
+      yaml,
+      meta: docMeta(cv),
+      since: previous?.yaml === yaml ? previous.since : Date.now(),
+    }
     // The frame prints itself. Printing the app instead would put the iframe on
     // the page as a box and crop the CV to it, however many pages it wanted.
-    if (!host.print()) ui.toast("Preview isn't ready yet")
+    if (!host.print()) {
+      ui.toast("Preview isn't ready yet")
+      return
+    }
+    // `print()` holds until the dialog closes, so by now the file is saved.
+    ui.pdfExport = snapshot
+    ui.enrichOpen = true
   },
 
   /* ── History ───────────────────────────────────────────────────────────── */

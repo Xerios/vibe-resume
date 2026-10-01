@@ -6,6 +6,7 @@
   import IconCheck from '@iconify-icons/lucide/circle-check'
   import { page } from '$app/state'
   import CompareModal from '$lib/components/CompareModal.svelte'
+  import EnrichPdfModal from '$lib/components/EnrichPdfModal.svelte'
   import ConvertPromptModal from '$lib/components/ConvertPromptModal.svelte'
   import HistoryPanel from '$lib/components/HistoryPanel.svelte'
   import PasteModal from '$lib/components/PasteModal.svelte'
@@ -132,7 +133,7 @@
   onMount(() => {
     start()
     cv.bindEditor(text => editor?.replaceAll(text))
-    bindHost({ print: () => frame?.print() ?? false })
+    bindHost({ print: () => frame?.print() ?? false, printed: () => $state.snapshot(parsed) })
 
     const onVisibility = () => {
       if (document.visibilityState === 'hidden') flush()
@@ -862,6 +863,10 @@
       promptSource = null
       editor?.takeFocus()
     }} />
+{/if}
+
+{#if ui.enrichOpen && ui.pdfExport}
+  <EnrichPdfModal exported={ui.pdfExport} onClose={() => (ui.enrichOpen = false)} />
 {/if}
 
 {#if compare && cv.ready}
