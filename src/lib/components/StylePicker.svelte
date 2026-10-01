@@ -1,9 +1,8 @@
 <script>
   import Icon from '@iconify/svelte'
   import IconClose from '@iconify-icons/lucide/x'
-  import IconCheck from '@iconify-icons/lucide/check'
   import { commands } from '$lib/cv/state/commands.js'
-  import { look, parts, ui } from '$lib/cv/state/state.svelte.js'
+  import { look, parts } from '$lib/cv/state/state.svelte.js'
   import { PRESETS } from '$lib/cv/template/compositions.js'
   import { FONTS } from '$lib/cv/theme/fonts.js'
   import { ORIENTATIONS, PAPER_SIZES, RUNNING_SLOTS } from '$lib/cv/theme/paper.js'
@@ -11,6 +10,7 @@
   import { KEYS, read, write } from '$lib/cv/state/storage.js'
   import Foldout from './Foldout.svelte'
   import TemplateThumb from './TemplateThumb.svelte'
+  import ToggleButton from './ToggleButton.svelte'
   import VariantCycle from './VariantCycle.svelte'
   import { fly } from 'svelte/transition'
 
@@ -59,7 +59,7 @@
   const running = $derived({ header: look.paper.header, footer: look.paper.footer })
 
   /** What the head says the groups below are set to, the way History counts its versions. */
-  const presetName = $derived((PRESETS.find(p => p.id === look.preset)?.name ?? look.preset) + (look.modified ? ' — edited' : ''))
+  const presetName = $derived((PRESETS.find((p) => p.id === look.preset)?.name ?? look.preset) + (look.modified ? ' — edited' : ''))
 </script>
 
 <aside id="style-pane" in:fly={{ y: -8, duration: 200 }}>
@@ -81,10 +81,10 @@
     <Foldout label="Preset" open={groups.preset} onToggle={() => toggleGroup('preset')}>
       <div class="layout-grid">
         {#each PRESETS as p (p.id)}
-          <button class="layout-opt" class:selected={p.id === look.preset} title={p.hint} aria-pressed={p.id === look.preset} onclick={() => commands.setPreset(p.id)}>
+          <ToggleButton big selected={p.id === look.preset} title={p.hint} onclick={() => commands.setPreset(p.id)}>
             <TemplateThumb id={p.id} />
             <span>{p.name}</span>
-          </button>
+          </ToggleButton>
         {/each}
       </div>
     </Foldout>
@@ -95,7 +95,9 @@
     <Foldout label="Blocks" open={groups.blocks} onToggle={() => toggleGroup('blocks')}>
       {#snippet head()}
         {#if look.modified}
-          <button class="blocks-reset ds-btn subtle compact" title="Put every block back to what this preset says" onclick={commands.resetVariants}>Reset</button>
+          <button class="blocks-reset ds-btn subtle compact" title="Put every block back to what this preset says" onclick={commands.resetVariants}
+            >Reset</button
+          >
         {/if}
       {/snippet}
       <div class="blocks-list">
@@ -108,10 +110,10 @@
     <Foldout label="Theme" open={groups.theme} onToggle={() => toggleGroup('theme')}>
       <div class="theme-grid">
         {#each THEMES as t (t.id)}
-          <button class="theme-opt" class:selected={t.id === look.theme} title={t.name} aria-pressed={t.id === look.theme} onclick={() => commands.setTheme(t.id)} data-cv-theme={t.id}>
+          <ToggleButton selected={t.id === look.theme} title={t.name} onclick={() => commands.setTheme(t.id)} data-cv-theme={t.id}>
             <span class="theme-dot"></span>
             <span>{t.name}</span>
-          </button>
+          </ToggleButton>
         {/each}
       </div>
     </Foldout>
@@ -122,10 +124,10 @@
     <Foldout label="Font" open={groups.font} onToggle={() => toggleGroup('font')}>
       <div class="font-grid">
         {#each FONTS as f (f.id)}
-          <button class="font-opt" class:selected={f.id === look.font} title={f.hint} aria-pressed={f.id === look.font} onclick={() => commands.setFont(f.id)} data-cv-font={f.id}>
+          <ToggleButton selected={f.id === look.font} title={f.hint} onclick={() => commands.setFont(f.id)} data-cv-font={f.id}>
             <span class="font-sample">Aa</span>
             <span>{f.name}</span>
-          </button>
+          </ToggleButton>
         {/each}
       </div>
     </Foldout>
@@ -141,22 +143,17 @@
     <Foldout label="Paper" open={groups.paper} onToggle={() => toggleGroup('paper')}>
       <div class="paper-grid">
         {#each PAPER_SIZES as s (s.id)}
-          <button class="paper-opt" class:selected={s.id === look.paper.size} aria-pressed={s.id === look.paper.size} onclick={() => commands.setPaper({ size: s.id })}>
+          <ToggleButton center selected={s.id === look.paper.size} onclick={() => commands.setPaper({ size: s.id })}>
             {s.name}
-          </button>
+          </ToggleButton>
         {/each}
       </div>
       <div class="paper-grid two">
         {#each ORIENTATIONS as o (o.id)}
-          <button
-            class="paper-opt"
-            class:selected={o.id === look.paper.orientation}
-            title={o.hint}
-            aria-pressed={o.id === look.paper.orientation}
-            onclick={() => commands.setPaper({ orientation: o.id })}>
+          <ToggleButton center selected={o.id === look.paper.orientation} title={o.hint} onclick={() => commands.setPaper({ orientation: o.id })}>
             <span class="paper-shape" class:wide={o.id === 'landscape'}></span>
             {o.name}
-          </button>
+          </ToggleButton>
         {/each}
       </div>
       <div class="blocks-list paper-runs">
@@ -164,14 +161,6 @@
           <VariantCycle {slot} choices={running} onPick={(edge, mode) => commands.setPaper({ [edge]: mode })} />
         {/each}
       </div>
-      {#if ui.desktop}
-        <!-- Not part of the file: this is how the preview is looked at, so it
-				     stays out of the document and out of the history. -->
-        <button class="paper-fit" class:selected={ui.fitPreview} aria-pressed={ui.fitPreview} title="Scale the preview until a whole page fits across the pane" onclick={commands.toggleFit}>
-          <span class="paper-tick" aria-hidden="true">{#if ui.fitPreview}<Icon icon={IconCheck} width="12" height="12" />{/if}</span>
-          Fit page to pane
-        </button>
-      {/if}
     </Foldout>
 
     <!-- Anything at all, applied last inside the preview frame. It can't
@@ -185,7 +174,7 @@
         value={look.css}
         placeholder={CSS_TEMPLATE}
         aria-label="Custom CSS for this CV"
-        oninput={e => commands.setCss(e.currentTarget.value)}></textarea>
+        oninput={(e) => commands.setCss(e.currentTarget.value)}></textarea>
       <p class="css-hint">
         Applies to this file only. Override the tokens on <code>#cv-root</code>, or style the sheet directly.
       </p>
@@ -288,58 +277,6 @@
     gap: var(--ds-space-100);
   }
 
-  /* Every option here is a selectable card: the raised surface at rest, and
-     ADS's selected border and fill once chosen. The border is always drawn,
-     transparent at rest, so picking one doesn't shift the grid. */
-  .layout-opt,
-  .theme-opt,
-  .font-opt,
-  .paper-opt,
-  .paper-fit {
-    background: var(--ds-surface-raised);
-    border: var(--ds-border-width-selected) solid transparent;
-    border-radius: var(--ds-radius-medium);
-    box-shadow: var(--ds-shadow-raised);
-    cursor: pointer;
-    font: var(--ds-font-body);
-    color: var(--ds-text);
-    transition: var(--hover-fade);
-
-    &:hover {
-      background: var(--ds-surface-raised-hovered);
-    }
-
-    &:active {
-      background: var(--ds-surface-raised-pressed);
-    }
-
-    &:focus-visible {
-      outline: 2px solid var(--ds-border-focused);
-      outline-offset: 2px;
-    }
-
-    &.selected {
-      background: var(--ds-background-selected);
-      border-color: var(--ds-border-selected);
-      color: var(--ds-text-selected);
-      box-shadow: none;
-
-      &:hover {
-        background: var(--ds-background-selected-hovered);
-      }
-    }
-  }
-
-  .layout-opt {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--ds-space-050);
-    padding: var(--ds-space-075) var(--ds-space-050);
-    font: var(--ds-font-body-small);
-    font-weight: var(--ds-font-weight-medium);
-  }
-
   .theme-grid,
   .font-grid {
     display: grid;
@@ -364,20 +301,6 @@
     margin-top: var(--ds-space-150);
   }
 
-  .theme-opt,
-  .font-opt,
-  .paper-opt {
-    display: flex;
-    align-items: center;
-    gap: var(--ds-space-100);
-    min-height: var(--control-h);
-    padding: var(--ds-space-050) var(--ds-space-100);
-  }
-
-  .paper-opt {
-    justify-content: center;
-  }
-
   /* The page, at the shape the button is offering. Drawn rather than named,
      because which way round it goes is the whole answer. */
   .paper-shape {
@@ -390,35 +313,6 @@
     &.wide {
       width: 12px;
       height: 9px;
-    }
-  }
-
-  /* On or off, and about the pane rather than about the file — so it is a
-     full-width row with a checkbox rather than one of a pair. */
-  .paper-fit {
-    display: flex;
-    align-items: center;
-    gap: var(--ds-space-100);
-    width: 100%;
-    min-height: var(--control-h);
-    margin-top: var(--ds-space-150);
-    padding: var(--ds-space-050) var(--ds-space-100);
-  }
-
-  /* An ADS checkbox: a 2px-bordered square that fills with the brand colour. */
-  .paper-tick {
-    flex-shrink: 0;
-    display: grid;
-    place-items: center;
-    width: 14px;
-    height: 14px;
-    border: 2px solid var(--ds-border-input);
-    border-radius: 2px;
-    color: var(--ds-text-inverse);
-
-    .selected & {
-      background: var(--ds-background-brand-bold);
-      border-color: var(--ds-background-brand-bold);
     }
   }
 

@@ -16,8 +16,13 @@
   let editValue = $state('')
   /** The tab being dragged, while it is being dragged. */
   let dragId = $state(/** @type {string | null} */ (null))
-  /** Whether the active tab's menu — everything you can do to this file — is showing. */
+  /** Whether a tab's menu — everything you can do to this file — is showing. */
   let menuOpen = $state(false)
+  /** The tab that menu is for: the active one from the caret, any one from a right-click. */
+  let menuId = $state(/** @type {string | null} */ (null))
+  /** What had focus when the menu opened, so closing it can hand focus back. */
+  let returnTo = $state(/** @type {HTMLElement | null} */ (null))
+  const menuFile = $derived(files.open.find((/** @type {import('$lib/cv/state/files.svelte.js').FileMeta} */ f) => f.id === menuId))
   /**
    * Where that menu is drawn. It is positioned against the viewport rather than
    * against the tab, because #tabs scrolls: a box positioned inside it is
@@ -25,7 +30,6 @@
    */
   let menuAt = $state({ x: 0, y: 0 })
 
-  let menuGroup = $state(/** @type {HTMLDivElement | undefined} */ (undefined))
   let moreBtn = $state(/** @type {HTMLButtonElement | undefined} */ (undefined))
   let menu = $state(/** @type {HTMLDivElement | undefined} */ (undefined))
 
@@ -33,15 +37,25 @@
   // leaving it, and hands focus back to the button that opened it.
   $effect(() => {
     if (!menuOpen) return
+    // The tab the menu is for was closed or trashed from under it.
+    if (!menuFile) {
+      menuOpen = false
+      return
+    }
     menu?.querySelector('button')?.focus()
 
     /** @param {PointerEvent} e */
-    const onPointerDown = (e) => {
-      if (!menuGroup?.contains(/** @type {Node | null} */ (e.target))) menuOpen = false
+    const onPointerDown = e => {
+      if (!inMenu(/** @type {Node | null} */ (e.target))) menuOpen = false
     }
     document.addEventListener('pointerdown', onPointerDown)
     return () => document.removeEventListener('pointerdown', onPointerDown)
   })
+
+  /** Whether a node is the menu or the caret that toggles it. @param {Node | null} node */
+  function inMenu(node) {
+    return !!node && (!!menu?.contains(node) || !!moreBtn?.contains(node))
+  }
 
   /** @param {import('$lib/cv/state/files.svelte.js').FileMeta} f */
   function startRename(f) {
@@ -145,28 +159,32 @@
   function openMenu() {
     const rect = moreBtn?.getBoundingClientRect()
     if (rect) menuAt = { x: rect.left, y: rect.bottom + 6 }
+    menuId = files.activeId
+    returnTo = moreBtn ?? null
     menuOpen = true
   }
 
   /**
-   * Right-click opens the same menu at the pointer. The menu belongs to the
-   * active tab, so the tab is made active first. While renaming, the input keeps
-   * the browser's own menu (cut, copy, paste).
+   * Right-click opens the same menu at the pointer, for the tab under it —
+   * which stays as it was: asking what can be done to a file isn't asking to
+   * switch to it. While renaming, the input keeps the browser's own menu (cut,
+   * copy, paste).
    * @param {MouseEvent} e
    * @param {import('$lib/cv/state/files.svelte.js').FileMeta} f
    */
   function onTabContextMenu(e, f) {
     if (editingId === f.id) return
     e.preventDefault()
-    if (f.id !== files.activeId) commands.selectTab(f.id)
     menuAt = { x: e.clientX, y: e.clientY }
+    menuId = f.id
+    returnTo = /** @type {HTMLElement} */ (e.currentTarget).querySelector('.tab-select')
     menuOpen = true
   }
 
   /** Run a menu choice and put focus back where the menu was opened from. */
   function pick(/** @type {() => void} */ action) {
     menuOpen = false
-    moreBtn?.focus()
+    returnTo?.focus()
     action()
   }
 
@@ -181,7 +199,7 @@
   function onMenuKeydown(e) {
     if (e.key === 'Escape') {
       menuOpen = false
-      moreBtn?.focus()
+      returnTo?.focus()
       return
     }
     const step = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0
@@ -195,7 +213,7 @@
   /** @param {FocusEvent} e */
   function onMenuFocusOut(e) {
     const next = /** @type {Node | null} */ (e.relatedTarget)
-    if (next && !menuGroup?.contains(next)) menuOpen = false
+    if (next && !inMenu(next)) menuOpen = false
   }
 </script>
 
@@ -217,12 +235,11 @@
         class:active
         class:dragging={dragId === f.id}
         draggable={editingId !== f.id}
-        ondragstart={(e) => onTabDragStart(e, f)}
-        ondragover={(e) => onTabDragOver(e, f)}
+        ondragstart={e => onTabDragStart(e, f)}
+        ondragover={e => onTabDragOver(e, f)}
         ondrop={onTabDrop}
-        oncontextmenu={(e) => onTabContextMenu(e, f)}
-        ondragend={() => (dragId = null)}
-      >
+        oncontextmenu={e => onTabContextMenu(e, f)}
+        ondragend={() => (dragId = null)}>
         {#if editingId === f.id}
           <input class="tab-rename ds-textfield compact" bind:value={editValue} use:focusAndSelect onblur={commitRename} onkeydown={onRenameKeydown} />
         {:else}
@@ -231,8 +248,7 @@
             title="{f.name} — double-click or F2 to rename, drag or Alt+← → to reorder"
             onclick={() => commands.selectTab(f.id)}
             ondblclick={() => startRename(f)}
-            onkeydown={(e) => onTabKeydown(e, f)}
-          >
+            onkeydown={e => onTabKeydown(e, f)}>
             {f.name}
           </button>
           <!-- Everything that can be done to a file is behind this one caret,
@@ -241,55 +257,19 @@
 					     in a tab as buttons. Deleting is last and set apart, for the same
 					     reason. -->
           {#if active}
-            <div class="tab-menu-group" bind:this={menuGroup}>
+            <div class="tab-menu-group">
               <button
                 class="tab-more ds-icon-btn compact"
                 bind:this={moreBtn}
                 aria-haspopup="menu"
-                aria-expanded={menuOpen}
+                aria-expanded={menuOpen && menuId === f.id}
                 aria-label="Actions for {f.name}"
                 title="What can be done to this CV"
-                onclick={() => (menuOpen ? (menuOpen = false) : openMenu())}
-                onkeydown={onMoreKeydown}
-              >
+                onclick={() => (menuOpen && menuId === f.id ? (menuOpen = false) : openMenu())}
+                onkeydown={onMoreKeydown}>
                 <Icon icon={IconChevron} width="16" height="16" />
               </button>
 
-              {#if menuOpen}
-                <div
-                  class="tab-menu ds-menu"
-                  role="menu"
-                  tabindex="-1"
-                  bind:this={menu}
-                  style:left="{menuAt.x}px"
-                  style:top="{menuAt.y}px"
-                  onkeydown={onMenuKeydown}
-                  onfocusout={onMenuFocusOut}
-                  in:fly={{ y: -8, duration: 200 }}
-                >
-                  <button class="ds-menu-item" role="menuitem" onclick={() => pick(commands.duplicateTab)}>
-                    <Icon icon={IconCopy} width="16" height="16" />
-                    <span>Duplicate</span>
-                  </button>
-                  <button class="ds-menu-item" role="menuitem" onclick={() => pick(() => startRename(f))}>
-                    <Icon icon={IconPencil} width="16" height="16" />
-                    <span>Rename</span>
-                  </button>
-                  <button class="ds-menu-item" role="menuitem" onclick={() => pick(commands.saveYaml)}>
-                    <Icon icon={IconDownload} width="16" height="16" />
-                    <span>Export YAML</span>
-                  </button>
-                  <button class="ds-menu-item" role="menuitem" onclick={() => pick(() => commands.openCompare())}>
-                    <Icon icon={IconCompare} width="16" height="16" />
-                    <span>Compare</span>
-                  </button>
-                  <div class="ds-menu-sep"></div>
-                  <button class="ds-menu-item danger" role="menuitem" onclick={() => pick(() => commands.closeTab(f.id))}>
-                    <Icon icon={IconTrash} width="16" height="16" />
-                    <span>Move to trash</span>
-                  </button>
-                </div>
-              {/if}
             </div>
           {/if}
         {/if}
@@ -304,6 +284,42 @@
     <Icon icon={IconFilePlus} width="16" height="16" />
     <span class="ds-txt"><u>N</u>ew CV</span>
   </button>
+
+      {#if menuOpen && menuFile}
+    {@const f = menuFile}
+        <div
+          class="tab-menu ds-menu"
+          role="menu"
+          tabindex="-1"
+          bind:this={menu}
+          style:left="{menuAt.x}px"
+          style:top="{menuAt.y}px"
+          onkeydown={onMenuKeydown}
+          onfocusout={onMenuFocusOut}
+          in:fly={{ y: -8, duration: 200 }}>
+          <button class="ds-menu-item" role="menuitem" onclick={() => pick(() => commands.duplicateTab(f.id))}>
+            <Icon icon={IconCopy} width="16" height="16" />
+            <span>Duplicate</span>
+          </button>
+          <button class="ds-menu-item" role="menuitem" onclick={() => pick(() => startRename(f))}>
+            <Icon icon={IconPencil} width="16" height="16" />
+            <span>Rename</span>
+          </button>
+          <button class="ds-menu-item" role="menuitem" onclick={() => pick(() => commands.saveYaml(f.id))}>
+            <Icon icon={IconDownload} width="16" height="16" />
+            <span>Export YAML</span>
+          </button>
+          <button class="ds-menu-item" role="menuitem" onclick={() => pick(() => commands.openCompare({ fileId: f.id, versionKey: null }, f.id === files.activeId ? undefined : { fileId: /** @type {string} */ (files.activeId), versionKey: null }))}>
+            <Icon icon={IconCompare} width="16" height="16" />
+            <span>Compare</span>
+          </button>
+          <div class="ds-menu-sep"></div>
+          <button class="ds-menu-item danger" role="menuitem" onclick={() => pick(() => commands.closeTab(f.id))}>
+            <Icon icon={IconTrash} width="16" height="16" />
+            <span>Move to trash</span>
+          </button>
+        </div>
+      {/if}
 </div>
 
 <style lang="scss">
@@ -365,13 +381,7 @@
     &.active {
       color: var(--ds-text);
       background: var(--ds-surface);
-      /* The brand edge is the top border itself, doubled by an inset shadow,
-         so it follows the rounded corners down into the side borders rather
-         than stopping short of them. */
-      border-top-color: var(--ds-border-selected);
-      box-shadow: inset 0 var(--ds-border-width) 0 var(--ds-border-selected);
-      /* Opaque, and on the bar's bottom edge, so it covers the bar's rule and
-         runs into the editor below. */
+      box-shadow: 1px 1px 3px var(--ds-background-neutral-bold);
       z-index: 1;
     }
 
@@ -422,7 +432,7 @@
   /* ── Open another tab ─────────────────────────── */
   .tab-new {
     flex-shrink: 0;
-    align-self: center;
+    align-self: flex-end;
   }
 
   /* Fixed, and placed where the caret was — see `menuAt`. */

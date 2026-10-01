@@ -4,6 +4,7 @@
   import IconEyeOff from '@iconify-icons/lucide/eye-off'
   import IconLink2 from '@iconify-icons/lucide/link-2'
   import IconLink2Off from '@iconify-icons/lucide/link-2-off'
+  import IconMaximize from '@iconify-icons/lucide/maximize'
   import IconMoon from '@iconify-icons/lucide/moon'
   import IconMousePointer2 from '@iconify-icons/lucide/mouse-pointer-2'
   import IconMousePointer2Off from '@iconify-icons/lucide/mouse-pointer-2-off'
@@ -104,7 +105,27 @@
       <span class="ds-txt"><u>S</u>croll</span>
     </button>
 
-    <button class="ds-btn subtle compact sb-btn" class:selected={ui.sourceHidden} onclick={commands.toggleSource} use:shortcut={['e', ui.sourceHidden ? 'Show editor' : 'Hide editor (preview only)']}>
+    <!-- About the pane rather than the file, so it lives with the other view
+	       switches instead of in Style. Only where there is a split to fit into. -->
+    {#if ui.desktop}
+      <button
+        class="ds-btn subtle compact sb-btn"
+        class:selected={ui.fitPreview}
+        onclick={commands.toggleFit}
+        aria-pressed={ui.fitPreview}
+        use:shortcut={['p', 'Scale the preview until a whole page fits across the pane']}
+      >
+        <Icon icon={IconMaximize} width="16" height="16" />
+        <span class="ds-txt">Fit <u>P</u>age</span>
+      </button>
+    {/if}
+
+    <button
+      class="ds-btn subtle compact sb-btn"
+      class:selected={ui.sourceHidden}
+      onclick={commands.toggleSource}
+      use:shortcut={['e', ui.sourceHidden ? 'Show editor' : 'Hide editor (preview only)']}
+    >
       {#if ui.sourceHidden}
         <Icon icon={IconEyeOff} width="16" height="16" />
       {:else}
