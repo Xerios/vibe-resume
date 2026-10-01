@@ -802,11 +802,12 @@ export class CvDoc {
         // A change spans `length` ops; its frontier is the last of them.
         const counter = c.counter + c.length - 1
         // Loro caps how many ops one change holds, so a commit big enough — a
-        // restore that rewrites the whole text — comes back as several changes
-        // in a row, each carrying the commit's message and time. A commit with
-        // a message never merges with its neighbour, so two like that are the
-        // same commit split, and they read as one.
-        if (last && c.message && c.message === last.change.message && c.timestamp === last.change.timestamp && follows(c, last.entry)) {
+        // restore or a paste that rewrites the whole text — comes back as
+        // several changes in a row, each carrying the commit's message and
+        // time. Two like that are the same commit split, and read as one: a
+        // named commit never merges with its neighbour, and two unnamed ones
+        // that close together would have been merged had they fitted.
+        if (last && c.message === last.change.message && c.timestamp === last.change.timestamp && follows(c, last.entry)) {
           Object.assign(last.entry, {
             key: `${peer}@${counter}`,
             counter,

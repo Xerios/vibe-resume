@@ -19,7 +19,7 @@
   } from '@codemirror/view'
   import { wrappedLineIndent } from 'codemirror-wrapped-line-indent'
   import { cvCompletion } from '$lib/cv/format/complete.js'
-  import { lintCv } from '$lib/cv/format/lint.js'
+  import { lintCv } from '$lib/workers/index.js'
   import { relaxedYaml } from '$lib/cv/format/relaxed-yaml-mode.js'
   import { splitLine } from '$lib/cv/format/relaxed-yaml.js'
   import { highlight } from './cm-highlight.js'
@@ -73,13 +73,13 @@
    * when the format still needed them (see lint.js). The dialect has few ways
    * left to be broken, so most of what lands here is the middle one.
    * @param {EditorView} v
-   * @returns {import('@codemirror/lint').Diagnostic[]}
+   * @returns {Promise<import('@codemirror/lint').Diagnostic[]>}
    */
-  function yamlDiagnostics(v) {
+  async function yamlDiagnostics(v) {
+    const found = await lintCv(v.state.doc.toString())
     const len = v.state.doc.length
-    const found = lintCv(v.state.doc.toString())
     // Clamped because the linter reads a snapshot of the text: by the time the
-    // debounce fires, the document may already be shorter than what it saw.
+    // worker answers, the document may already be shorter than what it saw.
     for (const d of found) {
       d.from = Math.min(Math.max(d.from, 0), len)
       d.to = Math.min(Math.max(d.to, d.from), len)

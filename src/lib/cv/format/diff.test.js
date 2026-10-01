@@ -112,6 +112,7 @@ describe('moves', () => {
       expect(d.a[n - 1].move).toBe(move.id)
     }
     expect(d.hunks).toEqual([{ kind: 'moved', a: move.a, b: move.b }])
+    expect(move.label).toMatch(/^(Summary|Skills)$/)
   })
 
   it('still finds the one edit inside a moved block', () => {
@@ -135,6 +136,7 @@ describe('moves', () => {
     expect(d.counts.removed).toBe(0)
     expect(d.counts.moved).toBe(1)
     expect(d.moves[0].a[0]).toBe(d.moves[0].a[1]) // one line
+    expect(['Led the dashboard rebuild from design to rollout.', 'Mentored four junior engineers.']).toContain(d.moves[0].label)
   })
 
   it('reads an entry that went to another section as moved', () => {

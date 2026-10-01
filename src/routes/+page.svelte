@@ -15,11 +15,11 @@
   import YamlEditor from '$lib/components/YamlEditor.svelte'
   import PreviewFrame from '$lib/cv/PreviewFrame.svelte'
   import { liveTemplate } from '$lib/cv/template/live-template.svelte.js'
-  import { parseCv } from '$lib/cv/template/render.js'
   import { bindHost, commands } from '$lib/cv/state/commands.js'
   import { doc as cv, flush, look, parts, start, ui } from '$lib/cv/state/state.svelte.js'
   import { KEYS, write } from '$lib/cv/state/storage.js'
   import { swUpdate } from '$lib/sw-update.svelte.js'
+  import { parseCv } from '$lib/workers/index.js'
 
   const PARSE_DEBOUNCE_MS = 250
   /** How long a pane's own scroll events stay ours after we move it ourselves. */
@@ -39,6 +39,8 @@
 
   /** Which document `parsed` reflects — used to bypass the debounce when a tab switch swaps it out from under us. */
   let lastParsedDocId = -1
+  /** The newest parse asked for. One that lands after a newer one was asked for is dropped. */
+  let parseSeq = 0
 
   /** Last successfully parsed CV. Kept on a parse error so the preview doesn't blank. */
   let parsed = $state(/** @type {any} */ (null))
@@ -275,9 +277,11 @@
     holdSync()
   })
 
-  /** @param {string} text */
-  function reparse(text) {
-    const { cv: doc, lines, error } = parseCv(text)
+  /** Parse in the worker, keeping only the answer to the newest text. @param {string} text */
+  async function reparse(text) {
+    const seq = ++parseSeq
+    const { cv: doc, lines, error } = await parseCv(text)
+    if (seq !== parseSeq) return
     ui.parseError = error
     // Both or neither: the map has to describe the CV that's on screen, so a
     // broken document leaves the last good pair in place.

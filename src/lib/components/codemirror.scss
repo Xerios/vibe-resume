@@ -143,6 +143,26 @@
   .cm-cmp-changed {
     cursor: pointer;
   }
+
+  /* Lines folded away by "Changes only": a quiet band saying how many, which
+     opens on a click. */
+  .cm-cmp-fold {
+    display: block;
+    width: 100%;
+    padding: var(--ds-space-025) var(--ds-space-100);
+    border: none;
+    border-block: var(--ds-border-width) dashed var(--ds-border);
+    background: var(--ds-surface-sunken);
+    color: var(--ds-text-subtlest);
+    font: var(--ds-font-body-small);
+    text-align: center;
+    cursor: pointer;
+
+    &:hover {
+      color: var(--ds-text-subtle);
+      background: var(--ds-background-neutral-subtle-hovered);
+    }
+  }
 }
 
 #cm-wrap {

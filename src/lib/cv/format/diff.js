@@ -35,8 +35,8 @@ import { parse } from './relaxed-yaml.js'
 
 /**
  * A block that is on both sides, in a different place. Line ranges are 1-based
- * and inclusive.
- * @typedef {{ id: number, a: [number, number], b: [number, number] }} Move
+ * and inclusive; `label` is what the block is called, for saying which moved.
+ * @typedef {{ id: number, a: [number, number], b: [number, number], label: string }} Move
  */
 
 /**
@@ -119,7 +119,7 @@ export function diffDocuments(textA, textB) {
   /** @param {Node} a @param {Node} b */
   const newMove = (a, b) => {
     const id = moves.length + 1
-    moves.push({ id, a: [a.start, a.end - 1], b: [b.start, b.end - 1] })
+    moves.push({ id, a: [a.start, a.end - 1], b: [b.start, b.end - 1], label: labelOf(b) })
     return id
   }
 
@@ -336,6 +336,23 @@ function identity(value) {
     if (typeof v[k] === 'string' && v[k].trim()) return `${typeof v.type === 'string' ? `${v.type}|` : ''}${k}=${v[k].trim()}`
   }
   return null
+}
+
+/** The name `identity` keys an entry by, as the entry spells it. */
+const NAMED_RE = /^(?:[^|=]*\|)?(?:title|name|text|company|school)=/
+
+/**
+ * What a node is called, as a reader would say it: an entry by its title or
+ * name, a bullet by its text, a mapping entry by its key. Anything else by its
+ * first line.
+ * @param {Node} node
+ */
+function labelOf(node) {
+  if (node.key !== null) {
+    const named = NAMED_RE.exec(node.key)
+    return named ? node.key.slice(named[0].length) : node.key
+  }
+  return (node.lines.find((l) => l.trim()) ?? '').trim().replace(/^(?:- )+/, '')
 }
 
 /** Every line of a node, first to last. @param {Node} node */

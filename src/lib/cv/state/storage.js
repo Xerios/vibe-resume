@@ -25,6 +25,8 @@ export const KEYS = {
   hoverSync: 'cv-editor:hover-sync',
   /** Whether scrolling either pane scrolls the other to the same place. */
   scrollSync: 'cv-editor:scroll-sync',
+  /** How the Compare dialog was left set up — which ribbons, folding, line numbers. */
+  compare: 'cv-editor:compare',
   /** Set once the welcome overlay has been dismissed; absent means first visit. */
   welcomeSeen: 'cv-editor:welcome-seen',
 }
