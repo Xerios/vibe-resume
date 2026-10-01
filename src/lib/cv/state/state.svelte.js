@@ -78,10 +78,9 @@ export function flush() {
  * what remembers, so the change gets a line in the history panel and a place
  * on the undo stack. Anything that changes how a CV looks goes through here.
  *
- * What the patch touches is the axis the change is on, which is what decides
- * whether it joins the history entry before it or starts one of its own — see
- * `recordStyle`. Two goes at the theme are one line in the history; a theme and
- * then a font are two.
+ * What the patch touches is the axis the change is on, which is what the history
+ * entry for a run of restyles is named by — see `recordStyle`. Two goes at the
+ * theme read as the last theme; a theme and then a font read as both.
  *
  * @param {{ layout?: string, variants?: Record<string, string>, theme?: string, font?: string, css?: string, paper?: import('../theme/paper.js').Paper }} patch
  * @param {string} label   what the history entry reads as, e.g. `Theme — Plum`
@@ -98,8 +97,8 @@ export function restyle(patch, label, defer) {
  * Choose one block variant. The same as `restyle`, but the patch is the file's
  * own doing: putting a slot back to what its preset says drops the override
  * rather than storing it, and only FileManager knows which that is.
- * One slot is one axis, so cycling a block through its variants is one line in
- * the history and moving to the next block starts another.
+ * One slot is one axis, so cycling a block through its variants names only the
+ * one it ended on in the history.
  * @param {string} slotId
  * @param {string} variantId
  * @param {string} label
@@ -117,8 +116,8 @@ export function restyleVariant(slotId, variantId, label) {
  * the other keys currently say.
  *
  * Each key is its own axis, so turning the sheet on its side and then asking
- * for page numbers are two lines in the history rather than one — the same
- * rule the slots follow, for the same reason: they are two decisions.
+ * for page numbers are both named in the history — the same rule the slots
+ * follow, for the same reason: they are two decisions.
  * @param {Partial<import('../theme/paper.js').Paper>} patch
  * @param {string} label
  */

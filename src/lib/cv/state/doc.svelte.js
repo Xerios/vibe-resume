@@ -4,6 +4,7 @@ import { LoroDoc, UndoManager } from 'loro-crdt/web'
 // straight from the wasm-bindgen module — it is the same instance either way.
 import initWasm from 'loro-crdt/web/loro_wasm.js'
 import DEFAULT_YAML from '../default-cv.yaml?raw'
+import { touchedParts } from '../format/touched.js'
 import { base64ToBytes, bytesToBase64, read, remove, snapshotKey, write } from './storage.js'
 
 const TEXT_ID = 'yaml'
@@ -177,6 +178,19 @@ export class CvDoc {
   #fileId = ''
   /** Change counts, keyed by entry key. @type {Map<string, ChangeStats>} */
   #statsCache = new Map()
+  /** Keys of changes that, all told, changed nothing — see `#statsFor`. @type {Set<string>} */
+  #noops = new Set()
+  /** What an edit is called in the history — the parts it touched — keyed like `#statsCache`. @type {Map<string, string>} */
+  #editLabels = new Map()
+  /**
+   * One copy of the document, moved from version to version while the history
+   * is rebuilt, so reading the text at each entry is a checkout rather than a
+   * fork each. Only while `#probing`: a copy outlives no edit, since it has none
+   * of what came after it.
+   * @type {LoroDoc | null}
+   */
+  #probe = null
+  #probing = false
   /** The presentation the file had when this document was adopted; the map layers over it. @type {Record<string, any>} */
   #baseStyle = {}
   /** Where that copy comes from, and where a change made in here is mirrored back to. @type {StyleHost | null} */
@@ -352,9 +366,9 @@ export class CvDoc {
    * arrives a keystroke at a time.
    *
    * `axis` is which part of the presentation moved — the preset, the theme, one
-   * slot's variant. Trying presets on is done by trying them on, so a run of
-   * changes to the same axis reads as one line in the history rather than as
-   * one per click; see `mergeStyleRuns`.
+   * slot's variant. A run of restyles reads as one line in the history rather
+   * than as one per click, and the axes are what that line is named by; see
+   * `mergeStyleRuns`.
    *
    * @param {Record<string, any>} style
    * @param {string} label   what the entry reads as, e.g. `Entry — Card`
@@ -529,32 +543,113 @@ export class CvDoc {
   }
 
   /**
+   * The text as it stood at a version — through `#probe` while the history is
+   * being rebuilt, off a fork of its own otherwise.
+   * @param {import('loro-crdt/web').OpId[]} frontiers
+   */
+  #versionText(frontiers) {
+    const doc = /** @type {LoroDoc} */ (this.#doc)
+    if (!this.#probing) return cvText(doc.forkAt(frontiers)).toString()
+    // Forked at the oplog's head, not `fork()`: a detached document forks at
+    // the version on screen, and the copy would know nothing newer.
+    this.#probe ??= doc.forkAt(doc.oplogFrontiers())
+    this.#probe.checkout(frontiers)
+    return cvText(this.#probe).toString()
+  }
+
+  /**
+   * Everything a change did, as a diff against the version just before it.
+   * @param {HistoryEntry} entry
+   * @returns {[import('loro-crdt/web').ContainerID, import('loro-crdt/web').Diff][]}
+   */
+  #changeDiff(entry) {
+    if (!this.#doc) return []
+    return this.#doc.diff(entry.deps, [frontier(entry)], false)
+  }
+
+  /**
    * What a change did to the text, as a delta against the version just before it.
    * Empty when the change touched no text at all — a tag carries only its label.
    * @param {HistoryEntry} entry
+   * @param {[import('loro-crdt/web').ContainerID, import('loro-crdt/web').Diff][]} [diffs]
    * @returns {import('loro-crdt/web').TextDiff['diff']}
    */
-  #textOps(entry) {
-    if (!this.#doc) return []
-    const found = this.#doc.diff(entry.deps, [frontier(entry)], false).find(([, d]) => d.type === 'text')
+  #textOps(entry, diffs = this.#changeDiff(entry)) {
+    const found = diffs.find(([, d]) => d.type === 'text')
     if (!found) return []
-    return /** @type {import('loro-crdt/web').TextDiff} */ (found[1]).diff
+    return this.#net(entry, /** @type {import('loro-crdt/web').TextDiff} */ (found[1]).diff)
+  }
+
+  /**
+   * Cancel what a change put back of what it took away. The CRDT diff knows
+   * characters by identity, so text deleted and then brought back — by an undo
+   * inside the merge window, say — is a deletion of the old characters and an
+   * insertion of new ones that read the same. Trimming each replaced stretch to
+   * where the two actually differ leaves only what changed in the reading.
+   * @param {HistoryEntry} entry
+   * @param {import('loro-crdt/web').TextDiff['diff']} ops
+   * @returns {import('loro-crdt/web').TextDiff['diff']}
+   */
+  #net(entry, ops) {
+    if (!this.#doc || !ops.some((op) => op.insert) || !ops.some((op) => op.delete != null)) return ops
+    const before = this.#versionText(entry.deps)
+    /** @type {import('loro-crdt/web').TextDiff['diff']} */
+    const out = []
+    let pos = 0
+    let i = 0
+    while (i < ops.length) {
+      const op = ops[i]
+      if (op.retain != null) {
+        out.push(op)
+        pos += op.retain
+        i++
+        continue
+      }
+      let inserted = ''
+      let deleted = 0
+      for (; i < ops.length && ops[i].retain == null; i++) {
+        const run = ops[i]
+        if (run.insert) inserted += run.insert
+        else if (run.delete != null) deleted += run.delete
+      }
+      const gone = before.slice(pos, pos + deleted)
+      pos += deleted
+      let head = 0
+      while (head < inserted.length && head < gone.length && inserted[head] === gone[head]) head++
+      let tail = 0
+      while (tail < inserted.length - head && tail < gone.length - head && inserted[inserted.length - 1 - tail] === gone[gone.length - 1 - tail]) tail++
+      if (head) out.push({ retain: head })
+      if (gone.length - head - tail) out.push({ delete: gone.length - head - tail })
+      if (inserted.length - head - tail) out.push({ insert: inserted.slice(head, inserted.length - tail) })
+      if (tail) out.push({ retain: tail })
+    }
+    return out
   }
 
   /**
    * How many characters a change added and removed. Cached: a change's content is
    * fixed once its key exists, since a change that grows by merging a later edit
    * ends on a new counter and so takes a new key.
+   *
+   * A change that, read that way, did nothing at all — no text moved and nothing
+   * else touched — is noted in `#noops`, so the history can leave it out.
    * @param {HistoryEntry} entry
    * @returns {ChangeStats}
    */
   #statsFor(entry) {
     const cached = this.#statsCache.get(entry.key)
     if (cached) return cached
+    const diffs = this.#changeDiff(entry)
+    const ops = this.#textOps(entry, diffs)
     const stats = { added: 0, removed: 0 }
-    for (const op of this.#textOps(entry)) {
+    for (const op of ops) {
       if (op.insert) stats.added += op.insert.length
       else if (op.delete != null) stats.removed += op.delete
+    }
+    if (!stats.added && !stats.removed && diffs.every(([, d]) => d.type === 'text')) this.#noops.add(entry.key)
+    if (entry.kind === 'edit' && (stats.added || stats.removed)) {
+      const parts = touchedParts(this.#versionText(entry.deps), this.#versionText([frontier(entry)]), ops)
+      if (parts.length) this.#editLabels.set(entry.key, nameParts(parts))
     }
     this.#statsCache.set(entry.key, stats)
     return stats
@@ -609,6 +704,8 @@ export class CvDoc {
   #adopt(/** @type {LoroDoc} */ doc) {
     this.#doc = doc
     this.#statsCache.clear()
+    this.#noops.clear()
+    this.#editLabels.clear()
     // Whatever the registry has for this file is what the map layers over, so
     // it has to be read before anything is read back out of the map.
     this.#baseStyle = this.#styleHost?.base() ?? {}
@@ -699,10 +796,28 @@ export class CvDoc {
     /** @type {HistoryEntry[]} */
     const list = []
     for (const [peer, changes] of this.#doc.getAllChanges()) {
+      /** The entry the last change went into, and the change itself. @type {{ entry: HistoryEntry, change: import('loro-crdt/web').Change } | null} */
+      let last = null
       for (const c of changes) {
         // A change spans `length` ops; its frontier is the last of them.
         const counter = c.counter + c.length - 1
-        list.push({
+        // Loro caps how many ops one change holds, so a commit big enough — a
+        // restore that rewrites the whole text — comes back as several changes
+        // in a row, each carrying the commit's message and time. A commit with
+        // a message never merges with its neighbour, so two like that are the
+        // same commit split, and they read as one.
+        if (last && c.message && c.message === last.change.message && c.timestamp === last.change.timestamp && follows(c, last.entry)) {
+          Object.assign(last.entry, {
+            key: `${peer}@${counter}`,
+            counter,
+            lamport: c.lamport + c.length - 1,
+            length: last.entry.length + c.length,
+          })
+          last.change = c
+          continue
+        }
+        /** @type {HistoryEntry} */
+        const entry = {
           key: `${peer}@${counter}`,
           peer,
           counter,
@@ -712,13 +827,27 @@ export class CvDoc {
           length: c.length,
           stats: null,
           deps: c.deps,
-        })
+        }
+        list.push(entry)
+        last = { entry, change: c }
       }
     }
     list.sort((a, b) => a.lamport - b.lamport || a.peer.localeCompare(b.peer))
     const merged = mergeStyleRuns(list)
-    for (const entry of merged.slice(-STATS_LIMIT)) entry.stats = this.#statsFor(entry)
-    this.history = merged
+    this.#probing = true
+    try {
+      for (const entry of merged.slice(-STATS_LIMIT)) {
+        entry.stats = this.#statsFor(entry)
+        entry.message = this.#editLabels.get(entry.key) ?? entry.message
+      }
+    } finally {
+      this.#probing = false
+      this.#probe?.free()
+      this.#probe = null
+    }
+    // An edit that came to nothing — a deletion undone before the merge window
+    // closed folds into the same change as the deletion — is not a version.
+    this.history = merged.filter((entry) => !(entry.kind === 'edit' && this.#noops.has(entry.key)))
   }
 
   #scheduleSettle() {
@@ -839,17 +968,21 @@ function readKind(raw) {
 }
 
 /**
- * Fold each run of restyles on the same axis into the last of them. Picking a
- * preset is how a preset is looked at, so a dozen of them are one decision and
- * read best as one line — the one that says where the run ended up.
+ * Fold each run of restyles into the last of them. Picking a preset is how a
+ * preset is looked at, and a theme, a font and a block or two are usually one
+ * sitting spent on how the sheet looks, so a run of them reads best as one
+ * line — the one that says where the run ended up.
  *
  * Done here rather than at commit time because Loro merges only changes that
  * carry no message, and the kind and label ride in the message. So the oplog
  * keeps every step — each is still its own undo — and the panel shows the run.
  *
- * The entry that stands for the run is the newest: its label, its time and its
- * frontier, so selecting it shows the CV as the run left it. Its `deps` are the
- * first one's, so the change it describes spans the whole run.
+ * The entry that stands for the run is the newest: its time and its frontier,
+ * so selecting it shows the CV as the run left it. Its `deps` are the first
+ * one's, so the change it describes spans the whole run. Its label is the last
+ * one given on each axis the run moved, in the order they were first moved —
+ * `Theme — Plum, Font — Inter` — so going back and forth on one axis still
+ * names only where it ended.
  *
  * @param {HistoryEntry[]} list  oldest first
  * @returns {HistoryEntry[]}
@@ -857,14 +990,34 @@ function readKind(raw) {
 function mergeStyleRuns(list) {
   /** @type {HistoryEntry[]} */
   const out = []
+  /** The current run's labels, by axis. @type {Map<string, string>} */
+  let labels = new Map()
   for (const entry of list) {
     const prev = out[out.length - 1]
-    const runs = prev && prev.kind === 'style' && entry.kind === 'style' && prev.peer === entry.peer && !!entry.axis && prev.axis === entry.axis
-    if (runs) out[out.length - 1] = { ...entry, deps: prev.deps, length: prev.length + entry.length }
+    const runs = prev && prev.kind === 'style' && entry.kind === 'style' && prev.peer === entry.peer
+    if (!runs) labels = new Map()
+    // An entry from before axes were recorded is an axis of its own.
+    labels.set(entry.axis || entry.message, entry.message)
+    if (runs) out[out.length - 1] = { ...entry, message: [...labels.values()].join(', '), deps: prev.deps, length: prev.length + entry.length }
     else out.push(entry)
   }
   return out
 }
+
+/**
+ * Whether a change carries straight on from an entry: the next op on the same
+ * peer, depending on nothing but the entry's last one.
+ * @param {import('loro-crdt/web').Change} change
+ * @param {HistoryEntry} entry
+ */
+const follows = (change, entry) =>
+  change.counter === entry.counter + 1 && change.deps.length === 1 && change.deps[0].peer === entry.peer && change.deps[0].counter === entry.counter
+
+/**
+ * An edit's name in the history: the parts it touched, the first few by name.
+ * @param {string[]} parts
+ */
+const nameParts = (parts) => (parts.length > 3 ? `${parts.slice(0, 3).join(', ')} +${parts.length - 3}` : parts.join(', '))
 
 /** @param {HistoryEntry} entry */
 const frontier = (entry) => ({ peer: /** @type {any} */ (entry.peer), counter: entry.counter })

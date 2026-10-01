@@ -191,7 +191,7 @@ export const commands = {
     const current = { fileId: id, versionKey: null }
     if (!right) {
       const neighbour = files.open.find((f) => f.id !== id)
-      const previous = doc.entries[1]
+      const previous = doc.entries.slice(1).find((e) => e.kind !== 'style')
       right = neighbour ? { fileId: neighbour.id, versionKey: null } : { fileId: id, versionKey: previous?.key ?? null }
     }
     pushState('', { compare: { left: left ?? current, right } })

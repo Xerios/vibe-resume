@@ -129,8 +129,9 @@
         </button>
         <!-- Always drawn rather than on hover, since a finger has no hover.
 				     The version on screen is what everything is compared against, so it
-				     has nothing to be compared with. -->
-        {#if !isActive}
+				     has nothing to be compared with; a restyle moves no text, so the
+				     comparison would show nothing. -->
+        {#if !isActive && entry.kind !== 'style'}
           <button class="hist-compare ds-icon-btn compact" title="Compare with current" aria-label="Compare “{entry.message}” with current" onclick={() => commands.compareVersion(entry)}>
             <Icon icon={IconCompare} width="16" height="16" />
           </button>

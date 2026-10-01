@@ -763,7 +763,9 @@
             <div class="banner-actions">
               {#if entry}
                 <button class="ds-btn compact" onclick={() => cv.restore(entry)}>Restore this version</button>
-                <button class="ds-btn subtle compact" onclick={() => commands.compareVersion(entry)}>Compare</button>
+                {#if entry.kind !== 'style'}
+                  <button class="ds-btn subtle compact" onclick={() => commands.compareVersion(entry)}>Compare</button>
+                {/if}
               {/if}
               <button class="ds-btn subtle compact" onclick={() => cv.viewLatest()}>Back to latest</button>
             </div>

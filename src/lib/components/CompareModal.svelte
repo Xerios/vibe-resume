@@ -391,7 +391,9 @@
       onchange={e => setVersion(side, e.currentTarget.value)}>
       <option value="">Current</option>
       {#if live}
-        {#each doc.entries as entry (entry.key)}
+        <!-- A restyle moves no text, so as a version to compare it is the one
+             before it under another name. -->
+        {#each doc.entries.filter(e => e.kind !== 'style') as entry (entry.key)}
           <option value={entry.key}>{entry.message} · {when(entry)}</option>
         {/each}
       {/if}
