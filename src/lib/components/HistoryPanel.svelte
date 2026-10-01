@@ -8,7 +8,7 @@
   import IconStyle from '@iconify-icons/lucide/palette'
   import IconCompare from '@iconify-icons/lucide/git-compare'
   import { commands } from '$lib/cv/state/commands.js'
-  import { doc, ui } from '$lib/cv/state/state.svelte.js'
+  import { doc } from '$lib/cv/state/state.svelte.js'
   import { formatBytes } from '$lib/cv/state/storage.js'
   import { fly } from 'svelte/transition'
 
@@ -84,11 +84,6 @@
     return parts.filter(Boolean).join(' — ')
   }
 
-  function clearHistory() {
-    if (!confirm('Delete every past version? The current text is kept, the rest is gone.')) return
-    doc.clearHistory()
-    ui.toast('History cleared')
-  }
 </script>
 
 <!-- One glyph per kind of moment, so the list can be read down the left edge:
@@ -149,7 +144,6 @@
     <span title="Size of the CRDT snapshot in localStorage">
       {formatBytes(doc.snapshotBytes)} stored
     </span>
-    <button onclick={clearHistory}>Clear history</button>
   </div>
 </aside>
 
@@ -417,20 +411,6 @@
     font-family: var(--mono);
     font-size: var(--ui-fs-2xs);
     color: var(--gray-11);
-
-    button {
-      background: none;
-      border: none;
-      padding: 0;
-      cursor: pointer;
-      font: inherit;
-      color: var(--gray-11);
-      text-decoration: underline;
-
-      &:hover {
-        color: var(--red-11);
-      }
-    }
   }
 
   /* Stacked layout: there is no third column to sit in, so the panel lifts out

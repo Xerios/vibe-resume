@@ -59,12 +59,6 @@
       <li class="trash-empty">Trash is empty.</li>
     {/each}
   </ul>
-
-  {#if files.trashed.length}
-    <div class="trash-foot">
-      <button onclick={commands.emptyTrash}>Empty trash</button>
-    </div>
-  {/if}
 </div>
 
 <style lang="scss">
@@ -185,28 +179,5 @@
     color: var(--gray-11);
     padding: var(--sp-6) var(--sp-3);
     line-height: 1.6;
-  }
-
-  .trash-foot {
-    flex-shrink: 0;
-    display: flex;
-    justify-content: flex-end;
-    padding: var(--sp-2) var(--sp-3);
-    border-top: var(--hairline) solid var(--gray-6);
-
-    button {
-      background: none;
-      border: none;
-      padding: 0;
-      cursor: pointer;
-      font-family: var(--mono);
-      font-size: var(--ui-fs-2xs);
-      color: var(--gray-11);
-      text-decoration: underline;
-
-      &:hover {
-        color: var(--red-11);
-      }
-    }
   }
 </style>

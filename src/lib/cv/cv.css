@@ -42,6 +42,13 @@
   transition: var(--theme-fade);
 }
 
+@media (max-width: 800px) {
+  .sheet {
+    margin: 0 auto;
+  }
+}
+
+
 /* Set by the page on whatever the pointer is over, while the editor scrolls to
    the line behind it. An outline is drawn outside the box, so the highlight can
    move from element to element without reflowing a thing. */

@@ -38,7 +38,7 @@
     menu?.querySelector('button')?.focus()
 
     /** @param {PointerEvent} e */
-    const onPointerDown = e => {
+    const onPointerDown = (e) => {
       if (!menuGroup?.contains(/** @type {Node | null} */ (e.target))) menuOpen = false
     }
     document.addEventListener('pointerdown', onPointerDown)
@@ -150,6 +150,21 @@
     menuOpen = true
   }
 
+  /**
+   * Right-click opens the same menu at the pointer. The menu belongs to the
+   * active tab, so the tab is made active first. While renaming, the input keeps
+   * the browser's own menu (cut, copy, paste).
+   * @param {MouseEvent} e
+   * @param {import('$lib/cv/state/files.svelte.js').FileMeta} f
+   */
+  function onTabContextMenu(e, f) {
+    if (editingId === f.id) return
+    e.preventDefault()
+    if (f.id !== files.activeId) commands.selectTab(f.id)
+    menuAt = { x: e.clientX, y: e.clientY }
+    menuOpen = true
+  }
+
   /** Run a menu choice and put focus back where the menu was opened from. */
   function pick(/** @type {() => void} */ action) {
     menuOpen = false
@@ -204,10 +219,12 @@
         class:active
         class:dragging={dragId === f.id}
         draggable={editingId !== f.id}
-        ondragstart={e => onTabDragStart(e, f)}
-        ondragover={e => onTabDragOver(e, f)}
+        ondragstart={(e) => onTabDragStart(e, f)}
+        ondragover={(e) => onTabDragOver(e, f)}
         ondrop={onTabDrop}
-        ondragend={() => (dragId = null)}>
+        oncontextmenu={(e) => onTabContextMenu(e, f)}
+        ondragend={() => (dragId = null)}
+      >
         {#if editingId === f.id}
           <input class="tab-rename" bind:value={editValue} use:focusAndSelect onblur={commitRename} onkeydown={onRenameKeydown} />
         {:else}
@@ -216,7 +233,8 @@
             title="{f.name} — double-click or F2 to rename, drag or Alt+← → to reorder"
             onclick={() => commands.selectTab(f.id)}
             ondblclick={() => startRename(f)}
-            onkeydown={e => onTabKeydown(e, f)}>
+            onkeydown={(e) => onTabKeydown(e, f)}
+          >
             {f.name}
           </button>
           <!-- Everything that can be done to a file is behind this one caret,
@@ -234,7 +252,8 @@
                 aria-label="Actions for {f.name}"
                 title="What can be done to this CV"
                 onclick={() => (menuOpen ? (menuOpen = false) : openMenu())}
-                onkeydown={onMoreKeydown}>
+                onkeydown={onMoreKeydown}
+              >
                 <Icon icon={IconChevron} width="11" height="11" />
               </button>
 
@@ -248,7 +267,8 @@
                   style:top="{menuAt.y}px"
                   onkeydown={onMenuKeydown}
                   onfocusout={onMenuFocusOut}
-                  in:fly={{ y: -8, duration: 200 }}>
+                  in:fly={{ y: -8, duration: 200 }}
+                >
                   <button class="menu-item" role="menuitem" onclick={() => pick(commands.duplicateTab)}>
                     <Icon icon={IconCopy} width="12" height="12" />
                     <span>Duplicate</span>
@@ -291,11 +311,21 @@
   <div id="tab-actions">
     <!-- Beside History because the two are one control between them: they take
 	       turns in the column to the right of the preview. -->
-    <button class="t-btn" class:on={ui.sidePanel === 'style'} use:shortcut={['t', 'Template, theme and font']} onclick={() => commands.toggleSidePanel('style')}>
+    <button
+      class="t-btn"
+      class:on={ui.sidePanel === 'style'}
+      use:shortcut={['t', 'Template, theme and font']}
+      onclick={() => commands.toggleSidePanel('style')}
+    >
       <Icon icon={IconLayout} width="12" height="12" />
       <span class="t-txt"><u>T</u>hemes</span>
     </button>
-    <button class="t-btn" class:on={ui.sidePanel === 'history'} use:shortcut={['h', 'Show version history']} onclick={() => commands.toggleSidePanel('history')}>
+    <button
+      class="t-btn"
+      class:on={ui.sidePanel === 'history'}
+      use:shortcut={['h', 'Show version history']}
+      onclick={() => commands.toggleSidePanel('history')}
+    >
       <Icon icon={IconHistory} width="12" height="12" />
       <span class="t-txt"><u>H</u>istory</span>
       {#if doc.history.length}<span class="t-count">{doc.history.length}</span>{/if}
