@@ -32,3 +32,109 @@ const OTHER_DATES = /^(?:\d{4}|present|current|now|today|ongoing)$/i
  * @param {string} part trimmed
  */
 export const isDate = (part) => OTHER_DATES.test(part) || DATE_FORMATS.some(([re]) => re.test(part))
+
+/* ── Reading a date for what it means ────────────────────────────────────── */
+
+/**
+ * One end of a range: a year, and a month when the CV gave one.
+ * @typedef {{ year: number, month?: number }} When
+ */
+
+/**
+ * What a `dates` value means: where it starts, and where it ends — another
+ * date, still going, or nothing for a single date.
+ * @typedef {object} DateSpan
+ * @property {When} start
+ * @property {When | 'present' | null} end
+ * @property {{ start: string, sep: string, end: string }} written  the value as typed, cut at the separator
+ */
+
+const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
+const LONG = MONTHS.map((m) => m[0].toUpperCase() + m.slice(1))
+const SHORT = LONG.map((m) => m.slice(0, 3))
+
+/** The words that stand for a range's open end. */
+const OPEN_END = /^(?:present|current|now|today|ongoing)$/i
+
+/**
+ * One end of a range, read: every format DATE_FORMATS knows, or a year.
+ * @param {string} part trimmed
+ * @returns {When | null}
+ */
+function readWhen(part) {
+  let m = /^(\d{1,2})[/.](\d{4})$/.exec(part)
+  if (m) return month(Number(m[2]), Number(m[1]))
+  m = /^(\d{4})-(\d{1,2})$/.exec(part)
+  if (m) return month(Number(m[1]), Number(m[2]))
+  m = /^([a-z]+)\.?\s+(\d{4})$/i.exec(part)
+  if (m) {
+    const name = m[1].toLowerCase()
+    const i = MONTHS.findIndex((full) => full === name || (name.length >= 3 && full.startsWith(name)))
+    return i < 0 ? null : { year: Number(m[2]), month: i + 1 }
+  }
+  m = /^(\d{4})$/.exec(part)
+  return m ? { year: Number(m[1]) } : null
+}
+
+/** @param {number} year @param {number} m */
+const month = (year, m) => (m >= 1 && m <= 12 ? { year, month: m } : null)
+
+/**
+ * What a `dates` value means, or null when it isn't one this can read — a
+ * season, another language, a typo. A value like that is printed as typed and
+ * claims nothing.
+ * @param {string} text  the value's plain text
+ * @returns {DateSpan | null}
+ */
+export function parseDates(text) {
+  const value = text.trim()
+  if (!value) return null
+  const cut = RANGE_SPLIT.exec(value)
+  if (!cut) {
+    const start = readWhen(value)
+    return start ? { start, end: null, written: { start: value, sep: '', end: '' } } : null
+  }
+  const left = value.slice(0, cut.index).trim()
+  const right = value.slice(cut.index + cut[0].length).trim()
+  const start = readWhen(left)
+  if (!start || RANGE_SPLIT.test(right)) return null
+  const end = OPEN_END.test(right) ? 'present' : readWhen(right)
+  if (!end) return null
+  return { start, end, written: { start: left, sep: cut[0], end: right } }
+}
+
+/** The ways the sheet can print a date, by `dates` variant id. */
+export const DATE_STYLES = ['as-written', 'short', 'long', 'numeric', 'iso']
+
+/**
+ * One end, printed.
+ * @param {When | 'present'} w
+ * @param {string} style  a DATE_STYLES id other than `as-written`
+ */
+export function formatWhen(w, style) {
+  if (w === 'present') return 'Present'
+  if (!w.month) return String(w.year)
+  const mm = String(w.month).padStart(2, '0')
+  if (style === 'short') return `${SHORT[w.month - 1]} ${w.year}`
+  if (style === 'long') return `${LONG[w.month - 1]} ${w.year}`
+  if (style === 'numeric') return `${mm}/${w.year}`
+  return `${w.year}-${mm}`
+}
+
+/**
+ * One end as an ISO 8601 date — `2020-03`, `2020` — for `<time datetime>` and
+ * JSON Resume. An open end has none.
+ * @param {When | 'present' | null} w
+ */
+export const isoWhen = (w) => (!w || w === 'present' ? '' : w.month ? `${w.year}-${String(w.month).padStart(2, '0')}` : String(w.year))
+
+/**
+ * A span as it reads aloud and as a parser reads it best: months spelled out
+ * and `to` between the ends — `March 2020 to Present`. This is what the PDF
+ * gives as the dates' actual text, whatever the sheet printed.
+ * @param {DateSpan} span
+ */
+export function spokenDates(span) {
+  const start = formatWhen(span.start, 'long')
+  return span.end ? `${start} to ${formatWhen(span.end, 'long')}` : start
+}

@@ -201,11 +201,22 @@ PDF/UA-1, so that ATS parsers and screen readers read it as it is meant to be re
   horizontally, by at most 15%, to end where the browser ended it. Each space is
   drawn as a glyph of its own, at least as wide as the font's space, so that text
   extraction finds it.
-- **Structure.** `Document` holds a `Sect` for the header and one per section.
-  Inside them are `H1` (the name), `H2` (section titles), `H3` (entry and group
-  titles), `P` and `Div`. Lists are `L` > `LI` > `LBody`, a level meter is a
-  `Figure` with the level in words as `/Alt`, and each link is a `Link` element
-  holding its text and its annotation, which has `/Contents`.
+- **Structure.** `Document` holds a `Sect` for the header and one per section,
+  each titled (`/T`). Inside them are `H1` (the name), `H2` (section titles),
+  `H3` (entry and group titles), `P` and `Div`. Lists are `L` > `LI` > `LBody`,
+  with a `ListNumbering` attribute saying what marks their items. A level meter
+  is a `Figure` with the level in words as `/Alt`, and each link is a `Link`
+  element holding its text and its annotation, which has `/Contents`.
+- **Dates.** Every `dates` value that reads as dates
+  ([dates.js](src/lib/cv/format/dates.js)) is a `Span` whose `ActualText` spells
+  it out — `March 2020 to Present` — on the structure element and on its marked
+  content. Screen readers and text extraction get that, however the sheet
+  printed it, so the Dates block variant can print `Mar 2020`, `03/2020` or
+  `2020-03` freely; in the preview each end is a `<time datetime>`. A value
+  that doesn't read as dates (`Summer 2019`) is printed as typed and claims
+  nothing.
+- **Navigation.** A bookmark per section, in reading order; the file opens with
+  them showing.
 - **Artifacts.** Everything `aria-hidden` and every border and fill outside a
   figure is drawn as an `Artifact`: the page fill, rules, frames, the column
   divider, bullet marks, separators, chip outlines and logos, section numbers,
@@ -215,10 +226,17 @@ PDF/UA-1, so that ATS parsers and screen readers read it as it is meant to be re
   for (★ in the mono face) falls back through the font stack the preview names,
   in the same order.
 - **Metadata.** The title is shown in the window (`DisplayDocTitle`), and the
-  catalog sets `/Lang`. The Info dictionary and the XMP both carry the title,
-  author, description and keywords from [doc-meta.js](src/lib/cv/render/doc-meta.js).
-  The XMP also declares `pdfuaid:part` 1. The YAML and a JSON copy of the CV are
-  attached as `Source` files.
+  catalog sets `/Lang` from the header's `lang:` (English when it has none). The
+  Info dictionary and the XMP both carry the title, author, description and
+  keywords from [doc-meta.js](src/lib/cv/render/doc-meta.js); the XMP also has
+  `dc:language` and declares `pdfuaid:part` 1.
+- **Attachments.** `cv.yaml` is the source as standard YAML
+  ([strict-yaml.js](src/lib/cv/format/strict-yaml.js)), marked as the `Source`.
+  `resume.json` is the CV in the [JSON Resume](https://jsonresume.org/schema)
+  schema ([json-resume.js](src/lib/cv/render/json-resume.js)), marked as an
+  `Alternative`: work, education, projects, skills, languages and certificates
+  as fields rather than text, with ISO 8601 dates, which a parser can read
+  without guessing.
 
 The tests in [PdfRenderer.test.js](src/lib/cv/pdf/PdfRenderer.test.js) render two
 display lists measured from the browser ([fixtures/](src/lib/cv/pdf/fixtures/)),

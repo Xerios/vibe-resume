@@ -13,8 +13,8 @@
  *   - an indicator character at the start (`[`, `*`, `-`, `>`, `'`, …)
  *   - `: ` or ` #` anywhere inside
  *   - a word YAML reads as a boolean or null (`yes`, `off`, `~`, …)
- *   - anything that would come back a number or a date, except a plain
- *     decimal — the app coerces those itself, so `md: 6` stays as written
+ *   - anything that would come back a number or a date — `dates: 2021` is
+ *     the string `2021` to the app, and must be to any other reader too
  *
  * The rest of the dialect maps across directly: a `|` or `>` block is copied
  * as-is with strip chomping (the dialect never keeps a trailing newline), and a
@@ -27,7 +27,6 @@ import { readScalar, splitLine } from './relaxed-yaml.js'
 const RESERVED = /^(?:~|null|true|false|yes|no|on|off|y|n)$/i
 const NUMBERISH =
   /^[-+]?(?:[\d_]+(?:\.[\d_]*)?(?:e[-+]?\d+)?|\.[\d_]+(?:e[-+]?\d+)?|0x[\da-f_]+|0o[0-7_]+|0b[01_]+|\d[\d_]*(?::[0-5]?\d)+(?:\.[\d_]*)?|\.inf|\.nan)$/i
-const DECIMAL = /^-?(?:0|[1-9]\d*)(?:\.\d+)?$/
 const TIMESTAMP = /^\d{4}-\d\d?-\d\d?(?:[Tt\s]|$)/
 const BLOCK = /^([|>])[-+]?$/
 
@@ -40,7 +39,7 @@ function plainSafe(s) {
   if (/^[-?:,[\]{}#&*!|>'"%@`]/.test(s)) return false
   if (/:(?:\s|$)|\s#/.test(s)) return false
   if (RESERVED.test(s) || TIMESTAMP.test(s)) return false
-  return !NUMBERISH.test(s) || DECIMAL.test(s)
+  return !NUMBERISH.test(s)
 }
 
 /**

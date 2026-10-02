@@ -21,6 +21,7 @@ import { displayUrl, phoneNumber } from '../format/autolink.js'
  * @property {boolean} [code]
  * @property {boolean} [del]
  * @property {string} [href]
+ * @property {string} [datetime]  a date, as ISO 8601, when the run is one end of a `dates` value
  */
 
 /** @typedef {Omit<Run, 'text'>} Marks */

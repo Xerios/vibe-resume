@@ -81,7 +81,9 @@ function read(data) {
     const map = new Map()
     for (const m of stream(n).matchAll(/<([0-9a-f]+)> <([0-9a-f]+)> \[([^\]]*)\]/gi)) {
       const start = parseInt(m[1], 16)
-      ;[...m[3].matchAll(/<([0-9a-f]+)>/gi)].forEach((u, i) => map.set(start + i, hex(u[1])))
+      // An entry can hold several code units — a ligature is two letters — which
+      // pdfkit writes with spaces between them.
+      ;[...m[3].matchAll(/<([0-9a-f\s]*)>/gi)].forEach((u, i) => map.set(start + i, hex(u[1].replace(/\s/g, ''))))
     }
     return map
   }
@@ -236,6 +238,7 @@ describe('PdfRenderer', () => {
     const { tagged } = pdf.sidebar
     expect(tagged.startsWith('John Doe\nSenior Full-Stack Engineer · 10+ years\nSpringfield, USA')).toBe(true)
     expect(tagged).toContain('Senior Full-Stack Engineer | Acme Corp')
+    expect(tagged).toContain('Springfield (remote)')
     expect(tagged).toContain('Databases & Data')
     expect(tagged).toContain('★ 120')
   })
@@ -264,6 +267,24 @@ describe('PdfRenderer', () => {
     // A language meter is a figure that says what it shows.
     expect(pdf.railRight.types).toContain('Figure')
     expect(pdf.railRight.s).toMatch(/\/S \/Figure[\s\S]{0,200}\/Alt \(Native: 5 of 5\)/)
+  })
+
+  it('says what each date range means, however it is printed', () => {
+    const { s, tagged } = pdf.railRight
+    // The rail-right fixture prints its dates as `Mar 2020 – Present`.
+    expect(s).toMatch(/\/S \/Span[\s\S]{0,120}\/ActualText \(March 2020 to Present\)/)
+    expect(s).toMatch(/\/Span <<[^>]*\/ActualText \(June 2016 to February 2020\)/)
+    expect(tagged).toContain('Mar 2020 – Present')
+  })
+
+  it('titles sections, marks lists and bookmarks the sections', () => {
+    const { s, catalog } = pdf.sidebar
+    expect(s).toMatch(/\/S \/Sect[\s\S]{0,80}\/T \(Experience\)/)
+    expect(s).toMatch(/\/O \/List\s*\/ListNumbering \/Disc/)
+    expect(catalog).toMatch(/\/Outlines \d+ 0 R/)
+    expect(catalog).toMatch(/\/PageMode \/UseOutlines/)
+    expect(s).toMatch(/\/Title \(Core Skills\)/)
+    expect(s).toMatch(/<dc:language><rdf:Bag><rdf:li>en<\/rdf:li>/)
   })
 
   it('attaches the source', () => {

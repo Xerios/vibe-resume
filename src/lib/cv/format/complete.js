@@ -31,6 +31,13 @@ import { parse, splitLine } from './relaxed-yaml.js'
 
 const TYPES = Object.keys(SECTIONS)
 
+/**
+ * Keys most documents never need. They are offered like any other, but a
+ * mapping without one isn't missing anything — so their absence alone doesn't
+ * open the list.
+ */
+const RARE = new Set(['lang'])
+
 /** @param {string} base @param {string | number} segment */
 const join = (base, segment) => (base ? `${base}.${segment}` : String(segment))
 
@@ -46,6 +53,7 @@ const KEY_INFO = {
   name: 'What this is called.',
   role: 'The line under your name.',
   contact: 'One line each — where you are, a number, some links.',
+  lang: 'The language the CV is written in, as a tag — en, de, fr-CA. Screen readers read it in that voice.',
   type: 'Which of the seven kinds of section this is.',
   title: 'The heading, or the entry’s own title.',
   rail: 'Put this section in the sidebar rail, or keep it out of one.',
@@ -373,8 +381,8 @@ export function cvComplete(cx) {
         type: 'property',
         info: KEY_INFO[key],
         // A key the entry already carries stays on offer — it may be the one
-        // being retyped — but sinks below the ones still missing.
-        boost: here && typeof here === 'object' && Object.hasOwn(here, key) ? -1 : 0,
+        // being retyped — but sinks below the ones still missing, as a rare one does.
+        boost: RARE.has(key) || (here && typeof here === 'object' && Object.hasOwn(here, key)) ? -1 : 0,
         apply: spot.colon ? key : `${key}: `,
       })
     }

@@ -14,9 +14,14 @@
  * What makes it PDF/UA:
  * - **Structure:** every piece of text sits in a structure element.
  *   - `Document` holds a `Sect` for the header and one per section.
- *   - Sections hold `H1`–`H3`, `P`, `L` > `LI` > `LBody`, and `Div`.
+ *   - Sections hold `H1`–`H3`, `P`, `L` > `LI` > `LBody`, and `Div`. A
+ *     section carries its title (`/T`), and a list what marks its items
+ *     (`ListNumbering`).
  *   - Each link is a `Link` element holding its text and its annotation.
  *   - A level meter is a `Figure` with alternative text.
+ *   - A date range is a `Span` whose `ActualText` is the range spelled out —
+ *     `March 2020 to Present` — however the sheet styled it.
+ * - **Navigation:** a bookmark per section, open when the file is.
  * - **Artifacts:** everything drawn that isn't content is an `Artifact` and is
  *   never read: the page fill, rules, frames, bullet marks, chip outlines and
  *   logos, separators, and the running head and foot.
@@ -44,6 +49,7 @@ export const CREATOR = 'Resume Editor'
  * @property {string} mime
  * @property {string} description
  * @property {Uint8Array} data
+ * @property {'Source' | 'Data' | 'Alternative' | 'Supplement'} [relationship]  how it relates to the PDF (AFRelationship); Source unless said
  */
 
 /** @typedef {import('./measure.js').DisplayList} DisplayList */
@@ -77,7 +83,7 @@ export class PdfRenderer {
    * @param {Date} [what.now]
    * @returns {Promise<Uint8Array>}
    */
-  async render(list, { meta, lang = 'en', font, paper, attachments = [], now = new Date() }) {
+  async render(list, { meta, lang = list.lang ?? 'en', font, paper, attachments = [], now = new Date() }) {
     // Typed loosely: pdfkit's bundled types leave out the tagging and
     // attachment API this file is built on.
     const doc = /** @type {any} */ (
@@ -133,14 +139,22 @@ export class PdfRenderer {
     const root = doc.struct('Document')
     doc.addStructure(root)
     this.#content(doc, fonts, list.root, root)
+    this.#bookmarks(doc, list)
     this.#running(doc, fonts, list, resolvePaper(paper), meta.author, font)
     root.end()
 
     for (const file of attachments) {
-      doc.file(file.data, { name: file.name, type: file.mime, description: file.description, relationship: 'Source', creationDate: now, modifiedDate: now })
+      doc.file(file.data, {
+        name: file.name,
+        type: file.mime,
+        description: file.description,
+        relationship: file.relationship ?? 'Source',
+        creationDate: now,
+        modifiedDate: now,
+      })
     }
 
-    this.#metadata(doc, meta)
+    this.#metadata(doc, meta, lang)
     doc.end()
     return out
   }
@@ -160,7 +174,13 @@ export class PdfRenderer {
     while (i < kids.length) {
       const kid = kids[i]
       if (kid.kind === 'node') {
-        const el = doc.struct(kid.tag, kid.alt ? { alt: kid.alt } : {})
+        const el = doc.struct(kid.tag, {
+          ...(kid.alt ? { alt: kid.alt } : {}),
+          ...(kid.actual ? { actual: kid.actual } : {}),
+          ...(kid.title ? { title: kid.title } : {}),
+        })
+        // What marks the items, as the attribute PDF/UA readers look for on a list.
+        if (kid.numbering) el.dictionary.data.A = { O: 'List', ListNumbering: kid.numbering }
         parent.add(el)
         if (kid.tag === 'Link') this.#link(doc, fonts, kid, el)
         else this.#content(doc, fonts, kid, el)
@@ -172,7 +192,9 @@ export class PdfRenderer {
       let j = i + 1
       while (j < kids.length && kids[j].kind !== 'node' && /** @type {TextItem | Paint} */ (kids[j]).page === kid.page) j++
       doc.switchToPage(kid.page)
-      const content = doc.markStructureContent(node.tag)
+      // A span's actual text goes on its marked content too, where extractors
+      // that read the content stream rather than the structure tree find it.
+      const content = doc.markStructureContent(node.tag, node.actual ? { actual: node.actual } : {})
       for (const k of kids.slice(i, j)) draw(doc, fonts, /** @type {TextItem | Paint} */ (k))
       doc.endMarkedContent()
       parent.add(content)
@@ -205,6 +227,25 @@ export class PdfRenderer {
         doc.link(t.x, t.y - t.size, t.w, t.h, node.href, { structParent: el, Contents: new String(`${label} (${node.href})`) })
       }
     }
+  }
+
+  /**
+   * A bookmark per section, in reading order, at its title. Opening the file
+   * shows them (pdfkit sets `/PageMode /UseOutlines` once there is one).
+   * @param {any} doc
+   * @param {DisplayList} list
+   */
+  #bookmarks(doc, list) {
+    /** @param {StructNode} node */
+    const visit = (node) => {
+      for (const c of node.children) {
+        if (c.kind !== 'node') continue
+        const at = c.tag === 'Sect' && c.title ? firstText(c) : null
+        if (at) doc.outline.addItem(c.title, { pageNumber: at.page, fit: false, top: Math.max(0, at.y - at.size * 2), left: list.width, zoom: 0 })
+        else visit(c)
+      }
+    }
+    visit(list.root)
   }
 
   /**
@@ -267,7 +308,7 @@ export class PdfRenderer {
   }
 
   /**
-   * The XMP beside the Info dictionary: the PDF/UA identification, and what
+   * The XMP beside the Info dictionary: the PDF/UA identification, the language, and what
    * pdfkit writes itself. pdfkit writes the title, author,
    * description and keywords into it from `info` as given, without escaping
    * them for XML. The Info dictionary is written before the metadata, so
@@ -276,11 +317,16 @@ export class PdfRenderer {
    * where most readers of XMP look for them.
    * @param {any} doc
    * @param {import('../render/doc-meta.js').DocMeta} meta
+   * @param {string} lang
    */
-  #metadata(doc, meta) {
+  #metadata(doc, meta, lang) {
     doc.appendXML(`
         <rdf:Description rdf:about="" xmlns:pdfuaid="http://www.aiim.org/pdfua/ns/id/">
           <pdfuaid:part>1</pdfuaid:part>
+        </rdf:Description>
+        <rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/">
+          <dc:language><rdf:Bag><rdf:li>${xml(lang)}</rdf:li></rdf:Bag></dc:language>
+          <dc:type><rdf:Bag><rdf:li>Text</rdf:li></rdf:Bag></dc:type>
         </rdf:Description>`)
     if (meta.keywords.length) {
       doc.appendXML(`
@@ -393,6 +439,19 @@ function text(doc, fonts, t) {
     put(gap, end, space > 0 ? Math.max(room, space) / space : 1)
     end += Math.max(room, space)
   })
+}
+
+/**
+ * The first run of text inside a structure node, in reading order.
+ * @param {StructNode} node
+ * @returns {TextItem | null}
+ */
+function firstText(node) {
+  for (const c of node.children) {
+    const hit = c.kind === 'node' ? firstText(c) : c.kind === 'text' ? c : null
+    if (hit) return hit
+  }
+  return null
 }
 
 /** As much of a scale as a word can take before it looks squeezed or stretched. @param {number} k */

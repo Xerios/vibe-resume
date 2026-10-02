@@ -44,7 +44,7 @@ export const SECTION_KEYS = ['type', 'title', 'rail']
 export const ROW_KEYS = ['tier', 'text']
 /** The document itself. */
 export const ROOT_KEYS = ['header', 'sections']
-export const HEADER_KEYS = ['name', 'role', 'contact']
+export const HEADER_KEYS = ['name', 'role', 'contact', 'lang']
 /** Lists that hold prose, wherever they turn up under an item. */
 const TEXT_LISTS = new Set(['bullets', 'stack', 'items'])
 

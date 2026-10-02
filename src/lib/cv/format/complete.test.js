@@ -40,7 +40,7 @@ describe('where the cursor is', () => {
   })
 
   it('reads a key under a mapping as that mapping’s', () => {
-    expect(keys('header:\n  na|')).toEqual(['name', 'role', 'contact'])
+    expect(keys('header:\n  na|')).toEqual(['name', 'role', 'contact', 'lang'])
   })
 
   it('reads a key on a `- ` line as the item’s own', () => {
@@ -117,7 +117,7 @@ describe('what it offers', () => {
   })
 
   it('opens with nothing typed where a key is still missing', () => {
-    expect(labels('header:\n  |', false)).toEqual(['name', 'role', 'contact'])
+    expect(labels('header:\n  |', false)).toEqual(['name', 'role', 'contact', 'lang'])
     expect(labels('sections:\n  - |', false)).toContain('entries section')
   })
 

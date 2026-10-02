@@ -121,6 +121,38 @@ describe('buildModel', () => {
   })
 })
 
+describe('dates', () => {
+  /** @param {string} style */
+  const dates = (style) => {
+    const job = /** @type {import('./model.js').Div} */ (buildModel(cv, { variants: { dates: style } }).columns[0].sections[2].body[0])
+    const head = /** @type {import('./model.js').Row} */ (job.body[0])
+    return /** @type {import('./model.js').Text} */ (head.aside).spans[0]
+  }
+
+  it('prints each end in the chosen style, and knows what it says', () => {
+    expect(textOf(dates('as-written').runs)).toBe('03/2020 – Present')
+    expect(textOf(dates('short').runs)).toBe('Mar 2020 – Present')
+    expect(textOf(dates('long').runs)).toBe('March 2020 – Present')
+    expect(textOf(dates('iso').runs)).toBe('2020-03 – Present')
+    expect(dates('short').actual).toBe('March 2020 to Present')
+    expect(dates('short').runs.map((r) => r.datetime)).toEqual(['2020-03', undefined, undefined])
+  })
+
+  it('prints a value it can’t read as typed, claiming nothing', () => {
+    const m = buildModel({ sections: [{ type: 'records', items: [{ name: 'X', dates: 'Summer 2019' }] }] }, { variants: { dates: 'long' } })
+    const list = /** @type {import('./model.js').List} */ (m.columns[0].sections[0].body[0])
+    const row = /** @type {import('./model.js').Row} */ (list.items[0].body[0])
+    const span = /** @type {import('./model.js').Text} */ (row.aside).spans[0]
+    expect(textOf(span.runs)).toBe('Summer 2019')
+    expect(span.actual).toBeUndefined()
+  })
+
+  it('takes the language from the header, and English otherwise', () => {
+    expect(buildModel({ header: { lang: 'de-CH' } }).lang).toBe('de-CH')
+    expect(buildModel({ header: { lang: 'not a tag' } }).lang).toBe('en')
+  })
+})
+
 describe('levelRating', () => {
   it('reads a level as words, letters or a number', () => {
     expect(levelRating({ level: 'Native' })).toBe(5)

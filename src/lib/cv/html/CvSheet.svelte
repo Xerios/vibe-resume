@@ -16,6 +16,11 @@
    * chip's logo, a section's number. Every piece of it is `aria-hidden`, which is
    * also what tells measure.js to draw it as an artifact.
    *
+   * What the PDF should know beyond what is printed rides on attributes:
+   * `data-actual` is what a styled span says (a date range spelled out),
+   * `<time datetime>` each end of it, `data-title` a section's title, and `lang`
+   * the CV's language.
+   *
    * Styleless on purpose: this is mounted into the preview frame, and a scoped
    * style block here would compile into the app's stylesheet instead. The rules
    * are html/sheet.css and html/sheet-css.js, both written into the frame.
@@ -51,7 +56,7 @@
   const tagOf = (kind) => ({ H1: 'h1', H2: 'h2', H3: 'h3', P: 'p' })[kind]
 
   /** @param {Run} r */
-  const runTag = (r) => (r.code ? 'code' : r.strong ? 'strong' : r.em ? 'em' : r.del ? 'del' : 'span')
+  const runTag = (r) => (r.datetime ? 'time' : r.code ? 'code' : r.strong ? 'strong' : r.em ? 'em' : r.del ? 'del' : 'span')
 
   /** Marks the tag can't carry on its own, for a run that has more than one. @param {Run} r */
   const runClass = (r) => [r.strong && 'b', r.em && 'i', r.del && 's'].filter(Boolean).join(' ') || undefined
@@ -61,6 +66,9 @@
 
   /** @param {number} n */
   const pad = (n) => String(n).padStart(2, '0')
+
+  /** A heading's plain text, as the PDF titles its section with. @param {Text} t */
+  const titleOf = (t) => t.spans.flatMap((s) => s.runs.map((r) => r.text)).join('')
 
   const DOTS = [1, 2, 3, 4, 5]
 
@@ -95,17 +103,17 @@
   {#each list as r}
     {#if r.href}
       <a href={r.href} target={external(r.href) ? '_blank' : undefined} rel={external(r.href) ? 'noopener' : undefined}
-        ><svelte:element this={runTag(r)} class={runClass(r)}>{r.text}</svelte:element></a
+        ><svelte:element this={runTag(r)} class={runClass(r)} datetime={r.datetime}>{r.text}</svelte:element></a
       >
     {:else}
-      <svelte:element this={runTag(r)} class={runClass(r)}>{r.text}</svelte:element>
+      <svelte:element this={runTag(r)} class={runClass(r)} datetime={r.datetime}>{r.text}</svelte:element>
     {/if}
   {/each}
 {/snippet}
 
 {#snippet text(/** @type {Text} */ node, /** @type {string} */ cls = '')}
   <svelte:element this={tagOf(node.kind)} class={[cls, node.align === 'center' && 'center'].filter(Boolean).join(' ') || undefined} data-src={node.src}
-    >{#each node.spans as s}<span class="r-{s.role}" data-src={s.src}>{@render runs(s.runs)}</span>{/each}</svelte:element
+    >{#each node.spans as s}<span class="r-{s.role}" data-src={s.src} data-actual={s.actual}>{@render runs(s.runs)}</span>{/each}</svelte:element
   >
 {/snippet}
 
@@ -185,7 +193,7 @@
 {/snippet}
 
 {#if model}
-  <div class="sheet" class:paged data-layout={model.layout} data-rail={model.railSide} style:--pages={pages}>
+  <div class="sheet" class:paged lang={model.lang} data-layout={model.layout} data-rail={model.railSide} style:--pages={pages}>
     {#if paged}
       <div class="pages" aria-hidden="true" data-skip>
         {#each { length: pages } as _, i}
@@ -225,7 +233,7 @@
       {#each model.columns as col (col.id)}
         <div class="cv-col cv-{col.id}">
           {#each col.sections as sec}
-            <section class="cv-sec" data-src={sec.src}>
+            <section class="cv-sec" data-src={sec.src} data-title={sec.title ? titleOf(sec.title) : undefined}>
               {#if sec.title}
                 <div class="sec-head" data-head={sec.head}>
                   {#if sec.head === 'numbered'}<span class="num" aria-hidden="true">{pad(sec.number)}</span>{/if}

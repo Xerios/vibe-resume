@@ -31,7 +31,7 @@ note: 'a #hashtag'
 'on': 'yes'
 when: '2023-01-15'
 phone: '+33'
-md: 6
+md: '6'
 inline: true
 said: it's
 `)

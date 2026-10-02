@@ -28,6 +28,7 @@
  * can follow each other.
  */
 
+import { formatWhen, isoWhen, parseDates, spokenDates } from '../format/dates.js'
 import { iconPaths } from './icons.js'
 import { contactRuns, list, runs, techs, textOf } from './inline.js'
 import { layoutOf } from './tokens.js'
@@ -42,6 +43,7 @@ import { resolveVariants } from './variants.js'
  * @property {string} role  a key of ROLES in tokens.js
  * @property {Run[]} runs
  * @property {string} [src]
+ * @property {string} [actual]  what the span says, for a reader, when what it prints is a styling of that — a date range
  */
 
 /** @typedef {{ kind: 'H1' | 'H2' | 'H3' | 'P', spans: Span[], src?: string, align?: 'center' }} Text */
@@ -93,10 +95,13 @@ import { resolveVariants } from './variants.js'
  * @typedef {object} Model
  * @property {string} layout  a LAYOUTS id
  * @property {'left' | 'right' | null} railSide
- * @property {string} lang
+ * @property {string} lang  the CV's language, as a BCP 47 tag
  * @property {{ style: string, name: Text, role: Text | null, contact: List | null }} header
  * @property {Column[]} columns  in reading order
  */
+
+/** A BCP 47 language tag, near enough: `en`, `de-CH`, `zh-Hant`. */
+const LANG = /^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$/i
 
 /** What goes to the rail unless the section says otherwise with `rail:`. */
 const RAIL_TYPES = new Set(['groups', 'list', 'levels'])
@@ -122,6 +127,32 @@ const text = (kind, spans, src) => ({ kind, spans: spans.filter((s) => s.runs.le
 
 /** @param {Span[]} spans */
 const empty = (spans) => !spans.some((s) => s.runs.length)
+
+/**
+ * A `dates` value. When it reads as dates, each end is a run that knows its
+ * date, printed in the style the dates variant asks for, and the span carries
+ * the range spelled out — `March 2020 to Present` — as what it actually says.
+ * The sheet can then style the dates however it likes, and a reader or a parser
+ * still gets the value. A value that doesn't read as dates is printed as typed.
+ * @param {unknown} value
+ * @param {string | undefined} src
+ * @param {string} style  a DATE_STYLES id
+ * @returns {Span}
+ */
+function dateSpan(value, src, style) {
+  const plain = textOf(runs(value))
+  const read = parseDates(plain)
+  if (!read) return { role: 'dates', runs: runs(value), src }
+  const fmt = (/** @type {import('../format/dates.js').When | 'present'} */ w, /** @type {string} */ written) => (style === 'as-written' ? written : formatWhen(w, style))
+  /** @type {Run[]} */
+  const out = [{ text: fmt(read.start, read.written.start), datetime: isoWhen(read.start) }]
+  if (read.end) {
+    out.push({ text: style === 'as-written' ? read.written.sep : ' – ' })
+    const end = { text: fmt(read.end, read.written.end) }
+    out.push(read.end === 'present' ? end : { ...end, datetime: isoWhen(read.end) })
+  }
+  return { role: 'dates', runs: out, src, actual: spokenDates(read) }
+}
 
 /**
  * @typedef {object} Context
@@ -182,7 +213,8 @@ export function buildModel(cv, look = {}) {
     }
   })
 
-  return { layout: layout.id, railSide: layout.railSide, lang: 'en', header, columns }
+  const lang = typeof h.lang === 'string' && LANG.test(h.lang.trim()) ? h.lang.trim() : 'en'
+  return { layout: layout.id, railSide: layout.railSide, lang, header, columns }
 }
 
 /**
@@ -408,7 +440,7 @@ function records(sec, path, ctx) {
     items: list(sec.items).map((item, i) => {
       const at = `${path}.items.${i}`
       const name = span('itemName', item?.name ?? item?.title, `${at}.name`)
-      const dates = text('P', [span('dates', item?.dates, `${at}.dates`)])
+      const dates = text('P', [dateSpan(item?.dates, `${at}.dates`, ctx.v.dates)])
       const meta = [span('issuer', item?.issuer, `${at}.issuer`)]
       if (item?.issuer && item?.note) meta.push(lit('meta', ' · '))
       meta.push(span('meta', item?.note, `${at}.note`))
@@ -477,7 +509,7 @@ function entry(item, at, ctx) {
   if (item?.org) head.push(lit('org', ' | '), span('org', item.org, `${at}.org`))
   if (item?.sideNote) head.push(lit('aside', ' '), span('aside', item.sideNote, `${at}.sideNote`))
 
-  const headRow = row(text('H3', head, `${at}.title`), text('P', [span('dates', item?.dates)], `${at}.dates`))
+  const headRow = row(text('H3', head, `${at}.title`), text('P', [dateSpan(item?.dates, undefined, ctx.v.dates)], `${at}.dates`))
   if (variant === 'badge' && headRow.kind === 'Row') headRow.badge = true
 
   /** @type {Block[]} */

@@ -72,6 +72,17 @@ export const SLOTS = [
     ],
   },
   {
+    id: 'dates',
+    name: 'Dates',
+    variants: [
+      { id: 'as-written', name: 'As written', hint: 'Each date the way the YAML has it' },
+      { id: 'short', name: 'Mar 2020', hint: 'Months as three letters' },
+      { id: 'long', name: 'March 2020', hint: 'Months spelled out' },
+      { id: 'numeric', name: '03/2020', hint: 'Month and year in figures' },
+      { id: 'iso', name: '2020-03', hint: 'Year first, as ISO 8601 has it' },
+    ],
+  },
+  {
     id: 'skills',
     name: 'Skills',
     variants: [

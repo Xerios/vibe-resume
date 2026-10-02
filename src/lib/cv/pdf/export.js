@@ -6,6 +6,7 @@
 
 import { toStrictYaml } from '../format/strict-yaml.js'
 import { docMeta } from '../render/doc-meta.js'
+import { toJsonResume } from '../render/json-resume.js'
 import { FACES, faceFor, fontOf } from '../theme/typefaces.js'
 import { familiesOf } from './fonts.js'
 import { PdfRenderer } from './PdfRenderer.js'
@@ -69,7 +70,13 @@ export async function exportPdf({ list, cv, yaml, look, fileName }) {
     paper: look.paper,
     attachments: [
       { name: 'cv.yaml', mime: 'application/yaml', description: 'This CV’s source, as YAML', data: enc.encode(toStrictYaml(yaml)) },
-      { name: 'cv.json', mime: 'application/json', description: 'This CV, as JSON', data: enc.encode(JSON.stringify(cv, null, 2)) },
+      {
+        name: 'resume.json',
+        mime: 'application/json',
+        description: 'This CV in the JSON Resume schema (jsonresume.org), for resume parsers',
+        relationship: 'Alternative',
+        data: enc.encode(JSON.stringify(toJsonResume(cv), null, 2)),
+      },
     ],
   })
   return save(bytes, `${fileName.replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'cv'}.pdf`)

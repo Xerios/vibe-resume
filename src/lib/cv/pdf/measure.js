@@ -56,7 +56,10 @@ const PT = 0.75
  * @typedef {object} StructNode
  * @property {'node'} kind
  * @property {string} tag
- * @property {string} [alt]
+ * @property {string} [alt]       a figure's alternative text
+ * @property {string} [actual]    what a span says, where what it prints is a styling of that
+ * @property {string} [title]     a section's title
+ * @property {string} [numbering] a list's ListNumbering — what marks its items
  * @property {string} [href]
  * @property {(StructNode | TextItem | Paint)[]} children
  */
@@ -68,6 +71,7 @@ const PT = 0.75
  * @property {number} pages
  * @property {string} paper   the page colour
  * @property {string} muted   the palette's muted ink, for the running head and foot
+ * @property {string} lang    the CV's language
  * @property {StructNode} root          the `Document`, in reading order
  * @property {(Paint | TextItem)[][]} artifacts  per page
  */
@@ -133,10 +137,15 @@ export function measure(sheet, geo) {
       if (role === 'img') {
         node = child(parent, { kind: 'node', tag: 'Figure', alt: el.getAttribute('aria-label') ?? '', children: [] })
         figure = true
+      } else if (el.hasAttribute('data-actual')) {
+        node = child(parent, { kind: 'node', tag: 'Span', actual: /** @type {string} */ (el.getAttribute('data-actual')), children: [] })
       } else if (el.tagName === 'A' && el.getAttribute('href')) {
         node = child(parent, { kind: 'node', tag: 'Link', href: /** @type {string} */ (el.getAttribute('href')), children: [] })
       } else if (TAGS[el.tagName]) {
         node = child(parent, { kind: 'node', tag: TAGS[el.tagName], children: [] })
+        const title = el.getAttribute('data-title')
+        if (title) node.title = title
+        if (el.tagName === 'UL') node.numbering = numbering(el)
         // A list item's content is its body; the mark beside it is decoration.
         if (el.tagName === 'LI') node = child(node, { kind: 'node', tag: 'LBody', children: [] })
       } else if (el.matches('div.cv-div')) {
@@ -353,7 +362,7 @@ export function measure(sheet, geo) {
   const page = sheet.querySelector('.page')
   const paper = hex(win.getComputedStyle(page ?? sheet).backgroundColor) || '#ffffff'
   const muted = win.getComputedStyle(sheet).getPropertyValue('--c-muted').trim() || '#5f6f6c'
-  return { width: geo.width * PT, height: geo.height * PT, pages: geo.pages, paper, muted, root: prune(root), artifacts }
+  return { width: geo.width * PT, height: geo.height * PT, pages: geo.pages, paper, muted, lang: sheet.lang || 'en', root: prune(root), artifacts }
 }
 
 /**
@@ -384,6 +393,13 @@ function baselineProbe(doc) {
     return ratio
   }
 }
+
+/**
+ * What marks a list's items, as PDF's ListNumbering names it: a disc for the
+ * bullets, a circle for the dots, and none for dashes, chips and run-on lists.
+ * @param {Element} ul
+ */
+const numbering = (ul) => (ul.classList.contains('m-bullet') ? 'Disc' : ul.classList.contains('m-dot') ? 'Circle' : 'None')
 
 /**
  * Add a structure node to its parent, and hand it back.
