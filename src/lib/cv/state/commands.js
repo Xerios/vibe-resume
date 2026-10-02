@@ -3,9 +3,9 @@
  *
  * A button, a menu item and a shortcut that do the same thing call the same
  * entry here rather than each being handed a callback down through the tree.
- * The commands work over the singletons in state.svelte.js; the one thing
- * only the page can supply — the preview frame to print — is bound with
- * `bindHost`.
+ * The commands work over the singletons in state.svelte.js; what only the page
+ * can supply — the parsed CV, and the preview frame to measure for the PDF and
+ * to print — is bound with `bindHost`.
  *
  * Nothing in here uses `this`, so an entry can be passed around bare:
  * `onclick={commands.newFile}`. The ones that take an argument want an arrow
@@ -15,26 +15,27 @@
 import { pushState } from '$app/navigation'
 import { page } from '$app/state'
 import { toStrictYaml } from '../format/strict-yaml.js'
-import { docMeta } from '../template/doc-meta.js'
-import { preset as presetOf } from '../template/compositions.js'
-import { FONTS } from '../theme/fonts.js'
+import { DENSITIES, LAYOUTS } from '../render/tokens.js'
+import { SLOTS } from '../render/variants.js'
+import { THEMES } from '../theme/palettes.js'
 import { ORIENTATIONS, PAPER_SIZES, RUNNING } from '../theme/paper.js'
-import { THEMES } from '../theme/presets.js'
+import { FONTS } from '../theme/typefaces.js'
 import { storedText } from './doc.svelte.js'
-import { doc, files, parts, restyle, restylePaper, restyleVariant, ui } from './state.svelte.js'
+import { doc, files, look, restyle, restylePaper, restyleVariant, ui } from './state.svelte.js'
 import { KEYS, write } from './storage.js'
 
 /**
  * What the page lends the commands — see `bindHost`.
  * @typedef {object} Host
  * @property {() => boolean} print  print the preview frame; false if it isn't up yet
- * @property {() => any} printed  the parsed CV the frame is showing, as a plain object
+ * @property {() => any} printed  the parsed CV the preview is showing, as a plain object
+ * @property {() => Promise<import('../pdf/measure.js').DisplayList | null>} measure  the preview, laid out and paginated, for the PDF
  */
 
 /** @type {Host} */
-let host = { print: () => false, printed: () => null }
+let host = { print: () => false, printed: () => null, measure: async () => null }
 
-/** Lend the page's frame to `exportPDF`. @param {Host} h */
+/** Lend the page's parsed CV and frame to the export commands. @param {Host} h */
 export function bindHost(h) {
   host = h
 }
@@ -162,34 +163,48 @@ export const commands = {
     ui.toast('YAML saved')
   },
 
-  exportPDF() {
+  /**
+   * Write the CV as a tagged PDF and save it: the preview as it is laid out
+   * and paginated, measured and drawn with its structure, metadata and source
+   * attached — see pdf/measure.js and pdf/PdfRenderer.js. The renderer, pdfkit
+   * and the font files are loaded on the first export rather than with the app.
+   */
+  async exportPDF() {
     if (ui.parseError) {
       ui.toast('Fix YAML errors before exporting')
       return
     }
-    // Tagged before printing, so the mark in the history sits on exactly the
-    // version that goes to the printer.
-    doc.markExport()
-    // Taken before the print, which is what dates the PDF: the file the
-    // browser writes has to be newer than this to be the one that shows it.
-    const yaml = doc.yaml
-    const previous = ui.pdfExport
     const cv = host.printed()
-    const snapshot = {
-      cv,
-      yaml,
-      meta: docMeta(cv),
-      since: previous?.yaml === yaml ? previous.since : Date.now(),
-    }
-    // The frame prints itself. Printing the app instead would put the iframe on
-    // the page as a box and crop the CV to it, however many pages it wanted.
-    if (!host.print()) {
+    const list = cv ? await host.measure() : null
+    if (!cv || !list) {
       ui.toast("Preview isn't ready yet")
       return
     }
-    // `print()` holds until the dialog closes, so by now the file is saved.
-    ui.pdfExport = snapshot
-    ui.enrichOpen = true
+    // Tagged first, so the mark in the history sits on exactly the version
+    // that is exported.
+    doc.markExport()
+    ui.toast('Generating PDF…')
+    try {
+      const { exportPdf } = await import('../pdf/export.js')
+      const saved = await exportPdf({ list, cv, yaml: doc.yaml, look: { font: look.font, paper: look.paper }, fileName: files.active?.name ?? 'cv' })
+      if (saved) ui.toast('PDF saved')
+    } catch (e) {
+      ui.toast(`PDF export failed: ${e instanceof Error ? e.message : String(e)}`)
+    }
+  },
+
+  /**
+   * The browser's own print of the preview — the fallback beside the export,
+   * for a printer or a print-to-PDF the generated file doesn't suit. The frame
+   * prints itself: printing the app instead would put the iframe on the page as
+   * a box and crop the CV to it.
+   */
+  printPDF() {
+    if (ui.parseError) {
+      ui.toast('Fix YAML errors before printing')
+      return
+    }
+    if (!host.print()) ui.toast("Preview isn't ready yet")
   },
 
   /* ── History ───────────────────────────────────────────────────────────── */
@@ -253,26 +268,8 @@ export const commands = {
   /* ── Style ─────────────────────────────────────────────────────────────── */
 
   /** @param {string} id */
-  setPreset(id) {
-    // A preset is a whole set of choices, so taking one drops the overrides
-    // that were sitting on the last one — otherwise half of the look you just
-    // asked for wouldn't arrive.
-    restyle({ layout: id, variants: {} }, `Preset — ${presetOf(id)?.name ?? id}`)
-  },
-
-  /**
-   * @param {string} slotId
-   * @param {string} variantId
-   */
-  setVariant(slotId, variantId) {
-    const slot = parts.slots.find((s) => s.id === slotId)
-    const name = slot?.variants.find((v) => v.id === variantId)?.name ?? variantId
-    restyleVariant(slotId, variantId, `${slot?.name ?? slotId} — ${name}`)
-  },
-
-  /** Back to the preset's own choices, whichever axes have been moved off it. */
-  resetVariants() {
-    restyle({ variants: {} }, 'Blocks — reset')
+  setLayout(id) {
+    restyle({ layout: id }, `Layout — ${LAYOUTS.find((l) => l.id === id)?.name ?? id}`)
   },
 
   /** @param {string} id */
@@ -280,9 +277,29 @@ export const commands = {
     restyle({ theme: id }, `Theme — ${THEMES.find((t) => t.id === id)?.name ?? id}`)
   },
 
+  /**
+   * @param {string} slotId
+   * @param {string} variantId
+   */
+  setVariant(slotId, variantId) {
+    const slot = SLOTS.find((s) => s.id === slotId)
+    const name = slot?.variants.find((v) => v.id === variantId)?.name ?? variantId
+    restyleVariant(slotId, variantId, `${slot?.name ?? slotId} — ${name}`)
+  },
+
+  /** Every block back to its default. */
+  resetVariants() {
+    restyle({ variants: {} }, 'Blocks — reset')
+  },
+
   /** @param {string} id */
   setFont(id) {
     restyle({ font: id }, `Font — ${FONTS.find((f) => f.id === id)?.name ?? id}`)
+  },
+
+  /** @param {string} id */
+  setDensity(id) {
+    restyle({ density: id }, `Density — ${DENSITIES.find((d) => d.id === id)?.name ?? id}`)
   },
 
   /**
@@ -325,16 +342,16 @@ export const commands = {
     commands.setSourceHidden(!ui.sourceHidden)
   },
 
+  /** Draw the preview as the PDF's pages, or as one strip. Not a restyle — see `ui.pagedPreview`. */
+  togglePaged() {
+    ui.pagedPreview = !ui.pagedPreview
+    write(KEYS.pagedPreview, String(ui.pagedPreview))
+  },
+
   /** Scale the preview to the pane, or stop. Not a restyle — see `ui.fitPreview`. */
   toggleFit() {
     ui.fitPreview = !ui.fitPreview
     write(KEYS.previewFit, String(ui.fitPreview))
-  },
-
-  /** Show or hide the PDF export entries in the history list. */
-  toggleHideExports() {
-    ui.hideExports = !ui.hideExports
-    write(KEYS.hideExports, String(ui.hideExports))
   },
 
   /** Couple the editor to the pointer over the preview, or stop. See `ui.hoverSync`. */

@@ -1,6 +1,6 @@
 /**
- * Regenerate src/lib/cv/tech-icons.js — the logos the Tech template draws
- * beside a stack line.
+ * Regenerate src/lib/cv/theme/tech-icons.js — the logos the chip variants draw
+ * beside a tool's name, in the preview and in the PDF.
  *
  *   node scripts/gen-tech-icons.mjs
  *
@@ -17,7 +17,7 @@
  *
  * Each entry is `slug: [aliases]`. The slug is Simple Icons' own name and is
  * always matched; the aliases are what a CV actually says — `Node.js`, `k8s`,
- * `Postgres` — normalised the same way `techIcon` normalises a lookup, so
+ * `Postgres` — normalised the same way `iconPaths` normalises a lookup, so
  * punctuation and case are irrelevant here.
  */
 
@@ -25,7 +25,7 @@ import { writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
 const API = 'https://api.iconify.design/simple-icons.json'
-const OUT = fileURLToPath(new URL('../src/lib/cv/tech-icons.js', import.meta.url))
+const OUT = fileURLToPath(new URL('../src/lib/cv/theme/tech-icons.js', import.meta.url))
 
 /** @type {Record<string, string[]>} */
 const ICONS = {
@@ -231,7 +231,7 @@ if (!res.ok) throw new Error(`Iconify said ${res.status} ${res.statusText}`)
 const data = await res.json()
 if (data.not_found?.length) console.warn(`⚠ no such icon: ${data.not_found.join(', ')}`)
 
-/** The same normalisation `techIcon` applies to a lookup — see template-api.js. */
+/** The same normalisation `iconPaths` applies to a lookup — see src/lib/cv/render/icons.js. */
 const normalise = (s) =>
   s
     .toLowerCase()
@@ -251,19 +251,19 @@ for (const [slug, names] of Object.entries(ICONS)) {
 
 const bodies = Object.entries(data.icons)
   .toSorted(([a], [b]) => a.localeCompare(b))
-  // The API hands back `fill="currentColor"` on every path; the <svg> techIcon
-  // wraps this in carries that itself, so the repetition is dropped here.
+  // The API hands back `fill="currentColor"` on every path; only the path data
+  // is ever read (see iconPaths), so the repetition is dropped here.
   .map(([slug, icon]) => `  ${slug}: '${icon.body.replaceAll(' fill="currentColor"', '').replaceAll("'", "\\'")}',`)
 
 const out = `/**
- * Brand logos for the Tech template — generated, do not edit.
+ * Brand logos for the chip variants — generated, do not edit.
  *
  * Written by scripts/gen-tech-icons.mjs from the Simple Icons set (CC0-1.0),
  * which is fetched there rather than depended on: the full collection is a few
  * thousand logos, and a CV spends the ${slugs.length} below. Run that script to add one.
  *
- * A body is the inside of a 24×24 \`<svg>\`; \`techIcon\` in template-api.js is
- * what wraps it in one, and what turns "Node.js" into \`nodedotjs\`.
+ * A body is the inside of a 24×24 \`<svg>\`; \`iconPaths\` in render/icons.js reads
+ * its path data, and is what turns "Node.js" into \`nodedotjs\`.
  */
 
 /** slug → the paths of its 24×24 icon. @type {Record<string, string>} */

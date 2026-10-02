@@ -26,6 +26,8 @@ export class UiState {
 	   page to fit the pane changes no CV, so it is a preference of this browser's
 	   and stays out of the document and the history. On unless turned off. */
   fitPreview = $state(read(KEYS.previewFit) !== 'false')
+  /** The preview as the PDF's pages, drawn apart; off, one strip with the same breaks. A view, not a restyle. */
+  pagedPreview = $state(read(KEYS.pagedPreview) !== 'false')
   /* Whether the pointer resting on the sheet pulls the editor to its line. Same
 	   family as `fitPreview`: how the window behaves rather than what the CV says.
 	   On unless turned off. */
@@ -48,16 +50,6 @@ export class UiState {
    * the banner, the status bar and the export read it.
    */
   parseError = $state(/** @type {string | null} */ (null))
-  /**
-   * The CV as it went to the printer at the last export, for the dialog that
-   * adds what the browser left out of the PDF — see EnrichPdfModal. Kept after
-   * the dialog closes, so that exporting the same text again doesn't move
-   * `since`.
-   * @type {PdfExport | null}
-   */
-  pdfExport = $state(null)
-  /** Whether that dialog is up. */
-  enrichOpen = $state(false)
   toastMsg = $state('')
   toastOn = $state(false)
   /** @type {ReturnType<typeof setTimeout> | undefined} */
@@ -75,15 +67,6 @@ export class UiState {
     clearTimeout(this.#toastTimer)
   }
 }
-
-/**
- * @typedef {object} PdfExport
- * @property {any} cv  the parsed CV the sheet was showing
- * @property {string} yaml  its source, as the editor holds it
- * @property {import('../template/doc-meta.js').DocMeta} meta
- * @property {number} since  when this text was first exported, in ms — an export
- *   of the same text again doesn't move it, so either PDF still counts
- */
 
 /** @returns {'style' | 'history' | null} */
 function readSidePanel() {

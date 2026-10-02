@@ -14,7 +14,7 @@ to `localStorage` with a version history.
 pnpm install
 pnpm dev        # http://localhost:5173
 pnpm build      # static site in build/
-pnpm check      # svelte-check
+pnpm check      # svelte-check, oxlint, vitest
 ```
 
 ## How it works
@@ -29,23 +29,22 @@ pnpm check      # svelte-check
 | What the editor says   | [src/lib/cv/format/lint.js](src/lib/cv/format/lint.js) — the section table, as diagnostics                           |
 | What the editor offers | [src/lib/cv/format/complete.js](src/lib/cv/format/complete.js) — the same table, as completions                      |
 | Colours and folding    | [src/lib/cv/format/relaxed-yaml-mode.js](src/lib/cv/format/relaxed-yaml-mode.js) — the CodeMirror language           |
-| YAML to HTML           | [src/lib/cv/template/render.js](src/lib/cv/template/render.js)                                                       |
+| YAML to a CV object    | [src/lib/cv/render/parse.js](src/lib/cv/render/parse.js)                                                             |
+| What a CV says         | [src/lib/cv/render/model.js](src/lib/cv/render/model.js) — the tree the sheet is drawn from, in reading order        |
+| Block variants         | [src/lib/cv/render/variants.js](src/lib/cv/render/variants.js) — every slot, and every way of drawing it            |
+| Inline Markdown        | [src/lib/cv/render/inline.js](src/lib/cv/render/inline.js) — a value as runs of styled text                          |
+| Type, space, layouts   | [src/lib/cv/render/tokens.js](src/lib/cv/render/tokens.js) — the numbers a CV is set with                            |
 | Preview                | [src/lib/cv/PreviewFrame.svelte](src/lib/cv/PreviewFrame.svelte) — the iframe the sheet renders in                   |
+| The sheet              | [src/lib/cv/html/](src/lib/cv/html/) — `CvSheet.svelte`, its stylesheet, the tokens as CSS, and the paginator        |
+| The sheet as PDF       | [src/lib/cv/pdf/](src/lib/cv/pdf/) — `measure.js` reads the sheet, `PdfRenderer.js` draws it; see _Exporting_ below  |
 | Starting text          | [src/lib/cv/default-cv.yaml](src/lib/cv/default-cv.yaml)                                                             |
-| Layouts                | [src/lib/cv/layouts/](src/lib/cv/layouts/) — the whole sheet, one file per arrangement                               |
-| Block variants         | [src/lib/cv/blocks/](src/lib/cv/blocks/) — one file per variation of one block                                       |
-| The axes               | [src/lib/cv/template/slots.js](src/lib/cv/template/slots.js) — every slot, and every variant of each                 |
-| The named looks        | [src/lib/cv/template/compositions.js](src/lib/cv/template/compositions.js) — presets, as sets of axis choices        |
-| Composing              | [src/lib/cv/template/compose.js](src/lib/cv/template/compose.js) — layout + variants → one component                 |
-| Part registry          | [src/lib/cv/state/parts.svelte.js](src/lib/cv/state/parts.svelte.js) — overrides and the user's own variants         |
-| Compiling it           | [src/lib/cv/template/compile-template.js](src/lib/cv/template/compile-template.js) — Svelte, in the browser          |
-| Picking a variant      | `components/{StylePicker,VariantCycle}.svelte` — the popover and the row inside it                                   |
-| Shared state           | [src/lib/cv/state/state.svelte.js](src/lib/cv/state/state.svelte.js) — the document, file registry and part registry |
+| Picking a look         | `components/{StylePicker,VariantCycle}.svelte` — the Style panel, and the row each block slot is drawn as            |
+| Shared state           | [src/lib/cv/state/state.svelte.js](src/lib/cv/state/state.svelte.js) — the document and the file registry            |
 | Commands               | [src/lib/cv/state/commands.js](src/lib/cv/state/commands.js) — everything the chrome can do, by name                 |
-| Theme                  | [src/lib/cv/theme/presets.js](src/lib/cv/theme/presets.js) — the palettes, and the CSS beside it                     |
-| Type                   | [src/lib/cv/theme/fonts.js](src/lib/cv/theme/fonts.js) — the font stacks, and the CSS beside it                      |
-| Paper                  | [src/lib/cv/theme/paper.js](src/lib/cv/theme/paper.js) — the page box, and what stands in its margins                |
+| Theme                  | [src/lib/cv/theme/palettes.js](src/lib/cv/theme/palettes.js) — the palettes, as data                                 |
+| Type                   | [src/lib/cv/theme/typefaces.js](src/lib/cv/theme/typefaces.js) — the six font choices, and the faces they bundle     |
 | Tech logos             | [src/lib/cv/theme/tech-icons.js](src/lib/cv/theme/tech-icons.js) — generated; see _Logos_ below                      |
+| Paper                  | [src/lib/cv/theme/paper.js](src/lib/cv/theme/paper.js) — the page box, and what stands in its margins                |
 | CSS                    | [src/app.scss](src/app.scss) — the index; see _Where the CSS lives_ below                                            |
 | Offline                | [src/service-worker.js](src/service-worker.js) — precache; manifest and icons in `static/`                           |
 
@@ -96,150 +95,79 @@ menu item and a keyboard shortcut for the same action all call the same
 command. The page keeps only what needs its own DOM — parsing, the
 preview-to-source mapping, scroll sync and the divider drag.
 
-### Layouts, blocks and presets
+### Rendering: one layout, measured for the PDF
 
-The Style button offers thirteen named looks — classic, compact, centered,
-sidebar, timeline, ledger, minimal, cards, tech, editorial, brief, profile,
-dossier — seven palettes, six fonts and the paper it all prints on. All four are
-per file, stored in the file registry next to the name; they are also in the
-file's own document, which is what puts a restyle in the version history and on
-the undo stack. See _Restyling is a change_ below.
+A CV is drawn once, as HTML in the preview, and the PDF is made from what that
+drew.
 
-The first nine used to be nine whole Svelte components, one per look, and that
-was the wrong seam. Seven of them had markup identical to `classic` and differed
-only in their `<style>` block; taking Tech's logo chips meant taking Tech's
-everything. So a sheet is two things now:
+[model.js](src/lib/cv/render/model.js) builds a tree out of the parsed YAML. It is
+the one place that decides what a section _is_: an entry is a heading with its
+dates beside it, a line of context, a list of bullets and a stack line; a skills
+section is a grid of groups; a language is a list item with its level at the
+right. Its nodes are PDF's own structure types (`Sect`, `H1`–`H3`, `P`, `L`, `LI`,
+`Div`), plus `Row` for "this, with that out at the right edge" and `Meter` for a
+level drawn as dots or a bar. The tree is already in **reading order**. The two
+rail layouts send the short, listy sections to a narrow column, and the order
+the columns are listed in is the order they are read in: Sidebar reads its rail
+first, Rail right reads its main column first.
 
-- a **layout** — [layouts/](src/lib/cv/layouts/), the arrangement of the page
-  and the markup for all nine section types. There are three: single column,
-  sidebar, and the same rail on the right.
-- a **variant** per **slot** — [blocks/](src/lib/cv/blocks/), one decision each
-  about how one part of the sheet is drawn.
+[CvSheet.svelte](src/lib/cv/html/CvSheet.svelte) writes the tree into the DOM in that
+order and [sheet.css](src/lib/cv/html/sheet.css) lays it out. Sizes, colours and
+spacing come from [tokens.js](src/lib/cv/render/tokens.js),
+[palettes.js](src/lib/cv/theme/palettes.js) and
+[typefaces.js](src/lib/cv/theme/typefaces.js), as custom properties and a class per
+text role ([sheet-css.js](src/lib/cv/html/sheet-css.js)). That layout is the only
+one there is. Two things follow it after every render:
 
-The slots are in [slots.js](src/lib/cv/template/slots.js): page, header, section title,
-summary, entry, skills, stack, list, languages, certificates and density. The first variant of each is
-its _default_, and it has no file at all, because it is the snippet the layout
-already renders. That is what makes the whole thing subtractive rather than
-constructive — choose nothing and you get the layout verbatim.
+- **The paginator** ([paginate.js](src/lib/cv/html/paginate.js)) walks each column
+  and pushes any block that would cross the foot of a page onto the next one. The
+  rules are the ones the print CSS used to ask the browser for: an entry, a skill
+  group, a list item and a paragraph stay whole, and a heading stays with the
+  start of what follows it. In **page view** (Pages in the status bar) the pages
+  are drawn as separate cards with the running head and foot in their margins.
+  With it off, the sheet is one strip with the same page breaks, so either way
+  what is on screen is what exports.
+- **The measurer** ([measure.js](src/lib/cv/pdf/measure.js)) runs on export. It
+  reads the paginated sheet back as a display list:
+  - every element's structure type
+  - every run of text, a line at a time, at the position the browser set it in,
+    with its font
+  - every border, fill and SVG path, on the page it falls on
 
-A variant is one of two kinds of file, and which one it is says what it is
-allowed to change:
+  [PdfRenderer.js](src/lib/cv/pdf/PdfRenderer.js) draws that list. It reads a small
+  subset of CSS — text, solid, dashed and dotted borders, solid fills, border
+  radii, translations and `<path>` — and sheet.css keeps to it. Decoration is
+  therefore a real `aria-hidden` element rather than a `::before`, because a
+  pseudo-element can't be measured: bullet marks, separators, the timeline's rail
+  and dot, a section's number, a chip's logo.
 
-- a **`.svelte` fragment** defines the slot's snippet, so it can change markup.
-  Only a handful need to: the chip variants, which need `techIcon`, and Sidebar,
-  which needs a rail.
-- a **`.css` file** has no markup and restyles the snippet the layout renders.
-  Most of them, which is the same observation as the seven identical templates,
-  now expressed as a fact about the file rather than as duplication.
+Inline Markdown reaches the sheet as runs of text with marks on them, from
+marked's own inline lexer ([inline.js](src/lib/cv/render/inline.js)), so there is no
+`{@html}` in it. A bare address still prints without its scheme, and a phone
+number on a contact line is still a `tel:` link.
 
-Every one of them has to print. That is the constraint the whole set is drawn
-under and the reason none of them leans on a filled background: Chrome drops
-background painting when _Background graphics_ is off in the print dialog, so a
-card that only existed as a fill would vanish from the PDF. Borders, outlines and
-type always print, and that is what the gutter, the airy density, the card
-outlines and the chips are built out of.
-
-The nine names survive as **presets** — [compositions.js](src/lib/cv/template/compositions.js)
-— and four more have been added that were never components at all, which is what
-the axes bought: a new look is a handful of choices rather than a new file. A
-preset holds nothing but a set of axis values. That is deliberate: pick
-Tech and then set the stack back to a plain line, and what you keep is Tech's
-skills and lists as chips, with nothing invisible riding along. A file's `layout`
-is the preset it started from and its `variants` are what it has changed since,
-so the popover can go on saying _Tech · modified_ rather than going nameless.
-
-Each is still a real `.svelte` or `.css` file that `pnpm check` compiles, so a
-broken one can't reach a release. What the type checker can't see is whether a
-layout and a variant still agree — a snippet renamed on one side, a `@cv` import
-one needs and the other doesn't, two chip variants declaring `chip` twice — so
-[compose.test.js](src/lib/cv/template/compose.test.js) compiles every preset and every
-variant against the defaults, which is the gate that catches those.
-
-#### Composing
-
-[compose.js](src/lib/cv/template/compose.js) takes the layout, swaps out the snippets
-whose slot has a non-default variant chosen, concatenates the stylesheets, and
-hands back one component source for compile-template.js to compile exactly as it
-used to compile a whole template.
-
-One component, not several. Compiling each fragment separately and importing
-them would be tidier, and it is the wrong shape: Svelte scopes a component's CSS
-to the markup in that same component, so a style-only variant would have to write
-`:global(.job)` — which then loses on specificity to any scoped `.job` rule in
-whichever component owns the markup. Assembled into one, every rule gets the same
-scoping class and plain cascade order decides, which is how the templates it
-replaces worked against cv.css in the first place. Slot order is that order, and `density`
-is last so it can quiet anything above it.
-
-A variant contributes its snippets and its style block; its script is there so
-`svelte-check` will read the file as a component, and is dropped. The `@cv`
-import line is rewritten to the union of what every chosen part needs, since
-`techIcon` only turns up once a chip variant is in play. A snippet the layout
-doesn't define — `chip` — is appended rather than swapped in, and de-duplicated,
-because the three chip variants each carry their own copy so that any one of them
-can be chosen alone.
-
-Compose also returns a **line map**, which is what lets a compile error in a
-source nobody wrote point at a line in the part being edited.
-
-Both pages compile what a composition comes to, on a debounce, and mount the
-result — through the same [liveTemplate](src/lib/cv/template/live-template.svelte.js), so
-the debounce, the out-of-order guard and the keep-the-last-good-one rule are
-written once. What it keys on is the whole composition rather than one part,
-because changing a variant is a choice and shouldn't sit out the debounce meant
-for someone typing.
-
-#### Picking one
-
-One place, one control. [StylePicker](src/lib/components/StylePicker.svelte)
-lists the presets and then every axis, a row each. A row is a
-[VariantCycle](src/lib/components/VariantCycle.svelte) — the arrows step through
-a slot's variants, and the name between them opens the whole list.
-
-There used to be a block picker here as well: hovering the sheet floated a card
-beside it with a row per slot the thing under the pointer belonged to, walked up
-the `data-slot` chain, and a click pinned it there. It has been removed, so the
-Style panel is the only way to choose a variant. The layouts still stamp
-`data-slot` — it names the block a piece of the sheet came from — but nothing
-reads it now.
-
-There used to be a `/template` deep link here for editing a part's source
-directly — a CodeMirror over the part, the CV beside it as a live preview, and
-Duplicate/Rename/Revert/Delete to manage overrides. It has been removed; the
-rows beside the sheet and in the Style popover only ever chose a variant, so
-nothing else in the app changes. What remains in
-[parts.svelte.js](src/lib/cv/state/parts.svelte.js) is the read side: an override of
-a shipped part, or a variant of the user's own, left over from before removal
-still folds into `slots` and renders normally — a part id that stops resolving
-just falls back to its slot's default, the way it always has. There is no
-longer a way to create, rename or revert one from the app.
-
-Whole templates written before the layout/variant split existed are folded in
-on first load as layouts of the user's own, since a whole template _is_ a
-layout, and the files that named one are pointed at it.
-
-The theme is still pure data — a ramp of eight colours, declared in
-[palettes.css](src/lib/cv/theme/palettes.css) and spent by one block in
-[presets.css](src/lib/cv/theme/presets.css) that re-points the frame's tokens at it.
-`data-cv-layout` is still set on `#cv-root` too, carrying the preset's id, but
-nothing shipped selects on it any more.
+The style panel offers three **layouts** (single column, sidebar, rail right), a
+row of **block variants**, seven **themes**, six **fonts**, two **densities** and
+the **paper**. A variant ([variants.js](src/lib/cv/render/variants.js)) is an id
+the model reads while building the tree. It changes a property there — a
+section's `head`, an entry's `frame`, a list's `display`, a language's meter —
+and sheet.css draws each such property. Because the PDF is measured from the
+sheet, a variant needs no PDF code of its own. Each slot is a
+[VariantCycle](src/lib/components/VariantCycle.svelte) row in the panel, and the
+first variant of each is its default.
 
 #### Restyling is a change
 
-Preset, block variants, theme, font and paper used to live only in
-the file registry, on the grounds that restyling is not an edit. That was the
-wrong reading: changing how a CV looks is a change to the CV, and the things a
-change gets here — a line in the version history, a place on the undo stack, and
-coming back with the version that had it — are exactly what a restyle wanted.
-
-So those values — and the paper, which arrived later and is one of them — are
-also a `style` map in the file's Loro document, and
+Layout, block variants, theme, font, density and paper are stored per file in the file registry, and
+also as a `style` map in the file's Loro document. Changing how a CV looks is a
+change to the CV, and the things a change gets here — a line in the version
+history, a place on the undo stack, and coming back with the version that had it
+— are exactly what a restyle wanted.
 [restyle](src/lib/cv/state/state.svelte.js) is the one way to move them: it writes the
 registry first, so the sheet follows immediately, then records the result in the
-document with a label — `Entry — Card`, `Theme — Plum`, `Paper — Landscape`.
-Ctrl+Z takes one back,
-from the editor as ever and now from anywhere else too, since a keystroke that
-didn't land in CodeMirror is handled by the page.
+document with a label — `Layout — Sidebar`, `Entry — Card`, `Theme — Plum`, `Paper — Landscape`.
+Ctrl+Z takes one back, from the editor as ever and from anywhere else too, since
+a keystroke that didn't land in CodeMirror is handled by the page.
 
 Two stores for one fact, and deliberately so: the registry knows the style of
 every file including the ones that aren't open, and the document knows the style
@@ -251,85 +179,75 @@ registry through the same callback.
 The map holds only what has changed since the document was adopted; everything
 else falls through to the registry's copy as it stood then, which is what makes
 undoing the first change of a session land on what was there before it rather
-than on nothing. Two details follow from what a change _is_: the commit carries a
-`style` kind, so the history panel can mark it.
+than on nothing. The commit carries a `style` kind, so the history panel can
+mark it.
 
-#### Compiling one
+#### Exporting
 
-[compile-template.js](src/lib/cv/template/compile-template.js) is the whole of it.
-Svelte's compiler is an ordinary module that runs in a browser, so the composed
-sheet goes through exactly the pass Vite would have given it at build time. What Vite
-also does — resolve the imports that come back — is what has to be replaced:
-compiled client code opens with `import * as $ from 'svelte/internal/client'`,
-and a bare specifier means nothing to the browser.
+Export writes the PDF directly, with [pdfkit](https://pdfkit.org), in the browser,
+from the preview as it is laid out and paginated. The renderer, pdfkit and the font
+files are loaded on the first export rather than with the app
+([export.js](src/lib/cv/pdf/export.js)). The result is a tagged PDF 1.7 written to
+PDF/UA-1, so that ATS parsers and screen readers read it as it is meant to be read:
 
-So every specifier the sheet is allowed to name (`@cv`, `svelte`, `marked`, and
-the two the compiler emits itself) gets a _shim module_: a blob that re-exports,
-name by name, the module this app already has bundled. The compiled source's
-import lines are rewritten to point at those blobs, the whole thing becomes a
-blob of its own, and `import()` turns it into a component — one Svelte runtime,
-one copy of `marked`, and no network. `@cv` is aliased in `vite.config.js` as
-well, which is the trick that lets the shipped parts import the same module
-through a bundler that has never heard of any of this.
+- **Reading order.** The display list is in document order, which is the model's
+  reading order. The renderer writes the structure tree and each page's content
+  stream in that order, switching between buffered pages and drawing each line at
+  the absolute position it was measured at. A left column that fills two pages is
+  written in full before a word of the right column is.
+- **Words where the browser put them.** The browser and pdfkit shape text from the
+  same files but don't agree to the fraction of a point: Chromium rounds advances
+  to pixels. So each word starts where the browser put it and is scaled
+  horizontally, by at most 15%, to end where the browser ended it. Each space is
+  drawn as a glyph of its own, at least as wide as the font's space, so that text
+  extraction finds it.
+- **Structure.** `Document` holds a `Sect` for the header and one per section.
+  Inside them are `H1` (the name), `H2` (section titles), `H3` (entry and group
+  titles), `P` and `Div`. Lists are `L` > `LI` > `LBody`, a level meter is a
+  `Figure` with the level in words as `/Alt`, and each link is a `Link` element
+  holding its text and its annotation, which has `/Contents`.
+- **Artifacts.** Everything `aria-hidden` and every border and fill outside a
+  figure is drawn as an `Artifact`: the page fill, rules, frames, the column
+  divider, bullet marks, separators, chip outlines and logos, section numbers,
+  and the running head and foot.
+- **Type.** Only the bundled faces are used, embedded and subset with a
+  ToUnicode map, and never a standard-14 font. A character the face has no glyph
+  for (★ in the mono face) falls back through the font stack the preview names,
+  in the same order.
+- **Metadata.** The title is shown in the window (`DisplayDocTitle`), and the
+  catalog sets `/Lang`. The Info dictionary and the XMP both carry the title,
+  author, description and keywords from [doc-meta.js](src/lib/cv/render/doc-meta.js).
+  The XMP also declares `pdfuaid:part` 1. The YAML and a JSON copy of the CV are
+  attached as `Source` files.
 
-The compiler is loaded on demand, being by far the largest thing this app could
-ship; it is still bundled locally and precached with everything else, so the
-first sheet compiles offline like everything else here.
+The tests in [PdfRenderer.test.js](src/lib/cv/pdf/PdfRenderer.test.js) render two
+display lists measured from the browser ([fixtures/](src/lib/cv/pdf/fixtures/)),
+read the uncompressed output back, and check these properties. They include that
+each page's marked content comes in the same order as the structure tree, and
+that each layout's columns are read in order. The fixtures have to be measured
+again when the sheet's markup or stylesheet changes what measure.js reads. A full conformance check needs an external
+validator: veraPDF with the PDF/UA-1 profile, or PAC.
 
-Two things follow that are worth being plain about. A compile error keeps the
-last sheet that worked on screen — the same bargain as a YAML parse error — and
-reports itself in the banner over the preview, traced back through compose.js's
-line map to the part it came from. On a fresh load there _is_ no last good one,
-so a broken part — a leftover override or a migrated template — leaves the
-editor page with nothing to render, and there is no longer a page in the app to
-fix it from; clearing the `cv-editor:parts:v1` entry in `localStorage` is what
-recovers it. And a part is the user's own code running in the app's realm
-rather than the frame's, because `mount()` takes a component and a component
-can only come from the realm that compiled it; the alternative is a second
-Svelte runtime inside the frame, and two runtimes cannot share one component.
-
-The sheet does not follow the app into dark mode. It is paper: it renders light
-on screen, prints exactly what it showed, and the app's dark toggle dresses only
-the editor around it. That is why the frame is never told which ramp the app is
-in, and why nothing in the print rules has to undo a dark one. Each palette
-still carries the `--t-*-d` half it would need for a dark preview — unspent, but
-kept beside the light ramp so the two can't drift apart.
-
-Palettes and font stacks sit in files of their own because they are the parts of
-the preset system the app still needs: the sheet's CSS all moves into the frame,
-but StylePicker draws each option by putting `data-cv-theme` or `data-cv-font`
-on the option itself, so there is no second copy of either to drift out of step. The swatches
-read from the light ramp too, for the same reason the sheet does — one that
-darkened with the chrome would advertise a CV the preview can't produce.
-
-Below both is a third layer, per file like the other two: arbitrary CSS, edited
-in the Style popover and applied last inside the frame. It is stored and
-validated exactly as much as it needs to be, which is not at all — the worst a
-broken rule can do is make the sheet look wrong.
+**Print** in the toolbar (and Ctrl+P) is still there as a fallback. It prints the
+preview frame with the browser's own print, which paginates for itself (the
+paginator's pushes are undone in print CSS) and tags whatever the browser chooses
+to tag.
 
 #### The paper
 
-The page a CV prints on is a value now rather than one line of frame.css, and it
-is per file like the theme: a size, an orientation, and what — if anything —
-stands in the margin above and below the sheet.
-[paper.js](src/lib/cv/theme/paper.js) is the whole of it, and `paperCss` is the one
-place it becomes CSS. That stylesheet says the same thing twice on purpose:
-`@page`, which is what the print uses, and a handful of `--page-*` tokens on
-`#cv-root`, which cv.css sizes the sheet from. The sheet on screen is therefore
-the page that comes out of the printer — turning it on its side turns the
-preview on its side — where before it was a `max-width: 820px` that happened to
-be about the width of an A4.
+The page a CV is set on is a value, per file like the theme: a size, an
+orientation, and what — if anything — stands in the margin above and below the
+sheet. [paper.js](src/lib/cv/theme/paper.js) is the whole of it. `pageBox` is the
+page and its margins in millimetres, which the paginator and the PDF use. `paperCss` is
+the same thing as CSS for the preview: `--page-*` tokens on `#cv-root`, which
+sheet.css sizes the sheet from, and `@page` for the print fallback. Turning the
+sheet on its side turns the preview on its side.
 
-A running header or footer is an `@page` **margin box**, which is real
-paged-media CSS rather than anything in the document. It has to be: the only
-thing that knows how many pages there are is the thing that made them, so
-`counter(pages)` is the only way to print _2 / 3_ at all. Chrome has had margin
-boxes since 131 and Firefox has never had them, so a header or a footer is the
-one thing here that some browsers will simply not print — which is why it prints
-nothing rather than something wrong, and why nothing else on the sheet depends
-on it. The name is baked in as a string literal because a margin box holds text
-and not elements. Page one gets no running _header_: it already has the name on
-it in 31px, and `@page :first` is what takes it back off.
+A running header or footer is drawn in the PDF's margin as a pagination artifact,
+once the layout knows how many pages there are. The print fallback writes the same
+thing as `@page` **margin boxes**, which Chrome has supported since version 131 and
+Firefox has never supported, so it prints nothing there rather than something wrong.
+Page one gets no running _header_ in either: it already has the name on it.
 
 Whichever edge carries one is given 5mm more margin to carry it in, so a running
 head sits in the margin rather than on the first line.
@@ -340,22 +258,13 @@ preview column. It changes no CV, so it is a preference of this browser's rather
 than a restyle — no history entry, no undo, nothing in the document — and it is
 offered only where the split still has two columns, since on a narrow screen the
 preview is already the width of the window. It is a `zoom` on `#cv-root` rather
-than a transform, which is what keeps every rect the page measures — the block
-picker's, the scroll ladder's — in the frame's own coordinates, and the print
-stylesheet drops it.
+than a transform, which is what keeps every rect the page measures — the scroll
+ladder's — in the frame's own coordinates, and the print stylesheet drops it.
 
-What every sheet shares is [cv.css](src/lib/cv/cv.css): the class names it is
-built out of, and how it paginates. A layout and its variants add to that and
-override parts of it from the composed style block, which the compiler scopes —
-so their rules outrank the base on specificity alone, whatever order they land
-in. The two rail layouts render a rail and a main column — Sidebar puts the rail
-on the left, Rail right mirrors it — with groups, lists and levels going to
-the rail, and any section can opt in or out with `rail: true` / `rail: false`. A
-rail is a third of a measure, so those layouts also carry the rules that make
-what lands in one survive it: the two-up grids fold to a single `minmax(0, 1fr)`
-column, headings and chips are allowed to wrap, and the gutter a skills-rows
-title hangs in goes away. The chip
-variants render a chip per tool instead of a line — see _Logos_ below.
+The two rail layouts send groups, lists and levels to the rail, and any section
+can opt in or out with `rail: true` / `rail: false`. A rail is a third of a
+measure, so what lands in one is set one-up rather than two-up, and an inline list
+becomes a bulleted one.
 
 #### The format
 
@@ -422,31 +331,31 @@ key and then text — none of which needs a parse tree.
 A document is a header and a list of sections, and a section's `type` is what
 decides how it renders. There are seven, each named after the shape of what it
 holds rather than what a CV usually puts in it, all of them understood by every
-layout, so switching preset can never lose one:
+layout, so switching layout can never lose one:
 
 | `type`    | Holds                                                                               | Usually         |
 | --------- | ----------------------------------------------------------------------------------- | --------------- |
 | `text`    | `paragraphs`                                                                        | a summary       |
 | `groups`  | `blocks`, each a `title` and `rows` of `{ tier?, text }`                            | skills          |
 | `entries` | `items` of `{ title, org?, dates?, sub?, bullets?, stack? }`                        | roles, degrees  |
-| `list`    | `items` of plain strings — `inline: true` sets them as pills on one line            | interests       |
+| `list`    | `items` of plain strings — `inline: true` runs them on in one line                  | interests       |
 | `levels`  | `items` of `{ name, level?, note?, rating? }`                                       | languages       |
 | `records` | `items` of `{ name, issuer?, dates?, note? }`                                       | certifications  |
-| `table`   | `items` of `{ name, value, desc }`, with `columns` — a list of headings — optional   | open source     |
+| `table`   | `items` of `{ name, value, desc }`, each set as one line; `columns` is accepted     | open source     |
 
-A record is a name, an issuer and a date, which is what lets Grid, Cards and
-Compact set the three of them differently. A level is a name and a level, and
+A record is a name, an issuer and a date. A level is a name and a level, and
 `level` is deliberately free text — `Native`, `C2` and `Professional working` are
-all how somebody writes one — so `levelRating` in
-[template-api.js](src/lib/cv/template/template-api.js) is what reads any of them as a
-number out of five, which is what the Dots and Bars variants draw. A level it
-can't read comes back as 0, and that is the signal for those variants to print
-the words after all rather than an empty meter. `rating: 1–5` says it outright
-for anything the table doesn't cover.
+all how somebody writes one — so it is printed as written. A `table` is read as a
+list of name, figure and description rather than as a grid, which is what it holds
+on a CV and what a PDF reader handles best.
+
+`stack` takes a comma-separated string or a YAML list, whichever reads better;
+`techs` in [inline.js](src/lib/cv/render/inline.js) reads either into a list of
+tools.
 
 Experience, education and projects are all `entries`, because a degree and a
 role are the same shape: a title, something it belongs to (`org`), dates, a line
-of context and some bullets — `.job` in cv.css. The section's title is what
+of context and some bullets. The section's title is what
 tells them apart. An item can also say `subtype: earlier`, which renders a run
 of older roles as one titled list with no dates of its own.
 
@@ -465,48 +374,45 @@ this table that [lint.js](src/lib/cv/format/lint.js) holds as `SECTIONS` — so 
 added here has to be added there too, and lint.test.js fails if the two lists
 stop agreeing.
 
+#### Type
+
+A font choice is a pairing of two bundled families: one for text, one for labels,
+dates and contact lines. All are SIL OFL static TTFs from the
+`@expo-google-fonts/*` packages, imported with `?url`
+([typefaces.js](src/lib/cv/theme/typefaces.js)).
+
+| Choice   | Text           | Labels         |
+| -------- | -------------- | -------------- |
+| Sans     | Inter          | JetBrains Mono |
+| Grotesk  | Archivo        | JetBrains Mono |
+| Humanist | Source Sans 3  | JetBrains Mono |
+| Serif    | Source Serif 4 | Source Serif 4 |
+| Book     | EB Garamond    | EB Garamond    |
+| Mono     | JetBrains Mono | JetBrains Mono |
+
+Bundled rather than OS font stacks, because the PDF has to embed every face it
+uses and a browser can't hand a system font's bytes to pdfkit. The preview
+declares every face with `@font-face`, and the browser downloads only the ones a
+sheet uses. The service worker precaches Inter and JetBrains Mono, the default
+pairing; another family is cached the first time it is used.
+
 #### Logos
 
 `stack` takes a comma-separated string or a YAML list, whichever reads better;
-`techs` in [template-api.js](src/lib/cv/template/template-api.js) is what reads either
-into a list, so no template has to care which was written.
-
-The chip variants draw each entry as a chip with its brand logo, from `techIcon`
-beside it. Matching is deliberately forgiving, because a CV is prose
+`techs` in [inline.js](src/lib/cv/render/inline.js) reads either into a list. The
+chip variants draw each entry as a chip with its brand logo, from `iconPaths` in
+[icons.js](src/lib/cv/render/icons.js). Matching is forgiving, because a CV is prose
 rather than a manifest: case and punctuation are normalised away and then a few
 reductions are tried in turn, so `Node.js`, `Postgres`, `TypeScript/JavaScript
 (10+ yrs)`, `React 18` and `ORM: Prisma` all land on a logo while `English C2`
-quietly doesn't. Anything unmatched is still a chip, just a lettered one.
+doesn't. A logo is SVG path data, drawn as `<path>` in the preview and as an
+artifact in the PDF.
 
-The logos are [Simple Icons](https://simpleicons.org) (CC0-1.0), and they are
-_vendored_ rather than depended on: the full set is a few thousand icons and
-several megabytes, so [scripts/gen-tech-icons.mjs](scripts/gen-tech-icons.mjs)
-fetches a curated list from the Iconify API and writes
-[tech-icons.js](src/lib/cv/theme/tech-icons.js), an ordinary module that ships with
-the bundle. Adding one means adding a line to that script and running it again.
-Nothing at runtime touches the network, which is the same rule as everything
-else here — and monochrome paths inheriting the ink around them print with the
-text rather than as images an exporter might drop.
-
-That module is the price of the feature: some 190 kB of path data, in the chunk
-the editor page loads rather than a lazy one, because `techIcon` is called
-during a render and can't wait for a fetch. It sits beside a Svelte compiler
-several times its size, which is the reason it was judged affordable — trimming
-the list in the generator is how to make it smaller.
-
-#### Type
-
-The six fonts work exactly as the palettes do: an id on `#cv-root` as
-`data-cv-font`, a table of stacks in [fonts.css](src/lib/cv/theme/fonts.css), and one
-block in presets.css that re-points `--sans` and `--mono` at whichever is
-named. StylePicker sets each option in the face it is offering by putting the
-same attribute on the option itself, so there is no second copy of the stacks.
-
-None of them is downloaded. A web font would mean either a CDN this app doesn't
-have or a few hundred kilobytes of precache per family, and a CV that renders in
-whatever the reader's machine substituted is worse than one set in a face that
-is certainly installed — so each is a stack of faces that ship with an operating
-system, ending in the generic the browser can always satisfy.
+The logos are [Simple Icons](https://simpleicons.org) (CC0-1.0), _vendored_ rather
+than depended on: [scripts/gen-tech-icons.mjs](scripts/gen-tech-icons.mjs) fetches a
+curated list from the Iconify API and writes
+[tech-icons.js](src/lib/cv/theme/tech-icons.js). Adding one means adding a line to
+that script and running it again; nothing at runtime touches the network.
 
 ### Keyboard
 
@@ -532,9 +438,8 @@ sheets are SCSS for one feature only: nesting, so that a control's states and
 children sit inside its rule (`.tab { &:hover … &.active … }`) instead of being
 restated beside it. Tokens stay CSS custom properties; there are no Sass
 variables, mixins or functions to learn. The preview frame's sheets under
-`src/lib/cv` remain plain `.css` — the layouts and blocks beside them are
-compiled in the browser, where no preprocessor runs. A rule only becomes global
-when it genuinely has no single owner:
+`src/lib/cv` are plain `.css`, imported as text and written into the frame. A rule
+only becomes global when it genuinely has no single owner:
 
 In the app's document:
 
@@ -546,19 +451,16 @@ In the app's document:
 | [styles/controls.scss](src/lib/styles/controls.scss)             | the `.ds-*` components — button, menu, lozenge and friends      |
 | [styles/print.scss](src/lib/styles/print.scss)                   | the fallback for a print the app can't intercept                |
 | [components/codemirror.scss](src/lib/components/codemirror.scss) | the CodeMirror theme, imported by `YamlEditor.svelte`           |
-| [cv/theme/palettes.css](src/lib/cv/theme/palettes.css)           | the seven ramps — here only so StylePicker can draw a swatch    |
-| [cv/theme/fonts.css](src/lib/cv/theme/fonts.css)                 | the six stacks — here for the same reason, one option each      |
 
 And in the preview frame's, written into it by `PreviewFrame`:
 
-| File                                                   | Holds                                                        |
-| ------------------------------------------------------ | ------------------------------------------------------------ |
-| [cv/frame.css](src/lib/cv/frame.css)                   | the frame's reset, tokens and page box — its declared inputs |
-| [cv/cv.css](src/lib/cv/cv.css)                         | the sheet itself, plus how it paginates                      |
-| [cv/theme/palettes.css](src/lib/cv/theme/palettes.css) | the same seven ramps, this time for the sheet to spend       |
-| [cv/theme/fonts.css](src/lib/cv/theme/fonts.css)       | the same six stacks, likewise                                |
-| [cv/theme/presets.css](src/lib/cv/theme/presets.css)   | the ramp and the stack selected on `#cv-root`                |
-| the active template's compiled style block             | scoped by the compiler, so it can't reach anything else      |
+| File                                                   | Holds                                                                  |
+| ------------------------------------------------------ | ---------------------------------------------------------------------- |
+| [cv/frame.css](src/lib/cv/frame.css)                   | the frame's reset, its gutter and scrollbars, the default page box     |
+| `@font-face` rules from typefaces.js                   | the bundled faces                                                      |
+| [cv/html/sheet.css](src/lib/cv/html/sheet.css)         | the arrangement of the sheet, page view, and the print fallback        |
+| what [sheet-css.js](src/lib/cv/html/sheet-css.js) writes | the palette, spacing and type roles for this file's theme and density |
+| what `paperCss` writes                                 | the page box and its margin boxes                                      |
 
 #### The chrome's palette
 
@@ -628,18 +530,18 @@ included, so the app's styles can't reach the sheet by accident. It also means t
 declare everything the sheet spends — `frame.css` is that list, and the overlap
 with `tokens.scss` is the point rather than an oversight.
 
-`CvFrameBody` is `mount()`ed into the frame's `#cv-root` with a `$state` props
-object; mutating it re-renders the sheet in place, so the frame is built once
-and never reloaded. The active template is one of those props, so a recompile is
-the same kind of event as a keystroke in the YAML. It is also the one thing that
-does cross the boundary: the component was compiled out here and only renders in
-there — see _Compiling one_ above for why it can't be the other way round.
+`CvSheet` is `mount()`ed into the frame's `#cv-root` with a `$state` props
+object holding the model; mutating it re-renders the sheet in place, so the frame
+is built once and never reloaded. After each render the frame paginates the
+sheet, and its `measure()` reads it back for the export. The sheet is always
+laid out at the paper's width — measured lengths would otherwise be wrong — and
+a pane narrower than that zooms it instead.
 
-Two things follow from the move. Printing goes to `iframe.contentWindow.print()`
-— printing the app instead would put the frame on the page as a box and crop the
-CV to it — which is also why `Ctrl+P` is intercepted; `print.scss` is now only the
-fallback for a print started from the browser's own menu, which nothing can
-catch. And every listener the two panes need is bound to the frame's document,
+Two things follow from the move. The print fallback goes to
+`iframe.contentWindow.print()` — printing the app instead would put the frame on
+the page as a box and crop the CV to it — which is also why `Ctrl+P` is
+intercepted; `print.scss` is only the fallback for a print started from the
+browser's own menu, which nothing can catch. And every listener the two panes need is bound to the frame's document,
 since an iframe's events don't bubble out: `instanceof Element` is no use in
 there either, because the constructor belongs to the app's realm and disowns
 every node in the frame.
@@ -713,11 +615,11 @@ single visit is enough; after that it runs with the network off. SvelteKit regis
 automatically in a production build and leaves it out of `vite dev`, so development
 never serves stale bytes.
 
-The heaviest single thing in that precache is Svelte's compiler, which the
-editor page needs to compile the sheet at all. It is a lazy chunk, loaded the
-first time a composition needs compiling — but it is precached all the same,
-because "compiles the sheet only when online" would be a strange kind of
-offline editor.
+The heaviest things in that precache are the PDF export's: the pdfkit chunk,
+loaded on the first export, and the default pairing's font files. They are
+precached all the same, because "exports only when online" would be a strange
+kind of offline editor. The other font choices' faces — some ten megabytes
+between them — are cached by the fetch handler the first time a sheet uses them.
 
 The one asset that makes this sharper than a usual PWA is Loro's `.wasm`, fetched
 lazily on first document load rather than inlined. Uncached, the app would paint its
@@ -742,10 +644,12 @@ is not much of one.
 
 ## Dependencies
 
-All bundled locally — the only WASM/asset URL is same-origin, and the only other
-URLs are the `blob:` ones a compiled template is imported through.
+All bundled locally — the WASM, the fonts and every other asset URL are
+same-origin.
 
-`svelte/compiler` is a runtime dependency here rather than a build-time one.
+`pdfkit` (and the `fontkit` it brings) is loaded only on the first export, as a
+chunk of its own. The fonts are devDependencies because only their TTF files are
+used, and those are copied into the build.
 
 `loro-crdt` ships several builds. `loro-codemirror` imports the bare specifier, which
 resolves to a build that loads its WASM with a synchronous main-thread XHR, and would

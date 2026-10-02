@@ -4,12 +4,7 @@
   // Everything else is styled inside the component it belongs to.
   import '../app.scss'
   // The CV's own stylesheets are *not* loaded here — the sheet renders inside
-  // an iframe and PreviewFrame.svelte writes them into it. The palettes and
-  // the font stacks are the exception: StylePicker draws each option with
-  // `data-cv-theme` / `data-cv-font` on the option itself, so the app needs
-  // both tables even though it has no sheet.
-  import '$lib/cv/theme/fonts.css'
-  import '$lib/cv/theme/palettes.css'
+  // an iframe and PreviewFrame.svelte writes them into it.
   import '$lib/styles/print.scss'
 
   let { children } = $props()

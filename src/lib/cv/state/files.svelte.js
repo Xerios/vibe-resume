@@ -6,10 +6,11 @@ import { KEYS, read, remove, snapshotKey, write } from './storage.js'
  * @property {string} id
  * @property {string} name
  * @property {number | null} deletedAt   ms epoch when moved to trash; null while open
- * @property {string} [layout]           preset id from compositions.js; absent means the default
- * @property {Record<string, string>} [variants]  slot id → variant id, on top of the preset's
- * @property {string} [theme]            palette id from presets.js; absent means the default
- * @property {string} [font]             font id from fonts.js; absent means the default
+ * @property {string} [layout]           a LAYOUTS id from render/tokens.js; absent means the default
+ * @property {string} [theme]            palette id from theme/palettes.js; absent means the default
+ * @property {string} [density]          a DENSITIES id from render/tokens.js; absent means the default
+ * @property {string} [font]             a FONTS id from theme/typefaces.js; absent means the default
+ * @property {Record<string, string>} [variants]  slot id → block variant id, from render/variants.js; a slot left out is its default
  * @property {import('../theme/paper.js').Paper} [paper]  the page box it prints on; absent means A4 portrait
  */
 
@@ -22,7 +23,7 @@ import { KEYS, read, remove, snapshotKey, write } from './storage.js'
  * key is left untouched, so restoring it from the trash brings back the full
  * history exactly as it was.
  *
- * Preset, block variants, theme and font ride along here too, because this is
+ * Layout, theme, font, density, block variants and paper ride along here too, because this is
  * the only place that knows them for a file that isn't open. For the file that
  * *is* open they are also in its document, which is what puts a restyle in the
  * version history and on the undo stack — see `bindStyle` in doc.svelte.js.
@@ -37,7 +38,7 @@ export class FileManager {
   /** Left-to-right tab order, oldest first. */
   open = $derived(this.files.filter((f) => !f.deletedAt))
   /** Most recently deleted first. */
-  trashed = $derived(this.files.filter((f) => f.deletedAt).sort((a, b) => (b.deletedAt ?? 0) - (a.deletedAt ?? 0)))
+  trashed = $derived(this.files.filter((f) => f.deletedAt).toSorted((a, b) => (b.deletedAt ?? 0) - (a.deletedAt ?? 0)))
   active = $derived(this.files.find((f) => f.id === this.activeId) ?? null)
 
   init() {
@@ -76,9 +77,10 @@ export class FileManager {
         name: this.#uniqueName(`${source.name} copy`),
         deletedAt: null,
         layout: source.layout,
-        variants: source.variants,
         theme: source.theme,
+        density: source.density,
         font: source.font,
+        variants: source.variants,
         paper: source.paper,
       },
     ]
@@ -178,9 +180,9 @@ export class FileManager {
 
   /**
    * Restyle a file. Ids are stored as given and validated on the way out
-   * (`resolvePreset` / `resolveSlots` / `resolveTheme` / `resolveFont`), so a
-   * preset or variant that later disappears degrades to the default instead of
-   * rendering nothing.
+   * (`resolveLayout` / `resolveTheme` / `resolveDensity` / `resolveFont` /
+   * `resolveVariants`), so an id that later
+   * disappears degrades to the default instead of rendering nothing.
    *
    * Not the way to restyle the file being edited: that is `restyle` in
    * state.svelte.js, which writes here *and* records the change in the
@@ -188,7 +190,7 @@ export class FileManager {
    * back into when an undo or a restore moves the style from that end.
    *
    * @param {string} id
-   * @param {{ layout?: string, variants?: Record<string, string>, theme?: string, font?: string, paper?: import('../theme/paper.js').Paper }} style
+   * @param {{ layout?: string, theme?: string, density?: string, font?: string, variants?: Record<string, string>, paper?: import('../theme/paper.js').Paper }} style
    */
   setStyle(id, style) {
     this.files = this.files.map((f) => (f.id === id ? { ...f, ...style } : f))
@@ -196,19 +198,19 @@ export class FileManager {
   }
 
   /**
-   * Choose one block variant, leaving the file's preset — and every other slot
-   * — where it was. Picking the slot's default back drops the entry rather than
-   * storing it, so a file that has been put back to its preset reads as
-   * unmodified again.
+   * Choose one block variant, leaving every other slot where it was. Picking a
+   * slot's default drops the entry rather than storing it, so a file put back
+   * to the defaults reads as unmodified again.
    * @param {string} id
    * @param {string} slotId
-   * @param {string | null} variantId  null clears the override
+   * @param {string} variantId
+   * @param {boolean} isDefault
    */
-  setVariant(id, slotId, variantId) {
+  setVariant(id, slotId, variantId, isDefault) {
     const file = this.files.find((f) => f.id === id)
     if (!file) return
     const variants = { ...file.variants }
-    if (variantId === null) delete variants[slotId]
+    if (isDefault) delete variants[slotId]
     else variants[slotId] = variantId
     this.setStyle(id, { variants })
   }
@@ -226,24 +228,6 @@ export class FileManager {
     const file = this.files.find((f) => f.id === id)
     if (!file) return
     this.setStyle(id, { paper: { ...resolvePaper(file.paper), ...patch } })
-  }
-
-  /**
-   * Take on the whole templates written before the layout/variant split. Each
-   * has become a layout of the user's own (see PartManager), so a file that
-   * named one now names it in the `page` slot instead.
-   * @param {Record<string, string>} map  old template id → new `page` variant id
-   */
-  adoptLegacyTemplates(map) {
-    if (Object.keys(map).length === 0) return
-    let changed = false
-    this.files = this.files.map((f) => {
-      const adopted = f.layout ? map[f.layout] : undefined
-      if (!adopted || f.variants?.page) return f
-      changed = true
-      return { ...f, variants: { ...f.variants, page: adopted } }
-    })
-    if (changed) this.#saveList()
   }
 
   // ── Internals ──────────────────────────────────────────────────────────────
@@ -298,12 +282,12 @@ const newId = () => Math.random().toString(36).slice(2, 10)
  *
  * The undefined values are left undefined rather than defaulted: a file that
  * has never been restyled has nothing to say about any of these, and the
- * resolvers (`resolvePreset`, `resolveTheme`, `resolveFont`) are what turn
+ * resolvers (`resolveLayout`, `resolveTheme`, `resolveDensity`, …) are what turn
  * that into the default at the point it is rendered.
  *
  * @param {FileMeta | null | undefined} file
  * @returns {Record<string, any>}
  */
 export function styleOf(file) {
-  return { layout: file?.layout, variants: file?.variants, theme: file?.theme, font: file?.font, paper: file?.paper }
+  return { layout: file?.layout, theme: file?.theme, density: file?.density, font: file?.font, variants: file?.variants, paper: file?.paper }
 }

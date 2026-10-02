@@ -2,88 +2,97 @@
   /**
    * The CV sheet, in a document of its own.
    *
-   * The preview used to be a `#cv-root` div in the app's own DOM, which meant
-   * one stylesheet for two unrelated things: a chrome rule could reach the
-   * sheet, and a sheet rule could reach the chrome. An iframe makes that
-   * impossible in both directions — nothing crosses, custom properties
-   * included.
+   * An iframe keeps the sheet's stylesheet and the app's apart in both
+   * directions: nothing crosses, custom properties included.
    *
-   * The frame's stylesheets are imported as text and written into its head:
-   * frame.css declares what the sheet spends, then cv.css, the theme ramps and
-   * the font stacks, then an empty style element for whatever the active
-   * template's own style block compiled to. Changing it is a `textContent`
-   * assignment — no rebuild.
+   * The frame's stylesheets are written into its head as text: frame.css and
+   * the bundled faces, then sheet.css for the arrangement, then two that move.
+   * The tokens hold the palette, the type and the spacing for this file's theme
+   * and density; the paper holds the page box. Changing either is a
+   * `textContent` assignment, never a reload.
    *
    * The sheet itself is `mount()`ed rather than rendered here, since it has to
    * land in the frame's document. Its props are a $state object, so mutating
-   * them re-renders it in place — the frame is built once and never reloaded.
+   * them re-renders it in place.
+   *
+   * After every render the sheet is paginated (html/paginate.js): blocks are
+   * pushed onto the page they will be on in the PDF, and in page view the pages
+   * are drawn apart. `measure()` reads that back for the export, so the PDF is
+   * exactly what is on screen.
    */
-  import { mount, onDestroy, unmount } from 'svelte'
-  import CvFrameBody from './CvFrameBody.svelte'
-  import { docMeta } from './template/doc-meta.js'
-  import { DEFAULT_PRESET } from './template/compositions.js'
-  import { DEFAULT_FONT } from './theme/fonts.js'
-  import { DEFAULT_PAPER, pageWidthPx, paperCss } from './theme/paper.js'
-  import { DEFAULT_THEME } from './theme/presets.js'
-  import cvCss from './cv.css?raw'
+  import { mount, onDestroy, tick, unmount } from 'svelte'
+  import CvSheet from './html/CvSheet.svelte'
+  import { paginate } from './html/paginate.js'
+  import { facesCss, sheetCss } from './html/sheet-css.js'
+  import sheetLayoutCss from './html/sheet.css?raw'
+  import { measure as measureSheet } from './pdf/measure.js'
+  import { docMeta } from './render/doc-meta.js'
+  import { buildModel } from './render/model.js'
+  import { DEFAULT_DENSITY, DEFAULT_LAYOUT } from './render/tokens.js'
+  import { DEFAULT_PAPER, pageBox, pageWidthPx, paperCss } from './theme/paper.js'
+  import { DEFAULT_THEME } from './theme/palettes.js'
+  import { DEFAULT_FONT } from './theme/typefaces.js'
   import frameCss from './frame.css?raw'
-  import fontsCss from './theme/fonts.css?raw'
-  import palettesCss from './theme/palettes.css?raw'
-  import presetsCss from './theme/presets.css?raw'
 
   /**
-   * `cv` is null until the first successful parse and `component` until the
-   * first successful compile; `templateCss` is what that template's style
-   * block came to. `layout`, `theme` and `font` are only ids: each lands on
-   * `#cv-root` as a data attribute, where the frame's own stylesheets are what
-   * give it meaning.
+   * `cv` is null until the first successful parse. `layout`, `theme`, `font`
+   * and `density` are ids, resolved against the shared tokens; `variants` is
+   * the block variant chosen per slot.
+   *
+   * `paged` draws the pages apart, as cards with the running head and foot in
+   * their margins. Off, the sheet is one strip; the page breaks are the same.
    *
    * `onReady` is handed the frame's document, window and `#cv-root` once they
-   * exist — the page binds its preview listeners in there, since nothing
-   * inside an iframe bubbles out to us, keydown included.
+   * exist. The page binds its preview listeners in there, since nothing inside
+   * an iframe bubbles out to us, keydown included.
    *
-   * `paper` is the one piece of presentation that can't be an id on an
-   * attribute: a page box is `@page`, and no selector reaches that. So it
-   * arrives as a value and becomes a stylesheet of its own — see paper.js —
-   * with `name` in it, since a running header can only hold a string literal.
+   * `paper` becomes a stylesheet of its own (see paper.js), with `name` in it,
+   * since a running header in the print margin can only hold a string literal.
    *
-   * `fit` scales the sheet down until a whole page fits the pane, which is a
-   * way of looking at the preview rather than anything about the file. The
-   * page decides whether to ask for it; all that happens here is the arithmetic
-   * and a `zoom`, which the print stylesheet drops.
+   * `fit` scales the sheet down until a whole page fits the pane. That is a
+   * way of looking at the preview rather than anything about the file, so all
+   * that happens here is the arithmetic and a `zoom`, which the print
+   * stylesheet drops.
    *
    * `dark` is the app's colour scheme, which the frame can't see for itself.
-   * Only the gutter around the sheet follows it — the sheet stays paper — so it
-   * lands on the frame's `<html>` rather than on `#cv-root`, out of reach of
-   * the palettes.
+   * Only the gutter around the sheet follows it.
    *
    * @type {{
    *   cv?: any,
-   *   component?: any,
-   *   templateCss?: string,
    *   layout?: string,
+   *   variants?: Record<string, string>,
    *   theme?: string,
    *   font?: string,
+   *   density?: string,
+   *   paged?: boolean,
    *   paper?: Partial<import('./theme/paper.js').Paper>,
    *   name?: string,
    *   fit?: boolean,
    *   dark?: boolean,
    *   onReady?: (parts: { doc: Document, win: Window, root: HTMLElement }) => void
+   *   onPaginated?: () => void
    * }}
    */
   let {
     cv = null,
-    component = null,
-    templateCss = '',
-    layout = DEFAULT_PRESET,
+    layout = DEFAULT_LAYOUT,
+    variants = {},
     theme = DEFAULT_THEME,
     font = DEFAULT_FONT,
+    density = DEFAULT_DENSITY,
+    paged = false,
     paper = DEFAULT_PAPER,
     name = '',
     fit = false,
     dark = false,
     onReady = undefined,
+    onPaginated = undefined,
   } = $props()
+
+  /** The gap between pages in page view, px. */
+  const PAGE_GAP = 16
+  /** CSS px per millimetre. */
+  const PX_PER_MM = 96 / 25.4
 
   /** An empty same-origin document to build into; `srcdoc` keeps it off the network. */
   const SHELL = "<!doctype html><html><head><meta charset='utf-8'></head><body></body></html>"
@@ -99,15 +108,18 @@
   let doc = $state(/** @type {Document | null} */ (null))
   let root = $state(/** @type {HTMLElement | null} */ (null))
   let pageStyle = $state(/** @type {HTMLStyleElement | null} */ (null))
-  let templateStyle = $state(/** @type {HTMLStyleElement | null} */ (null))
+  let tokenStyle = $state(/** @type {HTMLStyleElement | null} */ (null))
   let head = $state(/** @type {{ title: HTMLTitleElement, author: HTMLMetaElement, description: HTMLMetaElement, keywords: HTMLMetaElement } | null} */ (null))
   let sheet = /** @type {Record<string, any> | null} */ (null)
 
-  /** What the sheet says about itself — the PDF's title among it. See doc-meta.js. */
+  /** What the sheet says about itself — the printed PDF's title among it. See doc-meta.js. */
   const meta = $derived(docMeta(cv))
 
   /** The page box and its margin boxes, as CSS. Rebuilt whenever either moves. */
   const pageCss = $derived(paperCss(paper, name))
+
+  /** Palette, type and spacing, as custom properties and role classes. */
+  const tokensCss = $derived(sheetCss({ theme, density, font }))
 
   /** The frame's own width, watched so that a fitted sheet re-scales with the pane. */
   let paneW = $state(0)
@@ -122,44 +134,92 @@
    * identity is what the mounted component holds on to.
    */
   const sheetProps = $state({
-    cv: /** @type {any} */ (null),
-    component: /** @type {any} */ (null),
+    model: /** @type {import('./render/model.js').Model | null} */ (null),
+    paged: false,
+    pages: 1,
+    dividers: /** @type {import('./html/paginate.js').Pagination['dividers']} */ ([]),
+    running: { header: 'none', footer: 'none', name: '' },
   })
 
   // Ahead of the paint rather than after it, so a `tick()` in the page still
-  // finds the frame's DOM current: the props cross two component boundaries.
+  // finds the frame's DOM current.
   $effect.pre(() => {
-    sheetProps.cv = cv
-    sheetProps.component = component
+    sheetProps.model = cv ? buildModel(cv, { layout, variants }) : null
+    sheetProps.paged = paged
+    sheetProps.running = { header: paper.header ?? 'none', footer: paper.footer ?? 'none', name }
   })
 
-  /* Presentation rides on the same attributes it always did — only the element
-	   they land on has moved.
+  /** The page, in px, as paginate.js and measure.js take it. */
+  function geometry() {
+    const box = pageBox(paper)
+    return { width: box.w * PX_PER_MM, height: box.h * PX_PER_MM, mt: box.mt * PX_PER_MM, mb: box.mb * PX_PER_MM, gap: paged ? PAGE_GAP : 0 }
+  }
 
-	   Each of these reads its prop into a local *before* testing the target. An
+  /** The pagination in flight, which `measure()` waits for. */
+  let pending = Promise.resolve()
+  let runs = 0
+
+  /** Paginate once the DOM and its fonts have settled; a newer run supersedes an older one. */
+  function repaginate() {
+    const run = ++runs
+    pending = (async () => {
+      await tick()
+      if (doc) await doc.fonts.ready
+      const el = /** @type {HTMLElement | null | undefined} */ (root?.querySelector('.sheet'))
+      if (run !== runs || !el || !root) return
+      const geo = geometry()
+      root.style.setProperty('--page-gap', `${geo.gap}px`)
+      const result = paginate(el, geo)
+      sheetProps.pages = result.pages
+      sheetProps.dividers = result.dividers
+      onPaginated?.()
+    })()
+  }
+
+  // Anything that moves the layout moves the page breaks.
+  $effect(() => {
+    void sheetProps.model
+    void tokensCss
+    void pageCss
+    void paged
+    if (root) repaginate()
+  })
+
+  // A face that arrives late reflows the text it sets.
+  $effect(() => {
+    if (!doc) return
+    const fonts = doc.fonts
+    const onDone = () => repaginate()
+    fonts.addEventListener('loadingdone', onDone)
+    return () => fonts.removeEventListener('loadingdone', onDone)
+  })
+
+  /**
+   * The sheet as it is laid out and paginated now, for the PDF — see
+   * pdf/measure.js. Null before there is a sheet to measure.
+   * @returns {Promise<import('./pdf/measure.js').DisplayList | null>}
+   */
+  export async function measure() {
+    await pending
+    const el = /** @type {HTMLElement | null | undefined} */ (root?.querySelector('.sheet'))
+    if (!el) return null
+    const geo = geometry()
+    return measureSheet(el, { width: geo.width, height: geo.height, gap: geo.gap, pages: sheetProps.pages })
+  }
+
+  /* Each of these reads its prop into a local *before* testing the target. An
 	   effect only subscribes to what it actually reads, and on the first pass the
 	   target is still null: guarding first would short-circuit past the prop,
 	   leave the effect with no dependencies at all, and never run it again. */
-  $effect(() => {
-    const id = layout
-    if (root) root.dataset.cvLayout = id
-  })
-
-  $effect(() => {
-    const id = theme
-    if (root) root.dataset.cvTheme = id
-  })
-
-  $effect(() => {
-    const id = font
-    if (root) root.dataset.cvFont = id
-  })
-
   $effect(() => {
     const text = pageCss
     if (pageStyle) pageStyle.textContent = text
   })
 
+  $effect(() => {
+    const text = tokensCss
+    if (tokenStyle) tokenStyle.textContent = text
+  })
   $effect(() => {
     const { title, author, description, keywords } = meta
     if (!head) return
@@ -201,11 +261,6 @@
     return () => observer.disconnect()
   })
 
-  $effect(() => {
-    const text = templateCss
-    if (templateStyle) templateStyle.textContent = text
-  })
-
   onDestroy(() => {
     if (sheet) unmount(sheet)
   })
@@ -221,12 +276,9 @@
     if (!d || !win || doc) return // built already; the frame is never reloaded
 
     d.documentElement.dataset.scheme = dark ? 'dark' : 'light'
-    addStyle(d, [frameCss, cvCss, palettesCss, fontsCss, presetsCss].join('\n'))
-    // Two more, in cascade order. The paper goes first, because it is the page
-    // the template is drawn on; the template's own styles are scoped by the
-    // compiler and outrank cv.css on specificity alone.
+    addStyle(d, [frameCss, facesCss, sheetLayoutCss].join('\n'))
+    tokenStyle = addStyle(d, tokensCss)
     pageStyle = addStyle(d, pageCss)
-    templateStyle = addStyle(d, templateCss)
     head = {
       title: d.head.appendChild(d.createElement('title')),
       author: addMeta(d, 'author'),
@@ -236,14 +288,11 @@
 
     const el = d.createElement('div')
     el.id = 'cv-root'
-    el.dataset.cvLayout = layout
-    el.dataset.cvTheme = theme
-    el.dataset.cvFont = font
     d.body.appendChild(el)
 
     doc = d
     root = el
-    sheet = mount(CvFrameBody, { target: el, props: sheetProps })
+    sheet = mount(CvSheet, { target: el, props: sheetProps })
     onReady?.({ doc: d, win, root: el })
   }
 
@@ -270,9 +319,10 @@
   }
 
   /**
-   * Print the sheet. It is a document of its own now, so the print has to go to
-   * the frame: printing the app would get this iframe clipped to its box on the
-   * page rather than the CV flowed across as many pages as it needs.
+   * Print the sheet — the fallback beside the PDF export. It is a document of
+   * its own, so the print has to go to the frame: printing the app would get
+   * this iframe clipped to its box on the page rather than the CV flowed across
+   * as many pages as it needs.
    */
   export function print() {
     const win = frameEl?.contentWindow

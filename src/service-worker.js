@@ -19,8 +19,16 @@ const sw = /** @type {ServiceWorkerGlobalScope} */ (/** @type {unknown} */ (self
 
 const CACHE = `cv-editor-${version}`
 
+/**
+ * The bundled faces of the default font choice — the only ones every sheet
+ * needs. The other choices' faces are some ten megabytes between them, so they
+ * are cached by the fetch handler below the first time a sheet uses them rather
+ * than downloaded by every install.
+ */
+const precachedFace = (/** @type {string} */ path) => !path.endsWith('.ttf') || /\/(Inter|JetBrainsMono)_/.test(path)
+
 /** The Vite bundle (hashed, immutable), everything in static/, and the prerendered shell. */
-const PRECACHE = [...build, ...files, ...prerendered]
+const PRECACHE = [...build.filter(precachedFace), ...files, ...prerendered]
 const PRECACHED = new Set(PRECACHE)
 
 sw.addEventListener('install', (event) => {

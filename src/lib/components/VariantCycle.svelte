@@ -7,8 +7,8 @@
   /**
    * One axis, as a control: `‹ Chips ›`.
    *
-   * The row the Style popover lists every slot as, and the same one the paper's
-   * running-head axes use.
+   * The row the Style panel lists every block slot as (render/variants.js), and
+   * the same one the paper's running head and foot use.
    *
    * The arrows are the fast path and wrap at both ends; the name opens the full
    * list. One tab stop per row — the name. Left/Right on it step like the
@@ -17,7 +17,7 @@
 
   /**
    * @type {{
-   *   slot: import('$lib/cv/template/slots.js').Registry[number],
+   *   slot: import('$lib/cv/render/variants.js').Slot,
    *   choices: Record<string, string>,
    *   onPick: (slotId: string, variantId: string) => void,
    *   menuAlign?: 'left' | 'right',
@@ -167,7 +167,7 @@
           onclick={() => pick(v.id)}
         >
           <span class="vc-opt-name">
-            {v.name}{#if v.edited}<span class="vc-edited" title="Edited">*</span>{/if}
+            {v.name}
           </span>
           <span class="vc-opt-hint" id="{id}-{v.id}-hint">{v.hint}</span>
         </button>
@@ -323,10 +323,5 @@
   .vc-opt-hint {
     font: var(--ds-font-body-small);
     color: var(--ds-text-subtlest);
-  }
-
-  .vc-edited {
-    color: var(--ds-text-warning);
-    margin-left: var(--ds-space-025);
   }
 </style>

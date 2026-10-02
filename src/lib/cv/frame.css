@@ -1,44 +1,30 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    The preview frame's own base stylesheet — the first thing loaded into the
-   iframe that PreviewFrame.svelte builds, ahead of cv.css and presets.css.
+   iframe that PreviewFrame.svelte builds, ahead of html/sheet.css and the
+   tokens html/sheet-css.js writes.
 
    The sheet renders in a document of its own, so nothing from the app reaches
-   it: not a reset, not a font stack, not a single custom property. Everything
-   cv.css and presets.css spend without declaring has to be declared here
-   instead.
+   it: not a reset, not a font, not a single custom property. What the frame
+   itself needs outside the sheet is declared here.
 
-   The overlap with src/lib/styles/tokens.css is the point of the frame rather
-   than an oversight. These are its declared inputs — the short list the themes
-   and blocks re-point to restyle the sheet, and the reason app CSS can no
-   longer reach in to do it by accident.
-
-   There is one ramp here and no dark counterpart. The app's dark mode dresses
-   the editor around the sheet; the sheet itself is paper, and stays paper —
-   which is also what it will be when it prints. The one thing that does follow
-   the app is the gutter the sheet floats in — see `[data-scheme='dark']` below,
-   which PreviewFrame sets on this document's <html> from the app's own switch.
+   There is no dark counterpart for the sheet. The app's dark mode dresses
+   the editor around it; the sheet is paper, and stays paper — which is also
+   what it will be in the PDF. The one thing that does follow the app is the
+   gutter the sheet floats in — see `[data-scheme='dark']` below, which
+   PreviewFrame sets on this document's <html> from the app's own switch.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
   color-scheme: light;
 
-  /* Re-pointed on #cv-root by presets.css, from the palette the file picked.
-	   The values here are what the frame outside the sheet draws with. */
-  --ink: #15211f;
+  /* What the frame outside the sheet draws with. The sheet's own tokens are
+	   written on #cv-root by html/sheet-css.js from the file's palette; these
+	   are only for the gutter, the scrollbars and the running heads that
+	   paper.js puts in the print margins, which resolve against the root. */
   --muted: #5f6f6c;
-  --faint: #8a9794;
   --accent: #157c75;
-  --accent-deep: #0d4f4a;
-  --accent-wash: #eaf4f2;
-  --line: #dbe6e3;
-  --paper: #fff;
+  --mono: 'CV JetBrains Mono', monospace;
 
-  /* Not part of any CV palette, and stated once rather than per ramp: the
-	   sheet is always light, whatever the app around it is set to. Only --bg
-	   and the scrollbar it carries are restated for the dark scheme below. */
-  --danger: #b91c1c;
-  --prompt: #9a5b00;
-  --prompt-bg: #fbf2e2;
   /* ADS's sunken surface spelled out — the app's --ds-surface-sunken, which
 	   the iframe element and the pane around it are drawn on, so the gutter is
 	   the same canvas. */
@@ -46,39 +32,17 @@
   --scroll-thumb: color-mix(in srgb, var(--muted) 36%, transparent);
   --scroll-thumb-hover: color-mix(in srgb, var(--accent) 62%, transparent);
 
-  --mono: 'SFMono-Regular', ui-monospace, 'JetBrains Mono', 'Menlo', monospace;
-  --sans: 'Inter', 'Segoe UI', -apple-system, system-ui, Roboto, Helvetica, Arial, sans-serif;
-
-  /* The sheet's type ladder, anchored on --cv-fs-lg: that is what .sheet is set
-	   in, and every other step is read against it. cv.css and the blocks spend
-	   these rather than stating a size, so a variant can re-point one step and
-	   have every block that uses it follow.
-
-	   The two display steps are the name only, which is the one piece of the
-	   sheet far enough off the ladder to need its own. The app's chrome is on a
-	   separate ladder — --ui-fs-* in src/lib/styles/tokens.css — and neither
-	   document can see the other's. */
-  --cv-fs-2xs: 9.5px;
-  --cv-fs-xs: 10.5px;
-  --cv-fs-sm: 11.5px;
-  --cv-fs-md: 12.5px;
-  --cv-fs-lg: 13.5px;
-  --cv-fs-xl: 14.5px;
-  --cv-fs-2xl: 15.5px;
-  --cv-fs-name: 31px;
-  --cv-fs-name-sm: 27px;
-
-  /* The paper itself, re-pointed on #cv-root by the stylesheet paper.js
-	   generates — one per file, from the size and orientation it chose. The
-	   values here are the page the sheet has always assumed, so cv.css can size
-	   the sheet from them before a file has said anything about paper. */
+  /* The paper, re-pointed on #cv-root by the stylesheet paper.js generates.
+	   The values here are A4 portrait, which is what a file that has never
+	   chosen any paper is set on. */
   --page-w: 210mm;
   --page-h: 297mm;
   --page-mx: 13mm;
   --page-mt: 12mm;
   --page-mb: 12mm;
 
-  --theme-fade: background-color 0.22s ease, color 0.22s ease, border-color 0.22s ease;
+  /* Between pages in page view; PreviewFrame sets it on #cv-root. */
+  --page-gap: 0px;
 }
 
 /* The gutter, in the app's dark scheme. ADS's dark sunken surface, the same
@@ -101,18 +65,11 @@ body {
   margin: 0;
   padding: 0;
   background: var(--bg);
-  transition: var(--theme-fade);
 }
 
-/* The sheet's font stack is spent here rather than on `body`, so that pointing
-   --sans somewhere else on #cv-root — which is where presets.css does it —
-   actually changes the type. Set on `body` it would resolve against the ramp
-   an ancestor saw, and nothing would move. */
+/* A block formatting context, so the sheet's top margin stays inside the
+   frame instead of collapsing through `body` and out of the document. */
 #cv-root {
-  font-family: var(--sans);
-  -webkit-font-smoothing: antialiased;
-  /* A block formatting context, so the sheet's top margin stays inside the
-	   frame instead of collapsing through `body` and out of the document. */
   display: flow-root;
 }
 
@@ -149,9 +106,8 @@ body {
 }
 
 /* ── Print / Export PDF ───────────────────────────
-   Export prints *this* document rather than the app's, so the page box lives
-   here. How the sheet paginates inside it is cv.css's job, and which ramp it
-   falls back to is presets.css's. */
+   The print fallback prints *this* document rather than the app's, so the
+   page box lives here. How the sheet paginates inside it is sheet.css's job. */
 /* The page box a file that has never chosen any paper prints on. The real one
    is written into a stylesheet of its own further down the cascade — see
    paper.js — including the margin boxes a running header or footer needs. */

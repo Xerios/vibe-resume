@@ -2,20 +2,22 @@
   import Icon from '@iconify/svelte'
   import IconClose from '@iconify-icons/lucide/x'
   import { commands } from '$lib/cv/state/commands.js'
-  import { look, parts } from '$lib/cv/state/state.svelte.js'
-  import { PRESETS } from '$lib/cv/template/compositions.js'
-  import { FONTS } from '$lib/cv/theme/fonts.js'
-  import { ORIENTATIONS, PAPER_SIZES, RUNNING_SLOTS } from '$lib/cv/theme/paper.js'
-  import { THEMES } from '$lib/cv/theme/presets.js'
+  import { look } from '$lib/cv/state/state.svelte.js'
   import { KEYS, read, write } from '$lib/cv/state/storage.js'
+  import { DENSITIES, LAYOUTS } from '$lib/cv/render/tokens.js'
+  import { SLOTS } from '$lib/cv/render/variants.js'
+  import { THEMES } from '$lib/cv/theme/palettes.js'
+  import { ORIENTATIONS, PAPER_SIZES, RUNNING } from '$lib/cv/theme/paper.js'
+  import { FAMILIES, FONTS, faceFor } from '$lib/cv/theme/typefaces.js'
   import Foldout from './Foldout.svelte'
   import TemplateThumb from './TemplateThumb.svelte'
   import ToggleButton from './ToggleButton.svelte'
   import VariantCycle from './VariantCycle.svelte'
+  import { onMount } from 'svelte'
   import { fly } from 'svelte/transition'
 
   /** Which groups start folded open — all of them. */
-  const GROUPS_OPEN = { preset: true, blocks: true, theme: true, font: true, paper: true }
+  const GROUPS_OPEN = { layout: true, blocks: true, theme: true, font: true, density: true, paper: true }
 
   /**
    * The panel comes back the shape it was left in. Read over the defaults
@@ -39,19 +41,39 @@
     write(KEYS.styleGroups, JSON.stringify(groups))
   }
 
-  /* The two running-head rows are cycles over an axis like a block's, so they
-	   are drawn by the same control — see RUNNING_SLOTS. */
+  /* The two margins are cycles over the same four choices, so they are drawn by
+     the same control as the blocks. */
+  const RUNNING_SLOTS = [
+    { id: 'header', name: 'Header', variants: RUNNING },
+    { id: 'footer', name: 'Footer', variants: RUNNING },
+  ]
   const running = $derived({ header: look.paper.header, footer: look.paper.footer })
 
-  /** What the head says the groups below are set to, the way History counts its versions. */
-  const presetName = $derived((PRESETS.find((p) => p.id === look.preset)?.name ?? look.preset) + (look.modified ? ' — edited' : ''))
+  /** What the head says the sheet is set as. */
+  const summary = $derived(
+    [LAYOUTS.find((l) => l.id === look.layout)?.name, THEMES.find((t) => t.id === look.theme)?.name, FONTS.find((f) => f.id === look.font)?.name]
+      .filter(Boolean)
+      .join(' · ') + (look.modified ? ' — edited' : ''),
+  )
+
+  /* Each font option is set in the face it offers. The sheet's faces live in the
+     preview frame, so the app gets the one face per option it shows the sample
+     in, which the browser only downloads when the panel is open. */
+  onMount(() => {
+    for (const f of FONTS) {
+      const face = faceFor(f.text, 600)
+      const css = FAMILIES[f.text].css
+      if ([...document.fonts].some((ff) => ff.family === css)) continue
+      document.fonts.add(new FontFace(css, `url(${face.url})`, { weight: '600' }))
+    }
+  })
 </script>
 
 <aside id="style-pane" in:fly={{ y: -8, duration: 200 }}>
   <div class="style-head">
     <div class="style-head-text">
       <h2>Style</h2>
-      <span class="style-preset" title={presetName}>{presetName}</span>
+      <span class="style-preset" title={summary}>{summary}</span>
     </div>
     <button class="ds-icon-btn" aria-label="Close style" onclick={() => commands.toggleSidePanel('style')}>
       <Icon icon={IconClose} width="16" height="16" />
@@ -59,35 +81,29 @@
   </div>
 
   <div class="style-body">
-    <!-- A preset is a whole set of the choices below it, and taking one
-		     replaces every one of them. That is what keeps the nine looks
-		     everybody knows as one click each, now that the axes underneath are
-		     the real thing. -->
-    <Foldout label="Preset" open={groups.preset} onToggle={() => toggleGroup('preset')}>
+    <!-- The arrangement of the page. The preview and the exported PDF are the
+		     same layout, and read the columns in the order listed. -->
+    <Foldout label="Layout" open={groups.layout} onToggle={() => toggleGroup('layout')}>
       <div class="layout-grid">
-        {#each PRESETS as p (p.id)}
-          <ToggleButton big selected={p.id === look.preset} title={p.hint} onclick={() => commands.setPreset(p.id)}>
-            <TemplateThumb id={p.id} />
-            <span>{p.name}</span>
+        {#each LAYOUTS as l (l.id)}
+          <ToggleButton big selected={l.id === look.layout} title={l.hint} onclick={() => commands.setLayout(l.id)}>
+            <TemplateThumb id={l.id} />
+            <span>{l.name}</span>
           </ToggleButton>
         {/each}
       </div>
     </Foldout>
 
-    <!-- Every axis, always all of them. The same rows turn up beside the
-		     sheet when a block is hovered; this is where they are when you know
-		     which one you want rather than which block. -->
+    <!-- One row per block, each a cycle through how that block can be drawn. -->
     <Foldout label="Blocks" open={groups.blocks} onToggle={() => toggleGroup('blocks')}>
       {#snippet head()}
         {#if look.modified}
-          <button class="blocks-reset ds-btn subtle compact" title="Put every block back to what this preset says" onclick={commands.resetVariants}
-            >Reset</button
-          >
+          <button class="blocks-reset ds-btn subtle compact" title="Put every block back to its default" onclick={commands.resetVariants}>Reset</button>
         {/if}
       {/snippet}
       <div class="blocks-list">
-        {#each parts.slots as slot (slot.id)}
-          <VariantCycle {slot} choices={look.choices} onPick={commands.setVariant} />
+        {#each SLOTS as slot (slot.id)}
+          <VariantCycle {slot} choices={look.variants} onPick={commands.setVariant} />
         {/each}
       </div>
     </Foldout>
@@ -95,36 +111,39 @@
     <Foldout label="Theme" open={groups.theme} onToggle={() => toggleGroup('theme')}>
       <div class="theme-grid">
         {#each THEMES as t (t.id)}
-          <ToggleButton selected={t.id === look.theme} title={t.name} onclick={() => commands.setTheme(t.id)} data-cv-theme={t.id}>
-            <span class="theme-dot"></span>
+          <ToggleButton selected={t.id === look.theme} title={t.name} onclick={() => commands.setTheme(t.id)}>
+            <span class="theme-dot" style:--swatch-accent={t.colors.accent} style:--swatch-paper={t.colors.paper}></span>
             <span>{t.name}</span>
           </ToggleButton>
         {/each}
       </div>
     </Foldout>
 
-    <!-- Set in the face it offers, from the `data-cv-font` on the option —
-		     the same trick as the swatches above, and the same reason: one table
-		     of stacks (fonts.css), no second copy to drift. -->
     <Foldout label="Font" open={groups.font} onToggle={() => toggleGroup('font')}>
       <div class="font-grid">
         {#each FONTS as f (f.id)}
-          <ToggleButton selected={f.id === look.font} title={f.hint} onclick={() => commands.setFont(f.id)} data-cv-font={f.id}>
-            <span class="font-sample">Aa</span>
+          <ToggleButton selected={f.id === look.font} title={f.hint} onclick={() => commands.setFont(f.id)}>
+            <span class="font-sample" style:font-family="'{FAMILIES[f.text].css}'">Aa</span>
             <span>{f.name}</span>
           </ToggleButton>
         {/each}
       </div>
     </Foldout>
 
-    <!-- The page itself, which is the one thing here that is not a matter of
-		     taste: it is the sheet the print lands on, and the preview is sized
-		     from the same numbers so that what is on screen is that page.
+    <Foldout label="Density" open={groups.density} onToggle={() => toggleGroup('density')}>
+      <div class="paper-grid two">
+        {#each DENSITIES as d (d.id)}
+          <ToggleButton center selected={d.id === look.density} title={d.hint} onclick={() => commands.setDensity(d.id)}>
+            {d.name}
+          </ToggleButton>
+        {/each}
+      </div>
+    </Foldout>
 
-		     A header or a footer is drawn by the browser in the page margin, from
-		     `@page` — which is also the only place a page *number* can come from,
-		     since nothing in the document knows how many pages there are. Chrome
-		     and Edge do that; Firefox ignores it and prints neither. -->
+    <!-- The page itself: the sheet the PDF is set on, and the preview is sized
+		     and paginated from the same numbers so that what is on screen is that
+		     page. A header or footer is drawn in the page margin of the exported
+		     PDF, and in the preview's page view. -->
     <Foldout label="Paper" open={groups.paper} onToggle={() => toggleGroup('paper')}>
       <div class="paper-grid">
         {#each PAPER_SIZES as s (s.id)}
@@ -207,16 +226,16 @@
     flex-direction: column;
   }
 
-  .blocks-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--ds-space-050);
-  }
-
   .layout-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: var(--ds-space-100);
+  }
+
+  .blocks-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-space-050);
   }
 
   .theme-grid,
@@ -237,6 +256,7 @@
     &.two {
       grid-template-columns: repeat(2, 1fr);
     }
+
   }
 
   .paper-runs {
@@ -258,13 +278,11 @@
     }
   }
 
-  /* The specimen, in the stack the option's own `data-cv-font` declares. The
-     name beside it stays in the picker's type, so the two read as label and
-     sample rather than as one mixed line. */
+  /* The specimen, in the face the option offers. The name beside it stays in
+     the picker's type, so the two read as label and sample. */
   .font-sample {
     flex-shrink: 0;
     width: 20px;
-    font-family: var(--f-sans);
     font-size: 16px;
     font-weight: 600;
     line-height: 1;
@@ -273,7 +291,7 @@
   }
 
   /* Accent over the sheet colour it sits on, so a swatch previews the pairing.
-     The tokens come from the `data-cv-theme` on the option itself (palettes.css).
+     The colours are the palette's own, set on the dot from palettes.js.
 
      The light ramp whatever the app is set to, because that is what the sheet
      renders from — a swatch that darkened with the chrome would be advertising
@@ -283,10 +301,10 @@
     width: 16px;
     height: 16px;
     border-radius: var(--ds-radius-full);
-    background: var(--t-accent-l);
+    background: var(--swatch-accent);
     box-shadow:
-      inset 0 0 0 4px var(--t-paper-l),
-      inset 0 0 0 5px var(--t-accent-l);
+      inset 0 0 0 4px var(--swatch-paper),
+      inset 0 0 0 5px var(--swatch-accent);
   }
 
   /* Stacked layout: there is no third column to sit in, so the panel lifts out

@@ -4,7 +4,7 @@
  */
 
 import { lintCv } from '../cv/format/lint.js'
-import { parseCv } from '../cv/template/render.js'
+import { parseCv } from '../cv/render/parse.js'
 import { serve } from './rpc.js'
 
 serve({ parseCv, lintCv })

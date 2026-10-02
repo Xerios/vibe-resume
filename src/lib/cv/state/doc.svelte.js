@@ -11,7 +11,7 @@ import { base64ToBytes, bytesToBase64, read, remove, snapshotKey, write } from '
 const TEXT_ID = 'yaml'
 const TAGS_ID = 'checkpoints'
 /**
- * The file's presentation — preset, block variants, theme, font, paper.
+ * The file's presentation — layout, theme, font, density, block variants, paper.
  * It used to live only in the file registry, on the grounds that restyling is
  * not an edit; it is here as well now, because "not an edit" was the wrong
  * reading. Changing how a CV looks is a change to the CV, and the things a
@@ -25,8 +25,8 @@ const TAGS_ID = 'checkpoints'
  */
 const STYLE_ID = 'style'
 
-/** @type {readonly ('layout' | 'variants' | 'theme' | 'font' | 'paper')[]} */
-const STYLE_KEYS = ['layout', 'variants', 'theme', 'font', 'paper']
+/** @type {readonly ('layout' | 'theme' | 'density' | 'font' | 'variants' | 'paper')[]} */
+const STYLE_KEYS = ['layout', 'theme', 'density', 'font', 'variants', 'paper']
 
 /** Commits made by naming a version, kept out of the undo stack. */
 const TAG_ORIGIN = 'cv-tag'
@@ -145,7 +145,7 @@ export class CvDoc {
   extensions = $state(null)
 
   /** Newest first — the order the history panel shows. */
-  entries = $derived(this.history.slice().reverse())
+  entries = $derived(this.history.slice().toReversed())
   isViewingHistory = $derived(this.viewingKey !== null)
   /** @type {HistoryEntry | undefined} */
   viewingEntry = $derived(this.history.find((e) => e.key === this.viewingKey))
@@ -351,13 +351,13 @@ export class CvDoc {
    * this is the copy that goes into the document, which is what puts a restyle
    * in the history and on the undo stack.
    *
-   * `axis` is which part of the presentation moved — the preset, the theme, one
-   * slot's variant. A run of restyles reads as one line in the history rather
+   * `axis` is which part of the presentation moved — the layout, the theme,
+   * one block's variant, one key of the paper. A run of restyles reads as one line in the history rather
    * than as one per click, and the axes are what that line is named by; see
    * `mergeStyleRuns`.
    *
    * @param {Record<string, any>} style
-   * @param {string} label   what the entry reads as, e.g. `Entry — Card`
+   * @param {string} label   what the entry reads as, e.g. `Layout — Sidebar`
    * @param {string} axis    what it moved, e.g. `theme`
    */
   recordStyle(style, label, axis) {
@@ -906,7 +906,7 @@ const newEpoch = () => Math.random().toString(36).slice(2, 10)
  * here — a key the map never carried and one explicitly cleared both mean the
  * file has nothing of its own to say — and objects are compared by their
  * contents rather than by the order their keys happen to be written in, since
- * `variants` is rebuilt by a spread every time it is touched.
+ * `paper` and `variants` are rebuilt by a spread every time they are touched.
  * @param {unknown} a
  * @param {unknown} b
  */
@@ -915,7 +915,7 @@ const same = (a, b) => stable(a) === stable(b)
 /** @param {unknown} value */
 const stable = (value) =>
   JSON.stringify(value ?? null, (_, v) =>
-    v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).sort(([x], [y]) => x.localeCompare(y))) : v,
+    v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).toSorted(([x], [y]) => x.localeCompare(y))) : v,
   )
 
 /**

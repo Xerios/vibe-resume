@@ -1,0 +1,577 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   The arrangement of the CV sheet, and nothing else.
+
+   Sizes, weights, colours and spaces are custom properties and `.r-*` role
+   classes written by sheet-css.js from the tokens the PDF is drawn with. What
+   is here is the shape: the header styles, the columns, the rules, the grids,
+   the frames, the chips and the marks.
+
+   It is also the only layout there is. pdf/measure.js reads where all this put
+   every line and every border and draws the PDF from that, so what the preview
+   shows is what exports. That reading covers a subset of CSS — text, solid,
+   dashed and dotted borders, background fills, border radii and SVG paths —
+   and everything here keeps to it. Decoration is a real `aria-hidden` element
+   rather than a ::before, because a pseudo-element can't be measured; and the
+   paginator (paginate.js) pushes blocks down with an inline margin-top.
+
+   Written into the preview frame by PreviewFrame.svelte, so none of these
+   class names can reach the app around it.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* A page of the paper the file chose, at the size it prints at, and always at
+   that width: the PDF is measured from it, so it is never squeezed to fit a
+   pane (PreviewFrame zooms it instead). Its height is however many pages the
+   paginator found. */
+.sheet {
+  position: relative;
+  width: var(--page-w);
+  min-height: calc(var(--pages, 1) * var(--page-h) + (var(--pages, 1) - 1) * var(--page-gap));
+  margin: 22px auto;
+  padding: var(--page-mt) var(--page-mx) var(--page-mb);
+  background: var(--c-paper);
+  color: var(--c-ink);
+  font-family: var(--f-text);
+  font-size: var(--fs-body);
+  line-height: var(--leading);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    0 16px 48px color-mix(in srgb, var(--c-deep) 18%, transparent);
+  border-radius: 3px;
+}
+
+/* Page view: the sheet's own paper goes, and a card per page stands behind
+   it, `--page-gap` apart, with the running head and foot in its margins. The
+   paginator spaces the content to match, so a block never sits in a gap. */
+.sheet.paged {
+  isolation: isolate;
+  background: none;
+  box-shadow: none;
+}
+
+.pages {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+
+.page {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--i) * (var(--page-h) + var(--page-gap)));
+  height: var(--page-h);
+  background: var(--c-paper);
+  border-radius: 3px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    0 16px 48px color-mix(in srgb, var(--c-deep) 18%, transparent);
+}
+
+.page-header,
+.page-footer {
+  position: absolute;
+  left: var(--page-mx);
+  right: var(--page-mx);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  font-family: var(--f-label);
+  font-size: 8pt;
+  color: var(--c-muted);
+}
+
+.page-header {
+  top: calc(var(--page-mt) / 2 - 5pt);
+}
+
+.page-footer {
+  bottom: calc(var(--page-mb) / 2 - 5pt);
+}
+
+.page-header > :last-child,
+.page-footer > :last-child {
+  text-align: right;
+}
+
+.sheet :is(h1, h2, h3, p, ul) {
+  margin: 0;
+  padding: 0;
+  font: inherit;
+}
+
+.sheet a {
+  text-decoration: none;
+}
+
+.sheet a:hover {
+  text-decoration: underline;
+}
+
+.sheet .center {
+  text-align: center;
+}
+
+/* A run's marks. A `<strong>` is a step heavier than the role it sits in, and
+   only the bundled weights exist, so the browser lands on the same face the
+   PDF picks. */
+.sheet :is(strong, .b) {
+  font-weight: bolder;
+}
+
+.sheet :is(em, .i) {
+  font-style: italic;
+}
+
+.sheet :is(del, .s) {
+  text-decoration: line-through;
+}
+
+.sheet code {
+  font-family: var(--f-label);
+  font-size: 0.92em;
+}
+
+/* Set by the page on whatever the pointer is over, while the editor scrolls to
+   the line behind it. */
+.src-hover {
+  outline: 1.5px solid color-mix(in srgb, var(--c-accent) 50%, transparent);
+  outline-offset: 3px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--c-accent) 6%, transparent);
+}
+
+/* ── Header ─────────────────────────────────────
+   Split: name and role at the left, contact lines at the right, a rule
+   beneath. The others stack the three, with the contact lines run on in one
+   line between separators. */
+.cv-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 18pt;
+  padding-bottom: var(--sp-headerPad);
+  margin-bottom: var(--sp-header);
+  border-bottom: 1.5pt solid var(--c-accent);
+}
+
+.cv-id > * + * {
+  margin-top: 3pt;
+}
+
+.cv-head[data-style='split'] .cv-contact {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.cv-head:not([data-style='split']) {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6pt;
+}
+
+.cv-head:is([data-style='centered'], [data-style='banner']) .cv-list.inline {
+  justify-content: center;
+}
+
+.cv-head[data-style='banner'] {
+  padding-top: var(--sp-headerPad);
+  border-top: 1.5pt solid var(--c-accent);
+}
+
+/* ── Columns ────────────────────────────────────
+   The DOM order is the reading order, and the visual order matches it: the
+   sidebar's rail is first and on the left, Rail right's main column is first
+   and on the left. The divider is the rail's inner edge, halfway across the
+   gap. The rail keeps a transparent border for its width; the line itself is
+   drawn a page at a time by `.divider`, where the paginator found it falls. */
+.cv-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+
+.sheet[data-rail='left'] .cv-cols {
+  grid-template-columns: var(--rail) minmax(0, 1fr);
+}
+
+.sheet[data-rail='right'] .cv-cols {
+  grid-template-columns: minmax(0, 1fr) var(--rail);
+}
+
+.sheet[data-rail='left'] .cv-rail {
+  padding-right: calc(var(--sp-column) / 2);
+  margin-right: calc(var(--sp-column) / 2);
+  border-right: 0.75pt solid transparent;
+}
+
+.sheet[data-rail='right'] .cv-rail {
+  padding-left: calc(var(--sp-column) / 2);
+  margin-left: calc(var(--sp-column) / 2);
+  border-left: 0.75pt solid transparent;
+}
+
+.divider {
+  position: absolute;
+  width: 0;
+  border-left: 0.75pt solid var(--c-line);
+  transform: translateX(-0.375pt);
+}
+
+.cv-rail {
+  overflow-wrap: break-word;
+}
+
+/* ── Sections ───────────────────────────────────
+   Spacing is margins between siblings, written as three rules the PDF layout
+   repeats: a title is followed by --sp-title, a kept block (an entry, a
+   skill group) is set apart by --sp-entry, and anything else by --sp-para. */
+.cv-sec + .cv-sec {
+  margin-top: var(--sp-section);
+}
+
+.cv-sec > * + * {
+  margin-top: var(--sp-para);
+}
+
+.cv-sec > .keep + *,
+.cv-sec > * + .keep {
+  margin-top: var(--sp-entry);
+}
+
+.cv-sec > .sec-head + * {
+  margin-top: var(--sp-title);
+}
+
+/* A section title and what is drawn beside it, per the section-title variant. */
+.sec-head {
+  display: flex;
+  align-items: center;
+  gap: 9pt;
+}
+
+.sec-head .rule {
+  flex: 1;
+  border-top: 0.75pt solid var(--c-line);
+}
+
+.sec-head[data-head='dotted'] .rule {
+  border-top: 1pt dotted var(--c-line);
+}
+
+.sec-head[data-head='dashed'] .rule {
+  border-top: 0.75pt dashed var(--c-line);
+}
+
+.sec-head[data-head='double'] .rule {
+  height: 3pt;
+  border-bottom: 0.75pt solid var(--c-line);
+}
+
+.sec-head:is([data-head='plain'], [data-head='boxed']) .rule {
+  display: none;
+}
+
+.sec-head[data-head='boxed'] h2 {
+  padding: var(--d-boxPadY) var(--d-boxPadX);
+  border: 0.75pt solid var(--c-line);
+  border-radius: var(--d-radius);
+}
+
+/* The number is drawn, not read: it is the section's place, not its name. */
+.sec-head .num {
+  font-family: var(--f-label);
+  font-weight: 600;
+  font-size: 0.8em;
+  color: var(--c-accent);
+}
+
+/* ── Blocks ─────────────────────────────────────── */
+/* Between blocks, not after the decoration that leads some of them. */
+.cv-div > :not([aria-hidden]) + :not([aria-hidden]) {
+  margin-top: var(--sp-item);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  gap: var(--sp-entry) var(--sp-grid);
+}
+
+.cv-list.grid {
+  row-gap: var(--sp-item);
+}
+
+.cv-div.grid > * + * {
+  margin-top: 0;
+}
+
+/* A skill group's title in a gutter of its own, its rows beside it. */
+.cv-div.gutter {
+  display: grid;
+  grid-template-columns: var(--d-gutter) minmax(0, 1fr);
+  column-gap: calc(var(--sp-grid) / 2);
+}
+
+.cv-div.gutter > * + * {
+  margin-top: 0;
+}
+
+.cv-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0 10pt;
+}
+
+.cv-row > .aside {
+  flex: none;
+  white-space: nowrap;
+}
+
+/* The dates in an outline. On the inline box, so the outline sits round the
+   letters and the line keeps its height, as the PDF draws it. */
+.cv-row.badge > .aside > span {
+  padding: var(--d-badgePadY) var(--d-badgePadX);
+  border: 0.75pt solid var(--c-line);
+  border-radius: 99pt;
+}
+
+/* ── Frames ─────────────────────────────────────── */
+.f-card {
+  padding: var(--d-cardPad);
+  border: 0.75pt solid var(--c-line);
+  border-radius: var(--d-radius);
+}
+
+.f-stripe {
+  padding-left: var(--d-stripeGap);
+  border-left: var(--d-stripe) solid var(--c-accent);
+}
+
+/* The rail runs from the entry's dot to the next entry's, so the last one in
+   a section stops at its own foot. */
+.f-timeline {
+  position: relative;
+  padding-left: var(--d-timeline);
+}
+
+.tl-rail {
+  position: absolute;
+  left: calc(var(--d-timelineDot) / 2 - 0.375pt);
+  top: calc(var(--fs-body) * 0.62);
+  bottom: 0;
+  border-left: 0.75pt solid var(--c-line);
+}
+
+.cv-sec > .f-timeline:not(:last-child) > .tl-rail {
+  bottom: calc(-1 * var(--sp-entry));
+}
+
+.tl-dot {
+  position: absolute;
+  left: 0;
+  top: calc(var(--fs-body) * 0.62 - var(--d-timelineDot) / 2);
+  width: var(--d-timelineDot);
+  height: var(--d-timelineDot);
+  box-sizing: border-box;
+  border: 1.5pt solid var(--c-accent);
+  border-radius: 50%;
+  background: var(--c-paper);
+}
+
+.short-rule {
+  display: block;
+  width: 18pt;
+  margin-bottom: 4pt;
+  border-top: 1.5pt solid var(--c-accent);
+}
+
+/* ── Lists ──────────────────────────────────────
+   The marks are decoration: drawn here by CSS, and as artifacts in the PDF,
+   so neither reads them as text. */
+.cv-list {
+  list-style: none;
+}
+
+.cv-list > li + li {
+  margin-top: var(--sp-item);
+}
+
+.cv-list.grid > li + li {
+  margin-top: 0;
+}
+
+.cv-list > li > :not([aria-hidden]) + :not([aria-hidden]) {
+  margin-top: 1pt;
+}
+
+.m-bullet > li,
+.m-dot > li,
+.m-dash > li {
+  position: relative;
+  padding-left: var(--sp-indent);
+}
+
+.mark {
+  position: absolute;
+  left: 0;
+  top: calc(var(--fs-body) * 0.62);
+  transform: translateY(-50%);
+  fill: var(--c-accent);
+}
+
+.m-bullet .mark {
+  width: 5.3pt;
+  height: 5.3pt;
+  left: -0.775pt;
+}
+
+.m-dot .mark {
+  width: 3.75pt;
+  height: 3.75pt;
+}
+
+.m-dash .mark {
+  width: 5pt;
+  height: 5pt;
+  fill: var(--c-faint);
+}
+
+.cv-list.inline {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.cv-list.inline > li + li {
+  margin-top: 0;
+}
+
+/* An item runs on in the line: its separator and its text side by side. */
+.cv-list.inline > li > * {
+  display: inline;
+}
+
+.cv-list.inline .sep {
+  margin: 0 0.35em;
+  color: var(--c-faint);
+}
+
+.cv-contact .cv-list > li + li {
+  margin-top: 0;
+}
+
+/* ── Chips ──────────────────────────────────────
+   An outlined pill per item, the logo before the name. A chip's line is set
+   tighter than the sheet's, which is what keeps a row of them compact. */
+.cv-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--d-chipGap);
+  list-style: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--d-iconGap);
+  max-width: 100%;
+  padding: var(--d-chipPadY) var(--d-chipPadX);
+  border: 0.75pt solid var(--c-line);
+  border-radius: 99pt;
+  line-height: 1.25;
+}
+
+.chip-icon {
+  flex: none;
+  width: var(--d-icon);
+  height: var(--d-icon);
+  fill: var(--c-deep);
+}
+
+/* ── Meters ─────────────────────────────────────
+   A level as five dots or a bar. A figure, labelled with the level in words. */
+.meter {
+  display: inline-flex;
+  align-self: center;
+  gap: var(--d-meterGap);
+}
+
+.meter i {
+  display: block;
+  width: var(--d-meterDot);
+  height: var(--d-meterDot);
+  border-radius: 50%;
+  background: var(--c-line);
+}
+
+.meter i.on {
+  background: var(--c-accent);
+}
+
+.m-bars {
+  width: var(--d-barW);
+  height: var(--d-barH);
+  border-radius: 99pt;
+  background: var(--c-line);
+  overflow: hidden;
+}
+
+.m-bars i {
+  width: auto;
+  height: 100%;
+  border-radius: 99pt;
+  background: var(--c-accent);
+}
+
+/* ── Print fallback ────────────────────────────────
+   Export writes the PDF directly; this is only for the browser's own print.
+   The page box is paper.js's @page. */
+@media print {
+  .sheet {
+    box-shadow: none;
+    margin: 0;
+    width: auto;
+    max-width: none;
+    min-height: 0;
+    padding: 0;
+    border-radius: 0;
+  }
+
+  /* The browser paginates a print itself, so the paginator's pushes go back
+     to the margins they replaced, and its pages and dividers go. */
+  [data-push] {
+    margin-top: var(--orig-mt) !important;
+  }
+
+  .pages,
+  .divider {
+    display: none;
+  }
+
+  .keep,
+  .cv-list > li,
+  .chip {
+    break-inside: avoid;
+  }
+
+  .sec-head,
+  .cv-div > :is(h3, .cv-row):first-child {
+    break-after: avoid;
+  }
+
+  .sheet,
+  .cv-head,
+  .mark,
+  .tl-dot,
+  .meter {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .src-hover {
+    outline: none;
+    background: none;
+  }
+}

@@ -30,8 +30,8 @@
  *
  * Everything is a string except bare `true` and `false`. Those have to stay
  * boolean — `inline` and `rail` are tested for truthiness, and the
- * string `'false'` is true. Numbers don't need the same care: `md`, `techs` and
- * `levelRating` all coerce, so `dates: 2023` reads the same either way.
+ * string `'false'` is true. Numbers don't need the same care: `runs` and
+ * `techs` both coerce, so `dates: 2023` reads the same either way.
  *
  * Gone, deliberately: flow collections, anchors, aliases, tags and multiple
  * documents. `[` is just a bracket now.

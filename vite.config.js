@@ -12,13 +12,6 @@ export default defineConfig({
       // no preprocessor runs, so they stay plain CSS.
       preprocess: vitePreprocess(),
 
-      // Templates are compiled in the browser (see src/lib/cv/template/compile-template.js),
-      // where `@cv` is resolved by a registry rather than by a bundler. Declaring
-      // it here as well is what lets the built-in layouts and block variants in
-      // src/lib/cv/{layouts,blocks} be ordinary, type-checked components that
-      // import the very same module.
-      alias: { '@cv': 'src/lib/cv/template/template-api.js' },
-
       compilerOptions: {
         // Force runes mode for the project, except for libraries. Can be removed in svelte 6.
         runes: ({ filename }) => (filename.split(/[/\\]/).includes('node_modules') ? undefined : true),

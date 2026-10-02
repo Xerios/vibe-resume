@@ -11,7 +11,7 @@
 
 import { diffDocuments as diffInline } from '../cv/format/diff.js'
 import { lintCv as lintInline } from '../cv/format/lint.js'
-import { parseCv as parseInline } from '../cv/template/render.js'
+import { parseCv as parseInline } from '../cv/render/parse.js'
 import { connect } from './rpc.js'
 
 // The same tables each worker serves, for running inline where it can't.

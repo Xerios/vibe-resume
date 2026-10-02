@@ -85,17 +85,6 @@ const RUNNING_ROOM = 5
 const PX_PER_MM = 96 / 25.4
 
 /**
- * The two axes, as the rows a picker cycles through. Shaped as slots so that
- * VariantCycle — which is the control for "one axis, one choice" everywhere
- * else — can draw them without knowing they aren't block variants.
- * @type {import('../template/slots.js').Registry}
- */
-export const RUNNING_SLOTS = [
-  { id: 'header', name: 'Header', snippet: '', variants: RUNNING },
-  { id: 'footer', name: 'Footer', snippet: '', variants: RUNNING },
-]
-
-/**
  * Falls back rather than trusting what came out of storage — a file saved
  * before any of this existed has no paper at all, and an id can outlive the
  * list it came from. Always returns every key, so the rest of the app can

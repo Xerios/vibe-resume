@@ -2,6 +2,7 @@
   import Icon from '@iconify/svelte'
   import IconEye from '@iconify-icons/lucide/eye'
   import IconEyeOff from '@iconify-icons/lucide/eye-off'
+  import IconFiles from '@iconify-icons/lucide/files'
   import IconLink2 from '@iconify-icons/lucide/link-2'
   import IconLink2Off from '@iconify-icons/lucide/link-2-off'
   import IconMaximize from '@iconify-icons/lucide/maximize'
@@ -96,6 +97,18 @@
         <Icon icon={IconLink2Off} width="16" height="16" />
       {/if}
       <span class="ds-txt"><u>S</u>croll</span>
+    </button>
+
+    <!-- The preview as the PDF's pages, drawn apart. Off, the sheet is one
+	       strip with the same page breaks, so either way it is what exports. -->
+    <button
+      class="ds-btn subtle compact sb-btn"
+      class:selected={ui.pagedPreview}
+      onclick={commands.togglePaged}
+      aria-pressed={ui.pagedPreview}
+      use:shortcut={['g', 'Show the preview as the pages the PDF will have']}>
+      <Icon icon={IconFiles} width="16" height="16" />
+      <span class="ds-txt">Pa<u>g</u>es</span>
     </button>
 
     <!-- About the pane rather than the file, so it lives with the other view

@@ -6,7 +6,6 @@
   import IconCheck from '@iconify-icons/lucide/circle-check'
   import { page } from '$app/state'
   import CompareModal from '$lib/components/CompareModal.svelte'
-  import EnrichPdfModal from '$lib/components/EnrichPdfModal.svelte'
   import ConvertPromptModal from '$lib/components/ConvertPromptModal.svelte'
   import HistoryPanel from '$lib/components/HistoryPanel.svelte'
   import PasteModal from '$lib/components/PasteModal.svelte'
@@ -18,9 +17,8 @@
   import YamlEditor from '$lib/components/YamlEditor.svelte'
   import PreviewFrame from '$lib/cv/PreviewFrame.svelte'
   import { basicConversion, sourceMarkdown } from '$lib/cv/format/paste.js'
-  import { liveTemplate } from '$lib/cv/template/live-template.svelte.js'
   import { bindHost, commands } from '$lib/cv/state/commands.js'
-  import { doc as cv, flush, look, parts, start, ui } from '$lib/cv/state/state.svelte.js'
+  import { doc as cv, flush, look, start, ui } from '$lib/cv/state/state.svelte.js'
   import { KEYS, write } from '$lib/cv/state/storage.js'
   import { swUpdate } from '$lib/sw-update.svelte.js'
   import { parseCv } from '$lib/workers/index.js'
@@ -112,28 +110,13 @@
   /** The name a running header prints, which is the CV's own rather than the file's. */
   const cvName = $derived(String(parsed?.header?.name ?? ''))
 
-  /* The component the file's slot choices compose to. Composing is cheap — it
-	   is string work over sources already in memory — so it can sit on the
-	   reactive graph beside everything else. */
-  const composed = $derived(parts.compose(look.choices))
-
-  /* The sheet's component, kept compiled. The id is the composition rather than
-	   one template's: changing a variant is a choice and shouldn't sit out the
-	   debounce meant for keystrokes. */
-  const tpl = liveTemplate(() => ({
-    id: Object.entries(look.choices)
-      .map(([slot, variant]) => `${slot}:${variant}`)
-      .join('|'),
-    source: composed.source,
-  }))
-
-  /** One banner over the preview, whichever of the two is broken. */
-  const bannerError = $derived(ui.parseError ?? (tpl.error ? `Template — ${tpl.error.message}` : null))
+  /** What is wrong with the YAML, shown over the preview. */
+  const bannerError = $derived(ui.parseError)
 
   onMount(() => {
     start()
     cv.bindEditor(text => editor?.replaceAll(text))
-    bindHost({ print: () => frame?.print() ?? false, printed: () => $state.snapshot(parsed) })
+    bindHost({ print: () => frame?.print() ?? false, printed: () => $state.snapshot(parsed), measure: async () => (await frame?.measure()) ?? null })
 
     const onVisibility = () => {
       if (document.visibilityState === 'hidden') flush()
@@ -281,9 +264,11 @@
 
   // Presentation changes reflow the sheet without going through the parser.
   $effect(() => {
-    void tpl.component
-    void tpl.css
+    void look.layout
     void look.theme
+    void look.density
+    void look.font
+    void look.variants
     void ui.editorWidth
     void ui.sourceHidden
     anchorsStale = true
@@ -537,7 +522,7 @@
   function longestRun(values) {
     /** Index of the smallest tail seen for a run of each length. */
     const tails = /** @type {number[]} */ ([])
-    const prev = /** @type {number[]} */ (new Array(values.length).fill(-1))
+    const prev = /** @type {number[]} */ (Array.from({ length: values.length }, () => -1))
     for (let i = 0; i < values.length; i++) {
       let lo = 0
       let hi = tails.length
@@ -675,11 +660,11 @@
       commands.checkpoint()
     }
     // The sheet lives in a frame, and a frame prints clipped to its box on the
-    // page. Ctrl+P has to be taken over so it reaches the same export path as
-    // the button rather than producing one cropped page.
+    // page. Ctrl+P has to be taken over so it prints the frame instead of
+    // producing one cropped page.
     if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
       e.preventDefault()
-      commands.exportPDF()
+      commands.printPDF()
     }
     // A restyle is a change in the document like an edit is, so Ctrl+Z has to
     // take one back from anywhere — the toolbar, the sheet, the popover. Inside
@@ -806,11 +791,10 @@
           </div>
         </div>
       {:else if bannerError}
-        <!-- A part that doesn't compile leaves nothing to render at all. -->
         <div id="error-banner" class="ds-section-message danger">
           <Icon icon={IconAlert} width="24" height="24" />
           <div class="banner-body">
-            <div class="ds-section-message-title">The template didn’t compile</div>
+            <div class="ds-section-message-title">The YAML has an error</div>
             <pre>{bannerError}</pre>
           </div>
         </div>
@@ -818,14 +802,16 @@
       <PreviewFrame
         bind:this={frame}
         cv={parsed}
-        component={tpl.component}
-        templateCss={tpl.css}
-        layout={look.preset}
+        layout={look.layout}
+        variants={look.variants}
         theme={look.theme}
         font={look.font}
+        density={look.density}
         paper={look.paper}
+        paged={ui.pagedPreview}
+        onPaginated={() => (anchorsStale = true)}
         name={cvName}
-        fit={ui.fitPreview && ui.desktop}
+        fit={ui.fitPreview || !ui.desktop}
         dark={ui.dark}
         onReady={onFrameReady} />
     </div>
@@ -863,10 +849,6 @@
       promptSource = null
       editor?.takeFocus()
     }} />
-{/if}
-
-{#if ui.enrichOpen && ui.pdfExport}
-  <EnrichPdfModal exported={ui.pdfExport} onClose={() => (ui.enrichOpen = false)} />
 {/if}
 
 {#if compare && cv.ready}
@@ -927,7 +909,9 @@
     background: var(--ds-border);
     border: none;
     cursor: col-resize;
-    transition: background-color 100ms var(--ease), box-shadow 100ms var(--ease);
+    transition:
+      background-color 100ms var(--ease),
+      box-shadow 100ms var(--ease);
     position: relative;
     z-index: 2;
     padding: 0;

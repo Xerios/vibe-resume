@@ -7,10 +7,6 @@ export const KEYS = {
   /** Pre-multi-file snapshot key; read once at startup to migrate into the file registry. */
   legacySnapshot: 'cv-editor:snapshot:v1',
   files: 'cv-editor:files:v1',
-  /** Whole-template edits from before the layout/variant split; read-only now — see parts.svelte.js. */
-  templates: 'cv-editor:templates:v1',
-  /** Part edits: overrides of the shipped layouts and block variants, and variants of the user's own. */
-  parts: 'cv-editor:parts:v1',
   activeFile: 'cv-editor:active-file',
   theme: 'cv-theme',
   editorWidth: 'cv-editor:width',
@@ -21,6 +17,8 @@ export const KEYS = {
   styleGroups: 'cv-editor:style-groups',
   /** Whether the preview scales a whole page into the pane — a view, not a file. */
   previewFit: 'cv-editor:preview-fit',
+  /** Whether the preview is drawn as separate pages, as the PDF will have them. */
+  pagedPreview: 'cv-editor:paged-preview',
   /** Whether the pointer resting on the sheet pulls the editor to its line. */
   hoverSync: 'cv-editor:hover-sync',
   /** Whether scrolling either pane scrolls the other to the same place. */

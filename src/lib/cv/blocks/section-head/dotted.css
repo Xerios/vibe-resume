@@ -1,7 +1,0 @@
-/* The same trailing rule, drawn as dots. Softer than a solid line, so the
-   heading separates without the rule reading as a divider of its own.
-   2px so the dots are round enough to tell from a dashed rule at print size. */
-.sec-head .bar {
-  height: 2px;
-  border-top: 2px dotted var(--line);
-}

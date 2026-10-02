@@ -1,12 +1,12 @@
 /**
- * Brand logos for the Tech template — generated, do not edit.
+ * Brand logos for the chip variants — generated, do not edit.
  *
  * Written by scripts/gen-tech-icons.mjs from the Simple Icons set (CC0-1.0),
  * which is fetched there rather than depended on: the full collection is a few
  * thousand logos, and a CV spends the 177 below. Run that script to add one.
  *
- * A body is the inside of a 24×24 `<svg>`; `techIcon` in template-api.js is
- * what wraps it in one, and what turns "Node.js" into `nodedotjs`.
+ * A body is the inside of a 24×24 `<svg>`; `iconPaths` in render/icons.js reads
+ * its path data, and is what turns "Node.js" into `nodedotjs`.
  */
 
 /** slug → the paths of its 24×24 icon. @type {Record<string, string>} */
