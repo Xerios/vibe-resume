@@ -83,7 +83,12 @@ export class PdfRenderer {
     const doc = /** @type {any} */ (
       new PDFDocument({
         pdfVersion: '1.7',
-        subset: 'PDF/UA',
+        // Not `subset: 'PDF/UA'`: besides the XMP flag, which #metadata writes,
+        // that sets the flag pdfkit also uses for PDF/A-1, and so writes a
+        // CIDSet into every font. That CIDSet lists only the glyphs the text
+        // uses, not the components composite glyphs bring into the subset with
+        // them, which PDF/UA-1 (7.21.4.2) forbids. CIDSet is optional; there is
+        // none.
         tagged: true,
         displayTitle: true,
         lang,
@@ -262,7 +267,8 @@ export class PdfRenderer {
   }
 
   /**
-   * The XMP beside the Info dictionary. pdfkit writes the title, author,
+   * The XMP beside the Info dictionary: the PDF/UA identification, and what
+   * pdfkit writes itself. pdfkit writes the title, author,
    * description and keywords into it from `info` as given, without escaping
    * them for XML. The Info dictionary is written before the metadata, so
    * escaping the values at that point fixes the XMP and leaves the Info
@@ -272,6 +278,10 @@ export class PdfRenderer {
    * @param {import('../render/doc-meta.js').DocMeta} meta
    */
   #metadata(doc, meta) {
+    doc.appendXML(`
+        <rdf:Description rdf:about="" xmlns:pdfuaid="http://www.aiim.org/pdfua/ns/id/">
+          <pdfuaid:part>1</pdfuaid:part>
+        </rdf:Description>`)
     if (meta.keywords.length) {
       doc.appendXML(`
         <rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/">

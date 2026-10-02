@@ -193,6 +193,9 @@ describe('PdfRenderer', () => {
       expect(count).toBeGreaterThan(0)
       expect([...s.matchAll(/\/FontFile2 \d+ 0 R/g)].length).toBe(count)
       expect([...s.matchAll(/\/ToUnicode \d+ 0 R/g)].length).toBe(count)
+      // A CIDSet would have to list every glyph in the subset, composite parts
+      // included (PDF/UA-1 7.21.4.2); there is none to get wrong.
+      expect(s).not.toMatch(/\/CIDSet/)
     }
     expect(pdf.railRight.s).toMatch(/\/BaseFont \/[A-Z]{6}\+SourceSerif4/)
   })
