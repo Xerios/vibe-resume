@@ -6,7 +6,6 @@
   import IconInstall from '@iconify-icons/lucide/arrow-down-to-line'
   import IconLayout from '@iconify-icons/lucide/layout-panel-left'
   import IconMenu from '@iconify-icons/lucide/menu'
-  import IconPrinter from '@iconify-icons/lucide/printer'
   import IconCopy from '@iconify-icons/lucide/copy'
   import IconFilePlus from '@iconify-icons/lucide/file-plus'
   import IconSparkles from '@iconify-icons/lucide/sparkles'
@@ -141,11 +140,6 @@
         <span class="ds-txt"><u>I</u>nstall</span>
       </button>
     {/if}
-
-    <button class="ds-btn subtle" use:shortcut={['r', "Print the preview with the browser's own print"]} onclick={commands.printPDF}>
-      <Icon icon={IconPrinter} width="16" height="16" />
-      <span class="ds-txt">P<u>r</u>int</span>
-    </button>
 
     <button class="ds-btn primary" use:shortcut={['x', 'Export the current CV as a tagged PDF']} onclick={commands.exportPDF}>
       <Icon icon={IconDownload} width="16" height="16" />

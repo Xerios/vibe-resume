@@ -1,6 +1,8 @@
 <script>
   import Icon from '@iconify/svelte'
   import IconChevron from '@iconify-icons/lucide/chevron-down'
+  import IconLeft from '@iconify-icons/lucide/chevron-left'
+  import IconRight from '@iconify-icons/lucide/chevron-right'
   import IconCopy from '@iconify-icons/lucide/copy'
   import IconDownload from '@iconify-icons/lucide/download'
   import IconPencil from '@iconify-icons/lucide/pencil'
@@ -43,12 +45,50 @@
     menu?.querySelector('button')?.focus()
 
     /** @param {PointerEvent} e */
-    const onPointerDown = (e) => {
+    const onPointerDown = e => {
       if (!inMenu(/** @type {Node | null} */ (e.target))) menuOpen = false
     }
     document.addEventListener('pointerdown', onPointerDown)
     return () => document.removeEventListener('pointerdown', onPointerDown)
   })
+
+  let tabsEl = $state(/** @type {HTMLDivElement | undefined} */ (undefined))
+  /** Whether there are more tabs out of view to either side. */
+  let moreLeft = $state(false)
+  let moreRight = $state(false)
+
+  function updateScroll() {
+    if (!tabsEl) return
+    moreLeft = tabsEl.scrollLeft > 1
+    moreRight = tabsEl.scrollLeft + tabsEl.clientWidth < tabsEl.scrollWidth - 1
+  }
+
+  // The strip resizing — the window, or the bar's neighbours — changes how much fits.
+  $effect(() => {
+    if (!tabsEl) return
+    const observer = new ResizeObserver(updateScroll)
+    observer.observe(tabsEl)
+    return () => observer.disconnect()
+  })
+
+  // Keep the active tab in view: on switching, opening, and reordering.
+  $effect(() => {
+    void files.activeId
+    void files.open.map((/** @type {import('$lib/cv/state/files.svelte.js').FileMeta} */ f) => f.id)
+    const tab = /** @type {HTMLElement | null | undefined} */ (tabsEl?.querySelector('.tab.active'))
+    if (tabsEl && tab) {
+      const strip = tabsEl.getBoundingClientRect()
+      const rect = tab.getBoundingClientRect()
+      if (rect.left < strip.left) tabsEl.scrollLeft += rect.left - strip.left
+      else if (rect.right > strip.right) tabsEl.scrollLeft += rect.right - strip.right
+    }
+    updateScroll()
+  })
+
+  /** @param {-1 | 1} dir */
+  function scrollTabs(dir) {
+    tabsEl?.scrollBy({ left: dir * tabsEl.clientWidth * 0.75, behavior: 'smooth' })
+  }
 
   /** Whether a node is the menu or the caret that toggles it. @param {Node | null} node */
   function inMenu(node) {
@@ -233,7 +273,19 @@
 	     the menu down with it, since it is placed where the caret was. -->
   <!-- A list, and the tabs its items: the row has an order that the drag below
 	     changes, which is the one thing a screen reader has to be told about it. -->
-  <div id="tabs" role="list" onscroll={() => (menuOpen = false)}>
+  {#if moreLeft}
+    <button class="tabs-scroll left ds-icon-btn compact" aria-label="Scroll tabs left" onclick={() => scrollTabs(-1)}>
+      <Icon icon={IconLeft} width="16" height="16" />
+    </button>
+  {/if}
+  <div
+    id="tabs"
+    role="list"
+    bind:this={tabsEl}
+    onscroll={() => {
+      menuOpen = false
+      updateScroll()
+    }}>
     {#each files.open as f (f.id)}
       {@const active = f.id === files.activeId}
       <!-- Dragged by the tab as a whole, but not while it is being renamed:
@@ -245,12 +297,11 @@
         class:active
         class:dragging={dragId === f.id}
         draggable={editingId !== f.id}
-        ondragstart={(e) => onTabDragStart(e, f)}
-        ondragover={(e) => onTabDragOver(e, f)}
+        ondragstart={e => onTabDragStart(e, f)}
+        ondragover={e => onTabDragOver(e, f)}
         ondrop={onTabDrop}
-        oncontextmenu={(e) => onTabContextMenu(e, f)}
-        ondragend={() => (dragId = null)}
-      >
+        oncontextmenu={e => onTabContextMenu(e, f)}
+        ondragend={() => (dragId = null)}>
         {#if editingId === f.id}
           <input class="tab-rename ds-textfield compact" bind:value={editValue} use:focusAndSelect onblur={commitRename} onkeydown={onRenameKeydown} />
         {:else}
@@ -259,8 +310,7 @@
             title="{f.name} — double-click or F2 to rename, drag or Alt+← → to reorder"
             onclick={() => commands.selectTab(f.id)}
             ondblclick={() => startRename(f)}
-            onkeydown={(e) => onTabKeydown(e, f)}
-          >
+            onkeydown={e => onTabKeydown(e, f)}>
             {f.name}
           </button>
           <!-- Everything that can be done to a file is behind this one caret,
@@ -278,8 +328,7 @@
                 aria-label="Actions for {f.name}"
                 title="What can be done to this CV"
                 onclick={() => (menuOpen && menuId === f.id ? (menuOpen = false) : openMenu())}
-                onkeydown={onMoreKeydown}
-              >
+                onkeydown={onMoreKeydown}>
                 <Icon icon={IconChevron} width="16" height="16" />
               </button>
             </div>
@@ -288,6 +337,11 @@
       </div>
     {/each}
   </div>
+  {#if moreRight}
+    <button class="tabs-scroll right ds-icon-btn compact" aria-label="Scroll tabs right" onclick={() => scrollTabs(1)}>
+      <Icon icon={IconRight} width="16" height="16" />
+    </button>
+  {/if}
 
   {#if menuOpen && menuFile}
     {@const f = menuFile}
@@ -300,8 +354,7 @@
       style:top="{menuAt.y}px"
       onkeydown={onMenuKeydown}
       onfocusout={onMenuFocusOut}
-      in:fly={{ y: -8, duration: 200 }}
-    >
+      in:fly={{ y: -8, duration: 200 }}>
       <button class="ds-menu-item" role="menuitem" onclick={() => pick(() => commands.duplicateTab(f.id))}>
         <Icon icon={IconCopy} width="16" height="16" />
         <span>Duplicate</span>
@@ -323,8 +376,7 @@
               { fileId: f.id, versionKey: null },
               f.id === files.activeId ? undefined : { fileId: /** @type {string} */ (files.activeId), versionKey: null },
             ),
-          )}
-      >
+          )}>
         <Icon icon={IconCompare} width="16" height="16" />
         <span>Compare</span>
       </button>
@@ -373,6 +425,25 @@
     }
   }
 
+  /* Laid over the ends of the strip rather than beside it, so showing one never
+     moves a tab. Each is there only while the tabs go on past that end. */
+  .tabs-scroll {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    background: var(--ds-surface);
+    border: var(--ds-border-width) solid var(--ds-border);
+
+    &.left {
+      left: var(--ds-space-100);
+    }
+
+    &.right {
+      right: 0;
+    }
+  }
+
   .tab {
     flex-shrink: 0;
     position: relative;
@@ -399,7 +470,7 @@
     &.active {
       color: var(--ds-text);
       background: var(--ds-surface);
-      box-shadow: 1px 1px 3px var(--ds-background-neutral-bold);
+      border-width: 2px;
       z-index: 1;
     }
 
