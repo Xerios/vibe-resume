@@ -1,0 +1,42 @@
+{
+  "name": "@vibe-resume/web",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check:types": "svelte-kit sync && svelte-check"
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "catalog:",
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/language": "catalog:",
+    "@codemirror/lint": "^6.9.7",
+    "@codemirror/search": "^6.7.2",
+    "@codemirror/state": "catalog:",
+    "@codemirror/view": "catalog:",
+    "@lezer/highlight": "catalog:",
+    "@vibe-resume/core": "workspace:*",
+    "@vibe-resume/format-markdown": "workspace:*",
+    "@vibe-resume/format-yaml": "workspace:*",
+    "@vibe-resume/render": "workspace:*",
+    "codemirror-wrapped-line-indent": "^1.0.9",
+    "loro-codemirror": "^0.3.3",
+    "loro-crdt": "^1.16.1"
+  },
+  "devDependencies": {
+    "@iconify-icons/lucide": "^2.0.8",
+    "@iconify/svelte": "^5.2.2",
+    "@sveltejs/adapter-auto": "^7.0.1",
+    "@sveltejs/adapter-static": "^3.0.10",
+    "@sveltejs/kit": "^2.70.3",
+    "@sveltejs/vite-plugin-svelte": "^7.3.0",
+    "sass": "^1.104.1",
+    "svelte": "catalog:",
+    "svelte-check": "^4.7.6",
+    "typescript": "^6.0.3",
+    "vite": "catalog:"
+  }
+}

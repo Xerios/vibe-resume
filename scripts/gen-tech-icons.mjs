@@ -1,5 +1,5 @@
 /**
- * Regenerate src/lib/cv/theme/tech-icons.js — the logos the chip variants draw
+ * Regenerate packages/render/src/theme/tech-icons.js — the logos the chip variants draw
  * beside a tool's name, in the preview and in the PDF.
  *
  *   node scripts/gen-tech-icons.mjs
@@ -25,7 +25,7 @@ import { writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
 const API = 'https://api.iconify.design/simple-icons.json'
-const OUT = fileURLToPath(new URL('../src/lib/cv/theme/tech-icons.js', import.meta.url))
+const OUT = fileURLToPath(new URL('../packages/render/src/theme/tech-icons.js', import.meta.url))
 
 /** @type {Record<string, string[]>} */
 const ICONS = {
@@ -231,7 +231,7 @@ if (!res.ok) throw new Error(`Iconify said ${res.status} ${res.statusText}`)
 const data = await res.json()
 if (data.not_found?.length) console.warn(`⚠ no such icon: ${data.not_found.join(', ')}`)
 
-/** The same normalisation `iconPaths` applies to a lookup — see src/lib/cv/render/icons.js. */
+/** The same normalisation `iconPaths` applies to a lookup — see packages/render/src/icons.ts. */
 const normalise = (s) =>
   s
     .toLowerCase()

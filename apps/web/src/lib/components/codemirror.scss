@@ -1,0 +1,424 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   CodeMirror 6 theme, for YamlEditor.svelte, which imports it.
+
+   A plain stylesheet rather than the component's <style> block: CodeMirror
+   builds its own DOM outside the Svelte template, so scoped selectors would
+   never reach a single one of these elements.
+
+   Every rule goes through the host's id on purpose. CodeMirror's base theme
+   scopes its palette under a generated class on the editor root —
+   `&light .cm-gutters` ships as `.cm-lightXYZ .cm-gutters` — so a bare
+   `.cm-gutters` here loses the cascade on specificity however late the
+   stylesheet loads, and the gutter, active line, caret and selection keep their
+   stock light colours in both themes. An id outranks those two-class selectors
+   for good. The layout rules ride along with the colours: `height: 100%` on the
+   editor and `overflow: auto` on the scroller are what make a pane-sized editor
+   scroll at all.
+
+   The surface rules — everything down to the selection — also reach the two
+   read-only editors in CompareModal.svelte, through `.cm-host`. Wrapped in
+   `:is()` so the class borrows the id's specificity and the point above holds
+   for both. The lint, fold and completion rules stay the editor's own. Each of
+   the three prefixes is written once and the rules nest under it.
+
+   Colours come from the --cm-* tokens in src/lib/styles/tokens.scss, and from
+   the ADS tokens beside them for everything that is chrome rather than syntax:
+   the surface, the gutter, and the tooltips, which are drawn as ADS menus.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:is(#cm-wrap, .cm-host) {
+  /* The editor is the page — the same surface as the pane it fills, so no seam. */
+  .cm-editor {
+    height: 100%;
+    background: var(--ds-surface);
+    color: var(--ds-text);
+    font-family: var(--mono);
+    font-size: 13px;
+    transition: var(--theme-fade);
+
+    &.cm-focused {
+      outline: none;
+    }
+
+    /* The focused variant of this one is five classes deep in the base theme. */
+    &.cm-focused .cm-selectionBackground {
+      background: var(--cm-selection-focus);
+    }
+
+    /* The editor is read-only while a past version is on screen. */
+    &:not(.cm-focused) .cm-activeLine {
+      background: transparent;
+    }
+  }
+
+  .cm-scroller {
+    font-family: inherit;
+    line-height: 1.6;
+    overflow: auto;
+    /* required for a fixed-height editor to scroll */
+  }
+
+  .cm-content {
+    caret-color: var(--ds-border-focused);
+  }
+
+  /* The page's own surface with a rule beside it, as ADS's code block draws
+     its line numbers: ornament beside the line, in the subtlest text. */
+  .cm-gutters {
+    transition: var(--theme-fade);
+    background: var(--ds-surface);
+    border-right: var(--ds-border-width) solid var(--ds-border);
+    color: var(--ds-text-subtlest);
+  }
+
+  .cm-lineNumbers .cm-gutterElement {
+    padding: 0 6px 0 12px;
+    min-width: 28px;
+  }
+
+  .cm-activeLine {
+    background: var(--cm-active);
+  }
+
+  .cm-activeLineGutter {
+    background: var(--cm-active);
+    color: var(--ds-text);
+  }
+
+  .cm-cursor,
+  .cm-dropCursor {
+    border-left-color: var(--ds-border-focused);
+    border-left-width: 2px;
+  }
+
+  .cm-selectionBackground {
+    background: var(--cm-selection);
+  }
+}
+
+/* ── Compare ──────────────────────────────────── */
+/* What one side of the Compare view has that the other hasn't: a wash over
+   the line, a darker one over the characters that differ, and — for a block
+   that is on both sides in a different place — a bar down its edge, in the
+   one hue that says neither "wrong" nor "new". A moved line can also be an
+   edited one, so the bar and the wash are separate declarations. */
+.cm-host {
+  .cm-cmp-added {
+    background: var(--cm-diff-add-bg);
+
+    .cm-cmp-range {
+      background: var(--cm-diff-add-range);
+      border-radius: var(--ds-radius-small);
+    }
+  }
+
+  .cm-cmp-removed {
+    background: var(--cm-diff-del-bg);
+
+    .cm-cmp-range {
+      background: var(--cm-diff-del-range);
+      border-radius: var(--ds-radius-small);
+    }
+  }
+
+  .cm-cmp-changed {
+    background: var(--cm-diff-mod-bg);
+
+    .cm-cmp-range {
+      background: var(--cm-diff-mod-range);
+      border-radius: var(--ds-radius-small);
+    }
+  }
+
+  /* A line with a twin is a way over to it. */
+  .cm-cmp-changed {
+    cursor: pointer;
+  }
+
+  /* Lines folded away by "Changes only": a quiet band saying how many, which
+     opens on a click. */
+  .cm-cmp-fold {
+    display: block;
+    width: 100%;
+    padding: var(--ds-space-025) var(--ds-space-100);
+    border: none;
+    border-block: var(--ds-border-width) dashed var(--ds-border);
+    background: var(--ds-surface-sunken);
+    color: var(--ds-text-subtlest);
+    font: var(--ds-font-body-small);
+    text-align: center;
+    cursor: pointer;
+
+    &:hover {
+      color: var(--ds-text-subtle);
+      background: var(--ds-background-neutral-subtle-hovered);
+    }
+  }
+}
+
+#cm-wrap {
+  /* Highlights what a previewed version changed, relative to just before it. */
+  .cm-diff-added {
+    background: var(--cm-diff-add-bg);
+    border-radius: var(--ds-radius-small);
+  }
+
+  .cm-diff-removed {
+    background: var(--cm-diff-del-bg);
+    color: var(--cm-diff-del-text);
+    text-decoration: line-through;
+    border-radius: var(--ds-radius-small);
+    white-space: pre-wrap;
+  }
+
+  /* The line behind whatever the pointer is on in the preview. Unlike
+     .cm-activeLine this shows while the editor is unfocused — that's the whole
+     point of it, since the pointer is over on the other pane. */
+  .cm-peek-line {
+    background: var(--cm-peek);
+    box-shadow: inset 2px 0 0 var(--ds-border-selected);
+  }
+
+  /* Every other run of whatever's selected — renaming a key shows its twins. */
+  .cm-selectionMatch {
+    background: var(--cm-match);
+    border-radius: var(--ds-radius-small);
+  }
+
+  /* ── Folding ──────────────────────────────────── */
+  .cm-foldGutter .cm-gutterElement {
+    padding: 0 5px 0 1px;
+    color: var(--ds-icon-subtle);
+    opacity: 0.5;
+    transition:
+      opacity 0.12s ease,
+      color 0.12s ease;
+
+    &:hover {
+      opacity: 1;
+      color: var(--ds-icon-brand);
+    }
+  }
+
+  /* A control on the page: the neutral fill every default button takes. */
+  .cm-foldPlaceholder {
+    background: var(--ds-background-neutral);
+    border: none;
+    color: var(--ds-text-subtle);
+    border-radius: var(--ds-radius-small);
+    margin: 0 2px;
+    padding: 0 5px;
+  }
+
+  /* ── Diagnostics ──────────────────────────────── */
+  /* The stock underline is a fixed-colour SVG tile; a wavy text-decoration takes
+     the theme's colours instead. Three severities: what doesn't parse, a section
+     the templates won't render, and a quote left over from when the format still
+     needed one. */
+  .cm-lintRange-error,
+  .cm-lintRange-warning,
+  .cm-lintRange-hint {
+    background: none;
+    text-decoration-skip-ink: none;
+    text-underline-offset: 3px;
+  }
+
+  .cm-lintRange-error {
+    text-decoration: underline wavy var(--cm-error);
+  }
+
+  .cm-lintRange-warning {
+    text-decoration: underline wavy var(--cm-warn);
+  }
+
+  /* A hint is only ever the offer of a tidy-up, so it stays out of the way: a
+     flat dotted rule rather than the wave the other two get. */
+  .cm-lintRange-hint {
+    text-decoration: underline dotted var(--cm-hint);
+  }
+
+  /* An error with nothing left on the line to underline — an unterminated block,
+     say — renders as a caret at that spot rather than a range. */
+  .cm-lintPoint::after {
+    border-bottom-color: var(--cm-error);
+  }
+
+  /* Comes after .cm-activeLine and .cm-peek-line on purpose: a line that doesn't
+     parse outranks both of those tints while it's broken. */
+  .cm-error-line {
+    background: var(--cm-error-bg);
+    box-shadow: inset 2px 0 0 var(--cm-error);
+  }
+
+  .cm-gutter-lint {
+    width: 14px;
+
+    .cm-gutterElement {
+      padding: 0;
+    }
+  }
+
+  /* Stock markers are SVG images set through `content`, in colours of their own. */
+  .cm-lint-marker {
+    content: normal;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+  }
+
+  .cm-lint-marker-error::after,
+  .cm-lint-marker-warning::after,
+  .cm-lint-marker-hint::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--cm-error);
+  }
+
+  .cm-lint-marker-warning::after {
+    background: var(--cm-warn);
+  }
+
+  .cm-lint-marker-hint::after {
+    width: 4px;
+    height: 4px;
+    background: var(--cm-hint);
+  }
+
+  /* A tooltip floats over the page, so it takes the overlay surface and its
+     shadow like every other menu in the chrome. */
+  .cm-tooltip.cm-tooltip-lint {
+    background: var(--ds-surface-overlay);
+    border: none;
+    border-radius: var(--ds-radius-medium);
+    box-shadow: var(--ds-shadow-overlay);
+    overflow: hidden;
+  }
+
+  .cm-diagnostic {
+    font: var(--ds-font-body);
+    color: var(--ds-text);
+    padding: var(--ds-space-100) var(--ds-space-150);
+    margin: 0;
+    max-width: 320px;
+  }
+
+  .cm-diagnostic-error {
+    border-left: 3px solid var(--cm-error);
+  }
+
+  .cm-diagnostic-warning {
+    border-left: 3px solid var(--cm-warn);
+  }
+
+  .cm-diagnostic-hint {
+    border-left: 3px solid var(--cm-hint);
+  }
+
+  .cm-diagnosticSource {
+    color: var(--ds-text-subtlest);
+  }
+
+  /* ── Completion ───────────────────────────────── */
+  /* The list of keys, values and section skeletons the editor offers (see
+     src/lib/cv/complete.js). CodeMirror renders it as a tooltip inside the editor,
+     so the same id prefix reaches it — and has to, since the base theme's own
+     colours are scoped under a generated `&light`/`&dark` class. */
+  .cm-tooltip.cm-tooltip-autocomplete {
+    background: var(--ds-surface-overlay);
+    border: none;
+    border-radius: var(--ds-radius-medium);
+    box-shadow: var(--ds-shadow-overlay);
+    overflow: hidden;
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+
+  .cm-tooltip-autocomplete > ul {
+    max-height: 16em;
+    font-family: inherit;
+
+    padding: var(--ds-space-050) 0;
+
+    > li {
+      display: flex;
+      align-items: baseline;
+      gap: var(--ds-space-100);
+      padding: var(--ds-space-050) var(--ds-space-150);
+      line-height: 20px;
+      color: var(--ds-text);
+      position: relative;
+
+      /* The highlighted entry is an ADS menu's selected item: the selected
+         fill and the bar down its leading edge. */
+      &[aria-selected] {
+        background: var(--ds-background-selected);
+        color: var(--ds-text-selected);
+        box-shadow: inset 2px 0 0 var(--ds-border-selected);
+      }
+    }
+  }
+
+  /* What the typed prefix matched, so a fuzzy hit shows why it's in the list. */
+  .cm-completionMatchedText {
+    text-decoration: none;
+    font-weight: 700;
+    color: var(--ds-text-brand);
+  }
+
+  .cm-completionDetail {
+    margin-left: auto;
+    padding-left: 12px;
+    font: var(--ds-font-body-small);
+    color: var(--ds-text-subtlest);
+  }
+
+  /* Three kinds of thing, three marks: a key, one of a closed set of values, and
+     a whole section. The stock glyphs are a generic shape per programming-language
+     construct, which none of these are. */
+  .cm-completionIcon {
+    width: 0.9em;
+    padding-right: 0;
+    opacity: 1;
+    text-align: center;
+  }
+
+  .cm-completionIcon-property::after {
+    content: '▪';
+    color: var(--cm-key);
+  }
+
+  .cm-completionIcon-enum::after {
+    content: '◆';
+    color: var(--cm-num);
+  }
+
+  .cm-completionIcon-class::after {
+    content: '▤';
+    color: var(--cm-anchor);
+  }
+
+  /* The line about the selected entry, off to the side. */
+  .cm-tooltip.cm-completionInfo {
+    background: var(--ds-surface-overlay);
+    border: none;
+    border-radius: var(--ds-radius-medium);
+    box-shadow: var(--ds-shadow-overlay);
+    padding: var(--ds-space-100) var(--ds-space-150);
+    max-width: 280px;
+    font: var(--ds-font-body);
+    color: var(--ds-text-subtle);
+  }
+
+  /* A section skeleton lands with its fields marked; Tab steps through them. */
+  .cm-snippetField {
+    background: var(--cm-match);
+    border-radius: var(--ds-radius-small);
+  }
+
+  .cm-snippetFieldPosition {
+    border-left-color: var(--ds-border-focused);
+  }
+}

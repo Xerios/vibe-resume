@@ -1,4 +1,4 @@
-node_modules
-build
-.svelte-kit
+**/node_modules
+**/build
+**/.svelte-kit
 .git

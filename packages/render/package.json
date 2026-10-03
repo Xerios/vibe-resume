@@ -1,0 +1,32 @@
+{
+  "name": "@vibe-resume/render",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*.svelte": "./src/*.svelte",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "check:types": "svelte-check"
+  },
+  "dependencies": {
+    "@expo-google-fonts/archivo": "^0.4.2",
+    "@expo-google-fonts/eb-garamond": "^0.4.3",
+    "@expo-google-fonts/inter": "^0.4.2",
+    "@expo-google-fonts/jetbrains-mono": "^0.4.1",
+    "@expo-google-fonts/source-sans-3": "^0.4.1",
+    "@expo-google-fonts/source-serif-4": "^0.4.1",
+    "@vibe-resume/core": "workspace:*",
+    "marked": "catalog:",
+    "pdfkit": "^0.20.2"
+  },
+  "devDependencies": {
+    "@vibe-resume/format-yaml": "workspace:*",
+    "svelte": "catalog:",
+    "vite": "catalog:"
+  },
+  "peerDependencies": {
+    "svelte": "catalog:"
+  }
+}

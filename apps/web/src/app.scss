@@ -1,0 +1,34 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   The global stylesheet — an index, and nothing more.
+
+   Only rules that genuinely have no single owner live in the files below.
+   Everything that belongs to one piece of UI is styled where that piece is
+   written, in the component's own <style> block:
+
+     Toolbar.svelte      #toolbar: the tabs, the product name, the panel
+                         buttons and Export
+     StatusBar.svelte    #status-bar, #status, #save-state, .sb-* — Compare,
+                         Trash, and the source and dark-mode toggles
+     TabBar.svelte       #tabbar, .tab*, .tab-new* — the tabs, inside #toolbar
+     TrashPanel.svelte   #trash-panel, .trash-*
+     WelcomeOverlay.svelte  #welcome, .w-*
+     StylePicker.svelte  #style-pane, .style-*, .layout-*, .theme-*, .font-*
+     HistoryPanel.svelte #history-pane, .hist-*, .stat-*
+     YamlEditor.svelte   #cm-wrap (its CodeMirror theme is codemirror.css,
+                         beside it — scoped styles can't reach CM's own DOM)
+     +page.svelte        #split, #editor-pane, #divider, #preview-pane,
+                         the banners, #toast
+
+   The CV document is styled nowhere in this document at all. It renders inside
+   an iframe, and the render package's frame.css, html/sheet.css and the
+   tokens html/sheet-css.ts writes are loaded into that frame by
+   PreviewFrame.svelte rather than imported anywhere here. StylePicker draws
+   its theme swatches from the palette data in theme/palettes.ts.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Order matters: tokens define what the other two spend — the ADS colour,
+   elevation, space and type tokens, see the header of tokens.scss — and
+   controls holds the shared `.ds-*` components every bar and panel uses. */
+@use './lib/styles/tokens';
+@use './lib/styles/base';
+@use './lib/styles/controls';

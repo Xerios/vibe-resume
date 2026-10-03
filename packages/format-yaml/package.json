@@ -1,0 +1,27 @@
+{
+  "name": "@vibe-resume/format-yaml",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./editor": "./src/editor/index.ts",
+    "./template.yaml": "./src/template.yaml",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "check:types": "tsc -p ."
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "catalog:",
+    "@codemirror/language": "catalog:",
+    "@codemirror/state": "catalog:",
+    "@codemirror/view": "catalog:",
+    "@lezer/highlight": "catalog:",
+    "@vibe-resume/core": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "catalog:"
+  }
+}

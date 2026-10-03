@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "svelte": true,
-  "ignorePatterns": ["dist", "coverage", "pnpm-lock.yaml", "src/lib/cv/*.yaml"],
+  "ignorePatterns": ["dist", "coverage", "pnpm-lock.yaml", "packages/format-*/src/template.*", "packages/format-*/src/fixtures/**"],
   "printWidth": 160,
   "singleQuote": true,
   "semi": false

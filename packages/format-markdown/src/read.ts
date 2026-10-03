@@ -1,0 +1,419 @@
+/**
+ * A CV written as Markdown, read into the same tree the YAML dialect reads
+ * into (see @vibe-resume/core/schema).
+ *
+ * The document is read a line at a time, because a CV in Markdown only ever
+ * uses a handful of block shapes and each one says where it starts:
+ *
+ *     # Name                       the header; the first paragraph under it is
+ *     Role                         the role, and a list (or a line split on
+ *     - contact                    ` · ` / ` | `) is the contact line
+ *
+ *     ## Section                   a section; its type is what its content is
+ *     ### Entry — Org              an entry (or a group, under a skills section)
+ *     03/2020 – Present            a line that reads as dates
+ *     Context line                 the next line is the entry's `sub`
+ *     - bullet                     bullets
+ *     Stack: A, B                  its stack
+ *
+ * A section's type is taken, in order, from an `<!-- type: … -->` comment
+ * under its heading, from its title when the content fits (Skills, Languages,
+ * Certifications, Interests, Open Source…), and otherwise from its shape:
+ * `###` entries are `entries`, a list alone is `list`, and prose is `text`.
+ *
+ * Within one line, fields are split on a spaced em dash ` — `: a language is
+ * `name — level — note`, a record `name — issuer — dates — note`, a table row
+ * `name — value — desc`. An en dash is left alone, since date ranges use it.
+ *
+ * An HTML comment of `key: value` pairs sets keys the text can't say — under
+ * `#` (`lang`), under `##` (`type`, `rail`, `inline`), under `###` or at the
+ * end of a list item (`subtype`, `sideNote`, `rating`). Markdown viewers don't
+ * show comments, so the file still reads as an ordinary resume.
+ */
+
+import { parseDates } from '@vibe-resume/core/dates'
+import type { Diagnostic, SourceRead } from '@vibe-resume/core/format'
+import { SECTIONS } from '@vibe-resume/core/schema'
+
+/** One line of the source, with where it starts. */
+interface Line {
+  /** 1-based */
+  n: number
+  text: string
+  from: number
+}
+
+type Directive = Record<string, string | boolean>
+
+interface Item {
+  text: string
+  line: Line
+  directive: Directive
+}
+
+type Block = { kind: 'para'; lines: Line[] } | { kind: 'list'; items: Item[] }
+
+interface Child {
+  title: string
+  line: Line
+  directive: Directive
+  blocks: Block[]
+}
+
+interface Section {
+  title: string
+  line: Line
+  directive: Directive
+  directiveLine: Line | null
+  blocks: Block[]
+  children: Child[]
+}
+
+const HEADING = /^(#{1,6})\s+(.*?)\s*#*\s*$/
+const BULLET = /^\s*(?:[-*+]|\d+[.)])\s+(.*)$/
+const COMMENT = /^\s*<!--(.*?)-->\s*$/
+const TRAILING_COMMENT = /\s*<!--(.*?)-->\s*$/
+const RULE = /^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/
+/** A spaced em dash — the one separator between fields on a line. */
+const FIELDS = /\s+—\s+/
+/** `**Tier:** text`, a groups row with a tier. */
+const TIER = /^\*\*([^*]+?):?\*\*:?\s+(.*)$/
+/** `Stack: …`, in any of the ways it gets written. */
+const STACK = /^(?:\*\*|__)?(?:stack|tech(?:nologies)?|tools)(?::(?:\*\*|__)|(?:\*\*|__)?:)\s*(.*)$/i
+
+/** Keys a comment may set, by where it is. */
+const DIRECTIVE_KEYS = {
+  header: ['lang'],
+  section: ['type', 'rail', 'inline'],
+  item: ['subtype', 'sideNote', 'rating'],
+}
+
+/** Section titles that say what a section is, when its content agrees. */
+const TITLE_TYPES: Array<[RegExp, string, (s: Section) => boolean]> = [
+  [/summary|profile|about|objective/i, 'text', (s) => !s.children.length],
+  [/skill/i, 'groups', (s) => s.children.length > 0],
+  [/language/i, 'levels', (s) => onlyList(s)],
+  [/certif|licen|award|course/i, 'records', (s) => onlyList(s)],
+  [/interest|hobb/i, 'list', (s) => onlyList(s)],
+  [/open.?source/i, 'table', (s) => onlyList(s)],
+]
+
+const onlyList = (s: Section): boolean => !s.children.length && s.blocks.length > 0 && s.blocks.every((b) => b.kind === 'list')
+
+const strip = (text: string): string => text.replace(/[*_`]/g, '').trim()
+
+export function read(text: string): SourceRead {
+  const diagnostics: Diagnostic[] = []
+  const lines: Map<string, number> = new Map()
+  const value: Record<string, any> = {}
+
+  // ── Lines ────────────────────────────────────────────────────────────────
+  const src: Line[] = []
+  let offset = 0
+  for (const [i, t] of text.split('\n').entries()) {
+    src.push({ n: i + 1, text: t, from: offset })
+    offset += t.length + 1
+  }
+
+  const warn = (line: Line, message: string, from = 0, to = line.text.length): void => {
+    diagnostics.push({ from: line.from + from, to: line.from + Math.max(to, from), severity: 'warning', source: 'markdown', message })
+  }
+
+  /** Read a comment's `key: value` pairs, warning about any key that has no meaning there. */
+  const directive = (body: string, line: Line, allowed: string[]): Directive => {
+    const out: Directive = {}
+    for (const part of body.split(/[,;]/)) {
+      const m = /^\s*([A-Za-z_][\w-]*)\s*:\s*(.*?)\s*$/.exec(part)
+      if (!m) continue
+      const [, key, raw] = m
+      if (!allowed.includes(key)) {
+        const col = line.text.indexOf(key)
+        warn(line, `\`${key}\` means nothing here. A comment here can set: ${allowed.join(', ')}.`, col, col + key.length)
+        continue
+      }
+      out[key] = raw === 'true' ? true : raw === 'false' ? false : raw
+    }
+    return out
+  }
+
+  // ── Blocks ───────────────────────────────────────────────────────────────
+  // The document as headings, each holding the paragraphs and lists under it.
+  let header: { name: string; line: Line; directive: Directive; blocks: Block[] } | null = null
+  const sections: Section[] = []
+  /** Where blocks land as they are read: the header, a section, or one of its `###`. */
+  let target: { blocks: Block[]; directive: Directive } | null = null
+  let targetKind: keyof typeof DIRECTIVE_KEYS = 'header'
+  let para: Line[] | null = null
+  let list: Item[] | null = null
+  let strayWarned = false
+
+  const close = (): void => {
+    para = null
+    list = null
+  }
+
+  for (const line of src) {
+    const t = line.text
+    if (!t.trim() || RULE.test(t)) {
+      close()
+      continue
+    }
+    const heading = HEADING.exec(t)
+    if (heading) {
+      close()
+      const level = heading[1].length
+      const title = heading[2]
+      if (level === 1 && !header && !sections.length) {
+        header = { name: title, line, directive: {}, blocks: [] }
+        target = header
+        targetKind = 'header'
+      } else if (level <= 2) {
+        const sec: Section = { title, line, directive: {}, directiveLine: null, blocks: [], children: [] }
+        sections.push(sec)
+        target = sec
+        targetKind = 'section'
+      } else if (sections.length) {
+        const child: Child = { title, line, directive: {}, blocks: [] }
+        sections[sections.length - 1].children.push(child)
+        target = child
+        targetKind = 'item'
+      }
+      continue
+    }
+    const comment = COMMENT.exec(t)
+    if (comment) {
+      close()
+      if (target) {
+        Object.assign(target.directive, directive(comment[1], line, DIRECTIVE_KEYS[targetKind]))
+        if (targetKind === 'section') (target as Section).directiveLine ??= line
+      }
+      continue
+    }
+    if (!target) {
+      if (!strayWarned) warn(line, 'Text before the first heading is not part of the CV. Start with `# Your Name`.')
+      strayWarned = true
+      continue
+    }
+    const bullet = BULLET.exec(t)
+    if (bullet) {
+      para = null
+      if (!list) {
+        list = []
+        target.blocks.push({ kind: 'list', items: list })
+      }
+      const trailing = TRAILING_COMMENT.exec(bullet[1])
+      const itemText = trailing ? bullet[1].slice(0, trailing.index) : bullet[1]
+      list.push({ text: itemText.trim(), line, directive: trailing ? directive(trailing[1], line, DIRECTIVE_KEYS.item) : {} })
+      continue
+    }
+    // An indented line under a bullet carries that bullet on, unless it is a
+    // `Stack:` line, which ends the list rather than joining its last item.
+    if (list && /^\s/.test(t) && !STACK.test(t.trim())) {
+      const last = list[list.length - 1]
+      last.text = `${last.text} ${t.trim()}`
+      continue
+    }
+    list = null
+    if (!para) {
+      para = []
+      target.blocks.push({ kind: 'para', lines: para })
+    }
+    para.push(line)
+  }
+
+  // ── The header ───────────────────────────────────────────────────────────
+  if (header) {
+    lines.set('', header.line.n)
+    lines.set('header', header.line.n)
+    lines.set('header.name', header.line.n)
+    const h: Record<string, any> = { name: header.name }
+    const contact: string[] = []
+    const contactAt = (line: Line): void => {
+      if (!lines.has('header.contact')) lines.set('header.contact', line.n)
+      lines.set(`header.contact.${contact.length - 1}`, line.n)
+    }
+    for (const block of header.blocks) {
+      if (block.kind === 'list') {
+        for (const item of block.items) {
+          contact.push(item.text)
+          contactAt(item.line)
+        }
+        continue
+      }
+      for (const line of block.lines) {
+        if (h.role === undefined) {
+          h.role = line.text.trim()
+          lines.set('header.role', line.n)
+          continue
+        }
+        for (const part of line.text.split(/\s+[·|]\s+/)) {
+          if (!part.trim()) continue
+          contact.push(part.trim())
+          contactAt(line)
+        }
+      }
+    }
+    if (contact.length) h.contact = contact
+    if (typeof header.directive.lang === 'string') h.lang = header.directive.lang
+    value.header = h
+  }
+
+  // ── Sections ─────────────────────────────────────────────────────────────
+  if (sections.length) lines.set('sections', sections[0].line.n)
+  if (!lines.has('')) lines.set('', sections[0]?.line.n ?? 1)
+  value.sections = sections.map((sec, i) => readSection(sec, `sections.${i}`))
+
+  function readSection(sec: Section, path: string): Record<string, any> {
+    lines.set(path, sec.line.n)
+    lines.set(`${path}.title`, sec.line.n)
+    const out: Record<string, any> = { title: sec.title }
+    const { type: asked, ...rest } = sec.directive
+    let type: string | undefined
+    if (typeof asked === 'string') {
+      if (SECTIONS[asked]) {
+        type = asked
+        if (sec.directiveLine) lines.set(`${path}.type`, sec.directiveLine.n)
+      } else if (sec.directiveLine) {
+        const col = sec.directiveLine.text.indexOf(asked)
+        warn(sec.directiveLine, `\`${asked}\` isn't a section type. One of: ${Object.keys(SECTIONS).join(', ')}.`, col, col + asked.length)
+      }
+    }
+    type ??= TITLE_TYPES.find(([re, , fits]) => re.test(sec.title) && fits(sec))?.[1]
+    type ??= sec.children.length ? 'entries' : onlyList(sec) ? 'list' : 'text'
+    out.type = type
+    Object.assign(out, rest)
+
+    if (!sec.blocks.length && !sec.children.length) warn(sec.line, 'This section has nothing in it yet.')
+    if (sec.children.length && sec.blocks.length && type !== 'text') {
+      const first = sec.blocks[0]
+      warn(first.kind === 'para' ? first.lines[0] : first.items[0].line, 'Text between a section heading and its first `###` is not shown.')
+    }
+
+    const holds = SECTIONS[type].holds
+    const items: any[] = []
+    const holdsAt = (n: number): void => {
+      if (!lines.has(`${path}.${holds}`)) lines.set(`${path}.${holds}`, n)
+    }
+
+    if (type === 'text') {
+      for (const block of sec.blocks) {
+        const parts =
+          block.kind === 'para'
+            ? [{ text: block.lines.map((l) => l.text.trim()).join(' '), n: block.lines[0].n }]
+            : block.items.map((it) => ({ text: it.text, n: it.line.n }))
+        for (const p of parts) {
+          holdsAt(p.n)
+          lines.set(`${path}.${holds}.${items.length}`, p.n)
+          items.push(p.text)
+        }
+      }
+    } else if (type === 'entries' || type === 'groups') {
+      for (const child of sec.children) {
+        const at = `${path}.${holds}.${items.length}`
+        holdsAt(child.line.n)
+        lines.set(at, child.line.n)
+        lines.set(`${at}.title`, child.line.n)
+        items.push(type === 'entries' ? readEntry(child, at) : readGroup(child, at))
+      }
+    } else {
+      for (const block of sec.blocks) {
+        const entries = block.kind === 'list' ? block.items : block.lines.map((line) => ({ text: line.text.trim(), line, directive: {} }))
+        for (const item of entries) {
+          const at = `${path}.${holds}.${items.length}`
+          holdsAt(item.line.n)
+          lines.set(at, item.line.n)
+          items.push(readRow(type, item))
+        }
+      }
+    }
+    out[holds] = items
+    return out
+  }
+
+  function readEntry(child: Child, at: string): Record<string, any> {
+    const [title, ...org] = child.title.split(FIELDS)
+    const item: Record<string, any> = { title }
+    if (org.length) item.org = org.join(' — ')
+    Object.assign(item, child.directive)
+    const earlier = item.subtype === 'earlier'
+    const listKey = earlier ? 'items' : 'bullets'
+    for (const block of child.blocks) {
+      if (block.kind === 'list') {
+        for (const it of block.items) {
+          const stack = STACK.exec(it.text)
+          if (stack && !earlier) {
+            item.stack = stack[1]
+            lines.set(`${at}.stack`, it.line.n)
+            continue
+          }
+          item[listKey] ??= []
+          if (!lines.has(`${at}.${listKey}`)) lines.set(`${at}.${listKey}`, it.line.n)
+          lines.set(`${at}.${listKey}.${item[listKey].length}`, it.line.n)
+          item[listKey].push(it.text)
+        }
+        continue
+      }
+      // A paragraph is read a line at a time: the dates and the line of
+      // context are often written one under the other with no blank between.
+      for (const line of block.lines) {
+        const t = line.text.trim()
+        const stack = STACK.exec(t)
+        if (stack) {
+          item.stack = stack[1]
+          lines.set(`${at}.stack`, line.n)
+        } else if (item.dates === undefined && parseDates(strip(t))) {
+          item.dates = strip(t)
+          lines.set(`${at}.dates`, line.n)
+        } else if (item.sub === undefined) {
+          item.sub = t
+          lines.set(`${at}.sub`, line.n)
+        } else {
+          item.sub = `${item.sub} ${t}`
+        }
+      }
+    }
+    return item
+  }
+
+  function readGroup(child: Child, at: string): Record<string, any> {
+    const rows: Array<Record<string, string>> = []
+    const add = (row: string, line: Line): void => {
+      if (!rows.length) lines.set(`${at}.rows`, line.n)
+      lines.set(`${at}.rows.${rows.length}`, line.n)
+      const tier = TIER.exec(row)
+      rows.push(tier ? { tier: tier[1].trim(), text: tier[2] } : { text: row })
+    }
+    for (const block of child.blocks) {
+      if (block.kind === 'list') for (const it of block.items) add(it.text, it.line)
+      else for (const line of block.lines) add(line.text.trim(), line)
+    }
+    return { title: child.title, rows }
+  }
+
+  function readRow(type: string, item: Item): unknown {
+    const fields = item.text.split(FIELDS)
+    if (type === 'levels') {
+      const [name, level, ...note] = fields
+      return { name, ...(level && { level }), ...(note.length && { note: note.join(' — ') }), ...item.directive }
+    }
+    if (type === 'records') {
+      const [name, ...restFields] = fields
+      const out: Record<string, any> = { name }
+      const others: string[] = []
+      for (const f of restFields) {
+        if (out.dates === undefined && parseDates(strip(f))) out.dates = strip(f)
+        else others.push(f)
+      }
+      if (others[0]) out.issuer = others[0]
+      if (others.length > 1) out.note = others.slice(1).join(' — ')
+      return { ...out, ...item.directive }
+    }
+    if (type === 'table') {
+      const [name, val, ...desc] = fields
+      return { name, ...(val && { value: val }), ...(desc.length && { desc: desc.join(' — ') }) }
+    }
+    return item.text
+  }
+
+  return { value: header || sections.length ? value : null, lines, diagnostics }
+}

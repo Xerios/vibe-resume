@@ -4,21 +4,75 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    '@codemirror/autocomplete':
+      specifier: ^6.20.3
+      version: 6.20.3
+    '@codemirror/language':
+      specifier: ^6.12.4
+      version: 6.12.4
+    '@codemirror/state':
+      specifier: ^6.7.5
+      version: 6.7.5
+    '@codemirror/view':
+      specifier: ^6.43.12
+      version: 6.43.12
+    '@lezer/highlight':
+      specifier: ^1.2.3
+      version: 1.2.3
+    marked:
+      specifier: ^18.0.13
+      version: 18.0.13
+    svelte:
+      specifier: ^5.57.0
+      version: 5.57.0
+    vite:
+      specifier: ^8.3.0
+      version: 8.3.0
+
 patchedDependencies:
   loro-codemirror: 0369d7cef04d1aa88c20f135fb4bcf197baf89b5eeeadd1ddc9ee0444662e471
 
 importers:
 
   .:
+    devDependencies:
+      lint-staged:
+        specifier: ^16.4.0
+        version: 16.4.0
+      oxfmt:
+        specifier: ^0.65.0
+        version: 0.65.0(svelte@5.57.0)
+      oxlint:
+        specifier: ^1.83.0
+        version: 1.83.0
+      svelte:
+        specifier: 'catalog:'
+        version: 5.57.0
+      svelte-check:
+        specifier: ^4.7.6
+        version: 4.7.6(picomatch@4.0.7)(svelte@5.57.0)(typescript@6.0.3)
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vite:
+        specifier: 'catalog:'
+        version: 8.3.0(sass@1.104.1)(yaml@2.9.1)
+      vitest:
+        specifier: ^4.1.11
+        version: 4.1.11(vite@8.3.0(sass@1.104.1)(yaml@2.9.1))
+
+  apps/web:
     dependencies:
       '@codemirror/autocomplete':
-        specifier: ^6.20.3
+        specifier: 'catalog:'
         version: 6.20.3
       '@codemirror/commands':
         specifier: ^6.11.1
         version: 6.11.1
       '@codemirror/language':
-        specifier: ^6.12.4
+        specifier: 'catalog:'
         version: 6.12.4
       '@codemirror/lint':
         specifier: ^6.9.7
@@ -27,51 +81,36 @@ importers:
         specifier: ^6.7.2
         version: 6.7.2
       '@codemirror/state':
-        specifier: ^6.7.5
+        specifier: 'catalog:'
         version: 6.7.5
       '@codemirror/view':
-        specifier: ^6.43.12
+        specifier: 'catalog:'
         version: 6.43.12
       '@lezer/highlight':
-        specifier: ^1.2.3
+        specifier: 'catalog:'
         version: 1.2.3
+      '@vibe-resume/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@vibe-resume/format-markdown':
+        specifier: workspace:*
+        version: link:../../packages/format-markdown
+      '@vibe-resume/format-yaml':
+        specifier: workspace:*
+        version: link:../../packages/format-yaml
+      '@vibe-resume/render':
+        specifier: workspace:*
+        version: link:../../packages/render
       codemirror-wrapped-line-indent:
         specifier: ^1.0.9
         version: 1.0.9(@codemirror/language@6.12.4)(@codemirror/state@6.7.5)(@codemirror/view@6.43.12)
-      lint-staged:
-        specifier: ^16.4.0
-        version: 16.4.0
       loro-codemirror:
         specifier: ^0.3.3
         version: 0.3.3(patch_hash=0369d7cef04d1aa88c20f135fb4bcf197baf89b5eeeadd1ddc9ee0444662e471)(@codemirror/state@6.7.5)(@codemirror/view@6.43.12)(loro-crdt@1.16.1)
       loro-crdt:
         specifier: ^1.16.1
         version: 1.16.1
-      marked:
-        specifier: ^18.0.13
-        version: 18.0.13
-      pdfkit:
-        specifier: ^0.20.2
-        version: 0.20.2
     devDependencies:
-      '@expo-google-fonts/archivo':
-        specifier: ^0.4.2
-        version: 0.4.2
-      '@expo-google-fonts/eb-garamond':
-        specifier: ^0.4.3
-        version: 0.4.3
-      '@expo-google-fonts/inter':
-        specifier: ^0.4.2
-        version: 0.4.2
-      '@expo-google-fonts/jetbrains-mono':
-        specifier: ^0.4.1
-        version: 0.4.1
-      '@expo-google-fonts/source-sans-3':
-        specifier: ^0.4.1
-        version: 0.4.1
-      '@expo-google-fonts/source-serif-4':
-        specifier: ^0.4.1
-        version: 0.4.1
       '@iconify-icons/lucide':
         specifier: ^2.0.8
         version: 2.0.8
@@ -90,17 +129,11 @@ importers:
       '@sveltejs/vite-plugin-svelte':
         specifier: ^7.3.0
         version: 7.3.0(svelte@5.57.0)(vite@8.3.0(sass@1.104.1)(yaml@2.9.1))
-      oxfmt:
-        specifier: ^0.65.0
-        version: 0.65.0(svelte@5.57.0)
-      oxlint:
-        specifier: ^1.83.0
-        version: 1.83.0
       sass:
         specifier: ^1.104.1
         version: 1.104.1
       svelte:
-        specifier: ^5.57.0
+        specifier: 'catalog:'
         version: 5.57.0
       svelte-check:
         specifier: ^4.7.6
@@ -109,11 +142,100 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
       vite:
-        specifier: ^8.3.0
+        specifier: 'catalog:'
         version: 8.3.0(sass@1.104.1)(yaml@2.9.1)
-      vitest:
-        specifier: ^4.1.11
-        version: 4.1.11(vite@8.3.0(sass@1.104.1)(yaml@2.9.1))
+
+  packages/core: {}
+
+  packages/format-markdown:
+    dependencies:
+      '@codemirror/language':
+        specifier: 'catalog:'
+        version: 6.12.4
+      '@codemirror/state':
+        specifier: 'catalog:'
+        version: 6.7.5
+      '@lezer/highlight':
+        specifier: 'catalog:'
+        version: 1.2.3
+      '@vibe-resume/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@vibe-resume/format-yaml':
+        specifier: workspace:*
+        version: link:../format-yaml
+      '@vibe-resume/render':
+        specifier: workspace:*
+        version: link:../render
+      vite:
+        specifier: 'catalog:'
+        version: 8.3.0(sass@1.104.1)(yaml@2.9.1)
+
+  packages/format-yaml:
+    dependencies:
+      '@codemirror/autocomplete':
+        specifier: 'catalog:'
+        version: 6.20.3
+      '@codemirror/language':
+        specifier: 'catalog:'
+        version: 6.12.4
+      '@codemirror/state':
+        specifier: 'catalog:'
+        version: 6.7.5
+      '@codemirror/view':
+        specifier: 'catalog:'
+        version: 6.43.12
+      '@lezer/highlight':
+        specifier: 'catalog:'
+        version: 1.2.3
+      '@vibe-resume/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      vite:
+        specifier: 'catalog:'
+        version: 8.3.0(sass@1.104.1)(yaml@2.9.1)
+
+  packages/render:
+    dependencies:
+      '@expo-google-fonts/archivo':
+        specifier: ^0.4.2
+        version: 0.4.2
+      '@expo-google-fonts/eb-garamond':
+        specifier: ^0.4.3
+        version: 0.4.3
+      '@expo-google-fonts/inter':
+        specifier: ^0.4.2
+        version: 0.4.2
+      '@expo-google-fonts/jetbrains-mono':
+        specifier: ^0.4.1
+        version: 0.4.1
+      '@expo-google-fonts/source-sans-3':
+        specifier: ^0.4.1
+        version: 0.4.1
+      '@expo-google-fonts/source-serif-4':
+        specifier: ^0.4.1
+        version: 0.4.1
+      '@vibe-resume/core':
+        specifier: workspace:*
+        version: link:../core
+      marked:
+        specifier: 'catalog:'
+        version: 18.0.13
+      pdfkit:
+        specifier: ^0.20.2
+        version: 0.20.2
+    devDependencies:
+      '@vibe-resume/format-yaml':
+        specifier: workspace:*
+        version: link:../format-yaml
+      svelte:
+        specifier: 'catalog:'
+        version: 5.57.0
+      vite:
+        specifier: 'catalog:'
+        version: 8.3.0(sass@1.104.1)(yaml@2.9.1)
 
 packages:
 

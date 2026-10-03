@@ -1,0 +1,387 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Design tokens — the Atlassian Design System's, as two schemes.
+
+   Nothing here selects anything the app draws; every rule that does lives in a
+   component's <style> block or in one of the sibling stylesheets listed in
+   src/app.scss.
+
+   The vocabulary is ADS's own, letter for letter: `color.text.subtle` in the
+   Atlassian token set is `--ds-text-subtle` here, `elevation.surface.overlay`
+   is `--ds-surface-overlay`, `space.150` is `--ds-space-150`. Values are the
+   published light and dark values, typed out rather than imported — the
+   @atlaskit/tokens package would pull in a runtime and a theme loader to set
+   a few dozen custom properties. Because the names match, any ADS component
+   page on atlassian.design is a spec this stylesheet can be checked against.
+
+   ADS tokens are *semantic*: a rule asks for "the subtle text colour" or "the
+   background of a selected thing", never for a hue or a step. The dark block
+   restates every one of them, so no rule in the app needs a dark branch.
+
+   The families, and what each is for:
+
+     --ds-text-*          words. `-subtle` for secondary, `-subtlest` for meta.
+     --ds-icon-*          glyphs, one notch quieter than the text beside them.
+     --ds-border-*        edges. `-input` for fields, `-focused` for the ring.
+     --ds-background-*    fills. `neutral` for a button at rest, `-subtle` for
+                          one that is transparent until hovered, `selected` for
+                          what is on, `brand-bold` for the one primary action.
+     --ds-surface-*       the elevation ladder: sunken < surface < raised <
+                          overlay. Paired with the matching --ds-shadow-*.
+     --ds-space-*         the 8px grid, named in hundredths of it.
+     --ds-radius-*        corners.
+     --ds-font-*          `font` shorthands for the body and heading styles.
+
+   The sheet in the preview frame is not reachable from here and never follows:
+   it is a separate document with its own inputs in src/lib/cv/frame.css.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Colour: light ────────────────────────────── */
+:root {
+  /* Tells the browser which scheme its own chrome should use — the bits no
+     stylesheet reaches, like the scrollbars inside a native popup. */
+  color-scheme: light;
+
+  --ds-text: #172b4d;
+  --ds-text-subtle: #44546f;
+  --ds-text-subtlest: #626f86;
+  --ds-text-disabled: #091e424f;
+  --ds-text-inverse: #ffffff;
+  --ds-text-brand: #0c66e4;
+  --ds-text-selected: #0c66e4;
+  --ds-text-danger: #ae2e24;
+  --ds-text-warning: #a54800;
+  --ds-text-warning-inverse: #172b4d;
+  --ds-text-success: #216e4e;
+  --ds-text-information: #0055cc;
+  --ds-text-discovery: #5e4db2;
+  --ds-link: #0c66e4;
+  --ds-link-pressed: #0055cc;
+
+  --ds-text-accent-blue: #0055cc;
+  --ds-text-accent-green: #216e4e;
+  --ds-text-accent-orange: #a54800;
+  --ds-text-accent-purple: #5e4db2;
+  --ds-text-accent-teal: #206a83;
+  --ds-text-accent-magenta: #943d73;
+  --ds-text-accent-yellow: #7f5f01;
+  --ds-text-accent-gray: #44546f;
+
+  --ds-icon: #44546f;
+  --ds-icon-subtle: #626f86;
+  --ds-icon-brand: #0c66e4;
+  --ds-icon-selected: #0c66e4;
+  --ds-icon-danger: #c9372c;
+  --ds-icon-warning: #e56910;
+  --ds-icon-success: #22a06b;
+  --ds-icon-information: #1d7afc;
+
+  --ds-border: #091e4224;
+  --ds-border-bold: #758195;
+  --ds-border-input: #8590a2;
+  --ds-border-focused: #388bff;
+  --ds-border-selected: #0c66e4;
+  --ds-border-brand: #0c66e4;
+  --ds-border-danger: #e2483d;
+  --ds-border-warning: #e56910;
+  --ds-border-success: #22a06b;
+  --ds-border-information: #1d7afc;
+  --ds-border-disabled: #091e420f;
+
+  --ds-background-neutral: #091e420f;
+  --ds-background-neutral-hovered: #091e4224;
+  --ds-background-neutral-pressed: #091e424f;
+  --ds-background-neutral-subtle: #00000000;
+  --ds-background-neutral-subtle-hovered: #091e420f;
+  --ds-background-neutral-subtle-pressed: #091e4224;
+  --ds-background-neutral-bold: #44546f;
+  --ds-background-neutral-bold-hovered: #2c3e5d;
+  --ds-background-neutral-bold-pressed: #172b4d;
+  --ds-background-brand-bold: #0c66e4;
+  --ds-background-brand-bold-hovered: #0055cc;
+  --ds-background-brand-bold-pressed: #09326c;
+  --ds-background-selected: #e9f2ff;
+  --ds-background-selected-hovered: #cce0ff;
+  --ds-background-selected-pressed: #85b8ff;
+  --ds-background-danger: #ffeceb;
+  --ds-background-danger-hovered: #ffd5d2;
+  --ds-background-danger-bold: #c9372c;
+  --ds-background-danger-bold-hovered: #ae2e24;
+  --ds-background-danger-bold-pressed: #5d1f1a;
+  --ds-background-warning: #fff7d6;
+  --ds-background-warning-hovered: #f8e6a0;
+  --ds-background-warning-bold: #f5cd47;
+  --ds-background-success: #dcfff1;
+  --ds-background-success-hovered: #baf3db;
+  --ds-background-success-bold: #1f845a;
+  --ds-background-information: #e9f2ff;
+  --ds-background-information-hovered: #cce0ff;
+  --ds-background-information-bold: #1d7afc;
+  --ds-background-discovery: #f3f0ff;
+  --ds-background-input: #ffffff;
+  --ds-background-input-hovered: #f7f8f9;
+  --ds-background-disabled: #091e4208;
+
+  --ds-background-accent-blue-subtler: #cce0ff;
+  --ds-background-accent-blue-subtlest: #e9f2ff;
+  --ds-background-accent-green-subtler: #baf3db;
+  --ds-background-accent-red-subtler: #ffd5d2;
+  --ds-background-accent-yellow-subtler: #f8e6a0;
+  --ds-background-accent-yellow-subtlest: #fff7d6;
+  --ds-background-accent-blue-bolder: #0c66e4;
+
+  --ds-surface: #ffffff;
+  --ds-surface-hovered: #f1f2f4;
+  --ds-surface-pressed: #dcdfe4;
+  --ds-surface-sunken: #f7f8f9;
+  --ds-surface-raised: #ffffff;
+  --ds-surface-raised-hovered: #f1f2f4;
+  --ds-surface-raised-pressed: #dcdfe4;
+  --ds-surface-overlay: #ffffff;
+  --ds-surface-overlay-hovered: #f1f2f4;
+  --ds-surface-overlay-pressed: #dcdfe4;
+
+  --ds-shadow-raised: 0px 1px 1px #091e4240, 0px 0px 1px #091e424f;
+  --ds-shadow-overflow: 0px 0px 8px #091e4229, 0px 0px 1px #091e421f;
+  --ds-shadow-overlay: 0px 8px 12px #091e4226, 0px 0px 1px #091e424f;
+  --ds-blanket: #091e427d;
+  --ds-skeleton: #091e420f;
+
+  /* Read by syncThemeColor() and handed to <meta name="theme-color">, which
+     parses a plain colour and nothing else. It is the top navigation's surface,
+     since the installed window's titlebar sits directly on top of it. Nothing
+     else may spend this token. */
+  --theme-color: #ffffff;
+}
+
+/* ── Colour: dark ─────────────────────────────── */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --ds-text: #b6c2cf;
+  --ds-text-subtle: #9fadbc;
+  --ds-text-subtlest: #8c9bab;
+  --ds-text-disabled: #bfdbf847;
+  --ds-text-inverse: #1d2125;
+  --ds-text-brand: #579dff;
+  --ds-text-selected: #579dff;
+  --ds-text-danger: #fd9891;
+  --ds-text-warning: #f5cd47;
+  --ds-text-warning-inverse: #1d2125;
+  --ds-text-success: #7ee2b8;
+  --ds-text-information: #85b8ff;
+  --ds-text-discovery: #b8acf6;
+  --ds-link: #579dff;
+  --ds-link-pressed: #85b8ff;
+
+  --ds-text-accent-blue: #85b8ff;
+  --ds-text-accent-green: #7ee2b8;
+  --ds-text-accent-orange: #fec195;
+  --ds-text-accent-purple: #b8acf6;
+  --ds-text-accent-teal: #9dd9ee;
+  --ds-text-accent-magenta: #fdd0ec;
+  --ds-text-accent-yellow: #f5cd47;
+  --ds-text-accent-gray: #9fadbc;
+
+  --ds-icon: #9fadbc;
+  --ds-icon-subtle: #8696a7;
+  --ds-icon-brand: #579dff;
+  --ds-icon-selected: #579dff;
+  --ds-icon-danger: #f15b50;
+  --ds-icon-warning: #f38a3f;
+  --ds-icon-success: #2abb7f;
+  --ds-icon-information: #388bff;
+
+  --ds-border: #a6c5e229;
+  --ds-border-bold: #738496;
+  --ds-border-input: #738496;
+  --ds-border-focused: #85b8ff;
+  --ds-border-selected: #579dff;
+  --ds-border-brand: #579dff;
+  --ds-border-danger: #f15b50;
+  --ds-border-warning: #f38a3f;
+  --ds-border-success: #2abb7f;
+  --ds-border-information: #388bff;
+  --ds-border-disabled: #bcd6f01f;
+
+  --ds-background-neutral: #a1bdd914;
+  --ds-background-neutral-hovered: #a6c5e229;
+  --ds-background-neutral-pressed: #bfdbf847;
+  --ds-background-neutral-subtle: #00000000;
+  --ds-background-neutral-subtle-hovered: #a1bdd914;
+  --ds-background-neutral-subtle-pressed: #a6c5e229;
+  --ds-background-neutral-bold: #9fadbc;
+  --ds-background-neutral-bold-hovered: #b6c2cf;
+  --ds-background-neutral-bold-pressed: #c7d1db;
+  --ds-background-brand-bold: #579dff;
+  --ds-background-brand-bold-hovered: #85b8ff;
+  --ds-background-brand-bold-pressed: #cce0ff;
+  --ds-background-selected: #1c2b41;
+  --ds-background-selected-hovered: #09326c;
+  --ds-background-selected-pressed: #0055cc;
+  --ds-background-danger: #42221f;
+  --ds-background-danger-hovered: #5d1f1a;
+  --ds-background-danger-bold: #f87168;
+  --ds-background-danger-bold-hovered: #fd9891;
+  --ds-background-danger-bold-pressed: #ffd5d2;
+  --ds-background-warning: #533f04;
+  --ds-background-warning-hovered: #7f5f01;
+  --ds-background-warning-bold: #f5cd47;
+  --ds-background-success: #164b35;
+  --ds-background-success-hovered: #216e4e;
+  --ds-background-success-bold: #4bce97;
+  --ds-background-information: #1c2b41;
+  --ds-background-information-hovered: #09326c;
+  --ds-background-information-bold: #579dff;
+  --ds-background-discovery: #2b273f;
+  --ds-background-input: #22272b;
+  --ds-background-input-hovered: #282e33;
+  --ds-background-disabled: #bcd6f00a;
+
+  --ds-background-accent-blue-subtler: #09326c;
+  --ds-background-accent-blue-subtlest: #1c2b41;
+  --ds-background-accent-green-subtler: #164b35;
+  --ds-background-accent-red-subtler: #5d1f1a;
+  --ds-background-accent-yellow-subtler: #533f04;
+  --ds-background-accent-yellow-subtlest: #332e1b;
+  --ds-background-accent-blue-bolder: #579dff;
+
+  --ds-surface: #1d2125;
+  --ds-surface-hovered: #22272b;
+  --ds-surface-pressed: #282e33;
+  --ds-surface-sunken: #161a1d;
+  --ds-surface-raised: #22272b;
+  --ds-surface-raised-hovered: #282e33;
+  --ds-surface-raised-pressed: #2c333a;
+  --ds-surface-overlay: #282e33;
+  --ds-surface-overlay-hovered: #2c333a;
+  --ds-surface-overlay-pressed: #38414a;
+
+  --ds-shadow-raised: 0px 0px 0px 1px #00000000, 0px 1px 1px #03040480, 0px 0px 1px #03040480;
+  --ds-shadow-overflow: 0px 0px 12px #0304048f, 0px 0px 1px #03040480;
+  --ds-shadow-overlay: 0px 0px 0px 1px #39424a, 0px 8px 12px #0304045c, 0px 0px 1px 1px #03040480;
+  --ds-blanket: #10121499;
+  --ds-skeleton: #a1bdd914;
+
+  --theme-color: #1d2125;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Everything that is the same in both schemes.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Space ──────────────────────────────────── */
+  /* ADS's 8px grid, named in hundredths of it: 100 is 8px, 050 is half. */
+  --ds-space-0: 0;
+  --ds-space-025: 2px;
+  --ds-space-050: 4px;
+  --ds-space-075: 6px;
+  --ds-space-100: 8px;
+  --ds-space-150: 12px;
+  --ds-space-200: 16px;
+  --ds-space-250: 20px;
+  --ds-space-300: 24px;
+  --ds-space-400: 32px;
+  --ds-space-500: 40px;
+
+  /* ── Shape ──────────────────────────────────── */
+  /* Small is the button and the field, medium the menu and the card, large
+     the dialog and the floating panel. */
+  --ds-radius-small: 3px;
+  --ds-radius-medium: 4px;
+  --ds-radius-large: 8px;
+  --ds-radius-xlarge: 12px;
+  --ds-radius-full: 9999px;
+  --ds-border-width: 1px;
+  --ds-border-width-selected: 2px;
+
+  /* ── Type ───────────────────────────────────── */
+  /* ADS's type ramp as `font` shorthands, set in the app's own face rather
+     than Atlassian Sans. A rule spends one of these whole — size, line height
+     and weight travel together, which is how ADS specifies them. */
+  --sans: 'GitLab Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ubuntu, Roboto, sans-serif;
+  --mono: 'GitLab Mono', ui-monospace, Menlo, Consolas, monospace;
+
+  --ds-font-body: 400 14px/20px var(--sans);
+  --ds-font-body-small: 400 12px/16px var(--sans);
+  --ds-font-body-ui: 400 11px/14px var(--sans);
+  --ds-font-heading-xxsmall: 600 12px/16px var(--sans);
+  --ds-font-heading-xsmall: 600 14px/16px var(--sans);
+  --ds-font-heading-small: 600 16px/20px var(--sans);
+  --ds-font-heading-medium: 500 20px/24px var(--sans);
+  --ds-font-heading-large: 500 24px/28px var(--sans);
+  --ds-font-code: 400 12px/20px var(--mono);
+  --ds-font-weight-medium: 500;
+  --ds-font-weight-semibold: 600;
+  --ds-font-weight-bold: 700;
+
+  /* ── The app's own measures ─────────────────── */
+  /* The two bars: one across the top that carries the tabs, the product name
+     and the panel buttons, and a footer with room for a compact button. */
+  --bar-tool: 48px;
+  --bar-status: 32px;
+  --panel-w: 320px;
+  /* Where a popover hanging off the chrome starts: the bar above it, plus its
+     rule. Derived so the panels that float can't drift from the bar they hang
+     under. */
+  --overlay-top: calc(var(--bar-tool) + 1px);
+  --control-h: 32px;
+  --control-h-compact: 24px;
+  --field-h: 40px;
+  --field-h-compact: 32px;
+
+  /* A scrollbar is furniture on top of a pane whose colour it doesn't know. */
+  --scroll-thumb: var(--ds-border);
+  --scroll-thumb-hover: var(--ds-border-bold);
+
+  /* ── Motion ─────────────────────────────────── */
+  /* ADS's ease-out, and its two durations: small things answering the
+     pointer, and the slower fade a whole scheme swap deserves. */
+  --ease: cubic-bezier(0.15, 1, 0.3, 1);
+  --theme-fade: background-color 200ms var(--ease), color 200ms var(--ease), border-color 200ms var(--ease);
+  --hover-fade: background-color 100ms var(--ease), color 100ms var(--ease), border-color 100ms var(--ease);
+
+  /* ── Editor ─────────────────────────────────── */
+  /* The syntax roles, out of ADS's accent text set — the colours ADS reserves
+     for categorical labelling, which is what syntax highlighting is. They are
+     defined as legible on `surface`, which is what the editor's page is.
+
+     The tokens are read from JS as well as from CSS — see cm-highlight.js. */
+  --cm-key: var(--ds-text-accent-blue);
+  --cm-tag: var(--ds-text-accent-blue);
+  --cm-string: var(--ds-text-accent-green);
+  --cm-num: var(--ds-text-accent-orange);
+  --cm-keyword: var(--ds-text-accent-purple);
+  --cm-fn: var(--ds-text-accent-teal);
+  --cm-html: var(--ds-text-accent-teal);
+  --cm-anchor: var(--ds-text-accent-magenta);
+  --cm-attr: var(--ds-text-accent-magenta);
+  --cm-block: var(--ds-text-accent-yellow);
+  --cm-text: var(--ds-text);
+  --cm-punct: var(--ds-text-subtlest);
+  --cm-comment: var(--ds-text-subtlest);
+  --cm-hint: var(--ds-text-subtlest);
+  --cm-error: var(--ds-text-danger);
+  --cm-invalid: var(--ds-text-danger);
+  --cm-warn: var(--ds-text-warning);
+
+  /* The editor's washes. Each lands on top of text it must not bury, so they
+     are the translucent neutrals or the palest accent fills. */
+  --cm-error-bg: var(--ds-background-danger);
+  --cm-active: var(--ds-background-neutral-subtle-hovered);
+  --cm-selection: var(--ds-background-selected-hovered);
+  --cm-selection-focus: var(--ds-background-selected-hovered);
+  --cm-peek: var(--ds-background-selected);
+  --cm-match: var(--ds-background-accent-yellow-subtler);
+  --cm-diff-add-bg: var(--ds-background-success);
+  --cm-diff-del-bg: var(--ds-background-danger);
+  --cm-diff-del-text: var(--ds-text-danger);
+  /* The compare view's changed lines, and the deeper fill each wash takes on
+     the very characters that differ. */
+  --cm-diff-mod-bg: var(--ds-background-warning);
+  --cm-diff-mod-range: var(--ds-background-accent-yellow-subtler);
+  --cm-diff-add-range: var(--ds-background-accent-green-subtler);
+  --cm-diff-del-range: var(--ds-background-accent-red-subtler);
+  --stat-add: var(--ds-text-success);
+  --stat-del: var(--ds-text-danger);
+}
