@@ -18,7 +18,7 @@
  *   in words as its alternative text.
  *
  * Presentation reaches the sheet as a small, fixed set of properties:
- * - `frame` and `keep` on a group
+ * - `frame`, `keep` and `split` on a group
  * - `display` and `marker` on a list
  * - `align` on text
  * - `head` on a section and `style` on the header
@@ -71,9 +71,11 @@ export interface Item {
 }
 /**
  * A group of blocks. `keep` asks the PDF not to split it across a page, as the
- * print CSS asks of the same things.
+ * print CSS asks of the same things. `split` lets a kept entry break between
+ * its parts after all, its heading going with the first of them; it is still
+ * spaced as an entry.
  */
-export type Div = { kind: 'Div'; body: Block[]; keep?: boolean; frame?: Frame; src?: string }
+export type Div = { kind: 'Div'; body: Block[]; keep?: boolean; split?: boolean; frame?: Frame; src?: string }
 export type Block = Text | Row | List | Div
 export interface Section {
   kind: 'Sect'
@@ -398,6 +400,9 @@ function entry(item: any, at: string, ctx: Context): Div {
 
   const div: Div = { kind: 'Div', keep: true, src: at, body: blocks }
   if (frame) div.frame = frame
+  // A card is one outlined box, which measure.ts draws on the page it starts
+  // on, so a card stays whole.
+  if (ctx.v.breaks === 'split' && frame !== 'card') div.split = true
   return div
 }
 

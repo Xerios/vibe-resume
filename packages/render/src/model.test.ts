@@ -98,6 +98,13 @@ describe('buildModel', () => {
     expect(certs.items[0].frame).toBe('card')
   })
 
+  it('lets entries break across pages unless kept whole, and cards always whole', () => {
+    const job = (v: Record<string, string>) => buildModel(cv, { variants: v }).sections[2].body[0] as import('./model').Div
+    expect(job({})).toMatchObject({ keep: true, split: true })
+    expect(job({ breaks: 'whole' }).split).toBeUndefined()
+    expect(job({ entry: 'card' }).split).toBeUndefined()
+  })
+
   it("falls back to the default variant for an id it doesn't know", () => {
     const m = buildModel(cv, { variants: { entry: 'nope' } })
     const job = m.sections[2].body[0] as import('./model').Div

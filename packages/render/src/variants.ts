@@ -70,6 +70,14 @@ export const SLOTS: Slot[] = [
     ],
   },
   {
+    id: 'breaks',
+    name: 'Page breaks',
+    variants: [
+      { id: 'split', name: 'Split', hint: 'A long entry breaks between its bullets; cards stay whole' },
+      { id: 'whole', name: 'Whole', hint: 'An entry that won’t fit moves to the next page' },
+    ],
+  },
+  {
     id: 'dates',
     name: 'Dates',
     variants: [

@@ -450,14 +450,15 @@
     display: none;
   }
 
-  .keep,
+  .keep:not(.split),
   .cv-list > li,
   .chip {
     break-inside: avoid;
   }
 
   .sec-head,
-  .cv-div > :is(h3, .cv-row):first-child {
+  .cv-div > :is(h3, .cv-row):first-child,
+  .split > h3:first-child + p {
     break-after: avoid;
   }
 

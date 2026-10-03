@@ -5,9 +5,11 @@
  * order and, wherever a block would cross the foot of a page, pushes it down to the
  * top of the next one with a margin. The rules are the ones the print CSS used
  * to ask the browser for:
- * - an entry, a skill group, a list item, a row and a paragraph stay whole
+ * - an entry, a skill group, a list item, a row and a paragraph stay whole —
+ *   but an entry marked `split` may break between its bullets
  * - a section title stays with the start of what follows it, as does an entry's
- *   heading
+ *   heading, which takes its dates line along too
+ * - an entry's closing line (its stack) stays with its last bullet
  * - a group taller than a page is broken between its parts rather than moved
  *
  * The strip is then exactly the pages, end to end. In page view they are drawn
@@ -37,7 +39,7 @@ export interface Pagination {
 const PUSHED = 'data-push'
 
 /** What may not be split across a page. */
-const ATOMIC = 'p, h1, h2, h3, li, .cv-row, .keep, .cv-chips, .meter, .chip, .cv-head, .sec-head'
+const ATOMIC = 'p, h1, h2, h3, li, .cv-row, .keep:not(.split), .cv-chips, .meter, .chip, .cv-head, .sec-head'
 
 /** What leads the block after it and must not be left at the foot of a page. */
 const HEADING = 'h3, .cv-row'
@@ -47,6 +49,16 @@ const style = (el: Element) => (el.ownerDocument.defaultView as Window).getCompu
 
 /** Whether an element takes part in the flow: decoration and absolutely placed things don't. */
 const flows = (el: Element) => !el.hasAttribute('aria-hidden') && !el.hasAttribute('data-skip') && style(el).position !== 'absolute'
+
+/**
+ * What a heading must not be parted from: the block after it, or past that
+ * when it is a single line of text before a list — an entry's dates line,
+ * which goes with its heading.
+ */
+const led = (kids: Element[], i: number): Element => {
+  const [line, rest] = [kids[i + 1], kids[i + 2]]
+  return line.matches('p') && rest && !rest.matches('p') ? rest : line
+}
 
 /**
  * Breaking the preview into pages — the pages the PDF will have.
@@ -110,8 +122,15 @@ export function paginate(sheet: HTMLElement, geo: PageGeometry): Pagination {
    */
   const firstPiece = (el: Element): number => {
     if (el.matches(ATOMIC) && box(el).height <= room) return box(el).bottom
-    const inner = [...el.children].find(flows)
-    return inner ? firstPiece(inner) : box(el).bottom
+    const kids = [...el.children].filter(flows)
+    if (!kids.length) return box(el).bottom
+    if (!kids[0].matches(HEADING) || kids.length < 2) return firstPiece(kids[0])
+    // A heading's first piece runs on through the start of what it leads —
+    // and when that is a lone bullet, through the closing line it keeps.
+    const next = led(kids, 0)
+    const after = kids[kids.indexOf(next) + 1]
+    const lone = next.matches('ul') && [...next.children].filter(flows).length === 1 && after?.matches('p')
+    return lone ? box(after).bottom : firstPiece(next)
   }
 
   const place = (el: Element): void => {
@@ -134,11 +153,23 @@ export function paginate(sheet: HTMLElement, geo: PageGeometry): Pagination {
       const leads = kid.classList.contains('sec-head') || (kid.matches(HEADING) && i === 0 && kids.length > 1)
       if (leads && kids[i + 1]) {
         const top = box(kid).top
-        const bottom = firstPiece(kids[i + 1])
+        // A heading leads only as the first thing in its group, so the group's
+        // first piece is what it needs.
+        const bottom = kid.matches(HEADING) ? firstPiece(el) : firstPiece(kids[i + 1])
         if (crosses(top, bottom) && !atTop(top) && bottom - top <= room) {
           // The section itself moves, so its top margin goes with it.
           const target = kid.classList.contains('sec-head') ? el : kid
           push(target as HTMLElement, nextTop(top))
+          return
+        }
+      }
+      // An entry's closing line, its stack, takes its last bullet with it.
+      const last = kid.matches('p') && kids[i - 1]?.matches('ul') ? [...kids[i - 1].children].findLast(flows) : undefined
+      if (last && el.matches('.cv-div')) {
+        const top = box(last).top
+        const bottom = box(kid).bottom
+        if (crosses(top, bottom) && !atTop(top) && bottom - top <= room) {
+          push(last as HTMLElement, nextTop(top))
           return
         }
       }

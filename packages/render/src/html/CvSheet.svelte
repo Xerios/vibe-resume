@@ -170,7 +170,7 @@
   {:else if node.kind === 'L'}
     {@render list(node)}
   {:else if node.kind === 'Div'}
-    <div class="cv-div {node.frame ? `f-${node.frame}` : ''}" class:keep={node.keep} data-src={node.src}>
+    <div class="cv-div {node.frame ? `f-${node.frame}` : ''}" class:keep={node.keep} class:split={node.split} data-src={node.src}>
       {#if node.frame === 'timeline'}<span class="tl-rail" aria-hidden="true"></span><span class="tl-dot" aria-hidden="true"></span>{/if}
       {#each node.body as b}
         {@render block(b)}
