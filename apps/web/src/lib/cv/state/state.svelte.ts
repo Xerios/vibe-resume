@@ -9,7 +9,7 @@
  * worrying whether something else already did the work.
  */
 
-import { resolveDensity, resolveLayout } from '@vibe-resume/render/tokens'
+import { resolveDensity } from '@vibe-resume/render/tokens'
 import { isModified, resolveVariants, SLOTS } from '@vibe-resume/render/variants'
 import { resolveTheme } from '@vibe-resume/render/theme/palettes'
 import { resolveFont } from '@vibe-resume/render/theme/typefaces'
@@ -26,7 +26,6 @@ export const ui = new UiState()
 
 /** Presentation of the active file, defaulted here so the rest can assume a valid id. */
 class Look {
-  layout = $derived(resolveLayout(files.active?.layout))
   theme = $derived(resolveTheme(files.active?.theme))
   density = $derived(resolveDensity(files.active?.density))
   font = $derived(resolveFont(files.active?.font))
@@ -82,10 +81,7 @@ export function flush(): void {
  * entry for a run of restyles is named by — see `recordStyle`. Two goes at the
  * theme read as the last theme; a theme and then a layout read as both.
  */
-export function restyle(
-  patch: { layout?: string; theme?: string; density?: string; font?: string; variants?: Record<string, string>; paper?: Paper },
-  label: string,
-): void {
+export function restyle(patch: { theme?: string; density?: string; font?: string; variants?: Record<string, string>; paper?: Paper }, label: string): void {
   const id = files.activeId
   if (!id) return
   files.setStyle(id, patch)

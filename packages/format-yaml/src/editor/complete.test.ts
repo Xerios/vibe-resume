@@ -49,8 +49,8 @@ describe('where the cursor is', () => {
   })
 
   it('takes a section’s type from the document, not from the indentation', () => {
-    expect(keys('sections:\n  - type: levels\n    it|')).toEqual(['type', 'title', 'rail', 'items'])
-    expect(keys('sections:\n  - type: table\n    co|')).toEqual(['type', 'title', 'rail', 'items', 'columns'])
+    expect(keys('sections:\n  - type: levels\n    it|')).toEqual(['type', 'title', 'items'])
+    expect(keys('sections:\n  - type: table\n    co|')).toEqual(['type', 'title', 'items', 'columns'])
   })
 
   it('reaches an entry inside a section', () => {

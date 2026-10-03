@@ -4,26 +4,30 @@
  * the sheet.
  *
  * This is the one place that decides what a section *is*: which parts of an
- * entry are its heading, which are paragraphs and which are a list, which
- * column a section lands in, and what each block variant (variants.js) does to
- * it. The sheet writes the tree out in order, and the PDF's structure tree is
+ * entry are its heading, which are paragraphs and which are a list, and what
+ * each block variant (variants.ts) does to it. The sheet writes the tree out in order, and the PDF's structure tree is
  * read back from that, so the two can't disagree about what a CV says or in
  * what order.
  *
  * The node kinds are PDF's standard structure types (`Sect`, `H1`–`H3`, `P`,
  * `L`, `LI`, `Div`) plus two of this file's own:
  * - `Row` only says "this, with that out at the right edge", and is read as its
- *   two halves in order.
+ *   two halves in order. Only a short pair uses it — a language and its level,
+ *   a certificate and its date; an entry's dates get a line of their own.
  * - `Meter` is a level drawn as dots or a bar. It is a figure, with the level
  *   in words as its alternative text.
  *
  * Presentation reaches the sheet as a small, fixed set of properties:
  * - `frame` and `keep` on a group
- * - `display`, `marker` and `cols` on a list
+ * - `display` and `marker` on a list
  * - `align` on text
  * - `head` on a section and `style` on the header
  *
- * Every node that stands for a YAML value carries the value's path as `src`,
+ * Everything is set in one column, top to bottom. Nothing is placed beside
+ * anything else but a heading's dates, so a PDF parser that reads by position
+ * reads the CV in the order it is written.
+ *
+ * Every node that stands for a source value carries the value's path as `src`,
  * which is what the preview stamps on its elements as `data-src` so the panes
  * can follow each other.
  */
@@ -32,7 +36,6 @@ import { formatWhen, isoWhen, parseDates, spokenDates } from '@vibe-resume/core/
 import type { When } from '@vibe-resume/core/dates'
 import { iconPaths } from './icons'
 import { contactRuns, list, runs, techs, textOf } from './inline'
-import { layoutOf } from './tokens'
 import { resolveVariants } from './variants'
 
 type Run = import('./inline').Run
@@ -49,15 +52,14 @@ export type Span = { role: string; runs: Run[]; src?: string; actual?: string }
 
 export type Text = { kind: 'H1' | 'H2' | 'H3' | 'P'; spans: Span[]; src?: string; align?: 'center' }
 export type Meter = { kind: 'Meter'; value: number; style: 'dots' | 'bars'; alt: string; src?: string }
-export type Row = { kind: 'Row'; main: Text; aside: Text | Meter; badge?: boolean }
-export type Frame = 'card' | 'stripe' | 'timeline' | 'rule'
+export type Row = { kind: 'Row'; main: Text; aside: Text | Meter }
+export type Frame = 'card' | 'stripe' | 'timeline'
 
 export interface List {
   kind: 'L'
   items: Item[]
   display: 'block' | 'inline' | 'chips'
   marker: 'bullet' | 'dot' | 'dash' | 'none'
-  cols?: number
   src?: string
 }
 export interface Item {
@@ -68,11 +70,10 @@ export interface Item {
   frame?: Frame
 }
 /**
- * A group of blocks. `cols` sets its children in a grid; `keep` asks the PDF not
- * to split it across a page, as the print CSS asks of the same things; `gutter`
- * sets its two children side by side, the first in a narrow column at the left.
+ * A group of blocks. `keep` asks the PDF not to split it across a page, as the
+ * print CSS asks of the same things.
  */
-export type Div = { kind: 'Div'; body: Block[]; cols?: number; keep?: boolean; frame?: Frame; gutter?: boolean; src?: string }
+export type Div = { kind: 'Div'; body: Block[]; keep?: boolean; frame?: Frame; src?: string }
 export type Block = Text | Row | List | Div
 export interface Section {
   kind: 'Sect'
@@ -83,21 +84,14 @@ export interface Section {
   head: string
   number: number
 }
-export type Column = { id: 'main' | 'rail'; sections: Section[] }
-
 export interface Model {
-  layout: string
-  railSide: 'left' | 'right' | null
   lang: string
   header: { style: string; name: Text; role: Text | null; contact: List | null }
-  columns: Column[]
+  sections: Section[]
 }
 
 /** A BCP 47 language tag, near enough: `en`, `de-CH`, `zh-Hant`. */
 const LANG = /^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$/i
-
-/** What goes to the rail unless the section says otherwise with `rail:`. */
-const RAIL_TYPES = new Set(['groups', 'list', 'levels'])
 
 const span = (role: string, value: unknown, src?: string): Span => ({ role, runs: runs(value), src })
 
@@ -122,12 +116,10 @@ function dateSpan(value: unknown, src: string | undefined, style: string): Span 
 }
 
 export interface Context {
-  rail: boolean
   v: Record<string, string>
 }
 
-export function buildModel(cv: any, look: { layout?: string; variants?: Record<string, string> } = {}): Model {
-  const layout = layoutOf(look.layout)
+export function buildModel(cv: any, look: { variants?: Record<string, string> } = {}): Model {
   const v = resolveVariants(look.variants)
   const h = cv?.header && typeof cv.header === 'object' ? cv.header : {}
   const centred = v.header === 'centered' || v.header === 'banner'
@@ -147,7 +139,7 @@ export function buildModel(cv: any, look: { layout?: string; variants?: Record<s
     contact: contact.length
       ? ({
           kind: 'L' as const,
-          display: v.header === 'split' ? ('block' as const) : ('inline' as const),
+          display: 'inline' as const,
           marker: 'none' as const,
           items: contact.map((line, i) => ({
             kind: 'LI' as const,
@@ -158,23 +150,14 @@ export function buildModel(cv: any, look: { layout?: string; variants?: Record<s
       : null,
   }
 
-  const all = list(cv?.sections)
+  let number = 0
+  const sections = list(cv?.sections)
     .map((sec, i) => ({ sec, path: `sections.${i}` }))
     .filter((e) => e.sec && typeof e.sec === 'object')
-
-  const inRail = (sec: any): boolean => layout.railSide !== null && (sec.rail ?? RAIL_TYPES.has(sec.type))
-
-  let number = 0
-  const columns: Column[] = layout.columns.map((id) => {
-    const rail = id === 'rail'
-    return {
-      id,
-      sections: all.filter((e) => (layout.railSide === null ? true : inRail(e.sec) === rail)).map((e) => section(e.sec, e.path, { rail, v }, ++number)),
-    }
-  })
+    .map((e) => section(e.sec, e.path, { v }, ++number))
 
   const lang = typeof h.lang === 'string' && LANG.test(h.lang.trim()) ? h.lang.trim() : 'en'
-  return { layout: layout.id, railSide: layout.railSide, lang, header, columns }
+  return { lang, header, sections }
 }
 
 function section(sec: any, path: string, ctx: Context, number: number): Section {
@@ -230,7 +213,6 @@ function summary(sec: any, path: string, ctx: Context): Block[] {
 function skills(sec: any, path: string, ctx: Context): Block[] {
   const variant = ctx.v.skills
   const groups = list(sec.blocks).map((b, i) => ({ b, at: `${path}.blocks.${i}` }))
-  const cols = ctx.rail ? 1 : variant === 'three-col' ? 3 : variant === 'two-col' || variant === 'cards' || variant === 'chips' ? 2 : 1
 
   if (variant === 'inline') {
     return groups.map(({ b, at }) => {
@@ -244,7 +226,7 @@ function skills(sec: any, path: string, ctx: Context): Block[] {
     })
   }
 
-  const blocks = groups.map(({ b, at }) => {
+  return groups.map(({ b, at }) => {
     const title = text('H3', [span('blockTitle', b?.title)], `${at}.title`)
     const rest: Block[] =
       variant === 'chips'
@@ -258,14 +240,10 @@ function skills(sec: any, path: string, ctx: Context): Block[] {
         : list(b?.rows).map((r, j) =>
             text('P', r?.tier ? [span('tier', r.tier), lit('row', ' · '), span('row', r.text)] : [span('row', r?.text)], `${at}.rows.${j}`),
           )
-    // Hung in a gutter, the title is one column and its rows are the other.
-    const gutter = variant === 'rows' && !ctx.rail && title.spans.length > 0
-    const div: Div = { kind: 'Div', keep: true, src: at, body: gutter ? [title, { kind: 'Div', body: rest }] : title.spans.length ? [title, ...rest] : rest }
+    const div: Div = { kind: 'Div', keep: true, src: at, body: title.spans.length ? [title, ...rest] : rest }
     if (variant === 'cards') div.frame = 'card'
-    if (gutter) div.gutter = true
     return div
   })
-  return [{ kind: 'Div', cols, body: blocks }]
 }
 
 function chips(items: unknown[], src: string, role: string, icons = true): List {
@@ -290,7 +268,6 @@ function plainList(sec: any, path: string, ctx: Context): List {
     kind: 'L',
     display: 'block',
     marker: 'bullet',
-    ...(variant === 'columns' && !ctx.rail ? { cols: 2 } : {}),
     items: items.map((item, i) => ({ kind: 'LI', src: `${path}.items.${i}`, body: [text('P', [span('bullet', item)])] })),
   }
 }
@@ -302,7 +279,6 @@ function levels(sec: any, path: string, ctx: Context): List {
     kind: 'L',
     display: pills ? 'chips' : 'block',
     marker: 'none',
-    ...(pills || ctx.rail ? {} : { cols: 2 }),
     items: list(sec.items).map((item, i) => {
       const at = `${path}.items.${i}`
       const name = [span('itemName', item?.name, `${at}.name`)]
@@ -334,7 +310,6 @@ function records(sec: any, path: string, ctx: Context): List {
     kind: 'L',
     display: 'block',
     marker: 'none',
-    ...(variant === 'grid' && !ctx.rail ? { cols: 2 } : {}),
     items: list(sec.items).map((item, i) => {
       const at = `${path}.items.${i}`
       const name = span('itemName', item?.name ?? item?.title, `${at}.name`)
@@ -348,13 +323,10 @@ function records(sec: any, path: string, ctx: Context): List {
         const line = [name]
         if (!empty(meta)) line.push(lit('meta', ' · '), ...meta)
         blocks = [row(text('P', line), dates)]
-      } else if (variant === 'grid') {
-        blocks = [text('P', [name]), ...(empty(meta) ? [] : [text('P', meta)]), ...(dates.spans.length ? [dates] : [])]
       } else {
         blocks = [row(text('P', [name]), dates), ...(empty(meta) ? [] : [text('P', meta)])]
       }
       const out: Item = { kind: 'LI', src: at, body: blocks }
-      if (variant === 'grid') out.frame = 'rule'
       if (variant === 'cards') out.frame = 'card'
       return out
     }),
@@ -387,15 +359,22 @@ function entry(item: any, at: string, ctx: Context): Div {
     return earlier
   }
 
-  const head = [span('entryTitle', item?.title, `${at}.title`)]
-  if (item?.org) head.push(lit('org', ' | '), span('org', item.org, `${at}.org`))
+  // Read top to bottom, the way a parser reads it: who and what, then when and
+  // where, then what was done, then with what. Nothing is set out at the right
+  // edge, so no line of the PDF holds two things a parser has to pull apart.
+  const head: Span[] = []
+  if (item?.org) head.push(span('org', item.org, `${at}.org`), lit('org', ' — '))
+  head.push(span('entryTitle', item?.title, `${at}.title`))
   if (item?.sideNote) head.push(lit('aside', ' '), span('aside', item.sideNote, `${at}.sideNote`))
+  const blocks: Block[] = [text('H3', head, `${at}.title`)]
 
-  const headRow = row(text('H3', head, `${at}.title`), text('P', [dateSpan(item?.dates, undefined, ctx.v.dates)], `${at}.dates`))
-  if (variant === 'badge' && headRow.kind === 'Row') headRow.badge = true
-
-  const blocks: Block[] = [headRow]
-  if (item?.sub) blocks.push(text('P', [span('sub', item.sub)], `${at}.sub`))
+  const when = dateSpan(item?.dates, `${at}.dates`, ctx.v.dates)
+  const meta: Span[] = when.runs.length ? [when] : []
+  if (item?.sub) {
+    if (meta.length) meta.push(lit('sub', ' · '))
+    meta.push(span('sub', item.sub, `${at}.sub`))
+  }
+  if (meta.length) blocks.push(text('P', meta, when.runs.length ? `${at}.dates` : `${at}.sub`))
   const bullets = list(item?.bullets)
   if (bullets.length) {
     blocks.push({
@@ -409,8 +388,8 @@ function entry(item: any, at: string, ctx: Context): Div {
   if (tools.length && ctx.v.stack !== 'none') {
     if (ctx.v.stack === 'chips') blocks.push(chips(tools, `${at}.stack`, 'stack'))
     else {
-      const line = span('stack', tools.join(' · '))
-      blocks.push(text('P', ctx.v.stack === 'plain' ? [line] : [lit('stackLabel', 'STACK'), lit('stack', ' · '), line], `${at}.stack`))
+      const line = span('stack', tools.join(', '))
+      blocks.push(text('P', ctx.v.stack === 'plain' ? [line] : [lit('stackLabel', 'Stack: '), line], `${at}.stack`))
     }
   }
 

@@ -237,7 +237,6 @@
 
   // Presentation changes reflow the sheet without going through the parser.
   $effect(() => {
-    void look.layout
     void look.theme
     void look.density
     void look.font
@@ -457,11 +456,10 @@
   }
 
   /**
-   * Re-measure the ladder. Sorting by offset gives the order the reader sees;
-   * the sidebar layout then breaks the line order, since its rail column sits
-   * beside the main one rather than after it. Keeping the longest increasing
-   * run drops the shorter column, rather than letting one stray rail heading
-   * swallow everything below it.
+   * Re-measure the ladder. Sorting by offset gives the order the reader sees.
+   * Keeping the longest increasing run of lines drops any element whose line
+   * is out of step with its place on the sheet, rather than letting one stray
+   * rung swallow everything below it.
    */
   function buildAnchors() {
     anchorsStale = false
@@ -782,7 +780,6 @@
       <PreviewFrame
         bind:this={frame}
         cv={parsed}
-        layout={look.layout}
         variants={look.variants}
         theme={look.theme}
         font={look.font}

@@ -8,7 +8,7 @@
  * same numbers the PDF is drawn with.
  */
 
-import { DANGER, DECOR, LINK_COLOR, metrics, RAIL_SHARE, ROLES } from '../tokens'
+import { DANGER, DECOR, LINK_COLOR, metrics, ROLES } from '../tokens'
 import { palette } from '../theme/palettes'
 import { FAMILIES, fontFaceCss, fontOf, LAST_RESORT } from '../theme/typefaces'
 
@@ -36,9 +36,8 @@ export function sheetCss(look: { theme?: string; density?: string; font?: string
     `--f-label: ${stack([font.label, font.text, LAST_RESORT], 'monospace')};`,
     ...Object.entries(colors).map(([k, v]) => `--c-${k}: ${v};`),
     ...Object.entries(space).map(([k, v]) => `--sp-${k}: ${v}pt;`),
-    ...Object.entries(DECOR).map(([k, v]) => `--d-${k}: ${k === 'gutter' ? `${v * 100}%` : `${v}pt`};`),
+    ...Object.entries(DECOR).map(([k, v]) => `--d-${k}: ${v}pt;`),
     `--leading: ${leading};`,
-    `--rail: ${RAIL_SHARE * 100}%;`,
     `--fs-body: ${size.lg}pt;`,
   ]
 

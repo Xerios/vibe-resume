@@ -15,7 +15,7 @@
 import { pushState } from '$app/navigation'
 import { page } from '$app/state'
 import type { DisplayList } from '@vibe-resume/render/pdf/measure'
-import { DENSITIES, LAYOUTS } from '@vibe-resume/render/tokens'
+import { DENSITIES } from '@vibe-resume/render/tokens'
 import { SLOTS } from '@vibe-resume/render/variants'
 import { THEMES } from '@vibe-resume/render/theme/palettes'
 import { ORIENTATIONS, PAPER_SIZES, RUNNING } from '@vibe-resume/render/theme/paper'
@@ -57,7 +57,7 @@ export const commands = {
    * Open a fresh tab holding a format's template — no snapshot yet, so `CvDoc`
    * seeds one. The name's extension is what makes it that format.
    */
-  newFile(format: FormatId = 'yaml'): void {
+  newFile(format: FormatId = 'markdown'): void {
     const id = files.create(`Untitled${formats[format].extensions[0]}`)
     doc.switchTo(id)
     ui.toast('New CV from template')
@@ -258,10 +258,6 @@ export const commands = {
   },
 
   /* ── Style ─────────────────────────────────────────────────────────────── */
-
-  setLayout(id: string): void {
-    restyle({ layout: id }, `Layout — ${LAYOUTS.find((l) => l.id === id)?.name ?? id}`)
-  },
 
   setTheme(id: string): void {
     restyle({ theme: id }, `Theme — ${THEMES.find((t) => t.id === id)?.name ?? id}`)

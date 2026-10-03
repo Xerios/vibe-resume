@@ -42,7 +42,7 @@ describe('sections', () => {
 
   it('flags a key nothing renders', () => {
     expect(messages(doc('type: list\ntitle: Interests\ninlined: true\nitems:\n  - Chess'))).toEqual([
-      expect.stringMatching(/Nothing renders `inlined`.*type, title, rail, items, inline/s),
+      expect.stringMatching(/Nothing renders `inlined`.*type, title, items, inline/s),
     ])
   })
 
@@ -64,9 +64,7 @@ describe('sections', () => {
 
   it('says nothing about a section it understands', () => {
     expect(
-      lintCv(
-        doc('type: table\ntitle: Open Source\ncolumns:\n  - Project\n  - Stars\n  - About\nrail: true\nitems:\n  - name: kit\n    value: 12\n    desc: A kit'),
-      ),
+      lintCv(doc('type: table\ntitle: Open Source\ncolumns:\n  - Project\n  - Stars\n  - About\nitems:\n  - name: kit\n    value: 12\n    desc: A kit')),
     ).toEqual([])
   })
 })

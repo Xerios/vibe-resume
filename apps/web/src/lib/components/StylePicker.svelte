@@ -4,20 +4,19 @@
   import { commands } from '$lib/cv/state/commands'
   import { look } from '$lib/cv/state/state.svelte'
   import { KEYS, read, write } from '$lib/cv/state/storage'
-  import { DENSITIES, LAYOUTS } from '@vibe-resume/render/tokens'
+  import { DENSITIES } from '@vibe-resume/render/tokens'
   import { SLOTS } from '@vibe-resume/render/variants'
   import { THEMES } from '@vibe-resume/render/theme/palettes'
   import { ORIENTATIONS, PAPER_SIZES, RUNNING } from '@vibe-resume/render/theme/paper'
   import { FAMILIES, FONTS, faceFor } from '@vibe-resume/render/theme/typefaces'
   import Foldout from './Foldout.svelte'
-  import TemplateThumb from './TemplateThumb.svelte'
   import ToggleButton from './ToggleButton.svelte'
   import VariantCycle from './VariantCycle.svelte'
   import { onMount } from 'svelte'
   import { fly } from 'svelte/transition'
 
   /** Which groups start folded open — all of them. */
-  const GROUPS_OPEN = { layout: true, blocks: true, theme: true, font: true, density: true, paper: true }
+  const GROUPS_OPEN = { blocks: true, theme: true, font: true, density: true, paper: true }
 
   /**
    * The panel comes back the shape it was left in. Read over the defaults
@@ -51,9 +50,8 @@
 
   /** What the head says the sheet is set as. */
   const summary = $derived(
-    [LAYOUTS.find((l) => l.id === look.layout)?.name, THEMES.find((t) => t.id === look.theme)?.name, FONTS.find((f) => f.id === look.font)?.name]
-      .filter(Boolean)
-      .join(' · ') + (look.modified ? ' — edited' : ''),
+    [THEMES.find((t) => t.id === look.theme)?.name, FONTS.find((f) => f.id === look.font)?.name].filter(Boolean).join(' · ') +
+      (look.modified ? ' — edited' : ''),
   )
 
   /* Each font option is set in the face it offers. The sheet's faces live in the
@@ -81,19 +79,6 @@
   </div>
 
   <div class="style-body">
-    <!-- The arrangement of the page. The preview and the exported PDF are the
-		     same layout, and read the columns in the order listed. -->
-    <Foldout label="Layout" open={groups.layout} onToggle={() => toggleGroup('layout')}>
-      <div class="layout-grid">
-        {#each LAYOUTS as l (l.id)}
-          <ToggleButton big selected={l.id === look.layout} title={l.hint} onclick={() => commands.setLayout(l.id)}>
-            <TemplateThumb id={l.id} />
-            <span>{l.name}</span>
-          </ToggleButton>
-        {/each}
-      </div>
-    </Foldout>
-
     <!-- One row per block, each a cycle through how that block can be drawn. -->
     <Foldout label="Blocks" open={groups.blocks} onToggle={() => toggleGroup('blocks')}>
       {#snippet head()}
@@ -224,12 +209,6 @@
     overscroll-behavior: contain;
     display: flex;
     flex-direction: column;
-  }
-
-  .layout-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--ds-space-100);
   }
 
   .blocks-list {

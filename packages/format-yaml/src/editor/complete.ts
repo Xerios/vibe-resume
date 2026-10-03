@@ -54,7 +54,6 @@ const KEY_INFO: Record<string, string> = {
   lang: 'The language the CV is written in, as a tag — en, de, fr-CA. Screen readers read it in that voice.',
   type: 'Which of the seven kinds of section this is.',
   title: 'The heading, or the entry’s own title.',
-  rail: 'Put this section in the sidebar rail, or keep it out of one.',
   paragraphs: 'One paragraph per entry.',
   blocks: 'A group of skills each, with a title and rows.',
   rows: 'A line of skills each.',
@@ -93,7 +92,6 @@ const VALUES: Record<string, Array<{ label: string; info: string }>> = {
     { label: 'job', info: 'A role of its own, with dates and bullets.' },
     { label: 'earlier', info: 'A run of older roles, as one titled list with no dates.' },
   ],
-  rail: BOOLEANS,
   inline: BOOLEANS,
   rating: [1, 2, 3, 4, 5].map((n) => ({ label: String(n), info: `${n} out of five.` })),
 }

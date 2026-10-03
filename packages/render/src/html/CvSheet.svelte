@@ -39,18 +39,15 @@
   /**
    * `pages` is how many pages the paginator (paginate.js) found, and only drawn
    * when `paged`: a card per page behind the sheet, the running head and foot
-   * in its margins. `dividers` are where it found the column divider falls on
-   * each page — drawn here rather than as the rail's border, which would run on
-   * through the margins and the gaps between pages.
+   * in its margins.
    * @type {{
    *   model: import('../model').Model | null,
    *   paged?: boolean,
    *   pages?: number,
-   *   dividers?: import('./paginate').Pagination['dividers'],
    *   running?: { header: string, footer: string, name: string },
    * }}
    */
-  let { model, paged = false, pages = 1, dividers = [], running = { header: 'none', footer: 'none', name: '' } } = $props()
+  let { model, paged = false, pages = 1, running = { header: 'none', footer: 'none', name: '' } } = $props()
 
   /** @param {Text['kind']} kind */
   const tagOf = (kind) => ({ H1: 'h1', H2: 'h2', H3: 'h3', P: 'p' })[kind]
@@ -146,12 +143,11 @@
       {/each}
     </ul>
   {:else}
-    <ul class="cv-list m-{node.marker}" class:inline={node.display === 'inline'} class:grid={(node.cols ?? 1) > 1} style:--cols={node.cols} data-src={node.src}>
+    <ul class="cv-list m-{node.marker}" class:inline={node.display === 'inline'} data-src={node.src}>
       {#each node.items as item, i}
         <li class={item.frame ? `f-${item.frame}` : undefined} data-src={item.src}>
           {#if node.display === 'inline' && i > 0}<span class="sep" aria-hidden="true">·</span>{/if}
           {#if node.marker !== 'none'}{@render svg('mark', MARKS[node.marker].box, [MARKS[node.marker].d])}{/if}
-          {#if item.frame === 'rule'}<span class="short-rule" aria-hidden="true"></span>{/if}
           {#each item.body as b}
             {@render block(b)}
           {/each}
@@ -163,7 +159,7 @@
 
 {#snippet block(/** @type {Block} */ node)}
   {#if node.kind === 'Row'}
-    <div class="cv-row" class:badge={node.badge}>
+    <div class="cv-row">
       {@render text(node.main)}
       {#if node.aside.kind === 'Meter'}
         {@render meter(node.aside)}
@@ -174,14 +170,7 @@
   {:else if node.kind === 'L'}
     {@render list(node)}
   {:else if node.kind === 'Div'}
-    <div
-      class="cv-div {node.frame ? `f-${node.frame}` : ''}"
-      class:keep={node.keep}
-      class:gutter={node.gutter}
-      class:grid={(node.cols ?? 1) > 1}
-      style:--cols={node.cols}
-      data-src={node.src}
-    >
+    <div class="cv-div {node.frame ? `f-${node.frame}` : ''}" class:keep={node.keep} data-src={node.src}>
       {#if node.frame === 'timeline'}<span class="tl-rail" aria-hidden="true"></span><span class="tl-dot" aria-hidden="true"></span>{/if}
       {#each node.body as b}
         {@render block(b)}
@@ -193,7 +182,7 @@
 {/snippet}
 
 {#if model}
-  <div class="sheet" class:paged lang={model.lang} data-layout={model.layout} data-rail={model.railSide} style:--pages={pages}>
+  <div class="sheet" class:paged lang={model.lang} style:--pages={pages}>
     {#if paged}
       <div class="pages" aria-hidden="true" data-skip>
         {#each { length: pages } as _, i}
@@ -211,10 +200,6 @@
       </div>
     {/if}
 
-    {#each dividers as d}
-      <span class="divider" aria-hidden="true" style:left="{d.left}px" style:top="{d.top}px" style:height="{d.height}px"></span>
-    {/each}
-
     <header class="cv-head" data-style={model.header.style} data-src="header">
       <div class="cv-id">
         {@render text(model.header.name)}
@@ -229,25 +214,21 @@
       {/if}
     </header>
 
-    <div class="cv-cols">
-      {#each model.columns as col (col.id)}
-        <div class="cv-col cv-{col.id}">
-          {#each col.sections as sec}
-            <section class="cv-sec" data-src={sec.src} data-title={sec.title ? titleOf(sec.title) : undefined}>
-              {#if sec.title}
-                <div class="sec-head" data-head={sec.head}>
-                  {#if sec.head === 'numbered'}<span class="num" aria-hidden="true">{pad(sec.number)}</span>{/if}
-                  {#if sec.head === 'ruled-both'}<span class="rule" aria-hidden="true"></span>{/if}
-                  {@render text(sec.title)}
-                  <span class="rule" aria-hidden="true"></span>
-                </div>
-              {/if}
-              {#each sec.body as b}
-                {@render block(b)}
-              {/each}
-            </section>
+    <div class="cv-body">
+      {#each model.sections as sec}
+        <section class="cv-sec" data-src={sec.src} data-title={sec.title ? titleOf(sec.title) : undefined}>
+          {#if sec.title}
+            <div class="sec-head" data-head={sec.head}>
+              {#if sec.head === 'numbered'}<span class="num" aria-hidden="true">{pad(sec.number)}</span>{/if}
+              {#if sec.head === 'ruled-both'}<span class="rule" aria-hidden="true"></span>{/if}
+              {@render text(sec.title)}
+              <span class="rule" aria-hidden="true"></span>
+            </div>
+          {/if}
+          {#each sec.body as b}
+            {@render block(b)}
           {/each}
-        </div>
+        </section>
       {/each}
     </div>
   </div>

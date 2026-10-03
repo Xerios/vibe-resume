@@ -8,8 +8,6 @@ export interface FileMeta {
   name: string
   /** ms epoch when moved to trash; null while open */
   deletedAt: number | null
-  /** a LAYOUTS id from render/tokens.js; absent means the default */
-  layout?: string
   /** palette id from theme/palettes.js; absent means the default */
   theme?: string
   /** a DENSITIES id from render/tokens.js; absent means the default */
@@ -31,7 +29,7 @@ export interface FileMeta {
  * key is left untouched, so restoring it from the trash brings back the full
  * history exactly as it was.
  *
- * Layout, theme, font, density, block variants and paper ride along here too, because this is
+ * Theme, font, density, block variants and paper ride along here too, because this is
  * the only place that knows them for a file that isn't open. For the file that
  * *is* open they are also in its document, which is what puts a restyle in the
  * version history and on the undo stack — see `bindStyle` in doc.svelte.ts.
@@ -81,7 +79,6 @@ export class FileManager {
         id,
         name: this.#uniqueName(`${source.name} copy`),
         deletedAt: null,
-        layout: source.layout,
         theme: source.theme,
         density: source.density,
         font: source.font,
@@ -102,7 +99,7 @@ export class FileManager {
    */
   create(name?: string): string {
     const id = newId()
-    this.files = [...this.files, { id, name: this.#uniqueName(name || 'Untitled.yaml'), deletedAt: null }]
+    this.files = [...this.files, { id, name: this.#uniqueName(name || 'Untitled.md'), deletedAt: null }]
     this.#saveList()
     this.activeId = id
     this.#saveActive()
@@ -151,11 +148,8 @@ export class FileManager {
     let trimmed = name.trim()
     if (!trimmed) return
     const old = this.files.find((f) => f.id === id)?.name ?? ''
-    const ext = (n: string) =>
-      Object.values(formats)
-        .flatMap((f) => f.extensions)
-        .find((e) => n.toLowerCase().endsWith(e))
-    if (!ext(trimmed) && ext(old)) trimmed += old.slice(old.length - (ext(old) as string).length)
+    const kept = extensionOf(old)
+    if (!extensionOf(trimmed) && kept) trimmed += old.slice(old.length - kept.length)
     this.files = this.files.map((f) => (f.id === id ? { ...f, name: trimmed } : f))
     this.#saveList()
   }
@@ -187,7 +181,7 @@ export class FileManager {
 
   /**
    * Restyle a file. Ids are stored as given and validated on the way out
-   * (`resolveLayout` / `resolveTheme` / `resolveDensity` / `resolveFont` /
+   * (`resolveTheme` / `resolveDensity` / `resolveFont` /
    * `resolveVariants`), so an id that later
    * disappears degrades to the default instead of rendering nothing.
    *
@@ -257,7 +251,9 @@ export class FileManager {
       write(snapshotKey(id), legacy)
       remove(KEYS.legacySnapshot)
     }
-    this.files = [{ id, name: 'Untitled.yaml', deletedAt: null }]
+    // A snapshot from before there were tabs is YAML; a first visit starts in
+    // Markdown, like any new tab.
+    this.files = [{ id, name: legacy ? 'Untitled.yaml' : 'Untitled.md', deletedAt: null }]
     this.#saveList()
   }
 
@@ -282,9 +278,15 @@ const newId = (): string => Math.random().toString(36).slice(2, 10)
  *
  * The undefined values are left undefined rather than defaulted: a file that
  * has never been restyled has nothing to say about any of these, and the
- * resolvers (`resolveLayout`, `resolveTheme`, `resolveDensity`, …) are what turn
+ * resolvers (`resolveTheme`, `resolveDensity`, …) are what turn
  * that into the default at the point it is rendered.
  */
+/** The format extension a name ends in, if any. */
+const extensionOf = (name: string): string | undefined =>
+  Object.values(formats)
+    .flatMap((f) => f.extensions)
+    .find((e) => name.toLowerCase().endsWith(e))
+
 export function styleOf(file: FileMeta | null | undefined): Record<string, any> {
-  return { layout: file?.layout, theme: file?.theme, density: file?.density, font: file?.font, variants: file?.variants, paper: file?.paper }
+  return { theme: file?.theme, density: file?.density, font: file?.font, variants: file?.variants, paper: file?.paper }
 }

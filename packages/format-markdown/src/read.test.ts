@@ -2,7 +2,7 @@ import { parseWith } from '@vibe-resume/core/format'
 import { yaml } from '@vibe-resume/format-yaml'
 import { toJsonResume } from '@vibe-resume/render/json-resume'
 import { buildModel } from '@vibe-resume/render/model'
-import { LAYOUTS } from '@vibe-resume/render/tokens'
+import { SLOTS } from '@vibe-resume/render/variants'
 import { describe, expect, it } from 'vitest'
 import { markdown } from './index'
 import { read } from './read'
@@ -23,8 +23,9 @@ describe('the template', () => {
     expect(read(markdown.template).diagnostics).toEqual([])
   })
 
-  it.each(LAYOUTS.map((l) => l.id))('lays out the same as the YAML template, in the %s layout', (layout) => {
-    expect(withoutSrc(buildModel(md.cv, { layout }))).toEqual(withoutSrc(buildModel(ym.cv, { layout })))
+  it.each(SLOTS.flatMap((slot) => slot.variants.map((v) => [slot.id, v.id])))('lays out the same as the YAML template, with %s set to %s', (slot, variant) => {
+    const look = { variants: { [slot]: variant } }
+    expect(withoutSrc(buildModel(md.cv, look))).toEqual(withoutSrc(buildModel(ym.cv, look)))
   })
 
   it('says the same in JSON Resume', () => {
@@ -44,7 +45,7 @@ describe('section types', () => {
 
   it('falls back to the shape when the title does not fit', () => {
     expect(typeOf('## Skills\n\n- TypeScript\n- Go')).toBe('list')
-    expect(typeOf('## Work\n\n### Dev — Acme\n\n- Built it')).toBe('entries')
+    expect(typeOf('## Work\n\n### Acme — Dev\n\n- Built it')).toBe('entries')
     expect(typeOf('## Notes\n\nSome prose.')).toBe('text')
   })
 
@@ -68,10 +69,49 @@ describe('section types', () => {
 })
 
 describe('entries', () => {
-  const entry = (body: string) => parse(`# Jo\n\n## Work\n\n### Dev — Acme\n\n${body}`).cv?.sections?.[0].items[0]
+  const entry = (body: string) => parse(`# Jo\n\n## Work\n\n### Acme — Dev\n\n${body}`).cv?.sections?.[0].items[0]
 
-  it('reads dates and context written one under the other', () => {
+  it('reads an entry written the way the template writes one', () => {
+    const text = `# Jo
+
+## Experience
+
+### Digipolis — Freelance Backend API Developer (via Vivid Resourcing)
+**2017.09–2017.12** · Antwerp
+
+- Built the backend API for a microservice health-monitoring dashboard displaying real-time metrics
+- Piloted the dashboard on several microservices during the testing phase
+
+Stack: Node.js, Koa, Prometheus, Angular`
+    expect(parse(text).cv?.sections?.[0]).toEqual({
+      title: 'Experience',
+      type: 'entries',
+      items: [
+        {
+          org: 'Digipolis',
+          title: 'Freelance Backend API Developer (via Vivid Resourcing)',
+          dates: '2017.09–2017.12',
+          sub: 'Antwerp',
+          bullets: [
+            'Built the backend API for a microservice health-monitoring dashboard displaying real-time metrics',
+            'Piloted the dashboard on several microservices during the testing phase',
+          ],
+          stack: 'Node.js, Koa, Prometheus, Angular',
+        },
+      ],
+    })
+  })
+
+  it('reads a heading without an organisation as a title alone', () => {
+    expect(parse('# Jo\n\n## Projects\n\n### kit\n\n**2021**').cv?.sections?.[0].items[0]).toEqual({ title: 'kit', dates: '2021' })
+  })
+
+  it('reads plain dates and context written one under the other', () => {
     expect(entry('2020 – 2022\nMaking things')).toMatchObject({ title: 'Dev', org: 'Acme', dates: '2020 – 2022', sub: 'Making things' })
+  })
+
+  it('does not take a bold phrase later in an entry for its dates', () => {
+    expect(entry('**2020** · Ghent\n**Key work:** the API')).toMatchObject({ dates: '2020', sub: 'Ghent **Key work:** the API' })
   })
 
   it('takes a stack line straight after the bullets as the stack, not as more bullet', () => {
@@ -96,8 +136,8 @@ describe('the line map', () => {
     expect(lines.get('header.name')).toBe(1)
     expect(lines.get('header.contact.2')).toBe(lineOf(text, 'john.doe@example.com'))
     expect(lines.get('sections.2')).toBe(lineOf(text, '## Experience'))
-    expect(lines.get('sections.2.items.1')).toBe(lineOf(text, '### Full-Stack Developer'))
-    expect(lines.get('sections.2.items.0.dates')).toBe(lineOf(text, '03/2020 – Present'))
+    expect(lines.get('sections.2.items.1')).toBe(lineOf(text, '### Globex Inc'))
+    expect(lines.get('sections.2.items.0.dates')).toBe(lineOf(text, '**03/2020 – Present**'))
     expect(lines.get('sections.2.items.0.bullets.2')).toBe(lineOf(text, 'Mentored a team'))
     expect(lines.get('sections.1.blocks.0.rows.0')).toBe(lineOf(text, '**Expert:**'))
   })

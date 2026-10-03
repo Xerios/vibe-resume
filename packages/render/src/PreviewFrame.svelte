@@ -28,14 +28,14 @@
   import { measure as measureSheet } from './pdf/measure'
   import { docMeta } from './doc-meta'
   import { buildModel } from './model'
-  import { DEFAULT_DENSITY, DEFAULT_LAYOUT } from './tokens'
+  import { DEFAULT_DENSITY } from './tokens'
   import { DEFAULT_PAPER, pageBox, pageWidthPx, paperCss } from './theme/paper'
   import { DEFAULT_THEME } from './theme/palettes'
   import { DEFAULT_FONT } from './theme/typefaces'
   import frameCss from './frame.css?raw'
 
   /**
-   * `cv` is null until the first successful parse. `layout`, `theme`, `font`
+   * `cv` is null until the first successful parse. `theme`, `font`
    * and `density` are ids, resolved against the shared tokens; `variants` is
    * the block variant chosen per slot.
    *
@@ -59,7 +59,6 @@
    *
    * @type {{
    *   cv?: any,
-   *   layout?: string,
    *   variants?: Record<string, string>,
    *   theme?: string,
    *   font?: string,
@@ -75,7 +74,6 @@
    */
   let {
     cv = null,
-    layout = DEFAULT_LAYOUT,
     variants = {},
     theme = DEFAULT_THEME,
     font = DEFAULT_FONT,
@@ -137,14 +135,13 @@
     model: /** @type {import('./model').Model | null} */ (null),
     paged: false,
     pages: 1,
-    dividers: /** @type {import('./html/paginate').Pagination['dividers']} */ ([]),
     running: { header: 'none', footer: 'none', name: '' },
   })
 
   // Ahead of the paint rather than after it, so a `tick()` in the page still
   // finds the frame's DOM current.
   $effect.pre(() => {
-    sheetProps.model = cv ? buildModel(cv, { layout, variants }) : null
+    sheetProps.model = cv ? buildModel(cv, { variants }) : null
     sheetProps.paged = paged
     sheetProps.running = { header: paper.header ?? 'none', footer: paper.footer ?? 'none', name }
   })
@@ -171,7 +168,6 @@
       root.style.setProperty('--page-gap', `${geo.gap}px`)
       const result = paginate(el, geo)
       sheetProps.pages = result.pages
-      sheetProps.dividers = result.dividers
       onPaginated?.()
     })()
   }

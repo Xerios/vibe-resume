@@ -30,9 +30,8 @@ export const SLOTS: Slot[] = [
     id: 'header',
     name: 'Header',
     variants: [
-      { id: 'split', name: 'Split', hint: 'Name at the left, contact lines at the right' },
-      { id: 'centered', name: 'Centred', hint: 'Name, role and contact down the middle' },
       { id: 'stacked', name: 'Stacked', hint: 'Name over the contact line, both hard left' },
+      { id: 'centered', name: 'Centred', hint: 'Name, role and contact down the middle' },
       { id: 'banner', name: 'Banner', hint: 'A masthead — the name in capitals between two rules' },
     ],
   },
@@ -63,11 +62,10 @@ export const SLOTS: Slot[] = [
     id: 'entry',
     name: 'Entry',
     variants: [
-      { id: 'plain', name: 'Plain', hint: 'Title and dates on one line, bullets under' },
+      { id: 'plain', name: 'Plain', hint: 'Organisation and title, then dates and place, bullets under' },
       { id: 'timeline', name: 'Timeline', hint: 'Hung off a vertical rail, a dot per entry' },
       { id: 'card', name: 'Card', hint: 'Each role in an outlined box of its own' },
       { id: 'stripe', name: 'Stripe', hint: 'Each entry against a thick accent rule' },
-      { id: 'badge', name: 'Badge', hint: 'The dates as an outlined badge on the title line' },
       { id: 'minimal', name: 'Minimal', hint: 'Dashes for bullets, nothing else' },
     ],
   },
@@ -75,7 +73,7 @@ export const SLOTS: Slot[] = [
     id: 'dates',
     name: 'Dates',
     variants: [
-      { id: 'as-written', name: 'As written', hint: 'Each date the way the YAML has it' },
+      { id: 'as-written', name: 'As written', hint: 'Each date the way the source has it' },
       { id: 'short', name: 'Mar 2020', hint: 'Months as three letters' },
       { id: 'long', name: 'March 2020', hint: 'Months spelled out' },
       { id: 'numeric', name: '03/2020', hint: 'Month and year in figures' },
@@ -86,9 +84,7 @@ export const SLOTS: Slot[] = [
     id: 'skills',
     name: 'Skills',
     variants: [
-      { id: 'two-col', name: 'Two columns', hint: 'Two groups across' },
-      { id: 'three-col', name: 'Three columns', hint: 'Three across — more rows to a page' },
-      { id: 'rows', name: 'Rows', hint: 'One group per row, its name in the gutter' },
+      { id: 'stacked', name: 'Stacked', hint: 'One group under another, its rows beneath its name' },
       { id: 'inline', name: 'Inline', hint: 'One paragraph per group, its rows running on after the name' },
       { id: 'cards', name: 'Cards', hint: 'Every group in an outlined box of its own' },
       { id: 'chips', name: 'Chips', hint: 'Every skill a chip, with its logo where there is one' },
@@ -98,10 +94,10 @@ export const SLOTS: Slot[] = [
     id: 'stack',
     name: 'Stack',
     variants: [
-      { id: 'line', name: 'Line', hint: 'STACK · one tool after another' },
+      { id: 'line', name: 'Line', hint: 'Stack: one tool after another' },
       { id: 'chips', name: 'Chips', hint: 'A chip per tool, each with its logo' },
       { id: 'plain', name: 'Plain', hint: 'The same line without the label' },
-      { id: 'none', name: 'None', hint: 'Hidden — the YAML keeps its tools' },
+      { id: 'none', name: 'None', hint: 'Hidden — the source keeps its tools' },
     ],
   },
   {
@@ -110,7 +106,6 @@ export const SLOTS: Slot[] = [
     variants: [
       { id: 'pills', name: 'Pills', hint: 'An inline list as outlined pills' },
       { id: 'lines', name: 'Lines', hint: 'One item per line' },
-      { id: 'columns', name: 'Columns', hint: 'Two columns of lines — half the height' },
       { id: 'chips', name: 'Chips', hint: 'A chip per item, each with its logo' },
     ],
   },
@@ -118,7 +113,7 @@ export const SLOTS: Slot[] = [
     id: 'languages',
     name: 'Languages',
     variants: [
-      { id: 'rows', name: 'Rows', hint: 'Name and level, two to a row' },
+      { id: 'rows', name: 'Rows', hint: 'Name and level, one to a row' },
       { id: 'pills', name: 'Pills', hint: 'A pill per language, its level inside it' },
       { id: 'dots', name: 'Dots', hint: 'A five-dot meter read from the level' },
       { id: 'bars', name: 'Bars', hint: 'A bar the level fills its share of' },
@@ -129,7 +124,6 @@ export const SLOTS: Slot[] = [
     name: 'Certificates',
     variants: [
       { id: 'rows', name: 'Rows', hint: 'One a line, the date out at the right' },
-      { id: 'grid', name: 'Grid', hint: 'Two to a row, each under a short rule' },
       { id: 'cards', name: 'Cards', hint: 'Every certificate in an outlined box of its own' },
       { id: 'compact', name: 'Compact', hint: 'One line each, the issuer following the name' },
     ],

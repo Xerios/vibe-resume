@@ -13,7 +13,7 @@ import { base64ToBytes, bytesToBase64, read, remove, snapshotKey, write } from '
 const TEXT_ID = 'yaml'
 const TAGS_ID = 'checkpoints'
 /**
- * The file's presentation — layout, theme, font, density, block variants, paper.
+ * The file's presentation — theme, font, density, block variants, paper.
  * It used to live only in the file registry, on the grounds that restyling is
  * not an edit; it is here as well now, because "not an edit" was the wrong
  * reading. Changing how a CV looks is a change to the CV, and the things a
@@ -27,7 +27,7 @@ const TAGS_ID = 'checkpoints'
  */
 const STYLE_ID = 'style'
 
-const STYLE_KEYS = ['layout', 'theme', 'density', 'font', 'variants', 'paper'] as const
+const STYLE_KEYS = ['theme', 'density', 'font', 'variants', 'paper'] as const
 
 /** Commits made by naming a version, kept out of the undo stack. */
 const TAG_ORIGIN = 'cv-tag'
@@ -354,7 +354,7 @@ export class CvDoc {
    * this is the copy that goes into the document, which is what puts a restyle
    * in the history and on the undo stack.
    *
-   * `axis` is which part of the presentation moved — the layout, the theme,
+   * `axis` is which part of the presentation moved — the theme,
    * one block's variant, one key of the paper. A run of restyles reads as one line in the history rather
    * than as one per click, and the axes are what that line is named by; see
    * `mergeStyleRuns`.

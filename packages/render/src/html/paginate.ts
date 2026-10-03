@@ -1,8 +1,8 @@
 /**
  * Breaking the preview into pages — the pages the PDF will have.
  *
- * The sheet is laid out by CSS as one strip. This walks each column in order
- * and, wherever a block would cross the foot of a page, pushes it down to the
+ * The sheet is laid out by CSS as one strip, in one column. This walks it in
+ * order and, wherever a block would cross the foot of a page, pushes it down to the
  * top of the next one with a margin. The rules are the ones the print CSS used
  * to ask the browser for:
  * - an entry, a skill group, a list item, a row and a paragraph stay whole
@@ -31,14 +31,13 @@ export interface PageGeometry {
 /** The pagination result. */
 export interface Pagination {
   pages: number
-  dividers: Array<{ left: number; top: number; height: number }> // the column divider, one segment per page, px from the sheet's corner
 }
 
 /** Pushed blocks are tagged, so the next run can put them back first. */
 const PUSHED = 'data-push'
 
 /** What may not be split across a page. */
-const ATOMIC = 'p, h1, h2, h3, li, .cv-row, .keep, .cv-chips, .gutter, .meter, .chip, .cv-head, .sec-head'
+const ATOMIC = 'p, h1, h2, h3, li, .cv-row, .keep, .cv-chips, .meter, .chip, .cv-head, .sec-head'
 
 /** What leads the block after it and must not be left at the foot of a page. */
 const HEADING = 'h3, .cv-row'
@@ -170,29 +169,11 @@ export function paginate(sheet: HTMLElement, geo: PageGeometry): Pagination {
     }
   }
 
-  const columns = [...sheet.querySelectorAll('.cv-col')]
-  for (const col of columns) descend(col)
+  const body = sheet.querySelector('.cv-body')
+  if (body) descend(body)
 
-  const end = Math.max(0, ...columns.map((c) => box(c).bottom), box(sheet.querySelector('.cv-head') ?? sheet).bottom)
+  const end = Math.max(0, body ? box(body).bottom : 0, box(sheet.querySelector('.cv-head') ?? sheet).bottom)
   const pages = pageOf(Math.max(0, end - 0.5)) + 1
 
-  // The divider is the rail's inner edge, from the top of the columns on each
-  // page down to as far as the rail reaches on it.
-  const dividers: Pagination['dividers'] = []
-  const rail = sheet.querySelector('.cv-rail')
-  if (rail) {
-    const r = rail.getBoundingClientRect()
-    const side = sheet.dataset.rail
-    const left = ((side === 'right' ? r.left : r.right) - origin.left) / zoom
-    const reach = box(rail)
-    const content = [...rail.querySelectorAll('.cv-sec')].map(box)
-    const last = Math.max(reach.top, ...content.map((c) => c.bottom))
-    for (let k = pageOf(reach.top); k <= pageOf(last); k++) {
-      const top = k === pageOf(reach.top) ? reach.top : contentTop(k)
-      const bottom = Math.min(contentBottom(k), last)
-      if (bottom > top) dividers.push({ left, top, height: bottom - top })
-    }
-  }
-
-  return { pages, dividers }
+  return { pages }
 }

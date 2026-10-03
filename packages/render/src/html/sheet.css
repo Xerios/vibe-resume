@@ -3,8 +3,8 @@
 
    Sizes, weights, colours and spaces are custom properties and `.r-*` role
    classes written by sheet-css.js from the tokens the PDF is drawn with. What
-   is here is the shape: the header styles, the columns, the rules, the grids,
-   the frames, the chips and the marks.
+   is here is the shape: the header styles, the rules, the frames, the chips
+   and the marks. Everything is one column, read top to bottom.
 
    It is also the only layout there is. pdf/measure.js reads where all this put
    every line and every border and draws the PDF from that, so what the preview
@@ -142,14 +142,13 @@
 }
 
 /* ── Header ─────────────────────────────────────
-   Split: name and role at the left, contact lines at the right, a rule
-   beneath. The others stack the three, with the contact lines run on in one
-   line between separators. */
+   Name, role and the contact lines, one under another, the contact lines run
+   on in one line between separators, a rule beneath. */
 .cv-head {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 18pt;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6pt;
   padding-bottom: var(--sp-headerPad);
   margin-bottom: var(--sp-header);
   border-bottom: 1.5pt solid var(--c-accent);
@@ -159,17 +158,6 @@
   margin-top: 3pt;
 }
 
-.cv-head[data-style='split'] .cv-contact {
-  text-align: right;
-  white-space: nowrap;
-}
-
-.cv-head:not([data-style='split']) {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 6pt;
-}
-
 .cv-head:is([data-style='centered'], [data-style='banner']) .cv-list.inline {
   justify-content: center;
 }
@@ -177,49 +165,6 @@
 .cv-head[data-style='banner'] {
   padding-top: var(--sp-headerPad);
   border-top: 1.5pt solid var(--c-accent);
-}
-
-/* ── Columns ────────────────────────────────────
-   The DOM order is the reading order, and the visual order matches it: the
-   sidebar's rail is first and on the left, Rail right's main column is first
-   and on the left. The divider is the rail's inner edge, halfway across the
-   gap. The rail keeps a transparent border for its width; the line itself is
-   drawn a page at a time by `.divider`, where the paginator found it falls. */
-.cv-cols {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: start;
-}
-
-.sheet[data-rail='left'] .cv-cols {
-  grid-template-columns: var(--rail) minmax(0, 1fr);
-}
-
-.sheet[data-rail='right'] .cv-cols {
-  grid-template-columns: minmax(0, 1fr) var(--rail);
-}
-
-.sheet[data-rail='left'] .cv-rail {
-  padding-right: calc(var(--sp-column) / 2);
-  margin-right: calc(var(--sp-column) / 2);
-  border-right: 0.75pt solid transparent;
-}
-
-.sheet[data-rail='right'] .cv-rail {
-  padding-left: calc(var(--sp-column) / 2);
-  margin-left: calc(var(--sp-column) / 2);
-  border-left: 0.75pt solid transparent;
-}
-
-.divider {
-  position: absolute;
-  width: 0;
-  border-left: 0.75pt solid var(--c-line);
-  transform: translateX(-0.375pt);
-}
-
-.cv-rail {
-  overflow-wrap: break-word;
 }
 
 /* ── Sections ───────────────────────────────────
@@ -292,31 +237,6 @@
   margin-top: var(--sp-item);
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
-  gap: var(--sp-entry) var(--sp-grid);
-}
-
-.cv-list.grid {
-  row-gap: var(--sp-item);
-}
-
-.cv-div.grid > * + * {
-  margin-top: 0;
-}
-
-/* A skill group's title in a gutter of its own, its rows beside it. */
-.cv-div.gutter {
-  display: grid;
-  grid-template-columns: var(--d-gutter) minmax(0, 1fr);
-  column-gap: calc(var(--sp-grid) / 2);
-}
-
-.cv-div.gutter > * + * {
-  margin-top: 0;
-}
-
 .cv-row {
   display: flex;
   flex-wrap: wrap;
@@ -328,14 +248,6 @@
 .cv-row > .aside {
   flex: none;
   white-space: nowrap;
-}
-
-/* The dates in an outline. On the inline box, so the outline sits round the
-   letters and the line keeps its height, as the PDF draws it. */
-.cv-row.badge > .aside > span {
-  padding: var(--d-badgePadY) var(--d-badgePadX);
-  border: 0.75pt solid var(--c-line);
-  border-radius: 99pt;
 }
 
 /* ── Frames ─────────────────────────────────────── */
@@ -381,13 +293,6 @@
   background: var(--c-paper);
 }
 
-.short-rule {
-  display: block;
-  width: 18pt;
-  margin-bottom: 4pt;
-  border-top: 1.5pt solid var(--c-accent);
-}
-
 /* ── Lists ──────────────────────────────────────
    The marks are decoration: drawn here by CSS, and as artifacts in the PDF,
    so neither reads them as text. */
@@ -397,10 +302,6 @@
 
 .cv-list > li + li {
   margin-top: var(--sp-item);
-}
-
-.cv-list.grid > li + li {
-  margin-top: 0;
 }
 
 .cv-list > li > :not([aria-hidden]) + :not([aria-hidden]) {
@@ -545,8 +446,7 @@
     margin-top: var(--orig-mt) !important;
   }
 
-  .pages,
-  .divider {
+  .pages {
     display: none;
   }
 

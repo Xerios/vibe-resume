@@ -1,6 +1,7 @@
 /**
- * How a CV is set: which layouts there are, the type each kind of text is set
- * in, and the space between things. All lengths are points.
+ * How a CV is set: the type each kind of text is set in, and the space
+ * between things. There is one layout — a single column read top to bottom —
+ * because that is what a PDF parser reads most reliably. All lengths are points.
  *
  * The sheet spends these as CSS (see html/sheet-css.js). The PDF is measured
  * from the sheet, so it is set in exactly these too, without a copy of its own.
@@ -13,27 +14,6 @@ export interface Choice {
   /** one line, shown as the option's tooltip */
   hint: string
 }
-
-/**
- * How the sections are arranged on the page. The two rail layouts send the
- * short, listy sections to a narrow column; the order the columns are listed
- * in a layout is the order they are *read* in, whichever side they are drawn on.
- */
-type Layout = Choice & { columns: ('main' | 'rail')[]; railSide: 'left' | 'right' | null }
-
-export const LAYOUTS: Layout[] = [
-  { id: 'single', name: 'Single column', hint: 'One column, everything in source order', columns: ['main'], railSide: null },
-  { id: 'sidebar', name: 'Sidebar', hint: 'Skills and lists in a left rail, read first', columns: ['rail', 'main'], railSide: 'left' },
-  { id: 'rail-right', name: 'Rail right', hint: 'The same rail on the right; the main column reads first', columns: ['main', 'rail'], railSide: 'right' },
-]
-
-export const DEFAULT_LAYOUT = 'single'
-
-export function resolveLayout(id: string | undefined | null): string {
-  return LAYOUTS.some((l) => l.id === id) ? (id as string) : DEFAULT_LAYOUT
-}
-
-export const layoutOf = (id: string | undefined | null): Layout => LAYOUTS.find((l) => l.id === resolveLayout(id)) ?? LAYOUTS[0]
 
 export const DENSITIES: Choice[] = [
   { id: 'normal', name: 'Normal', hint: 'The measure and spacing the sheet is designed at' },
@@ -55,7 +35,7 @@ const SPACE = {
   header: 14,
   /** between the name block and the rule under it */
   headerPad: 10,
-  /** above every section but the first in a column */
+  /** above every section but the first */
   section: 15,
   /** between a section title and what follows it */
   title: 7,
@@ -67,17 +47,10 @@ const SPACE = {
   item: 3,
   /** how far a bullet's text is indented past its marker */
   indent: 11,
-  /** between the main column and the rail */
-  column: 20,
-  /** between the columns of a two-up grid */
-  grid: 22,
 }
 
 /** What compact density does to each. */
 const COMPACT = { size: 0.93, space: 0.7, leading: 1.34 }
-
-/** Of the area inside the margins, the rail's share. */
-export const RAIL_SHARE = 0.31
 
 /**
  * The sizes and spaces a density comes to.
@@ -169,11 +142,6 @@ export const DECOR = {
   meterGap: 2.5,
   barW: 48,
   barH: 4,
-  /** the badge round the dates */
-  badgePadX: 4,
-  badgePadY: 1.5,
-  /** the gutter a skills-rows group title hangs in, as a share of the column */
-  gutter: 0.26,
   /** a chip's logo */
   icon: 9,
   /** the padding round a boxed title */

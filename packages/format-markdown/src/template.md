@@ -43,10 +43,8 @@ Full-stack engineer with **10+ years** of experience building web applications e
 
 ## Experience
 
-### Senior Full-Stack Engineer — Acme Corp
-
-03/2020 – Present
-B2B SaaS platform — Springfield (remote)
+### Acme Corp — Senior Full-Stack Engineer
+**03/2020 – Present** · B2B SaaS platform — Springfield (remote)
 
 - Led the development of a customer-facing dashboard used by **thousands of businesses**, from initial design through production rollout.
 - Migrated a legacy monolith to a **modular service architecture**, improving deploy frequency and reducing incident response time.
@@ -55,10 +53,8 @@ B2B SaaS platform — Springfield (remote)
 
 Stack: React, Node.js, TypeScript, PostgreSQL, Docker, AWS
 
-### Full-Stack Developer — Globex Inc
-
-06/2016 – 02/2020
-E-commerce platform — Shelbyville
+### Globex Inc — Full-Stack Developer
+**06/2016 – 02/2020** · E-commerce platform — Shelbyville
 
 - Built and shipped new features for a high-traffic e-commerce site serving **millions of monthly visitors**.
 - Optimized checkout flow, improving conversion rate through incremental A/B tested changes.
@@ -66,10 +62,8 @@ E-commerce platform — Shelbyville
 
 Stack: Vue.js, Node.js, MySQL, Redis
 
-### Junior Developer — Initech
-
-07/2014 – 05/2016
-Internal tools team — Capital City
+### Initech — Junior Developer
+**07/2014 – 05/2016** · Internal tools team — Capital City
 
 - Developed internal reporting tools used across multiple departments.
 - Automated manual data-entry workflows, saving the team several hours per week.
@@ -86,25 +80,19 @@ Stack: PHP, jQuery, MySQL
 ## Projects
 
 ### [dashboard-kit](https://example.dev/dashboard-kit)
-
-2023 – Present
-Charting and layout components for internal dashboards, extracted from the work at Acme and released publicly.
+**2023 – Present** · Charting and layout components for internal dashboards, extracted from the work at Acme and released publicly.
 
 Stack: TypeScript, Svelte, Vite
 
 ### [deploy-bot](https://example.dev/deploy-bot)
-
-2021
-Chat-driven deployments for small teams — approvals, rollbacks and an audit trail.
+**2021** · Chat-driven deployments for small teams — approvals, rollbacks and an audit trail.
 
 Stack: Go, PostgreSQL, Docker
 
 ## Education
 
-### BSc Computer Science — Springfield University
-
-2010 – 2014
-Graduated with honours — thesis on distributed systems.
+### Springfield University — BSc Computer Science
+**2010 – 2014** · Graduated with honours — thesis on distributed systems.
 
 ## Certifications & Permits
 

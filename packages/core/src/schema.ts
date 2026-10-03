@@ -23,7 +23,7 @@ export const SECTIONS: Record<string, { holds: string; item: string[] | null; ex
 }
 
 /** The keys any section may carry, whatever its type. */
-export const SECTION_KEYS = ['type', 'title', 'rail']
+export const SECTION_KEYS = ['type', 'title']
 /** A `groups` block's rows, which are a level deeper than anything else gets. */
 export const ROW_KEYS = ['tier', 'text']
 /** The document itself. */

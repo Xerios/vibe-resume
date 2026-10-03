@@ -4,15 +4,15 @@ import { parseWith } from '@vibe-resume/core/format'
 import { yaml } from '@vibe-resume/format-yaml'
 import { FACES } from '../theme/typefaces'
 import { PdfRenderer } from './PdfRenderer'
-import RAIL_RIGHT from './fixtures/railright.json'
-import SIDEBAR from './fixtures/sidebar.json'
+import PLAIN from './fixtures/plain.json'
+import STYLED from './fixtures/styled.json'
 
 /*
  * The fixtures are the default CV's preview, laid out and paginated by the
  * browser and read by measure.js — exactly what an export hands the renderer.
- * Sidebar is the default look with page view on; rail-right is banner, numbered
- * titles, timeline entries, logo chips, dot meters and certificate cards, in
- * the serif font. Regenerate them from the browser when the sheet's markup or
+ * Plain is the default look with page view on; styled is banner, numbered
+ * titles, timeline entries, logo chips, dot meters, certificate cards and short
+ * dates, in the serif font. Regenerate them from the browser when the sheet's markup or
  * stylesheet changes what measure.js reads.
  */
 
@@ -152,13 +152,13 @@ function read(data: Uint8Array) {
 describe('PdfRenderer', () => {
   const pdf: Record<string, any> = {}
   beforeAll(async () => {
-    const [sidebar, railRight] = await Promise.all([render(/** @type {any} */ (SIDEBAR), 'sans'), render(/** @type {any} */ (RAIL_RIGHT), 'serif')])
-    pdf.sidebar = sidebar
-    pdf.railRight = railRight
+    const [plain, styled] = await Promise.all([render(/** @type {any} */ (PLAIN), 'sans'), render(/** @type {any} */ (STYLED), 'serif')])
+    pdf.plain = plain
+    pdf.styled = styled
   })
 
   it('is a tagged PDF 1.7 that declares PDF/UA-1', () => {
-    const { s, catalog } = pdf.sidebar
+    const { s, catalog } = pdf.plain
     expect(s.startsWith('%PDF-1.7')).toBe(true)
     expect(catalog).toMatch(/\/StructTreeRoot \d+ 0 R/)
     expect(catalog).toMatch(/\/Lang \(en\)/)
@@ -180,7 +180,7 @@ describe('PdfRenderer', () => {
       // included (PDF/UA-1 7.21.4.2); there is none to get wrong.
       expect(s).not.toMatch(/\/CIDSet/)
     }
-    expect(pdf.railRight.s).toMatch(/\/BaseFont \/[A-Z]{6}\+SourceSerif4/)
+    expect(pdf.styled.s).toMatch(/\/BaseFont \/[A-Z]{6}\+SourceSerif4/)
   })
 
   it('marks every piece of content as either structure or an artifact', () => {
@@ -199,41 +199,44 @@ describe('PdfRenderer', () => {
     }
   })
 
-  it("reads the columns one after the other, in the layout's order", () => {
-    const order = (name: string) => ['CORE SKILLS', 'SUMMARY', 'EXPERIENCE', 'LANGUAGES', 'OPEN SOURCE'].map((t: string) => pdf[name].tagged.indexOf(t))
-    for (const name of Object.keys(pdf)) expect(order(name).every((i: number) => i >= 0)).toBe(true)
+  it('reads the sections in the order they are written, one column top to bottom', () => {
+    for (const name of Object.keys(pdf)) {
+      const order = ['SUMMARY', 'CORE SKILLS', 'EXPERIENCE', 'LANGUAGES', 'OPEN SOURCE'].map((t: string) => pdf[name].tagged.indexOf(t))
+      expect(order.every((i: number) => i >= 0)).toBe(true)
+      expect(order).toEqual(order.toSorted((x: number, y: number) => x - y))
+    }
+  })
 
-    const [skills, summary, experience, languages, oss] = order('sidebar')
-    expect(skills).toBeLessThan(languages)
-    expect(languages).toBeLessThan(summary)
-    expect(summary).toBeLessThan(experience)
-    expect(experience).toBeLessThan(oss)
-
-    const right = order('railRight')
-    expect(right[1]).toBeLessThan(right[4])
-    expect(right[4]).toBeLessThan(right[0])
-    expect(right[0]).toBeLessThan(right[3])
+  it('sets an entry as who and what, then when and where, each on a line of its own', () => {
+    const { tagged } = pdf.plain
+    expect(tagged).toMatch(/^Acme Corp — Senior Full-Stack Engineer$/m)
+    // The dates are a span of their own (they carry ActualText), so they come out a leaf apart.
+    const at = ['Acme Corp — Senior Full-Stack Engineer', '03/2020', ' · B2B SaaS platform — Springfield (remote)', 'Led the development'].map((t) =>
+      tagged.indexOf(t),
+    )
+    expect(at.every((i: number) => i >= 0)).toBe(true)
+    expect(at).toEqual(at.toSorted((x: number, y: number) => x - y))
+    expect(tagged).toMatch(/^Stack: React, Node\.js, TypeScript, PostgreSQL, Docker, AWS$/m)
   })
 
   it('starts with the header and keeps text as Unicode, spaces included', () => {
-    const { tagged } = pdf.sidebar
+    const { tagged } = pdf.plain
     expect(tagged.startsWith('John Doe\nSenior Full-Stack Engineer · 10+ years\nSpringfield, USA')).toBe(true)
-    expect(tagged).toContain('Senior Full-Stack Engineer | Acme Corp')
     expect(tagged).toContain('Springfield (remote)')
     expect(tagged).toContain('Databases & Data')
     expect(tagged).toContain('★ 120')
   })
 
   it('keeps decoration out of the text', () => {
-    const { tagged, artifacts } = pdf.sidebar
-    expect(artifacts.join(' ')).toMatch(/1 \/ 2/)
+    const { tagged, artifacts } = pdf.plain
+    expect(artifacts.join(' ')).toMatch(/1 \/ 3/)
     expect(tagged).not.toMatch(/\d \/ \d$/m)
     // The section numbers and the separators between chips are drawn, not read.
-    expect(pdf.railRight.tagged).not.toMatch(/^0\d$/m)
+    expect(pdf.styled.tagged).not.toMatch(/^0\d$/m)
   })
 
   it('nests headings, lists, links and figures as PDF/UA asks', () => {
-    const { types, s } = pdf.sidebar
+    const { types, s } = pdf.plain
     expect(types[0]).toBe('Document')
     expect(types.indexOf('H1')).toBeLessThan(types.indexOf('H2'))
     expect(types.indexOf('H2')).toBeLessThan(types.indexOf('H3'))
@@ -246,20 +249,20 @@ describe('PdfRenderer', () => {
       expect(a).toMatch(/\/Contents \(/)
     }
     // A language meter is a figure that says what it shows.
-    expect(pdf.railRight.types).toContain('Figure')
-    expect(pdf.railRight.s).toMatch(/\/S \/Figure[\s\S]{0,200}\/Alt \(Native: 5 of 5\)/)
+    expect(pdf.styled.types).toContain('Figure')
+    expect(pdf.styled.s).toMatch(/\/S \/Figure[\s\S]{0,200}\/Alt \(Native: 5 of 5\)/)
   })
 
   it('says what each date range means, however it is printed', () => {
-    const { s, tagged } = pdf.railRight
-    // The rail-right fixture prints its dates as `Mar 2020 – Present`.
+    const { s, tagged } = pdf.styled
+    // The styled fixture prints its dates as `Mar 2020 – Present`.
     expect(s).toMatch(/\/S \/Span[\s\S]{0,120}\/ActualText \(March 2020 to Present\)/)
     expect(s).toMatch(/\/Span <<[^>]*\/ActualText \(June 2016 to February 2020\)/)
     expect(tagged).toContain('Mar 2020 – Present')
   })
 
   it('titles sections, marks lists and bookmarks the sections', () => {
-    const { s, catalog } = pdf.sidebar
+    const { s, catalog } = pdf.plain
     expect(s).toMatch(/\/S \/Sect[\s\S]{0,80}\/T \(Experience\)/)
     expect(s).toMatch(/\/O \/List\s*\/ListNumbering \/Disc/)
     expect(catalog).toMatch(/\/Outlines \d+ 0 R/)
@@ -269,7 +272,7 @@ describe('PdfRenderer', () => {
   })
 
   it('attaches the source', () => {
-    const { s, catalog } = pdf.sidebar
+    const { s, catalog } = pdf.plain
     expect(catalog).toMatch(/\/AF \[/)
     expect(s).toMatch(/\/Type \/Filespec[\s\S]*?\/AFRelationship \/Source/)
     expect(s).toMatch(/\/UF \(cv\.yaml\)/)

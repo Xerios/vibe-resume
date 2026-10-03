@@ -53,7 +53,7 @@ or `@lezer/highlight` break the editor.
 | What a CV says         | [packages/render/src/model.ts](packages/render/src/model.ts) — the tree the sheet is drawn from, in reading order                             |
 | Block variants         | [packages/render/src/variants.ts](packages/render/src/variants.ts) — every slot, and every way of drawing it                                  |
 | Inline Markdown        | [packages/render/src/inline.ts](packages/render/src/inline.ts) — a value as runs of styled text                                               |
-| Type, space, layouts   | [packages/render/src/tokens.ts](packages/render/src/tokens.ts) — the numbers a CV is set with                                                 |
+| Type and space         | [packages/render/src/tokens.ts](packages/render/src/tokens.ts) — the numbers a CV is set with                                                 |
 | Preview                | [packages/render/src/PreviewFrame.svelte](packages/render/src/PreviewFrame.svelte) — the iframe the sheet renders in                          |
 | The sheet              | [packages/render/src/html/](packages/render/src/html/) — `CvSheet.svelte`, its stylesheet, the tokens as CSS, and the paginator               |
 | The sheet as PDF       | [packages/render/src/pdf/](packages/render/src/pdf/) — `measure.js` reads the sheet, `PdfRenderer.ts` draws it; see _Exporting_ below         |
@@ -120,16 +120,20 @@ preview-to-source mapping, scroll sync and the divider drag.
 A CV is drawn once, as HTML in the preview, and the PDF is made from what that
 drew.
 
-[model.ts](packages/render/src/model.ts) builds a tree out of the parsed YAML. It is
-the one place that decides what a section _is_: an entry is a heading with its
-dates beside it, a line of context, a list of bullets and a stack line; a skills
-section is a grid of groups; a language is a list item with its level at the
-right. Its nodes are PDF's own structure types (`Sect`, `H1`–`H3`, `P`, `L`, `LI`,
-`Div`), plus `Row` for "this, with that out at the right edge" and `Meter` for a
-level drawn as dots or a bar. The tree is already in **reading order**. The two
-rail layouts send the short, listy sections to a narrow column, and the order
-the columns are listed in is the order they are read in: Sidebar reads its rail
-first, Rail right reads its main column first.
+[model.ts](packages/render/src/model.ts) builds a tree out of the parsed source. It is
+the one place that decides what a section _is_: an entry is a heading naming the
+organisation and the title (`Acme Corp — Senior Engineer`), a line of its dates
+and context (`03/2020 – Present · Springfield`), a list of bullets and a
+`Stack:` line; a skills section is its groups one under another; a language is a
+list item with its level at the right. Its nodes are PDF's own structure types
+(`Sect`, `H1`–`H3`, `P`, `L`, `LI`, `Div`), plus `Row` for "this, with that out
+at the right edge" and `Meter` for a level drawn as dots or a bar. The tree is
+already in **reading order**.
+
+There is **one column**. Sidebars, two-up grids and gutters are gone, because a
+PDF parser that reads by position — most ATS do — splices side-by-side text
+together. Everything is set top to bottom in the order it is written, and only a
+short pair (a language and its level, a certificate and its date) shares a line.
 
 [CvSheet.svelte](packages/render/src/html/CvSheet.svelte) writes the tree into the DOM in that
 order and [sheet.css](packages/render/src/html/sheet.css) lays it out. Sizes, colours and
@@ -139,7 +143,7 @@ spacing come from [tokens.ts](packages/render/src/tokens.ts),
 text role ([sheet-css.ts](packages/render/src/html/sheet-css.ts)). That layout is the only
 one there is. Two things follow it after every render:
 
-- **The paginator** ([paginate.ts](packages/render/src/html/paginate.ts)) walks each column
+- **The paginator** ([paginate.ts](packages/render/src/html/paginate.ts)) walks the sheet
   and pushes any block that would cross the foot of a page onto the next one. The
   rules are the ones the print CSS used to ask the browser for: an entry, a skill
   group, a list item and a paragraph stay whole, and a heading stays with the
@@ -166,8 +170,7 @@ marked's own inline lexer ([inline.ts](packages/render/src/inline.ts)), so there
 `{@html}` in it. A bare address still prints without its scheme, and a phone
 number on a contact line is still a `tel:` link.
 
-The style panel offers three **layouts** (single column, sidebar, rail right), a
-row of **block variants**, seven **themes**, six **fonts**, two **densities** and
+The style panel offers a row of **block variants**, seven **themes**, six **fonts**, two **densities** and
 the **paper**. A variant ([variants.ts](packages/render/src/variants.ts)) is an id
 the model reads while building the tree. It changes a property there — a
 section's `head`, an entry's `frame`, a list's `display`, a language's meter —
@@ -178,14 +181,14 @@ first variant of each is its default.
 
 #### Restyling is a change
 
-Layout, block variants, theme, font, density and paper are stored per file in the file registry, and
+Block variants, theme, font, density and paper are stored per file in the file registry, and
 also as a `style` map in the file's Loro document. Changing how a CV looks is a
 change to the CV, and the things a change gets here — a line in the version
 history, a place on the undo stack, and coming back with the version that had it
 — are exactly what a restyle wanted.
 [restyle](apps/web/src/lib/cv/state/state.svelte.ts) is the one way to move them: it writes the
 registry first, so the sheet follows immediately, then records the result in the
-document with a label — `Layout — Sidebar`, `Entry — Card`, `Theme — Plum`, `Paper — Landscape`.
+document with a label — `Entry — Card`, `Theme — Plum`, `Paper — Landscape`.
 Ctrl+Z takes one back, from the editor as ever and from anywhere else too, since
 a keystroke that didn't land in CodeMirror is handled by the page.
 
@@ -213,8 +216,7 @@ PDF/UA-1, so that ATS parsers and screen readers read it as it is meant to be re
 - **Reading order.** The display list is in document order, which is the model's
   reading order. The renderer writes the structure tree and each page's content
   stream in that order, switching between buffered pages and drawing each line at
-  the absolute position it was measured at. A left column that fills two pages is
-  written in full before a word of the right column is.
+  the absolute position it was measured at.
 - **Words where the browser put them.** The browser and pdfkit shape text from the
   same files but don't agree to the fraction of a point: Chromium rounds advances
   to pixels. So each word starts where the browser put it and is scaled
@@ -262,7 +264,7 @@ The tests in [PdfRenderer.test.ts](packages/render/src/pdf/PdfRenderer.test.ts) 
 display lists measured from the browser ([fixtures/](packages/render/src/pdf/fixtures/)),
 read the uncompressed output back, and check these properties. They include that
 each page's marked content comes in the same order as the structure tree, and
-that each layout's columns are read in order. The fixtures have to be measured
+that the sections and an entry's lines come out in the order they are written. The fixtures have to be measured
 again when the sheet's markup or stylesheet changes what measure.ts reads. A full conformance check needs an external
 validator: veraPDF with the PDF/UA-1 profile, or PAC.
 
@@ -299,17 +301,12 @@ preview is already the width of the window. It is a `zoom` on `#cv-root` rather
 than a transform, which is what keeps every rect the page measures — the scroll
 ladder's — in the frame's own coordinates, and the print stylesheet drops it.
 
-The two rail layouts send groups, lists and levels to the rail, and any section
-can opt in or out with `rail: true` / `rail: false`. A rail is a third of a
-measure, so what lands in one is set one-up rather than two-up, and an inline list
-becomes a bulleted one.
-
 #### Formats
 
 A file is written in one of two formats, and its name says which: `cv.md` is
 Markdown and `cv.yaml` is YAML. A name with no extension is YAML, which is what
-every file was before there was a choice. The menu's _New Tab (YAML)_ and _New
-Tab (Markdown)_ start a file from that format's template, and renaming a tab
+every file was before there was a choice. A new tab is Markdown; the menu's _New
+Tab (YAML)_ starts one from the YAML template instead, and renaming a tab
 into the other extension reads the same text in the other format — nothing
 converts it. A new name typed without an extension keeps the old one.
 
@@ -336,10 +333,9 @@ Senior Full-Stack Engineer · 10+ years
 
 ## Experience
 
-### Senior Full-Stack Engineer — Acme Corp
+### Acme Corp — Senior Full-Stack Engineer
 
-03/2020 – Present
-B2B SaaS platform — Springfield (remote)
+**03/2020 – Present** · Springfield (remote)
 
 - Led the development of a customer-facing dashboard.
 
@@ -363,9 +359,11 @@ the contact line. Each `##` is a section, and its type comes from, in order: an
 `<!-- type: … -->` comment under it; its title, when the content fits
 (_Skills_ with `###` groups, _Languages_, _Certifications_, _Interests_, _Open
 Source_, _Summary_); and otherwise its shape — `###` children are `entries`, a
-list alone is a `list`, prose is `text`. Under an entry's `###`, a line that
-reads as dates is the dates, the next line is the line of context, bullets are
-bullets and `Stack:` is the stack. In a skills group, `**Expert:** …` gives a row
+list alone is a `list`, prose is `text`. An entry is `### Org — Title` (a
+heading with no `—` is a title alone), then `**dates** · place` on the next
+line, then bullets and `Stack:` — the same order the sheet and the PDF print it
+in. A plain line that reads as dates, with the line of context under it, is read
+too. In a skills group, `**Expert:** …` gives a row
 its tier.
 
 Within a line, fields are split on a spaced em dash `—`: a language is
@@ -373,7 +371,7 @@ Within a line, fields are split on a spaced em dash `—`: a language is
 row `name — value — desc`. An en dash is left alone, since date ranges use it.
 
 What plain Markdown can't say goes in an HTML comment of `key: value` pairs:
-`lang` under `#`; `type`, `rail` and `inline` under `##`; `subtype`, `sideNote`
+`lang` under `#`; `type` and `inline` under `##`; `subtype`, `sideNote`
 and `rating` under `###` or at the end of a list item. Markdown viewers don't
 show comments, so the file still reads as an ordinary resume anywhere else. The
 editor underlines a comment key that means nothing where it is, an unknown type,
@@ -407,8 +405,8 @@ so `- Some text: more` stays a string.
 Everything else follows from taking values verbatim. A `#` only opens a comment
 at the head of a line, so `ranked # 1` and `#fff` are ordinary text. Indentation
 nests, and a tab in it is an error. Every scalar is a string except a bare `true`
-or `false`, which have to stay boolean because `inline` and `rail`
-are tested for truthiness and the string `'false'` is true. `|` and `>` still
+or `false`, which have to stay boolean because `inline`
+is tested for truthiness and the string `'false'` is true. `|` and `>` still
 open a block. Flow collections, anchors, aliases, tags and `---` are gone — `[`
 is just a bracket now.
 
@@ -443,8 +441,7 @@ key and then text — none of which needs a parse tree.
 
 A document is a header and a list of sections, and a section's `type` is what
 decides how it renders. There are seven, each named after the shape of what it
-holds rather than what a CV usually puts in it, all of them understood by every
-layout, so switching layout can never lose one:
+holds rather than what a CV usually puts in it:
 
 | `type`    | Holds                                                                           | Usually        |
 | --------- | ------------------------------------------------------------------------------- | -------------- |

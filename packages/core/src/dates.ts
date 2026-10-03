@@ -15,6 +15,7 @@ export const DATE_FORMATS: Array<[RegExp, string]> = [
   [/^\d{1,2}\/\d{4}$/, '03/2020'],
   [/^\d{1,2}\.\d{4}$/, '03.2020'],
   [/^\d{4}-\d{1,2}$/, '2020-03'],
+  [/^\d{4}\.\d{1,2}$/, '2020.03'],
   [/^(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\.?\s+\d{4}$/i, 'Mar 2020'],
   [/^(?:january|february|march|april|june|july|august|september|october|november|december)\s+\d{4}$/i, 'March 2020'],
 ]
@@ -65,7 +66,7 @@ const OPEN_END = /^(?:present|current|now|today|ongoing)$/i
 function readWhen(part: string): When | null {
   let m = /^(\d{1,2})[/.](\d{4})$/.exec(part)
   if (m) return month(Number(m[2]), Number(m[1]))
-  m = /^(\d{4})-(\d{1,2})$/.exec(part)
+  m = /^(\d{4})[-.](\d{1,2})$/.exec(part)
   if (m) return month(Number(m[1]), Number(m[2]))
   m = /^([a-z]+)\.?\s+(\d{4})$/i.exec(part)
   if (m) {

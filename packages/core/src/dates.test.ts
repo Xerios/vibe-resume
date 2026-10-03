@@ -16,6 +16,7 @@ describe('parseDates', () => {
     }
     expect(parseDates('06/2016 – 02/2020')).toMatchObject({ start: { year: 2016, month: 6 }, end: { year: 2020, month: 2 } })
     expect(parseDates('2010 – 2014')).toMatchObject({ start: { year: 2010 }, end: { year: 2014 } })
+    expect(parseDates('2017.09–2017.12')).toMatchObject({ start: { year: 2017, month: 9 }, end: { year: 2017, month: 12 } })
   })
 
   it('reads a single date', () => {

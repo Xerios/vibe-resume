@@ -10,11 +10,13 @@
  *     - contact                    ` · ` / ` | `) is the contact line
  *
  *     ## Section                   a section; its type is what its content is
- *     ### Entry — Org              an entry (or a group, under a skills section)
- *     03/2020 – Present            a line that reads as dates
- *     Context line                 the next line is the entry's `sub`
+ *     ### Org — Title              an entry (or a group, under a skills section)
+ *     **2017.09–2017.12** · Place  its dates, in bold, then where (its `sub`)
  *     - bullet                     bullets
  *     Stack: A, B                  its stack
+ *
+ * The bold dates line is the one to write; a plain line that reads as dates,
+ * with the line of context under it, is read too.
  *
  * A section's type is taken, in order, from an `<!-- type: … -->` comment
  * under its heading, from its title when the content fits (Skills, Languages,
@@ -26,7 +28,7 @@
  * `name — value — desc`. An en dash is left alone, since date ranges use it.
  *
  * An HTML comment of `key: value` pairs sets keys the text can't say — under
- * `#` (`lang`), under `##` (`type`, `rail`, `inline`), under `###` or at the
+ * `#` (`lang`), under `##` (`type`, `inline`), under `###` or at the
  * end of a list item (`subtype`, `sideNote`, `rating`). Markdown viewers don't
  * show comments, so the file still reads as an ordinary resume.
  */
@@ -78,13 +80,15 @@ const RULE = /^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/
 const FIELDS = /\s+—\s+/
 /** `**Tier:** text`, a groups row with a tier. */
 const TIER = /^\*\*([^*]+?):?\*\*:?\s+(.*)$/
+/** An entry's `**dates** · place` line: the bold part, or a plain one, then what follows a `·` or `|`. */
+const META = /^(?:\*\*(.+?)\*\*|([^·|]+?))\s*(?:[·|]\s*(.*))?$/
 /** `Stack: …`, in any of the ways it gets written. */
 const STACK = /^(?:\*\*|__)?(?:stack|tech(?:nologies)?|tools)(?::(?:\*\*|__)|(?:\*\*|__)?:)\s*(.*)$/i
 
 /** Keys a comment may set, by where it is. */
 const DIRECTIVE_KEYS = {
   header: ['lang'],
-  section: ['type', 'rail', 'inline'],
+  section: ['type', 'inline'],
   item: ['subtype', 'sideNote', 'rating'],
 }
 
@@ -331,9 +335,10 @@ export function read(text: string): SourceRead {
   }
 
   function readEntry(child: Child, at: string): Record<string, any> {
-    const [title, ...org] = child.title.split(FIELDS)
-    const item: Record<string, any> = { title }
-    if (org.length) item.org = org.join(' — ')
+    // `### Org — Title`: the organisation first, as a reader scans for it. A
+    // heading with no ` — ` is a title alone — a project, say.
+    const [first, ...rest] = child.title.split(FIELDS)
+    const item: Record<string, any> = rest.length ? { title: rest.join(' — '), org: first } : { title: first }
     Object.assign(item, child.directive)
     const earlier = item.subtype === 'earlier'
     const listKey = earlier ? 'items' : 'bullets'
@@ -358,12 +363,20 @@ export function read(text: string): SourceRead {
       for (const line of block.lines) {
         const t = line.text.trim()
         const stack = STACK.exec(t)
+        const meta = item.dates === undefined && item.sub === undefined ? META.exec(t) : null
+        // Bold leading the first line is the dates, whatever they say; plain
+        // text only when it reads as dates.
+        const when = meta ? (meta[1] ?? (parseDates(strip(meta[2])) ? meta[2] : undefined)) : undefined
         if (stack) {
           item.stack = stack[1]
           lines.set(`${at}.stack`, line.n)
-        } else if (item.dates === undefined && parseDates(strip(t))) {
-          item.dates = strip(t)
+        } else if (meta && when !== undefined) {
+          item.dates = strip(when)
           lines.set(`${at}.dates`, line.n)
+          if (meta[3]) {
+            item.sub = meta[3].trim()
+            lines.set(`${at}.sub`, line.n)
+          }
         } else if (item.sub === undefined) {
           item.sub = t
           lines.set(`${at}.sub`, line.n)
