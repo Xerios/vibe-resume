@@ -45,25 +45,34 @@
 export const KEY_RE = /^[A-Za-z_][A-Za-z0-9_-]*(?=:(?:[ \t]|$))/
 
 /**
- * @typedef {object} LineParts
- * @property {number} indent   column of the first non-space character
- * @property {number} tab      column of a tab in the indentation, or -1
- * @property {number} comment  column of the `#`, or -1 when the line isn't one
- * @property {number[]} dashes column of each `- ` marker, outermost first
- * @property {string | null} key
- * @property {number} content  column where the entry or scalar starts, past every dash
- * @property {number} colon    column of the key's `:`, or -1
- * @property {number} value    column where the value text starts, or -1 when there is none
+ * A line, taken apart by the parser. The tokenizer, the parser and the editor's
+ * "where does the content start" all read a line through here, so none of them
+ * can disagree about what a key is.
  */
+export interface LineParts {
+  /** column of the first non-space character */
+  indent: number
+  /** column of a tab in the indentation, or -1 */
+  tab: number
+  /** column of the `#`, or -1 when the line isn't one */
+  comment: number
+  /** column of each `- ` marker, outermost first */
+  dashes: number[]
+  key: string | null
+  /** column where the entry or scalar starts, past every dash */
+  content: number
+  /** column of the key's `:`, or -1 */
+  colon: number
+  /** column where the value text starts, or -1 when there is none */
+  value: number
+}
 
 /**
  * A line, taken apart. The tokenizer, the parser and the editor's
  * "where does the content start" all read a line through here, so none of them
  * can disagree about what a key is.
- * @param {string} text a single line, without its newline
- * @returns {LineParts}
  */
-export function splitLine(text) {
+export function splitLine(text: string): LineParts {
   let i = 0
   let tab = -1
   while (i < text.length && (text[i] === ' ' || text[i] === '\t')) {
@@ -71,14 +80,13 @@ export function splitLine(text) {
     i++
   }
   const indent = i
-  const bare = { indent, tab, comment: -1, dashes: /** @type {number[]} */ ([]), key: null, content: i, colon: -1, value: -1 }
+  const bare: LineParts = { indent, tab, comment: -1, dashes: [], key: null, content: i, colon: -1, value: -1 }
   if (i >= text.length) return bare
   // A comment is only a comment at the head of a line, so `# 1` and `#fff` are
   // ordinary text everywhere a value can appear.
   if (text[i] === '#') return { ...bare, comment: i }
 
-  /** @type {number[]} */
-  const dashes = []
+  const dashes: number[] = []
   while (text[i] === '-' && (i + 1 >= text.length || text[i + 1] === ' ' || text[i + 1] === '\t')) {
     dashes.push(i)
     i++
@@ -96,11 +104,8 @@ export function splitLine(text) {
 
 /**
  * A scalar's source text, read as a value.
- *
- * @param {string} raw the value text, from where it starts to the end of the line
- * @returns {{ value: string | boolean, quoted: boolean }}
  */
-export function readScalar(raw) {
+export function readScalar(raw: string): { value: string | boolean; quoted: boolean } {
   const s = raw.trimEnd()
   if (s === 'true') return { value: true, quoted: false }
   if (s === 'false') return { value: false, quoted: false }
@@ -116,10 +121,8 @@ export function readScalar(raw) {
  * scalar is taken as written. Both YAML escapes are honoured for the sake of
  * documents written before the dialect relaxed: `''` inside single quotes, and
  * backslashes inside double.
- * @param {string} s
- * @returns {string | null}
  */
-function unquote(s) {
+function unquote(s: string): string | null {
   if (s.length < 2) return null
   const q = s[0]
   if ((q !== "'" && q !== '"') || s[s.length - 1] !== q) return null
@@ -133,10 +136,8 @@ function unquote(s) {
  *
  * Almost nothing does any more, which is the point — this is what tells a
  * writer which of the quotes they inherited are now just noise.
- * @param {string} text the text inside the quotes
- * @param {boolean} atItemStart the scalar sits directly after a `- `
  */
-export function needsQuotes(text, atItemStart) {
+export function needsQuotes(text: string, atItemStart: boolean): boolean {
   if (text === '' || text !== text.trim()) return true // empty, or space that would be trimmed away
   if (text === 'true' || text === 'false') return true // otherwise it comes back a boolean
   if (/^[|>][-+]?$/.test(text)) return true // otherwise it opens a block scalar
@@ -146,26 +147,35 @@ export function needsQuotes(text, atItemStart) {
 }
 
 /**
- * @typedef {object} ParseResult
- * @property {any} value the document
- * @property {Map<string, number>} lines dotted path → the 1-based line it starts on
- * @property {import('@codemirror/lint').Diagnostic[]} diagnostics in character offsets
+ * The result of parsing a YAML document.
  */
+interface ParseResult {
+  /** the document */
+  value: any
+  /** dotted path → the 1-based line it starts on */
+  lines: Map<string, number>
+  /** in character offsets */
+  diagnostics: import('@codemirror/lint').Diagnostic[]
+}
 
 /**
  * A source line as the parser carries it: taken apart, placed, and holding a
  * count of how many of its own `- ` markers have been read.
- * @typedef {LineParts & { n: number, from: number, text: string, di: number }} Line
  */
+interface Line extends LineParts {
+  n: number
+  from: number
+  text: string
+  di: number
+}
 
 /** A line with nothing on it to parse. Blanks and comments are invisible to the parser. */
-const skip = (/** @type {Line} */ l) => l.comment >= 0 || l.indent >= l.text.length
+const skip = (l: Line): boolean => l.comment >= 0 || l.indent >= l.text.length
 
 /** The column a line is currently being read at — its next unread `- `, or its content. */
-const colOf = (/** @type {Line} */ l) => (l.di < l.dashes.length ? l.dashes[l.di] : l.content)
+const colOf = (l: Line): number => (l.di < l.dashes.length ? l.dashes[l.di] : l.content)
 
-/** @param {string} base @param {string | number} segment */
-const join = (base, segment) => (base ? `${base}.${segment}` : String(segment))
+const join = (base: string, segment: string | number): string => (base ? `${base}.${segment}` : String(segment))
 
 /**
  * Read a document.
@@ -179,18 +189,12 @@ const join = (base, segment) => (base ? `${base}.${segment}` : String(segment))
  * anchors a mapping entry on its *key*, because `title: Summary` and a
  * `bullets:` block both want the line you'd click to edit them, not wherever
  * the value happens to begin.
- *
- * @param {string} text
- * @returns {ParseResult}
  */
-export function parse(text) {
-  /** @type {import('@codemirror/lint').Diagnostic[]} */
-  const diagnostics = []
-  /** @type {Map<string, number>} */
-  const paths = new Map()
+export function parse(text: string): ParseResult {
+  const diagnostics: import('@codemirror/lint').Diagnostic[] = []
+  const paths: Map<string, number> = new Map()
 
-  /** @type {Line[]} */
-  const lines = []
+  const lines: Line[] = []
   for (let from = 0, n = 1; from <= text.length; n++) {
     let end = text.indexOf('\n', from)
     if (end < 0) end = text.length
@@ -200,14 +204,7 @@ export function parse(text) {
     if (end >= text.length) break
   }
 
-  /**
-   * @param {Line} l
-   * @param {number} col
-   * @param {number} to
-   * @param {import('@codemirror/lint').Diagnostic['severity']} severity
-   * @param {string} message
-   */
-  const report = (l, col, to, severity, message) => {
+  const report = (l: Line, col: number, to: number, severity: import('@codemirror/lint').Diagnostic['severity'], message: string): void => {
     diagnostics.push({ from: l.from + col, to: l.from + Math.max(to, col), severity, source: 'yaml', message })
   }
 
@@ -223,10 +220,8 @@ export function parse(text) {
 
   /**
    * Whatever starts at `col`: a sequence, a mapping, or a run of bare lines.
-   * @param {number} col
-   * @param {string} path
    */
-  function parseBlock(col, path) {
+  function parseBlock(col: number, path: string): any {
     const l = peek()
     if (!l || colOf(l) !== col) return null
     if (l.di < l.dashes.length) return parseSeq(col, path)
@@ -236,19 +231,15 @@ export function parse(text) {
 
   /**
    * The block indented under the line just consumed, or null when there isn't one.
-   * @param {number} col the parent's column
-   * @param {string} path
    */
-  function parseChild(col, path) {
+  function parseChild(col: number, path: string): any {
     const l = peek()
     if (!l || colOf(l) <= col) return null
     return parseBlock(colOf(l), path)
   }
 
-  /** @param {number} col @param {string} path */
-  function parseMap(col, path) {
-    /** @type {Record<string, any>} */
-    const obj = {}
+  function parseMap(col: number, path: string): Record<string, any> {
+    const obj: Record<string, any> = {}
     for (;;) {
       const l = peek()
       if (!l) break
@@ -278,10 +269,8 @@ export function parse(text) {
     return obj
   }
 
-  /** @param {number} col @param {string} path */
-  function parseSeq(col, path) {
-    /** @type {any[]} */
-    const arr = []
+  function parseSeq(col: number, path: string): any[] {
+    const arr: any[] = []
     for (;;) {
       const l = peek()
       if (!l) break
@@ -323,11 +312,9 @@ export function parse(text) {
   /**
    * A run of bare lines standing where a value was expected, folded into one
    * string — what `key:` followed by an indented paragraph means.
-   * @param {number} col
    */
-  function parseFolded(col) {
-    /** @type {string[]} */
-    const parts = []
+  function parseFolded(col: number): any {
+    const parts: string[] = []
     let first = null
     for (;;) {
       const l = peek()
@@ -342,11 +329,8 @@ export function parse(text) {
 
   /**
    * The value on a line, from `col` — or the block scalar it opens.
-   * @param {Line} l the line, already consumed
-   * @param {number} col the column the line is being read at
-   * @param {number} [from] where the value text starts; defaults to the entry's value
    */
-  function scalar(l, col, from = l.value) {
+  function scalar(l: Line, col: number, from = l.value): any {
     const raw = l.text.slice(from)
     const block = /^([|>])[-+]?$/.exec(raw.trim())
     if (block) return blockScalar(col, block[1] === '|')
@@ -360,12 +344,9 @@ export function parse(text) {
 
   /**
    * The indented body of a `|` or `>` value, dedented by its first line.
-   * @param {number} col the column of the line that opened it
-   * @param {boolean} literal `|` keeps the line breaks; `>` folds them to spaces
    */
-  function blockScalar(col, literal) {
-    /** @type {string[]} */
-    const body = []
+  function blockScalar(col: number, literal: boolean): string {
+    const body: string[] = []
     let indent = -1
     while (at < lines.length) {
       const l = lines[at]

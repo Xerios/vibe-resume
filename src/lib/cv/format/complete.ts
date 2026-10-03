@@ -26,8 +26,8 @@
  */
 
 import { autocompletion, snippetCompletion } from '@codemirror/autocomplete'
-import { HEADER_KEYS, ROOT_KEYS, ROW_KEYS, SECTION_KEYS, SECTIONS } from './lint.js'
-import { parse, splitLine } from './relaxed-yaml.js'
+import { HEADER_KEYS, ROOT_KEYS, ROW_KEYS, SECTION_KEYS, SECTIONS } from './lint'
+import { parse, splitLine } from './relaxed-yaml'
 
 const TYPES = Object.keys(SECTIONS)
 
@@ -38,16 +38,14 @@ const TYPES = Object.keys(SECTIONS)
  */
 const RARE = new Set(['lang'])
 
-/** @param {string} base @param {string | number} segment */
-const join = (base, segment) => (base ? `${base}.${segment}` : String(segment))
+const join = (base: string, segment: string | number): string => (base ? `${base}.${segment}` : String(segment))
 
 /**
  * One line for every key the format has, said once. Several of them turn up in
  * more than one place — `name` is a person's, a language's and a repository's —
  * so each line has to hold for every use of it.
- * @type {Record<string, string>}
  */
-const KEY_INFO = {
+const KEY_INFO: Record<string, string> = {
   header: 'Your name, what you do, and how to reach you.',
   sections: 'The body of the CV, in the order it prints.',
   name: 'What this is called.',
@@ -80,8 +78,7 @@ const KEY_INFO = {
   desc: 'One line about it.',
 }
 
-/** @type {{ label: string, info: string }[]} */
-const BOOLEANS = [
+const BOOLEANS: Array<{ label: string; info: string }> = [
   { label: 'true', info: 'Yes.' },
   { label: 'false', info: 'No — and worth saying when the default is yes.' },
 ]
@@ -89,9 +86,8 @@ const BOOLEANS = [
 /**
  * The keys whose values are a closed set. Everything absent from here is prose,
  * and prose is exactly what this format exists to leave alone.
- * @type {Record<string, { label: string, info: string }[]>}
  */
-const VALUES = {
+const VALUES: Record<string, Array<{ label: string; info: string }>> = {
   type: TYPES.map((type) => ({ label: type, info: `Holds \`${SECTIONS[type].holds}\`.` })),
   subtype: [
     { label: 'job', info: 'A role of its own, with dates and bullets.' },
@@ -114,9 +110,8 @@ const VALUES = {
  *
  * `#{…}` marks a field: the text is inserted as written and Tab steps through
  * the parts worth replacing.
- * @type {Record<string, string[]>}
  */
-const SKELETONS = {
+const SKELETONS: Record<string, string[]> = {
   text: ['type: text', '\ttitle: #{Summary}', '\tparagraphs:', '\t\t- #{A sentence or two about what you do.}'],
   groups: [
     'type: groups',
@@ -159,25 +154,30 @@ const SKELETONS = {
  * become an item it does, and on a `- ` already typed it doesn't. Either way
  * every line after the first sits at the same column, since a `- ` is exactly
  * one indent unit wide.
- * @param {string} type
- * @param {boolean} dash
  */
-export const sectionSkeleton = (type, dash) => (dash ? '- ' : '') + SKELETONS[type].join('\n')
+export const sectionSkeleton = (type: string, dash: boolean): string => (dash ? '- ' : '') + SKELETONS[type].join('\n')
 
 /**
- * @typedef {object} Spot
- * @property {'key' | 'value'} what is the cursor on a key, or past one
- * @property {string} path  the mapping the line belongs to — a value's key hangs off it too
- * @property {string | null} key  the key whose value is being typed
- * @property {number} from  the offset a completion replaces from
- * @property {boolean} colon the line already carries its `:`, so a key needs no second one
- * @property {boolean} dash  the line carries a `- `, so it opens an entry of its own
+ * Where the cursor is, in the document's own terms.
  */
+interface Spot {
+  /** is the cursor on a key, or past one */
+  what: 'key' | 'value'
+  /** the mapping the line belongs to — a value's key hangs off it too */
+  path: string
+  /** the key whose value is being typed */
+  key: string | null
+  /** the offset a completion replaces from */
+  from: number
+  /** the line already carries its `:`, so a key needs no second one */
+  colon: boolean
+  /** the line carries a `- `, so it opens an entry of its own */
+  dash: boolean
+}
 
 /** A line, taken apart, and where it starts in the document. */
-const lineParts = (/** @type {string} */ text) => {
-  /** @type {(import('./relaxed-yaml.js').LineParts & { text: string, from: number })[]} */
-  const out = []
+const lineParts = (text: string): Array<import('./relaxed-yaml').LineParts & { text: string; from: number }> => {
+  const out: Array<import('./relaxed-yaml').LineParts & { text: string; from: number }> = []
   for (let from = 0; ;) {
     let end = text.indexOf('\n', from)
     if (end < 0) end = text.length
@@ -189,7 +189,7 @@ const lineParts = (/** @type {string} */ text) => {
 }
 
 /** Whether a line's value is the `|` or `>` that opens a block body. */
-const opensBlock = (/** @type {{ value: number, text: string }} */ l) => l.value >= 0 && /^[|>][-+]?$/.test(l.text.slice(l.value).trim())
+const opensBlock = (l: { value: number; text: string }): boolean => l.value >= 0 && /^[|>][-+]?$/.test(l.text.slice(l.value).trim())
 
 /**
  * Where the cursor is, in the document's own terms.
@@ -202,12 +202,8 @@ const opensBlock = (/** @type {{ value: number, text: string }} */ l) => l.value
  *
  * Null means there is nothing to offer at all: inside a comment, inside a `|`
  * body, or out in a line's indentation.
- *
- * @param {string} text
- * @param {number} pos
- * @returns {Spot | null}
  */
-export function spotAt(text, pos) {
+export function spotAt(text: string, pos: number): Spot | null {
   const lines = lineParts(text)
   let n = 0
   while (n + 1 < lines.length && lines[n + 1].from <= pos) n++
@@ -215,8 +211,13 @@ export function spotAt(text, pos) {
   const col = pos - cur.from
   if (cur.comment >= 0) return null
 
-  /** @type {{ col: number, kind: 'map' | 'seq', path: string, count: number }[]} */
-  const stack = []
+  interface StackFrame {
+    col: number
+    kind: 'map' | 'seq'
+    path: string
+    count: number
+  }
+  const stack: StackFrame[] = []
   /** The path a block indented under the last line read would hang from. */
   let opens = ''
   /** Column of the line that opened a `|` or `>` body, or -1. */
@@ -225,11 +226,8 @@ export function spotAt(text, pos) {
   /**
    * The frame at column `at`, opening one if the column isn't held — or is held
    * by the other kind, which is a list starting where a mapping left off.
-   * @param {number} at
-   * @param {'map' | 'seq'} kind
-   * @param {string} path
    */
-  const enter = (at, kind, path) => {
+  const enter = (at: number, kind: 'map' | 'seq', path: string): StackFrame => {
     while (stack.length > 0 && stack[stack.length - 1].col > at) stack.pop()
     const top = stack[stack.length - 1]
     if (top && top.col === at) {
@@ -244,10 +242,8 @@ export function spotAt(text, pos) {
   /**
    * Walk a line's `- ` markers, one sequence level each, and give back the path
    * of the item the last of them opens.
-   * @param {import('./relaxed-yaml.js').LineParts} p
-   * @param {string} parent
    */
-  const items = (p, parent) => {
+  const items = (p: import('./relaxed-yaml').LineParts, parent: string): string => {
     for (const at of p.dashes) {
       const seq = enter(at, 'seq', parent)
       parent = join(seq.path, seq.count)
@@ -296,10 +292,8 @@ export function spotAt(text, pos) {
 /**
  * The node a path names, for asking what a section's type is and which keys an
  * entry already carries.
- * @param {string} path
- * @param {any} doc
  */
-const nodeAt = (path, doc) => (path === '' ? doc : path.split('.').reduce((/** @type {any} */ o, s) => o?.[s], doc))
+const nodeAt = (path: string, doc: any): any => (path === '' ? doc : path.split('.').reduce((o: any, s: string) => o?.[s], doc))
 
 /**
  * The keys a mapping at `path` accepts, or null when the path names something
@@ -309,12 +303,8 @@ const nodeAt = (path, doc) => (path === '' ? doc : path.split('.').reduce((/** @
  * A section's own keys depend on its `type`, which is why the parsed document
  * comes in alongside the path: indentation says where the cursor is, but only
  * the text says what kind of section it's in.
- *
- * @param {string} path
- * @param {any} doc
- * @returns {string[] | null}
  */
-export function keysAt(path, doc) {
+export function keysAt(path: string, doc: any): string[] | null {
   const seg = path === '' ? [] : path.split('.')
   if (seg.length === 0) return ROOT_KEYS
   if (seg[0] !== 'sections') return seg.length === 1 && seg[0] === 'header' ? HEADER_KEYS : null
@@ -339,12 +329,8 @@ export function keysAt(path, doc) {
  * about to become one, and needs the marker. A line that already carries a `- `
  * there is one — but only while it has no `type:` yet, so a skeleton is never
  * offered from inside a section that already exists.
- *
- * @param {Spot} spot
- * @param {any} doc
- * @returns {{ dash: boolean } | null}
  */
-function skeletonSpot(spot, doc) {
+function skeletonSpot(spot: Spot, doc: any): { dash: boolean } | null {
   if (spot.what !== 'key' || spot.colon) return null
   const m = /^sections(?:\.(\d+))?$/.exec(spot.path)
   if (!m) return null
@@ -354,10 +340,8 @@ function skeletonSpot(spot, doc) {
 
 /**
  * The completion source: every key, value and skeleton on offer at the cursor.
- * @param {import('@codemirror/autocomplete').CompletionContext} cx
- * @returns {import('@codemirror/autocomplete').CompletionResult | null}
  */
-export function cvComplete(cx) {
+export function cvComplete(cx: import('@codemirror/autocomplete').CompletionContext): import('@codemirror/autocomplete').CompletionResult | null {
   const text = cx.state.doc.toString()
   const spot = spotAt(text, cx.pos)
   if (!spot) return null
@@ -365,8 +349,7 @@ export function cvComplete(cx) {
   const doc = parse(text).value
   const keys = keysAt(spot.path, doc)
 
-  /** @type {import('@codemirror/autocomplete').Completion[]} */
-  const options = []
+  const options: import('@codemirror/autocomplete').Completion[] = []
 
   if (spot.what === 'value') {
     if (!keys?.includes(String(spot.key))) return null
@@ -419,9 +402,9 @@ export function cvComplete(cx) {
  * the case for exactly the keys that were inserted with their `: ` and have a
  * closed set of values behind them. Choosing `type` is really the first half of
  * choosing which type.
- * @param {import('@codemirror/autocomplete').Completion} completion
  */
-export const opensValues = (completion) => completion.apply === `${completion.label}: ` && VALUES[completion.label] !== undefined
+export const opensValues = (completion: import('@codemirror/autocomplete').Completion): boolean =>
+  completion.apply === `${completion.label}: ` && VALUES[completion.label] !== undefined
 
 /** Completion, wired to the format's own table. */
 export function cvCompletion() {

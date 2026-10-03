@@ -10,9 +10,9 @@
   import IconFilePlus from '@iconify-icons/lucide/file-plus'
   import IconSparkles from '@iconify-icons/lucide/sparkles'
   import logo from '$lib/assets/favicon.svg'
-  import { commands } from '$lib/cv/state/commands.js'
-  import { doc, ui } from '$lib/cv/state/state.svelte.js'
-  import { shortcut } from './access-keys.js'
+  import { commands } from '$lib/cv/state/commands'
+  import { doc, ui } from '$lib/cv/state/state.svelte'
+  import { shortcut } from './access-keys'
   import TabBar from './TabBar.svelte'
 
   /** Whether the menu is showing. */

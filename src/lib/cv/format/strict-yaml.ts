@@ -22,7 +22,7 @@
  * what the dialect read it as anyway.
  */
 
-import { readScalar, splitLine } from './relaxed-yaml.js'
+import { readScalar, splitLine } from './relaxed-yaml'
 
 const RESERVED = /^(?:~|null|true|false|yes|no|on|off|y|n)$/i
 const NUMBERISH =
@@ -32,9 +32,8 @@ const BLOCK = /^([|>])[-+]?$/
 
 /**
  * Whether a string reads back as itself when written bare in block context.
- * @param {string} s
  */
-function plainSafe(s) {
+function plainSafe(s: string): boolean {
   if (s === '' || s !== s.trim()) return false
   if (/^[-?:,[\]{}#&*!|>'"%@`]/.test(s)) return false
   if (/:(?:\s|$)|\s#/.test(s)) return false
@@ -44,9 +43,8 @@ function plainSafe(s) {
 
 /**
  * A value, written so a standard parser reads it back the same.
- * @param {string | boolean} value
  */
-function strictScalar(value) {
+function strictScalar(value: string | boolean): string {
   if (typeof value === 'boolean') return String(value)
   if (plainSafe(value)) return value
   // Single quotes can't carry control characters; JSON's escapes are valid YAML.
@@ -56,13 +54,10 @@ function strictScalar(value) {
 
 /**
  * Rewrite a document in the editor's dialect as standard YAML.
- * @param {string} text
- * @returns {string}
  */
-export function toStrictYaml(text) {
+export function toStrictYaml(text: string): string {
   const src = text.split('\n')
-  /** @type {string[]} */
-  const out = []
+  const out: string[] = []
 
   for (let i = 0; i < src.length; i++) {
     const line = src[i]
@@ -92,8 +87,7 @@ export function toStrictYaml(text) {
     // after it at the same column — blank lines and comments between included.
     if (l.key === null && l.dashes.length === 0) {
       const parts = [raw.trim()]
-      /** @type {string[]} */
-      const between = []
+      const between: string[] = []
       let last = i
       for (let j = i + 1; j < src.length; j++) {
         const next = splitLine(src[j])

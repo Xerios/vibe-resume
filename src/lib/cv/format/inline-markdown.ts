@@ -17,14 +17,19 @@
  */
 
 /**
- * @typedef {object} Run
- * @property {number} from  column the run starts at
- * @property {number} to    column past its end
- * @property {string} token space-separated token names, or '' for plain text
+ * A run of marked-up text in a value.
  */
+interface Run {
+  /** column the run starts at */
+  from: number
+  /** column past its end */
+  to: number
+  /** space-separated token names, or '' for plain text */
+  token: string
+}
 
-import { ANGLE_RE, EMAIL_CHAR, SCHEME_RE, emailAt, phoneNumber, urlAt } from './autolink.js'
-import { RANGE_SPLIT, isDate } from './dates.js'
+import { ANGLE_RE, EMAIL_CHAR, SCHEME_RE, emailAt, phoneNumber, urlAt } from './autolink'
+import { RANGE_SPLIT, isDate } from './dates'
 
 /** Characters that could open something. Everything else is prose, or an autolink. */
 const OPENERS = '[!`*_~<'
@@ -50,9 +55,8 @@ const HTML_RE = /^<\/?[a-zA-Z][a-zA-Z0-9-]*(?:\s[^<>]*)?\/?>/
  * Whether the character on either side of a delimiter lets it open or close.
  * `_` inside a word is not emphasis — `snake_case_name` is a name — while `*`
  * is allowed to be, which is CommonMark's rule and marked's behaviour.
- * @param {string} ch
  */
-const wordish = (ch) => !!ch && !/[\s!-/:-@[-`{-~]/.test(ch)
+const wordish = (ch: string): boolean => !!ch && !/[\s!-/:-@[-`{-~]/.test(ch)
 
 /**
  * The delimited construct opening at `at` — emphasis, or a `~~` deletion — or
@@ -61,11 +65,8 @@ const wordish = (ch) => !!ch && !/[\s!-/:-@[-`{-~]/.test(ch)
  * The opener has to be followed by a non-space and the closer preceded by one,
  * so `5 * 3` and `a ** b` stay the arithmetic and the prose they look like, and
  * an unclosed `**claim` stays plain until it is finished.
- * @param {string} text
- * @param {number} at
- * @param {number} to
  */
-function emphasisAt(text, at, to) {
+function emphasisAt(text: string, at: number, to: number): { mark: string; body: number; end: number; to: number; token: string } | null {
   const ch = text[at]
   const double = text[at + 1] === ch
   const mark = double ? ch + ch : ch
@@ -84,32 +85,19 @@ function emphasisAt(text, at, to) {
   return null
 }
 
-/**
- * @param {Run[]} out
- * @param {number} from
- * @param {number} to
- * @param {string} token
- */
-function push(out, from, to, token) {
+function push(out: Run[], from: number, to: number, token: string): void {
   if (to > from) out.push({ from, to, token })
 }
 
-/** @param {string} base @param {string} name */
-const join = (base, name) => (base ? base + ' ' + name : name)
+const join = (base: string, name: string): string => (base ? base + ' ' + name : name)
 
 /**
  * An address the page links on its own, as runs: the `https://` it won't print
  * is markup, but still part of the link, so the underline runs unbroken.
- * @param {string} text
- * @param {number} from
- * @param {number} to
- * @param {string} base
- * @returns {Run[]}
  */
-function autolink(text, from, to, base) {
+function autolink(text: string, from: number, to: number, base: string): Run[] {
   const scheme = from + (SCHEME_RE.exec(text.slice(from, to))?.[0].length ?? 0)
-  /** @type {Run[]} */
-  const out = []
+  const out: Run[] = []
   push(out, from, scheme, 'cvMdMark cvMdLink')
   push(out, scheme, to, join(base, 'cvMdLink'))
   return out
@@ -117,15 +105,9 @@ function autolink(text, from, to, base) {
 
 /**
  * Split `[from, to)` of `text` into runs.
- * @param {string} text
- * @param {number} [from]
- * @param {number} [to]
- * @param {string} [base] token names every run inside this range inherits
- * @returns {Run[]}
  */
-export function inlineRuns(text, from = 0, to = text.length, base = '') {
-  /** @type {Run[]} */
-  const out = []
+export function inlineRuns(text: string, from = 0, to = text.length, base = ''): Run[] {
+  const out: Run[] = []
   let plain = from
 
   // marked doesn't autolink inside a link's own label.
@@ -134,12 +116,10 @@ export function inlineRuns(text, from = 0, to = text.length, base = '') {
 
   for (let i = from; i < to; i++) {
     const ch = text[i]
-    const bare =
-      auto && (URL_OPENERS.includes(ch) || (mail && EMAIL_CHAR.test(ch) && (i === from || !EMAIL_CHAR.test(text[i - 1]))))
+    const bare = auto && (URL_OPENERS.includes(ch) || (mail && EMAIL_CHAR.test(ch) && (i === from || !EMAIL_CHAR.test(text[i - 1]))))
     if (!bare && !OPENERS.includes(ch)) continue
 
-    /** @type {Run[] | null} */
-    let runs = null
+    let runs: Run[] | null = null
 
     const slice = text.slice(i, to)
     const code = ch === '`' && CODE_RE.exec(slice)
@@ -198,12 +178,8 @@ export function inlineRuns(text, from = 0, to = text.length, base = '') {
  * The stretch of `[from, to)` inside a pair of wrapping quotes, or the whole of
  * it. A legacy document quotes its numbers and its dates; the page reads what
  * is inside.
- * @param {string} text
- * @param {number} from
- * @param {number} to
- * @returns {[number, number]}
  */
-function unquoted(text, from, to) {
+function unquoted(text: string, from: number, to: number): [number, number] {
   const q = /^(['"])(.*)\1\s*$/.exec(text.slice(from, to))
   return q ? [from + 1, from + 1 + q[2].length] : [from, to]
 }
@@ -212,12 +188,8 @@ function unquoted(text, from, to) {
  * A contact line's runs. The same as any value's, except that a line which is a
  * phone number has the number marked as the link `contact` makes of it — and
  * only here, because only the contact block gets one.
- * @param {string} text
- * @param {number} [from]
- * @param {number} [to]
- * @returns {Run[]}
  */
-export function contactRuns(text, from = 0, to = text.length) {
+export function contactRuns(text: string, from = 0, to = text.length): Run[] {
   const [start, stop] = unquoted(text, from, to)
   const tel = phoneNumber(text.slice(start, stop))
   if (!tel) return inlineRuns(text, from, to)
@@ -237,19 +209,13 @@ const RANGE_SPLIT_ALL = new RegExp(RANGE_SPLIT.source, 'gi')
  * A `dates` value's runs: each end of the range that reads as a date — the same
  * test the lint makes — is a `cvDate`; an end that doesn't is read as any other
  * value, markdown and all.
- * @param {string} text
- * @param {number} [from]
- * @param {number} [to]
- * @returns {Run[]}
  */
-export function dateRuns(text, from = 0, to = text.length) {
+export function dateRuns(text: string, from = 0, to = text.length): Run[] {
   const [start, stop] = unquoted(text, from, to)
-  /** @type {Run[]} */
-  const out = []
+  const out: Run[] = []
   push(out, from, start, '')
 
-  /** @param {number} a @param {number} b */
-  const part = (a, b) => {
+  const part = (a: number, b: number): void => {
     const s = text.slice(a, b)
     const lead = a + s.length - s.trimStart().length
     const tail = b - (s.length - s.trimEnd().length)

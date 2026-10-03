@@ -16,12 +16,12 @@
   import WelcomeOverlay from '$lib/components/WelcomeOverlay.svelte'
   import YamlEditor from '$lib/components/YamlEditor.svelte'
   import PreviewFrame from '$lib/cv/PreviewFrame.svelte'
-  import { basicConversion, sourceMarkdown } from '$lib/cv/format/paste.js'
-  import { bindHost, commands } from '$lib/cv/state/commands.js'
-  import { doc as cv, flush, look, start, ui } from '$lib/cv/state/state.svelte.js'
-  import { KEYS, write } from '$lib/cv/state/storage.js'
-  import { swUpdate } from '$lib/sw-update.svelte.js'
-  import { parseCv } from '$lib/workers/index.js'
+  import { basicConversion, sourceMarkdown } from '$lib/cv/format/paste'
+  import { bindHost, commands } from '$lib/cv/state/commands'
+  import { doc as cv, flush, look, start, ui } from '$lib/cv/state/state.svelte'
+  import { KEYS, write } from '$lib/cv/state/storage'
+  import { swUpdate } from '$lib/sw-update.svelte'
+  import { parseCv } from '$lib/workers/index'
 
   const PARSE_DEBOUNCE_MS = 250
   /** How long a pane's own scroll events stay ours after we move it ourselves. */
@@ -82,11 +82,11 @@
   const compare = $derived(page.state.compare ?? null)
 
   /** A paste the editor held back because it isn't the format, while the question is up. */
-  let pasteIssue = $state(/** @type {import('$lib/cv/format/paste.js').PasteIssue | null} */ (null))
+  let pasteIssue = $state(/** @type {import('$lib/cv/format/paste').PasteIssue | null} */ (null))
   /** The CV the conversion prompt is built around, while that dialog is up. */
   let promptSource = $state(/** @type {string | null} */ (null))
 
-  /** @param {import('$lib/cv/format/paste.js').PasteIssue} issue */
+  /** @param {import('$lib/cv/format/paste').PasteIssue} issue */
   function holdPaste(issue) {
     pasteIssue = issue
   }

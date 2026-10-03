@@ -8,9 +8,9 @@
   import IconStyle from '@iconify-icons/lucide/palette'
   import IconCompare from '@iconify-icons/lucide/git-compare'
   import IconClose from '@iconify-icons/lucide/x'
-  import { commands } from '$lib/cv/state/commands.js'
-  import { doc } from '$lib/cv/state/state.svelte.js'
-  import { formatBytes } from '$lib/cv/state/storage.js'
+  import { commands } from '$lib/cv/state/commands'
+  import { doc } from '$lib/cv/state/state.svelte'
+  import { formatBytes } from '$lib/cv/state/storage'
   import { fly } from 'svelte/transition'
 
   /** The glyph for each kind of change; anything unrecognised reads as an edit. */
@@ -41,13 +41,13 @@
     name = ''
   }
 
-  /** @param {import('$lib/cv/state/doc.svelte.js').HistoryEntry} entry */
+  /** @param {import('$lib/cv/state/doc.svelte').HistoryEntry} entry */
   function select(entry) {
     if (entry.key === latestKey) doc.viewLatest()
     else doc.view(entry)
   }
 
-  /** @param {import('$lib/cv/state/doc.svelte.js').HistoryEntry} entry */
+  /** @param {import('$lib/cv/state/doc.svelte').HistoryEntry} entry */
   function ago(entry) {
     if (!entry.timestamp) return 'unknown time'
     const secs = Math.max(0, Math.round(now / 1000 - entry.timestamp))
@@ -60,7 +60,7 @@
     })
   }
 
-  /** @param {import('$lib/cv/state/doc.svelte.js').HistoryEntry} entry */
+  /** @param {import('$lib/cv/state/doc.svelte').HistoryEntry} entry */
   function exactTime(entry) {
     if (!entry.timestamp) return ''
     return new Date(entry.timestamp * 1000).toLocaleString()
@@ -69,14 +69,14 @@
   /**
    * The change counts worth showing: a tag moves no text, and entries too far
    * back to have been counted have none to show.
-   * @param {import('$lib/cv/state/doc.svelte.js').HistoryEntry} entry
+   * @param {import('$lib/cv/state/doc.svelte').HistoryEntry} entry
    */
   function counts(entry) {
     const s = entry.stats
     return s && (s.added || s.removed) ? s : null
   }
 
-  /** @param {import('$lib/cv/state/doc.svelte.js').HistoryEntry} entry */
+  /** @param {import('$lib/cv/state/doc.svelte').HistoryEntry} entry */
   function tooltip(entry) {
     const parts = [exactTime(entry)]
     const s = counts(entry)
@@ -89,7 +89,7 @@
 
 <!-- One glyph per kind of moment, so the list can be read down the left edge:
      a dot is a plain edit, everything else is something the user asked for. -->
-{#snippet mark(/** @type {import('$lib/cv/state/doc.svelte.js').ChangeKind} */ kind)}
+{#snippet mark(/** @type {import('$lib/cv/state/doc.svelte').ChangeKind} */ kind)}
   <Icon icon={MARKS[kind] ?? IconEdit} class="hist-mark" width="16" height="16" aria-hidden="true" />
 {/snippet}
 

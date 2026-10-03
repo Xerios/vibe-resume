@@ -14,11 +14,9 @@ export const ACCESS_CHORD = /Mac|iP(hone|ad|od)/.test(ua) ? 'Ctrl+Alt+' : /Firef
 /**
  * A control's mnemonic and its tooltip, from one letter: sets `accesskey` and
  * writes the chord into `title` so the two can never disagree.
- * @param {HTMLElement} node
- * @param {[key: string, title: string]} params
  */
-export function shortcut(node, params) {
-  const apply = (/** @type {[string, string]} */ [key, title]) => {
+export function shortcut(node: HTMLElement, params: [string, string]): { update: (params: [string, string]) => void } {
+  const apply = ([key, title]: [string, string]) => {
     node.accessKey = key
     node.title = `${title} (${ACCESS_CHORD}${key.toUpperCase()})`
   }

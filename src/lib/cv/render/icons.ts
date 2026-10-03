@@ -11,18 +11,16 @@
  * `Docker (Swarm)` all land on a logo while `English C2` quietly doesn't.
  */
 
-import { ICON_ALIASES, ICON_BODIES } from '../theme/tech-icons.js'
+import { ICON_ALIASES, ICON_BODIES } from '../theme/tech-icons'
 
-/** Parsed once per slug: a body is a run of `<path d="…"/>`. @type {Map<string, string[]>} */
-const cache = new Map()
+/** Parsed once per slug: a body is a run of `<path d="…"/>`. */
+const cache: Map<string, string[]> = new Map()
 
 /**
  * The paths of the logo for a name, in a 24×24 box, or null when nothing
  * matches — the normal case for anything that isn't a brand.
- * @param {unknown} name
- * @returns {string[] | null}
  */
-export function iconPaths(name) {
+export function iconPaths(name: unknown): string[] | null {
   const slug = iconSlug(name)
   if (!slug) return null
   let paths = cache.get(slug)
@@ -36,9 +34,8 @@ export function iconPaths(name) {
 /**
  * The same shape the generator keys its tables by: lower case, no punctuation
  * except the two characters that are part of a language's name.
- * @param {string} text
  */
-export const normalise = (text) =>
+export const normalise = (text: string): string =>
   text
     .toLowerCase()
     .replaceAll('&', 'and')
@@ -48,10 +45,8 @@ export const normalise = (text) =>
  * What to look an entry up as, most literal first. Each reduction drops
  * something a CV adds and a brand name doesn't have: a parenthetical, a
  * category prefix, an alternative after a slash, a version number.
- * @param {unknown} name
- * @returns {string | null}
  */
-function iconSlug(name) {
+function iconSlug(name: unknown): string | null {
   if (!name) return null
   const text = String(name).trim()
   const bare = text.replaceAll(/\([^)]*\)/g, ' ')

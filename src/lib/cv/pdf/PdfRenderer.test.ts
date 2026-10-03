@@ -1,9 +1,9 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import DEFAULT_YAML from '../default-cv.yaml?raw'
-import { docMeta } from '../render/doc-meta.js'
-import { parseCv } from '../render/parse.js'
-import { FACES } from '../theme/typefaces.js'
-import { PdfRenderer } from './PdfRenderer.js'
+import { docMeta } from '../render/doc-meta'
+import { parseCv } from '../render/parse'
+import { FACES } from '../theme/typefaces'
+import { PdfRenderer } from './PdfRenderer'
 import RAIL_RIGHT from './fixtures/railright.json'
 import SIDEBAR from './fixtures/sidebar.json'
 
@@ -21,15 +21,14 @@ const INLINE = /** @type {Record<string, string>} */ (
   import.meta.glob('/node_modules/@expo-google-fonts/{inter,jetbrains-mono,source-serif-4}/*/*.ttf', { query: '?inline', import: 'default', eager: true })
 )
 
-/** @param {string} url */
-const fromDataUrl = (url) => Uint8Array.from(atob(url.slice(url.indexOf(',') + 1)), (c) => c.charCodeAt(0))
+const fromDataUrl = (url: string) => Uint8Array.from(atob(url.slice(url.indexOf(',') + 1)), (c: string) => c.charCodeAt(0))
 
 /** The faces the fixtures use, by FACES id. */
 const FONTS = Object.fromEntries(
-  FACES.flatMap((f) => {
+  FACES.flatMap((f: any) => {
     const file = f.url.split('/').pop()?.split('?')[0]
-    const hit = Object.entries(INLINE).find(([path]) => file && path.endsWith(file))
-    return hit ? [[f.id, fromDataUrl(hit[1])]] : []
+    const hit = Object.entries(INLINE).find(([path]: [string, unknown]) => file && path.endsWith(file))
+    return hit ? [[f.id, fromDataUrl(hit[1] as string)]] : []
   }),
 )
 
@@ -37,10 +36,8 @@ const cv = parseCv(DEFAULT_YAML).cv
 
 /**
  * Render a fixture, uncompressed so the test can read it.
- * @param {import('./measure.js').DisplayList} list
- * @param {string} font
  */
-async function render(list, font) {
+async function render(list: any, font: string) {
   const pdf = await new PdfRenderer({ fonts: FONTS, compress: false }).render(list, {
     meta: docMeta(cv),
     font,
@@ -53,65 +50,54 @@ async function render(list, font) {
 
 /* ── A reader for exactly what pdfkit writes uncompressed ─────────────────── */
 
-/** An indirect reference's object number, by key. @param {string} body @param {string} key */
-const ref = (body, key) => Number(new RegExp(`/${key} (\\d+) 0 R`).exec(body)?.[1])
+/** An indirect reference's object number, by key. */
+const ref = (body: string, key: string) => Number(new RegExp(`/${key} (\\d+) 0 R`).exec(body)?.[1])
 
-/** UTF-16BE hex as text. @param {string} h */
-const hex = (h) => String.fromCharCode(...(h.match(/.{4}/g) ?? []).map((c) => parseInt(c, 16)))
+/** UTF-16BE hex as text. */
+const hex = (h: string) => String.fromCharCode(...(h.match(/.{4}/g) ?? []).map((c: string) => parseInt(c, 16)))
 
-/** @param {Uint8Array} data */
-function read(data) {
+function read(data: Uint8Array) {
   let s = ''
   for (let i = 0; i < data.length; i += 0x8000) s += String.fromCharCode(...data.subarray(i, i + 0x8000))
 
-  /** @type {Map<number, string>} */
-  const objs = new Map()
+  const objs = new Map<number, string>()
   for (const m of s.matchAll(/(\d+) 0 obj\n([\s\S]*?)\nendobj/g)) objs.set(Number(m[1]), m[2])
-  /** @param {number} n */
-  const obj = (n) => objs.get(n) ?? ''
-  /** @param {number} n */
-  const stream = (n) => {
+  const obj = (n: number) => objs.get(n) ?? ''
+  const stream = (n: number) => {
     const b = obj(n)
     return b.slice(b.indexOf('stream\n') + 7, b.lastIndexOf('\nendstream'))
   }
 
-  /** A ToUnicode CMap as glyph id → text. @param {number} n */
-  const cmap = (n) => {
-    /** @type {Map<number, string>} */
-    const map = new Map()
+  /** A ToUnicode CMap as glyph id → text. */
+  const cmap = (n: number) => {
+    const map = new Map<number, string>()
     for (const m of stream(n).matchAll(/<([0-9a-f]+)> <([0-9a-f]+)> \[([^\]]*)\]/gi)) {
       const start = parseInt(m[1], 16)
       // An entry can hold several code units — a ligature is two letters — which
       // pdfkit writes with spaces between them.
-      ;[...m[3].matchAll(/<([0-9a-f\s]*)>/gi)].forEach((u, i) => map.set(start + i, hex(u[1].replace(/\s/g, ''))))
+      ;[...m[3].matchAll(/<([0-9a-f\s]*)>/gi)].forEach((u: any, i: number) => map.set(start + i, hex(u[1].replace(/\s/g, ''))))
     }
     return map
   }
 
   const catalog = obj(ref(s.slice(s.lastIndexOf('trailer')), 'Root'))
-  const pageRefs = [...obj(ref(catalog, 'Pages')).matchAll(/(\d+) 0 R/g)].map((m) => Number(m[1]))
+  const pageRefs = [...obj(ref(catalog, 'Pages')).matchAll(/(\d+) 0 R/g)].map((m: any) => Number(m[1]))
 
   /** Text by `page:mcid`, and artifact text, in stream order. */
-  /** @type {Map<string, string>} */
-  const marked = new Map()
-  /** @type {string[]} */
-  const artifacts = []
-  /** @type {{ tag: string, mcid: number | null }[]} */
-  const bdc = []
+  const marked = new Map<string, string>()
+  const artifacts: string[] = []
+  const bdc: { tag: string; mcid: number | null }[] = []
 
-  pageRefs.forEach((pageRef, page) => {
+  pageRefs.forEach((pageRef: number, page: number) => {
     const pageDict = obj(pageRef)
     const resources = /\/Resources (\d+) 0 R/.test(pageDict) ? obj(ref(pageDict, 'Resources')) : pageDict
-    /** @type {Map<string, Map<number, string>>} */
-    const fontMaps = new Map()
+    const fontMaps = new Map<string, Map<number, string>>()
     for (const m of (/\/Font <<([\s\S]*?)>>/.exec(resources)?.[1] ?? '').matchAll(/\/(\w+) (\d+) 0 R/g)) {
       fontMaps.set(m[1], cmap(ref(obj(Number(m[2])), 'ToUnicode')))
     }
 
-    /** @type {({ tag: string, mcid: number | null })[]} */
-    const stack = []
-    /** @type {Map<number, string> | undefined} */
-    let font
+    const stack: { tag: string; mcid: number | null }[] = []
+    let font: Map<number, string> | undefined
     const content = stream(ref(pageDict, 'Contents'))
     for (const m of content.matchAll(/\/(\w+) <<([^>]*)>> BDC|\/(\w+) BMC|\bEMC\b|\/(\w+) [\d.]+ Tf|\[([^\]]*)\] TJ/g)) {
       if (m[1] || m[3]) {
@@ -122,7 +108,9 @@ function read(data) {
       } else if (m[0] === 'EMC') stack.pop()
       else if (m[4]) font = fontMaps.get(m[4])
       else if (m[5] !== undefined) {
-        const text = [...m[5].matchAll(/<([0-9a-f]+)>/gi)].flatMap((h) => (h[1].match(/.{4}/g) ?? []).map((g) => font?.get(parseInt(g, 16)) ?? '?')).join('')
+        const text = [...m[5].matchAll(/<([0-9a-f]+)>/gi)]
+          .flatMap((h: any) => (h[1].match(/.{4}/g) ?? []).map((g: string) => font?.get(parseInt(g, 16)) ?? '?'))
+          .join('')
         const top = stack[stack.length - 1]
         if (!top || top.tag === 'Artifact') artifacts.push(text)
         else {
@@ -134,13 +122,10 @@ function read(data) {
   })
 
   /** The structure tree, walked in order: element types, and the marked content each one holds. */
-  const pageIndex = new Map(pageRefs.map((r, i) => [r, i]))
-  /** @type {string[]} */
-  const types = []
-  /** @type {{ page: number, mcid: number }[]} */
-  const leaves = []
-  /** @param {number} n @param {number} [inherited] */
-  const walk = (n, inherited) => {
+  const pageIndex = new Map(pageRefs.map((r: number, i: number) => [r, i]))
+  const types: string[] = []
+  const leaves: { page: number; mcid: number }[] = []
+  const walk = (n: number, inherited?: number): void => {
     const el = obj(n)
     const type = /\/S \/(\w+)/.exec(el)?.[1] ?? '?'
     types.push(type)
@@ -158,20 +143,16 @@ function read(data) {
   const root = obj(ref(catalog, 'StructTreeRoot'))
   for (const m of (/\/K \[([^\]]*)\]/.exec(root)?.[1] ?? '').matchAll(/(\d+) 0 R/g)) walk(Number(m[1]))
 
-  const tagged = leaves.map((l) => marked.get(`${l.page}:${l.mcid}`) ?? '').join('\n')
+  const tagged = leaves.map((l: any) => marked.get(`${l.page}:${l.mcid}`) ?? '').join('\n')
   return { s, catalog, pages: pageRefs.length, bdc, types, leaves, tagged, artifacts }
 }
 
 /* ── The tests ───────────────────────────────────────────────────────────── */
 
 describe('PdfRenderer', () => {
-  /** @type {Record<string, Awaited<ReturnType<typeof render>>>} */
-  const pdf = {}
+  const pdf: Record<string, any> = {}
   beforeAll(async () => {
-    const [sidebar, railRight] = await Promise.all([
-      render(/** @type {any} */ (SIDEBAR), 'sans'),
-      render(/** @type {any} */ (RAIL_RIGHT), 'serif'),
-    ])
+    const [sidebar, railRight] = await Promise.all([render(/** @type {any} */ (SIDEBAR), 'sans'), render(/** @type {any} */ (RAIL_RIGHT), 'serif')])
     pdf.sidebar = sidebar
     pdf.railRight = railRight
   })
@@ -212,15 +193,15 @@ describe('PdfRenderer', () => {
   it('writes each page in the order its structure is read', () => {
     for (const { leaves, pages } of Object.values(pdf)) {
       for (let page = 0; page < pages; page++) {
-        const mcids = leaves.filter((l) => l.page === page).map((l) => l.mcid)
-        expect(mcids).toEqual(mcids.toSorted((a, b) => a - b))
+        const mcids = leaves.filter((l: any) => l.page === page).map((l: any) => l.mcid)
+        expect(mcids).toEqual(mcids.toSorted((a: number, b: number) => a - b))
       }
     }
   })
 
-  it('reads the columns one after the other, in the layout’s order', () => {
-    const order = (/** @type {string} */ name) => ['CORE SKILLS', 'SUMMARY', 'EXPERIENCE', 'LANGUAGES', 'OPEN SOURCE'].map((t) => pdf[name].tagged.indexOf(t))
-    for (const name of Object.keys(pdf)) expect(order(name).every((i) => i >= 0)).toBe(true)
+  it("reads the columns one after the other, in the layout's order", () => {
+    const order = (name: string) => ['CORE SKILLS', 'SUMMARY', 'EXPERIENCE', 'LANGUAGES', 'OPEN SOURCE'].map((t: string) => pdf[name].tagged.indexOf(t))
+    for (const name of Object.keys(pdf)) expect(order(name).every((i: number) => i >= 0)).toBe(true)
 
     const [skills, summary, experience, languages, oss] = order('sidebar')
     expect(skills).toBeLessThan(languages)
@@ -258,7 +239,7 @@ describe('PdfRenderer', () => {
     expect(types.indexOf('H2')).toBeLessThan(types.indexOf('H3'))
     for (const [i, t] of types.entries()) if (t === 'LI') expect(types[i + 1]).toBe('LBody')
     expect(types).toContain('Link')
-    const annots = [...s.matchAll(/\d+ 0 obj\n(<<[\s\S]*?\n>>)\nendobj/g)].map((m) => m[1]).filter((d) => d.includes('/Subtype /Link'))
+    const annots = [...s.matchAll(/\d+ 0 obj\n(<<[\s\S]*?\n>>)\nendobj/g)].map((m: any) => m[1]).filter((d: string) => d.includes('/Subtype /Link'))
     expect(annots.length).toBeGreaterThan(0)
     for (const a of annots) {
       expect(a).toMatch(/\/StructParent \d+/)

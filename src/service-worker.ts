@@ -15,7 +15,7 @@
 
 import { base, build, files, prerendered, version } from '$service-worker'
 
-const sw = /** @type {ServiceWorkerGlobalScope} */ (/** @type {unknown} */ (self))
+const sw = self as ServiceWorkerGlobalScope
 
 const CACHE = `cv-editor-${version}`
 
@@ -25,7 +25,7 @@ const CACHE = `cv-editor-${version}`
  * are cached by the fetch handler below the first time a sheet uses them rather
  * than downloaded by every install.
  */
-const precachedFace = (/** @type {string} */ path) => !path.endsWith('.ttf') || /\/(Inter|JetBrainsMono)_/.test(path)
+const precachedFace = (path: string) => !path.endsWith('.ttf') || /\/(Inter|JetBrainsMono)_/.test(path)
 
 /** The Vite bundle (hashed, immutable), everything in static/, and the prerendered shell. */
 const PRECACHE = [...build.filter(precachedFace), ...files, ...prerendered]
@@ -63,10 +63,9 @@ sw.addEventListener('fetch', (event) => {
 })
 
 /**
- * @param {Request} request
- * @param {URL} url
+ * Fetch handler that checks precached URLs, the shell route, and falls back to network.
  */
-async function respond(request, url) {
+async function respond(request: Request, url: URL) {
   const cache = await caches.open(CACHE)
 
   // Precached URLs are either content-hashed or shipped with the version, so a hit

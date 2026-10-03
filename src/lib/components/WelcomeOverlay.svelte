@@ -5,7 +5,7 @@
   import IconShieldCheck from '@iconify-icons/lucide/shield-check'
   import IconClose from '@iconify-icons/lucide/x'
   import logo from '$lib/assets/favicon.svg'
-  import { commands } from '$lib/cv/state/commands.js'
+  import { commands } from '$lib/cv/state/commands'
 
   /** @type {HTMLButtonElement | undefined} */
   let startBtn = $state(undefined)

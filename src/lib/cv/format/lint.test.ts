@@ -6,19 +6,17 @@
 
 import { describe, expect, it } from 'vitest'
 import DEFAULT_YAML from '../default-cv.yaml?raw'
-import { SECTIONS, lintCv } from './lint.js'
+import { SECTIONS, lintCv } from './lint'
 
-/** @param {string} text */
-const messages = (text) => lintCv(text).map((d) => d.message)
-/** @param {string} text */
-const only = (text) => {
+const messages = (text: string) => lintCv(text).map((d: any) => d.message)
+const only = (text: string) => {
   const found = lintCv(text)
   expect(found).toHaveLength(1)
   return found[0]
 }
 
 /** A document with one section spliced in, indented to sit under `sections:`. */
-const doc = (/** @type {string} */ section) => `header:\n  name: Jo\nsections:\n  - ${section.trim().split('\n').join('\n    ')}\n`
+const doc = (section: string) => `header:\n  name: Jo\nsections:\n  - ${section.trim().split('\n').join('\n    ')}\n`
 
 describe('the shipped document', () => {
   it('has nothing to answer for', () => {
@@ -26,9 +24,7 @@ describe('the shipped document', () => {
   })
 
   it('uses every type the table knows about', () => {
-    expect(new Set(Object.keys(SECTIONS))).toEqual(
-      new Set(/** @type {string[]} */ (['text', 'groups', 'entries', 'records', 'levels', 'list', 'table'])),
-    )
+    expect(new Set(Object.keys(SECTIONS))).toEqual(new Set(/** @type {string[]} */ (['text', 'groups', 'entries', 'records', 'levels', 'list', 'table'])))
   })
 })
 
@@ -66,7 +62,11 @@ describe('sections', () => {
   })
 
   it('says nothing about a section it understands', () => {
-    expect(lintCv(doc('type: table\ntitle: Open Source\ncolumns:\n  - Project\n  - Stars\n  - About\nrail: true\nitems:\n  - name: kit\n    value: 12\n    desc: A kit'))).toEqual([])
+    expect(
+      lintCv(
+        doc('type: table\ntitle: Open Source\ncolumns:\n  - Project\n  - Stars\n  - About\nrail: true\nitems:\n  - name: kit\n    value: 12\n    desc: A kit'),
+      ),
+    ).toEqual([])
   })
 })
 
@@ -107,7 +107,7 @@ describe('the document itself', () => {
 })
 
 describe('date formats', () => {
-  const jobs = (/** @type {string[]} */ dates) => doc(`type: entries\nitems:\n${dates.map((d) => `  - title: Dev\n    dates: ${d}`).join('\n')}`)
+  const jobs = (dates: string[]) => doc(`type: entries\nitems:\n${dates.map((d: string) => `  - title: Dev\n    dates: ${d}`).join('\n')}`)
 
   it('points at the one written differently from the rest', () => {
     const text = jobs(['03/2020 – Present', '06/2016 – 02/2020', 'Mar 2014 – May 2016'])

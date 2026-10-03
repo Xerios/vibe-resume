@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_PAPER, pageBox, paperCss, resolvePaper } from './paper.js'
+import { DEFAULT_PAPER, pageBox, paperCss, resolvePaper } from './paper'
 
 describe('resolvePaper', () => {
   it('answers every key for a file that has never chosen any paper', () => {

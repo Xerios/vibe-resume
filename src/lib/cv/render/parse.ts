@@ -1,5 +1,11 @@
-import { migrateTree } from '../format/migrate.js'
-import { parse } from '../format/relaxed-yaml.js'
+import { migrateTree } from '../format/migrate'
+import { parse } from '../format/relaxed-yaml'
+
+/** Success result of parsing: CV tree and line map. */
+type ParseSuccess = { cv: any; lines: Map<string, number>; error: null }
+
+/** Error result of parsing. */
+type ParseError = { cv: null; lines: null; error: string }
 
 /**
  * Parse the editor's source into a CV object, plus the map that ties every
@@ -19,11 +25,8 @@ import { parse } from '../format/relaxed-yaml.js'
  *
  * A document in the old section types — an earlier version being looked at in
  * the history — is read as the current ones, so it still renders.
- *
- * @param {string} yaml
- * @returns {{ cv: any, lines: Map<string, number>, error: null } | { cv: null, lines: null, error: string }}
  */
-export function parseCv(yaml) {
+export function parseCv(yaml: string): ParseSuccess | ParseError {
   const { value, lines, diagnostics } = parse(yaml)
   if (!value || typeof value !== 'object') return { cv: null, lines: null, error: 'Document is empty' }
   const broken = diagnostics.find((d) => d.severity === 'error')

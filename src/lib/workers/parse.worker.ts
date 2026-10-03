@@ -3,8 +3,8 @@
  * diagnostics. Both read the whole document on every pause in typing.
  */
 
-import { lintCv } from '../cv/format/lint.js'
-import { parseCv } from '../cv/render/parse.js'
-import { serve } from './rpc.js'
+import { lintCv } from '../cv/format/lint'
+import { parseCv } from '../cv/render/parse'
+import { serve } from './rpc'
 
-serve({ parseCv, lintCv })
+serve({ parseCv, lintCv } as any)

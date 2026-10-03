@@ -31,11 +31,12 @@
  *   a language, and XMP that declares `pdfuaid:part` 1.
  */
 
-import { PDFDocument } from 'pdfkit'
+import PDFDocument from 'pdfkit'
+// @ts-ignore - pdfkit/output doesn't have type definitions
 import { toBytes } from 'pdfkit/output'
-import { pageBox, resolvePaper } from '../theme/paper.js'
-import { faceFor, fontOf } from '../theme/typefaces.js'
-import { Fonts } from './fonts.js'
+import { pageBox, resolvePaper } from '../theme/paper'
+import { faceFor, fontOf } from '../theme/typefaces'
+import { Fonts } from './fonts'
 
 /** Millimetres to points. */
 const PT = 72 / 25.4
@@ -43,80 +44,92 @@ const PT = 72 / 25.4
 /** What the Creator says: the program that made the document, as opposed to the one that wrote the PDF. */
 export const CREATOR = 'Resume Editor'
 
-/**
- * @typedef {object} Attachment
- * @property {string} name  the file name it is listed under
- * @property {string} mime
- * @property {string} description
- * @property {Uint8Array} data
- * @property {'Source' | 'Data' | 'Alternative' | 'Supplement'} [relationship]  how it relates to the PDF (AFRelationship); Source unless said
- */
+export interface Attachment {
+  /** the file name it is listed under */
+  name: string
+  mime: string
+  description: string
+  data: Uint8Array
+  /** how it relates to the PDF (AFRelationship); Source unless said */
+  relationship?: 'Source' | 'Data' | 'Alternative' | 'Supplement'
+}
 
-/** @typedef {import('./measure.js').DisplayList} DisplayList */
-/** @typedef {import('./measure.js').TextItem} TextItem */
-/** @typedef {import('./measure.js').Paint} Paint */
-/** @typedef {import('./measure.js').StructNode} StructNode */
+type DisplayList = import('./measure').DisplayList
+type TextItem = import('./measure').TextItem
+type Paint = import('./measure').Paint
+type StructNode = import('./measure').StructNode
 
-/** @param {string} s */
-const xml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+const xml = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
 export class PdfRenderer {
-  /**
-   * @param {object} options
-   * @param {Record<string, Uint8Array | ArrayBuffer>} options.fonts  FACES id → the TTF's bytes, for every face the list uses
-   * @param {boolean} [options.compress]  false leaves streams readable, for tests
-   */
-  constructor({ fonts, compress = true }) {
+  fonts: Record<string, Uint8Array | ArrayBuffer>
+  compress: boolean
+
+  constructor({
+    fonts,
+    compress = true,
+  }: {
+    /** FACES id → the TTF's bytes, for every face the list uses */
+    fonts: Record<string, Uint8Array | ArrayBuffer>
+    /** false leaves streams readable, for tests */
+    compress?: boolean
+  }) {
     if (!Object.keys(fonts).length) throw new Error('No fonts to embed')
     this.fonts = fonts
     this.compress = compress
   }
 
-  /**
-   * @param {DisplayList} list
-   * @param {object} what
-   * @param {import('../render/doc-meta.js').DocMeta} what.meta
-   * @param {string} [what.lang]
-   * @param {string} [what.font]   the font choice, for the running head and foot
-   * @param {Partial<import('../theme/paper.js').Paper>} [what.paper]  for what stands in the margins
-   * @param {Attachment[]} [what.attachments]
-   * @param {Date} [what.now]
-   * @returns {Promise<Uint8Array>}
-   */
-  async render(list, { meta, lang = list.lang ?? 'en', font, paper, attachments = [], now = new Date() }) {
+  async render(
+    list: DisplayList,
+    {
+      meta,
+      lang = list.lang ?? 'en',
+      font,
+      paper,
+      attachments = [],
+      now = new Date(),
+    }: {
+      meta: import('../render/doc-meta').DocMeta
+      /** the font choice, for the running head and foot */
+      lang?: string
+      font?: string
+      /** for what stands in the margins */
+      paper?: Partial<import('../theme/paper').Paper>
+      attachments?: Attachment[]
+      now?: Date
+    },
+  ): Promise<Uint8Array> {
     // Typed loosely: pdfkit's bundled types leave out the tagging and
     // attachment API this file is built on.
-    const doc = /** @type {any} */ (
-      new PDFDocument({
-        pdfVersion: '1.7',
-        // Not `subset: 'PDF/UA'`: besides the XMP flag, which #metadata writes,
-        // that sets the flag pdfkit also uses for PDF/A-1, and so writes a
-        // CIDSet into every font. That CIDSet lists only the glyphs the text
-        // uses, not the components composite glyphs bring into the subset with
-        // them, which PDF/UA-1 (7.21.4.2) forbids. CIDSet is optional; there is
-        // none.
-        tagged: true,
-        displayTitle: true,
-        lang,
-        bufferPages: true,
-        autoFirstPage: false,
-        compress: this.compress,
-        size: [list.width, list.height],
-        margin: 0,
-        // pdfkit sets a default font as it starts; this keeps it from reaching
-        // for Helvetica. It is never drawn with, so it is never embedded.
-        font: bytes(Object.values(this.fonts)[0]),
-        info: {
-          Title: meta.title,
-          ...(meta.author ? { Author: meta.author } : {}),
-          ...(meta.description ? { Subject: meta.description } : {}),
-          ...(meta.keywords.length ? { Keywords: meta.keywords.join(', ') } : {}),
-          Creator: CREATOR,
-          CreationDate: now,
-          ModDate: now,
-        },
-      })
-    )
+    const doc = new PDFDocument({
+      pdfVersion: '1.7',
+      // Not `subset: 'PDF/UA'`: besides the XMP flag, which #metadata writes,
+      // that sets the flag pdfkit also uses for PDF/A-1, and so writes a
+      // CIDSet into every font. That CIDSet lists only the glyphs the text
+      // uses, not the components composite glyphs bring into the subset with
+      // them, which PDF/UA-1 (7.21.4.2) forbids. CIDSet is optional; there is
+      // none.
+      tagged: true,
+      displayTitle: true,
+      lang,
+      bufferPages: true,
+      autoFirstPage: false,
+      compress: this.compress,
+      size: [list.width, list.height],
+      margin: 0,
+      // pdfkit sets a default font as it starts; this keeps it from reaching
+      // for Helvetica. It is never drawn with, so it is never embedded.
+      font: bytes(Object.values(this.fonts)[0]),
+      info: {
+        Title: meta.title,
+        ...(meta.author ? { Author: meta.author } : {}),
+        ...(meta.description ? { Subject: meta.description } : {}),
+        ...(meta.keywords.length ? { Keywords: meta.keywords.join(', ') } : {}),
+        Creator: CREATOR,
+        CreationDate: now,
+        ModDate: now,
+      },
+    } as any)
     const out = toBytes(doc)
     for (const [id, data] of Object.entries(this.fonts)) doc.registerFont(id, bytes(data))
     const fonts = new Fonts(doc)
@@ -163,12 +176,8 @@ export class PdfRenderer {
    * A structure node's children, in order. Text and figure paint go in as
    * marked content belonging to `parent`, one sequence per page; a child node
    * becomes a structure element of its own.
-   * @param {any} doc
-   * @param {Fonts} fonts
-   * @param {StructNode} node
-   * @param {any} parent  its structure element
    */
-  #content(doc, fonts, node, parent) {
+  #content(doc: any, fonts: Fonts, node: StructNode, parent: any): void {
     const kids = node.children
     let i = 0
     while (i < kids.length) {
@@ -190,12 +199,12 @@ export class PdfRenderer {
       }
       // A stretch of content on one page.
       let j = i + 1
-      while (j < kids.length && kids[j].kind !== 'node' && /** @type {TextItem | Paint} */ (kids[j]).page === kid.page) j++
-      doc.switchToPage(kid.page)
+      while (j < kids.length && kids[j].kind !== 'node' && (kids[j] as TextItem | Paint).page === (kid as TextItem | Paint).page) j++
+      doc.switchToPage((kid as TextItem | Paint).page)
       // A span's actual text goes on its marked content too, where extractors
       // that read the content stream rather than the structure tree find it.
       const content = doc.markStructureContent(node.tag, node.actual ? { actual: node.actual } : {})
-      for (const k of kids.slice(i, j)) draw(doc, fonts, /** @type {TextItem | Paint} */ (k))
+      for (const k of kids.slice(i, j)) draw(doc, fonts, k as TextItem | Paint)
       doc.endMarkedContent()
       parent.add(content)
       i = j
@@ -205,13 +214,9 @@ export class PdfRenderer {
   /**
    * A link: its text as the `Link` element's content, and an annotation over
    * each line of it, described by the text and where it goes.
-   * @param {any} doc
-   * @param {Fonts} fonts
-   * @param {StructNode} node
-   * @param {any} el
    */
-  #link(doc, fonts, node, el) {
-    const items = /** @type {TextItem[]} */ (node.children.filter((c) => c.kind === 'text'))
+  #link(doc: any, fonts: Fonts, node: StructNode, el: any): void {
+    const items = node.children.filter((c) => c.kind === 'text') as TextItem[]
     const label = items
       .map((t) => t.text)
       .join('')
@@ -232,12 +237,9 @@ export class PdfRenderer {
   /**
    * A bookmark per section, in reading order, at its title. Opening the file
    * shows them (pdfkit sets `/PageMode /UseOutlines` once there is one).
-   * @param {any} doc
-   * @param {DisplayList} list
    */
-  #bookmarks(doc, list) {
-    /** @param {StructNode} node */
-    const visit = (node) => {
+  #bookmarks(doc: any, list: DisplayList): void {
+    const visit = (node: StructNode): void => {
       for (const c of node.children) {
         if (c.kind !== 'node') continue
         const at = c.tag === 'Sect' && c.title ? firstText(c) : null
@@ -253,14 +255,8 @@ export class PdfRenderer {
    * margin, as pagination artifacts. Page one never gets a head, since it
    * already carries the name in the header. Set where the preview's page view
    * sets them, in the label face.
-   * @param {any} doc
-   * @param {Fonts} fonts
-   * @param {DisplayList} list
-   * @param {import('../theme/paper.js').Paper} paper
-   * @param {string} name
-   * @param {string | undefined} font
    */
-  #running(doc, fonts, list, paper, name, font) {
+  #running(doc: any, fonts: Fonts, list: DisplayList, paper: import('../theme/paper').Paper, name: string, font: string | undefined): void {
     const box = pageBox(paper)
     const face = faceFor(fontOf(font).label, 400).id
     const size = 8
@@ -268,16 +264,12 @@ export class PdfRenderer {
     const left = box.mx * PT
     const right = list.width - box.mx * PT
     for (let page = 0; page < list.pages; page++) {
-      const edges = /** @type {const} */ ([
-        ['header', (box.mt * PT) / 2],
-        ['footer', list.height - (box.mb * PT) / 2],
-      ])
+      const edges = (['header', 'footer'] as const).map((edge) => [edge, edge === 'header' ? (box.mt * PT) / 2 : list.height - (box.mb * PT) / 2] as const)
       for (const [edge, mid] of edges) {
-        const mode = paper[edge]
+        const mode = paper[edge as keyof import('../theme/paper').Paper]
         if (mode === 'none' || (edge === 'header' && page === 0)) continue
         const num = `${page + 1} / ${list.pages}`
-        /** @type {[string, 'left' | 'center' | 'right'][]} */
-        const items =
+        const items: [string, 'left' | 'center' | 'right'][] =
           mode === 'name' && name
             ? [[name, 'center']]
             : mode === 'page'
@@ -315,11 +307,8 @@ export class PdfRenderer {
    * escaping the values at that point fixes the XMP and leaves the Info
    * dictionary as written. The keywords also go in as `dc:subject`, which is
    * where most readers of XMP look for them.
-   * @param {any} doc
-   * @param {import('../render/doc-meta.js').DocMeta} meta
-   * @param {string} lang
    */
-  #metadata(doc, meta, lang) {
+  #metadata(doc: any, meta: import('../render/doc-meta').DocMeta, lang: string): void {
     doc.appendXML(`
         <rdf:Description rdf:about="" xmlns:pdfuaid="http://www.aiim.org/pdfua/ns/id/">
           <pdfuaid:part>1</pdfuaid:part>
@@ -346,11 +335,8 @@ export class PdfRenderer {
 
 /**
  * One item of the display list, on the current page.
- * @param {any} doc
- * @param {Fonts} fonts
- * @param {TextItem | Paint} item
  */
-function draw(doc, fonts, item) {
+function draw(doc: any, fonts: Fonts, item: TextItem | Paint): void {
   switch (item.kind) {
     case 'text':
       text(doc, fonts, item)
@@ -390,17 +376,15 @@ function draw(doc, fonts, item) {
  * can make one — is widened to it, taking the difference out of the word after
  * it rather than pushing the rest of the line along: extractors read a gap that
  * narrow as no space at all.
- * @param {any} doc
- * @param {Fonts} fonts
- * @param {TextItem} t
  */
-function text(doc, fonts, t) {
+function text(doc: any, fonts: Fonts, t: TextItem): void {
   const words = t.words?.length ? t.words : [{ at: 0, x: t.x, w: t.w }]
   const track = t.tracking ?? 0
-  /** A string's own advance, its letter spacing included. @param {string} str */
-  const natural = (str) => fonts.pieces(str, t.families, t.weight, t.italic).reduce((sum, p) => sum + fonts.width(p.text, p.face, t.size) + track * [...p.text].length, 0)
-  /** @param {string} str @param {number} x @param {number} scale  a share of the natural width */
-  const put = (str, x, scale) => {
+  /** A string's own advance, its letter spacing included. */
+  const natural = (str: string): number =>
+    fonts.pieces(str, t.families, t.weight, t.italic).reduce((sum, p) => sum + fonts.width(p.text, p.face, t.size) + track * [...p.text].length, 0)
+  /** a share of the natural width */
+  const put = (str: string, x: number, scale: number): void => {
     let at = x
     for (const p of fonts.pieces(str, t.families, t.weight, t.italic)) {
       doc
@@ -443,10 +427,8 @@ function text(doc, fonts, t) {
 
 /**
  * The first run of text inside a structure node, in reading order.
- * @param {StructNode} node
- * @returns {TextItem | null}
  */
-function firstText(node) {
+function firstText(node: StructNode): TextItem | null {
   for (const c of node.children) {
     const hit = c.kind === 'node' ? firstText(c) : c.kind === 'text' ? c : null
     if (hit) return hit
@@ -454,8 +436,7 @@ function firstText(node) {
   return null
 }
 
-/** As much of a scale as a word can take before it looks squeezed or stretched. @param {number} k */
-const clamp = (k) => Math.min(1.15, Math.max(0.85, k))
+/** As much of a scale as a word can take before it looks squeezed or stretched. */
+const clamp = (k: number): number => Math.min(1.15, Math.max(0.85, k))
 
-/** @param {Uint8Array | ArrayBuffer} b */
-const bytes = (b) => (b instanceof Uint8Array ? b : new Uint8Array(b))
+const bytes = (b: Uint8Array | ArrayBuffer): Uint8Array => (b instanceof Uint8Array ? b : new Uint8Array(b))

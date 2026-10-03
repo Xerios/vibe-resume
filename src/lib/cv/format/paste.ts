@@ -17,21 +17,25 @@
  */
 
 import EXAMPLE from '../default-cv.yaml?raw'
-import { needsQuotes, parse, splitLine } from './relaxed-yaml.js'
+import { needsQuotes, parse, splitLine } from './relaxed-yaml'
 
-/** @typedef {'markdown' | 'html' | 'invalid'} PasteKind */
+type PasteKind = 'markdown' | 'html' | 'invalid'
 
 /**
  * A paste held back for a decision: what was on the clipboard, and the range
  * it would have replaced.
- * @typedef {object} PasteIssue
- * @property {PasteKind} kind
- * @property {string} text   the clipboard's plain text
- * @property {string} html   its HTML, or ''
- * @property {number} from
- * @property {number} to
- * @property {boolean} whole the paste would have replaced the whole document
  */
+export interface PasteIssue {
+  kind: PasteKind
+  /** the clipboard's plain text */
+  text: string
+  /** its HTML, or '' */
+  html: string
+  from: number
+  to: number
+  /** the paste would have replaced the whole document */
+  whole: boolean
+}
 
 /** Fewer lines than this is a phrase going into a value, whatever it looks like. */
 const MIN_LINES = 3
@@ -45,18 +49,13 @@ const HTML_BLOCK = /<(?:h[1-6]|p|li|div|tr|br)\b/i
 /** The same, typed or copied as source rather than as formatted text. */
 const HTML_SOURCE = /<\/?(?:html|body|div|p|h[1-6]|ul|ol|li|table|tr|td|span|br|strong|em|a)\b[^>]*>/gi
 
-/**
- * @param {unknown} v
- * @returns {v is Record<string, unknown>}
- */
-const isMap = (v) => typeof v === 'object' && v !== null && !Array.isArray(v)
+const isMap = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
 
 /**
  * Whether a text is a CV in the dialect: something with the header or the
  * sections the sheet is built from.
- * @param {string} text
  */
-export function looksLikeCv(text) {
+export function looksLikeCv(text: string): boolean {
   const { value } = parse(text)
   return isMap(value) && (Array.isArray(value.sections) || isMap(value.header))
 }
@@ -67,12 +66,8 @@ export function looksLikeCv(text) {
  * Replacing the whole document is held to the full standard — it has to come
  * out a CV. Anywhere else a paste is a fragment, and a fragment of the dialect
  * is ordinary editing: it is only stopped when it is plainly something else.
- * @param {string} text  the clipboard's plain text
- * @param {string} html  its HTML, or ''
- * @param {boolean} whole whether it would replace the whole document
- * @returns {PasteKind | null}
  */
-export function classifyPaste(text, html, whole) {
+export function classifyPaste(text: string, html: string, whole: boolean): PasteKind | null {
   const lines = text.split(/\r?\n/).filter((l) => l.trim())
   if (lines.length < MIN_LINES) return null
   if (whole && looksLikeCv(text)) return null
@@ -103,22 +98,21 @@ const RULE_RE = /^(?:[-*_]\s*){3,}$/
 const TABLE_RULE_RE = /^\|?[\s:|-]*-[\s:|-]*\|[\s:|-]*$/
 const SETEXT_RE = /^(?:=+|-{2,})$/
 
-/** @typedef {{ title: string, paras: string[] }} Section */
+interface Section {
+  title: string
+  paras: string[]
+}
 
 /** Emphasis wrapped round a whole heading is the heading's own weight, not a claim. */
-const plain = (/** @type {string} */ s) => s.replace(/^(\*\*|__|\*|_)(.+)\1$/, '$2')
+const plain = (s: string): string => s.replace(/^(\*\*|__|\*|_)(.+)\1$/, '$2')
 
 /**
  * Markdown, read as headings and lines. The shallowest heading level makes the
  * sections; deeper ones become bold lines inside them, so `## Experience` over
  * `### Acme` is one section rather than an empty one beside another.
- * @param {string} md
- * @param {boolean} takeName read a first `# heading` as the CV's name
- * @returns {{ name: string, sections: Section[] }}
  */
-export function readMarkdown(md, takeName) {
-  /** @type {{ level: number, text: string }[]} */
-  const blocks = []
+export function readMarkdown(md: string, takeName: boolean): { name: string; sections: Section[] } {
+  const blocks: Array<{ level: number; text: string }> = []
   let afterPara = false
   for (const raw of md.split(/\r?\n/)) {
     const t = raw.trim()
@@ -127,8 +121,8 @@ export function readMarkdown(md, takeName) {
       continue
     }
     if (afterPara && SETEXT_RE.test(t)) {
-      const last = /** @type {{ level: number, text: string }} */ (blocks.pop())
-      blocks.push({ level: t[0] === '=' ? 1 : 2, text: last.text })
+      const last = blocks.pop()
+      if (last) blocks.push({ level: t[0] === '=' ? 1 : 2, text: last.text })
       afterPara = false
       continue
     }
@@ -149,10 +143,8 @@ export function readMarkdown(md, takeName) {
   if (takeName && first >= 0 && blocks[first].level === 1) name = blocks.splice(first, 1)[0].text
 
   const top = Math.min(...blocks.filter((b) => b.level).map((b) => b.level))
-  /** @type {Section[]} */
-  const sections = []
-  /** @type {Section | null} */
-  let cur = null
+  const sections: Section[] = []
+  let cur: Section | null = null
   for (const b of blocks) {
     if (b.level === top) {
       cur = { title: b.text, paras: [] }
@@ -170,16 +162,13 @@ export function readMarkdown(md, takeName) {
 
 /**
  * A value as the dialect needs it written — bare almost always.
- * @param {string} s
- * @param {boolean} item
  */
-const scalar = (s, item) => (needsQuotes(s, item) ? `'${s.replace(/'/g, "''")}'` : s)
+const scalar = (s: string, item: boolean): string => (needsQuotes(s, item) ? `'${s.replace(/'/g, "''")}'` : s)
 
 /**
  * Sections as `sections:` list items, at the indent the default CV uses.
- * @param {Section[]} sections
  */
-function sectionsYaml(sections) {
+function sectionsYaml(sections: Section[]): string {
   return sections
     .map(({ title, paras }) => {
       const out = ['  - type: text']
@@ -194,11 +183,8 @@ function sectionsYaml(sections) {
 /**
  * Where new sections go in a document that already has some: after the last
  * thing in its `sections:` list, or in a new one at the end.
- * @param {string} doc
- * @param {string} items `sections:` list items
- * @returns {{ from: number, to: number, insert: string }}
  */
-export function appendSections(doc, items) {
+export function appendSections(doc: string, items: string): { from: number; to: number; insert: string } {
   const lines = doc.split('\n')
   const at = lines.findIndex((l) => {
     const p = splitLine(l)
@@ -210,7 +196,7 @@ export function appendSections(doc, items) {
   }
   // The list ends where the next top-level key starts; blank lines and
   // comments before that key belong to it rather than to the list.
-  let last = at
+  let last: number = at
   for (let i = at + 1; i < lines.length; i++) {
     const p = splitLine(lines[i])
     if (p.indent >= lines[i].length || p.comment >= 0) continue
@@ -227,11 +213,8 @@ export function appendSections(doc, items) {
  * The basic conversion, as an edit: the whole document when the paste would
  * have replaced it, and otherwise new sections at the end, leaving what was
  * selected alone.
- * @param {PasteIssue} issue
- * @param {string} doc the document's current text
- * @returns {{ from: number, to: number, insert: string }}
  */
-export function basicConversion(issue, doc) {
+export function basicConversion(issue: PasteIssue, doc: string): { from: number; to: number; insert: string } {
   const { name, sections } = readMarkdown(sourceMarkdown(issue), issue.whole)
   const items = sectionsYaml(sections)
   if (!issue.whole) return appendSections(doc, items)
@@ -254,17 +237,15 @@ const IGNORED = new Set('head link meta noscript script style svg template title
  * links. Everything else is read for its text. Bold and italic are taken from
  * inline styles as well as tags, because that is how Google Docs writes them —
  * and why a `<b style="font-weight:normal">` is not bold.
- * @param {string} html
  */
-export function htmlToMarkdown(html) {
+export function htmlToMarkdown(html: string): string {
   const body = new DOMParser().parseFromString(html, 'text/html').body
-  /** @type {string[]} */
-  const out = []
+  const out: string[] = []
   let prefix = ''
   let line = ''
   let inHeading = false
 
-  const flush = () => {
+  const flush = (): void => {
     const t = line.replace(/\s+/g, ' ').trim()
     line = ''
     if (!t) return
@@ -272,17 +253,15 @@ export function htmlToMarkdown(html) {
     prefix = ''
   }
 
-  /** @param {Element} el */
-  const children = (el) => el.childNodes.forEach(walk)
+  const children = (el: Element): void => el.childNodes.forEach(walk)
 
-  /** @param {Node} node */
-  function walk(node) {
+  function walk(node: Node): void {
     if (node.nodeType === Node.TEXT_NODE) {
       line += node.nodeValue ?? ''
       return
     }
     if (node.nodeType !== Node.ELEMENT_NODE) return
-    const el = /** @type {Element} */ (node)
+    const el = node as Element
     const tag = el.tagName.toLowerCase()
     if (IGNORED.has(tag)) return
     if (tag === 'br') return flush()
@@ -344,9 +323,8 @@ export function htmlToMarkdown(html) {
 /**
  * The paste as Markdown — what both conversions start from. Formatted text
  * comes from its HTML, or from the plain text when that is HTML source.
- * @param {PasteIssue} issue
  */
-export function sourceMarkdown(issue) {
+export function sourceMarkdown(issue: PasteIssue): string {
   return issue.kind === 'html' ? htmlToMarkdown(issue.html || issue.text) : issue.text
 }
 
@@ -354,9 +332,8 @@ export function sourceMarkdown(issue) {
 
 /**
  * A prompt that converts a CV into the dialect, with the CV in it.
- * @param {string} cv the CV, as Markdown or plain text
  */
-export function conversionPrompt(cv) {
+export function conversionPrompt(cv: string): string {
   return `Convert my CV below into the YAML-like format described here. Reply with only the converted document, in a single code block.
 
 Rules:
@@ -391,9 +368,8 @@ ${cv.trim()}
 
 /**
  * An assistant's reply, without the code fence it was asked to put it in.
- * @param {string} reply
  */
-export function stripFence(reply) {
+export function stripFence(reply: string): string {
   const m = /^\s*```[\w-]*[ \t]*\r?\n([\s\S]*?)\r?\n```\s*$/.exec(reply)
   return m ? m[1] : reply
 }

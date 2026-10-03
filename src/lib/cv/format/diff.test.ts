@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from 'vitest'
 import DEFAULT_YAML from '../default-cv.yaml?raw'
-import { diffDocuments, mapLine } from './diff.js'
+import { diffDocuments, mapLine } from './diff'
 
 const SUMMARY = `- type: summary
   title: Summary
@@ -38,14 +38,14 @@ const WORK = `- type: experience
         - Built the public API.`
 
 /** A document with sections spliced in, indented to sit under `sections:`. */
-const doc = (/** @type {string[]} */ ...sections) =>
-  `header:\n  name: Jo\n  role: Engineer\nsections:\n${sections.map((s) => `  ${s.split('\n').join('\n  ')}`).join('\n\n')}\n`
+const doc = (...sections: string[]) =>
+  `header:\n  name: Jo\n  role: Engineer\nsections:\n${sections.map((s: string) => `  ${s.split('\n').join('\n  ')}`).join('\n\n')}\n`
 
-/** @param {import('./diff.js').LineInfo[]} side @param {import('./diff.js').LineKind} kind */
-const linesOf = (side, kind) => side.map((l, i) => (l.kind === kind ? i + 1 : 0)).filter(Boolean)
+/** Get line numbers matching a specific kind. */
+const linesOf = (side: any[], kind: string) => side.map((l: any, i: number) => (l.kind === kind ? i + 1 : 0)).filter(Boolean)
 
-/** @param {string} text @param {RegExp} re */
-const lineMatching = (text, re) => text.split('\n').findIndex((l) => re.test(l)) + 1
+/** Find the first line matching a regex. */
+const lineMatching = (text: string, re: RegExp) => text.split('\n').findIndex((l: string) => re.test(l)) + 1
 
 describe('nothing changed', () => {
   it('finds nothing in a document compared with itself', () => {

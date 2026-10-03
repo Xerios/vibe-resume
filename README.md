@@ -21,32 +21,32 @@ pnpm check      # svelte-check, oxlint, vitest
 
 | Concern                | Where                                                                                                                |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Document + history     | [src/lib/cv/state/doc.svelte.js](src/lib/cv/state/doc.svelte.js) — Loro doc, persistence, cross-tab merge            |
+| Document + history     | [src/lib/cv/state/doc.svelte.ts](src/lib/cv/state/doc.svelte.ts) — Loro doc, persistence, cross-tab merge            |
 | Editor                 | [src/lib/components/YamlEditor.svelte](src/lib/components/YamlEditor.svelte) — CodeMirror 6                          |
 | Chrome                 | `components/{Toolbar,TabBar,StatusBar}.svelte` — the buttons, the tabs, the status bar                               |
 | The chrome's palette   | [src/lib/styles/tokens.scss](src/lib/styles/tokens.scss) — ADS tokens; see _The chrome's palette_ below              |
-| The format             | [src/lib/cv/format/relaxed-yaml.js](src/lib/cv/format/relaxed-yaml.js) — the parser; see _The format_ below          |
-| What the editor says   | [src/lib/cv/format/lint.js](src/lib/cv/format/lint.js) — the section table, as diagnostics                           |
-| What the editor offers | [src/lib/cv/format/complete.js](src/lib/cv/format/complete.js) — the same table, as completions                      |
-| Colours and folding    | [src/lib/cv/format/relaxed-yaml-mode.js](src/lib/cv/format/relaxed-yaml-mode.js) — the CodeMirror language           |
-| YAML to a CV object    | [src/lib/cv/render/parse.js](src/lib/cv/render/parse.js)                                                             |
-| What a CV says         | [src/lib/cv/render/model.js](src/lib/cv/render/model.js) — the tree the sheet is drawn from, in reading order        |
-| Block variants         | [src/lib/cv/render/variants.js](src/lib/cv/render/variants.js) — every slot, and every way of drawing it            |
-| Inline Markdown        | [src/lib/cv/render/inline.js](src/lib/cv/render/inline.js) — a value as runs of styled text                          |
-| Type, space, layouts   | [src/lib/cv/render/tokens.js](src/lib/cv/render/tokens.js) — the numbers a CV is set with                            |
+| The format             | [src/lib/cv/format/relaxed-yaml.ts](src/lib/cv/format/relaxed-yaml.ts) — the parser; see _The format_ below          |
+| What the editor says   | [src/lib/cv/format/lint.ts](src/lib/cv/format/lint.ts) — the section table, as diagnostics                           |
+| What the editor offers | [src/lib/cv/format/complete.ts](src/lib/cv/format/complete.ts) — the same table, as completions                      |
+| Colours and folding    | [src/lib/cv/format/relaxed-yaml-mode.ts](src/lib/cv/format/relaxed-yaml-mode.ts) — the CodeMirror language           |
+| YAML to a CV object    | [src/lib/cv/render/parse.ts](src/lib/cv/render/parse.ts)                                                             |
+| What a CV says         | [src/lib/cv/render/model.ts](src/lib/cv/render/model.ts) — the tree the sheet is drawn from, in reading order        |
+| Block variants         | [src/lib/cv/render/variants.ts](src/lib/cv/render/variants.ts) — every slot, and every way of drawing it            |
+| Inline Markdown        | [src/lib/cv/render/inline.ts](src/lib/cv/render/inline.ts) — a value as runs of styled text                          |
+| Type, space, layouts   | [src/lib/cv/render/tokens.ts](src/lib/cv/render/tokens.ts) — the numbers a CV is set with                            |
 | Preview                | [src/lib/cv/PreviewFrame.svelte](src/lib/cv/PreviewFrame.svelte) — the iframe the sheet renders in                   |
 | The sheet              | [src/lib/cv/html/](src/lib/cv/html/) — `CvSheet.svelte`, its stylesheet, the tokens as CSS, and the paginator        |
-| The sheet as PDF       | [src/lib/cv/pdf/](src/lib/cv/pdf/) — `measure.js` reads the sheet, `PdfRenderer.js` draws it; see _Exporting_ below  |
+| The sheet as PDF       | [src/lib/cv/pdf/](src/lib/cv/pdf/) — `measure.js` reads the sheet, `PdfRenderer.ts` draws it; see _Exporting_ below  |
 | Starting text          | [src/lib/cv/default-cv.yaml](src/lib/cv/default-cv.yaml)                                                             |
 | Picking a look         | `components/{StylePicker,VariantCycle}.svelte` — the Style panel, and the row each block slot is drawn as            |
-| Shared state           | [src/lib/cv/state/state.svelte.js](src/lib/cv/state/state.svelte.js) — the document and the file registry            |
-| Commands               | [src/lib/cv/state/commands.js](src/lib/cv/state/commands.js) — everything the chrome can do, by name                 |
-| Theme                  | [src/lib/cv/theme/palettes.js](src/lib/cv/theme/palettes.js) — the palettes, as data                                 |
-| Type                   | [src/lib/cv/theme/typefaces.js](src/lib/cv/theme/typefaces.js) — the six font choices, and the faces they bundle     |
-| Tech logos             | [src/lib/cv/theme/tech-icons.js](src/lib/cv/theme/tech-icons.js) — generated; see _Logos_ below                      |
-| Paper                  | [src/lib/cv/theme/paper.js](src/lib/cv/theme/paper.js) — the page box, and what stands in its margins                |
+| Shared state           | [src/lib/cv/state/state.svelte.ts](src/lib/cv/state/state.svelte.ts) — the document and the file registry            |
+| Commands               | [src/lib/cv/state/commands.ts](src/lib/cv/state/commands.ts) — everything the chrome can do, by name                 |
+| Theme                  | [src/lib/cv/theme/palettes.ts](src/lib/cv/theme/palettes.ts) — the palettes, as data                                 |
+| Type                   | [src/lib/cv/theme/typefaces.ts](src/lib/cv/theme/typefaces.ts) — the six font choices, and the faces they bundle     |
+| Tech logos             | [src/lib/cv/theme/tech-icons.ts](src/lib/cv/theme/tech-icons.ts) — generated; see _Logos_ below                      |
+| Paper                  | [src/lib/cv/theme/paper.ts](src/lib/cv/theme/paper.ts) — the page box, and what stands in its margins                |
 | CSS                    | [src/app.scss](src/app.scss) — the index; see _Where the CSS lives_ below                                            |
-| Offline                | [src/service-worker.js](src/service-worker.js) — precache; manifest and icons in `static/`                           |
+| Offline                | [src/service-worker.ts](src/service-worker.ts) — precache; manifest and icons in `static/`                           |
 
 ### Editor and document
 
@@ -59,12 +59,12 @@ undo at high precedence, and two undo stacks would fight over Ctrl+Z.
 
 Syntax colours are a `HighlightStyle` whose values are CSS custom properties, so
 it can serve both themes; it lives in
-[cm-highlight.js](src/lib/components/cm-highlight.js), the `--cm-*` tokens it
+[cm-highlight.ts](src/lib/components/cm-highlight.ts), the `--cm-*` tokens it
 names live in [tokens.scss](src/lib/styles/tokens.scss), and the rules that spend
 the rest of them are in [codemirror.scss](src/lib/components/codemirror.scss).
 
 Completion reads the same section table as the linter, forwards:
-[complete.js](src/lib/cv/format/complete.js) imports `SECTIONS` rather than copying it,
+[complete.ts](src/lib/cv/format/complete.ts) imports `SECTIONS` rather than copying it,
 so a type added there is offered without anything else being touched. What it
 offers depends only on where the cursor is — the keys the enclosing mapping
 accepts, the closed set of answers for the handful of keys that have one, and,
@@ -83,14 +83,14 @@ quiet once it says everything it can, so landing in a finished entry doesn't put
 a list of what it already says on the screen. Ctrl-Space still answers anywhere.
 
 The document, the file registry and the part registry are module-level
-singletons in [state.svelte.js](src/lib/cv/state/state.svelte.js), built once by
+singletons in [state.svelte.ts](src/lib/cv/state/state.svelte.ts), built once by
 `start()` on mount rather than inline in the page component. Beside them sit
 `ui` — the window's own preferences and transient chrome state (which panel is
 up, whether the panes are coupled, the toast), see
-[ui.svelte.js](src/lib/cv/state/ui.svelte.js) — and `look`, the active file's
+[ui.svelte.ts](src/lib/cv/state/ui.svelte.ts) — and `look`, the active file's
 presentation resolved to valid ids. The chrome reads all of these directly
 rather than being handed each flag as a prop, and everything it can _do_ is a
-named entry in [commands.js](src/lib/cv/state/commands.js): a toolbar button, a
+named entry in [commands.ts](src/lib/cv/state/commands.ts): a toolbar button, a
 menu item and a keyboard shortcut for the same action all call the same
 command. The page keeps only what needs its own DOM — parsing, the
 preview-to-source mapping, scroll sync and the divider drag.
@@ -100,7 +100,7 @@ preview-to-source mapping, scroll sync and the divider drag.
 A CV is drawn once, as HTML in the preview, and the PDF is made from what that
 drew.
 
-[model.js](src/lib/cv/render/model.js) builds a tree out of the parsed YAML. It is
+[model.ts](src/lib/cv/render/model.ts) builds a tree out of the parsed YAML. It is
 the one place that decides what a section _is_: an entry is a heading with its
 dates beside it, a line of context, a list of bullets and a stack line; a skills
 section is a grid of groups; a language is a list item with its level at the
@@ -113,13 +113,13 @@ first, Rail right reads its main column first.
 
 [CvSheet.svelte](src/lib/cv/html/CvSheet.svelte) writes the tree into the DOM in that
 order and [sheet.css](src/lib/cv/html/sheet.css) lays it out. Sizes, colours and
-spacing come from [tokens.js](src/lib/cv/render/tokens.js),
-[palettes.js](src/lib/cv/theme/palettes.js) and
-[typefaces.js](src/lib/cv/theme/typefaces.js), as custom properties and a class per
-text role ([sheet-css.js](src/lib/cv/html/sheet-css.js)). That layout is the only
+spacing come from [tokens.ts](src/lib/cv/render/tokens.ts),
+[palettes.ts](src/lib/cv/theme/palettes.ts) and
+[typefaces.ts](src/lib/cv/theme/typefaces.ts), as custom properties and a class per
+text role ([sheet-css.ts](src/lib/cv/html/sheet-css.ts)). That layout is the only
 one there is. Two things follow it after every render:
 
-- **The paginator** ([paginate.js](src/lib/cv/html/paginate.js)) walks each column
+- **The paginator** ([paginate.ts](src/lib/cv/html/paginate.ts)) walks each column
   and pushes any block that would cross the foot of a page onto the next one. The
   rules are the ones the print CSS used to ask the browser for: an entry, a skill
   group, a list item and a paragraph stay whole, and a heading stays with the
@@ -127,14 +127,14 @@ one there is. Two things follow it after every render:
   are drawn as separate cards with the running head and foot in their margins.
   With it off, the sheet is one strip with the same page breaks, so either way
   what is on screen is what exports.
-- **The measurer** ([measure.js](src/lib/cv/pdf/measure.js)) runs on export. It
+- **The measurer** ([measure.ts](src/lib/cv/pdf/measure.ts)) runs on export. It
   reads the paginated sheet back as a display list:
   - every element's structure type
   - every run of text, a line at a time, at the position the browser set it in,
     with its font
   - every border, fill and SVG path, on the page it falls on
 
-  [PdfRenderer.js](src/lib/cv/pdf/PdfRenderer.js) draws that list. It reads a small
+  [PdfRenderer.ts](src/lib/cv/pdf/PdfRenderer.ts) draws that list. It reads a small
   subset of CSS — text, solid, dashed and dotted borders, solid fills, border
   radii, translations and `<path>` — and sheet.css keeps to it. Decoration is
   therefore a real `aria-hidden` element rather than a `::before`, because a
@@ -142,13 +142,13 @@ one there is. Two things follow it after every render:
   and dot, a section's number, a chip's logo.
 
 Inline Markdown reaches the sheet as runs of text with marks on them, from
-marked's own inline lexer ([inline.js](src/lib/cv/render/inline.js)), so there is no
+marked's own inline lexer ([inline.ts](src/lib/cv/render/inline.ts)), so there is no
 `{@html}` in it. A bare address still prints without its scheme, and a phone
 number on a contact line is still a `tel:` link.
 
 The style panel offers three **layouts** (single column, sidebar, rail right), a
 row of **block variants**, seven **themes**, six **fonts**, two **densities** and
-the **paper**. A variant ([variants.js](src/lib/cv/render/variants.js)) is an id
+the **paper**. A variant ([variants.ts](src/lib/cv/render/variants.ts)) is an id
 the model reads while building the tree. It changes a property there — a
 section's `head`, an entry's `frame`, a list's `display`, a language's meter —
 and sheet.css draws each such property. Because the PDF is measured from the
@@ -163,7 +163,7 @@ also as a `style` map in the file's Loro document. Changing how a CV looks is a
 change to the CV, and the things a change gets here — a line in the version
 history, a place on the undo stack, and coming back with the version that had it
 — are exactly what a restyle wanted.
-[restyle](src/lib/cv/state/state.svelte.js) is the one way to move them: it writes the
+[restyle](src/lib/cv/state/state.svelte.ts) is the one way to move them: it writes the
 registry first, so the sheet follows immediately, then records the result in the
 document with a label — `Layout — Sidebar`, `Entry — Card`, `Theme — Plum`, `Paper — Landscape`.
 Ctrl+Z takes one back, from the editor as ever and from anywhere else too, since
@@ -187,7 +187,7 @@ mark it.
 Export writes the PDF directly, with [pdfkit](https://pdfkit.org), in the browser,
 from the preview as it is laid out and paginated. The renderer, pdfkit and the font
 files are loaded on the first export rather than with the app
-([export.js](src/lib/cv/pdf/export.js)). The result is a tagged PDF 1.7 written to
+([export.ts](src/lib/cv/pdf/export.ts)). The result is a tagged PDF 1.7 written to
 PDF/UA-1, so that ATS parsers and screen readers read it as it is meant to be read:
 
 - **Reading order.** The display list is in document order, which is the model's
@@ -208,7 +208,7 @@ PDF/UA-1, so that ATS parsers and screen readers read it as it is meant to be re
   is a `Figure` with the level in words as `/Alt`, and each link is a `Link`
   element holding its text and its annotation, which has `/Contents`.
 - **Dates.** Every `dates` value that reads as dates
-  ([dates.js](src/lib/cv/format/dates.js)) is a `Span` whose `ActualText` spells
+  ([dates.ts](src/lib/cv/format/dates.ts)) is a `Span` whose `ActualText` spells
   it out — `March 2020 to Present` — on the structure element and on its marked
   content. Screen readers and text extraction get that, however the sheet
   printed it, so the Dates block variant can print `Mar 2020`, `03/2020` or
@@ -228,22 +228,22 @@ PDF/UA-1, so that ATS parsers and screen readers read it as it is meant to be re
 - **Metadata.** The title is shown in the window (`DisplayDocTitle`), and the
   catalog sets `/Lang` from the header's `lang:` (English when it has none). The
   Info dictionary and the XMP both carry the title, author, description and
-  keywords from [doc-meta.js](src/lib/cv/render/doc-meta.js); the XMP also has
+  keywords from [doc-meta.ts](src/lib/cv/render/doc-meta.ts); the XMP also has
   `dc:language` and declares `pdfuaid:part` 1.
 - **Attachments.** `cv.yaml` is the source as standard YAML
-  ([strict-yaml.js](src/lib/cv/format/strict-yaml.js)), marked as the `Source`.
-  `resume.json` is the CV in the [JSON Resume](https://jsonresume.org/schema)
-  schema ([json-resume.js](src/lib/cv/render/json-resume.js)), marked as an
+  ([strict-yaml.ts](src/lib/cv/format/strict-yaml.ts)), marked as the `Source`.
+  `resume.tson` is the CV in the [JSON Resume](https://jsonresume.org/schema)
+  schema ([json-resume.ts](src/lib/cv/render/json-resume.ts)), marked as an
   `Alternative`: work, education, projects, skills, languages and certificates
   as fields rather than text, with ISO 8601 dates, which a parser can read
   without guessing.
 
-The tests in [PdfRenderer.test.js](src/lib/cv/pdf/PdfRenderer.test.js) render two
+The tests in [PdfRenderer.test.ts](src/lib/cv/pdf/PdfRenderer.test.ts) render two
 display lists measured from the browser ([fixtures/](src/lib/cv/pdf/fixtures/)),
 read the uncompressed output back, and check these properties. They include that
 each page's marked content comes in the same order as the structure tree, and
 that each layout's columns are read in order. The fixtures have to be measured
-again when the sheet's markup or stylesheet changes what measure.js reads. A full conformance check needs an external
+again when the sheet's markup or stylesheet changes what measure.ts reads. A full conformance check needs an external
 validator: veraPDF with the PDF/UA-1 profile, or PAC.
 
 **Print** in the toolbar (and Ctrl+P) is still there as a fallback. It prints the
@@ -255,7 +255,7 @@ to tag.
 
 The page a CV is set on is a value, per file like the theme: a size, an
 orientation, and what — if anything — stands in the margin above and below the
-sheet. [paper.js](src/lib/cv/theme/paper.js) is the whole of it. `pageBox` is the
+sheet. [paper.ts](src/lib/cv/theme/paper.ts) is the whole of it. `pageBox` is the
 page and its margins in millimetres, which the paginator and the PDF use. `paperCss` is
 the same thing as CSS for the preview: `--page-*` tokens on `#cv-root`, which
 sheet.css sizes the sheet from, and `@page` for the print fallback. Turning the
@@ -291,7 +291,7 @@ difference is deliberate. A CV is prose, and prose is full of the characters
 YAML reserves. Real YAML makes you quote a link because it starts with `[`, a
 phone number because it starts with `+`, and `ORM: Prisma` because of the colon
 — none of which is anything a person writing a resume should have to know. So
-[relaxed-yaml.js](src/lib/cv/format/relaxed-yaml.js) reads a smaller, line-oriented
+[relaxed-yaml.ts](src/lib/cv/format/relaxed-yaml.ts) reads a smaller, line-oriented
 dialect instead, in which a value runs verbatim to the end of its line and
 nothing inside it means anything:
 
@@ -330,7 +330,7 @@ escape hatch — `- 'Analytics: Mixpanel'` — and any list that should hold pla
 text is checked for it, so the editor offers the fix rather than leaving you to
 find it in the preview.
 
-That check is one of three things [lint.js](src/lib/cv/format/lint.js) reports, and it
+That check is one of three things [lint.ts](src/lib/cv/format/lint.ts) reports, and it
 exists because relaxing the format moved where mistakes land. Almost nothing a
 person types fails to parse now, so a typo shows up as a section that quietly
 renders wrong instead of as an error. The table below is therefore held as data
@@ -339,7 +339,7 @@ renders, and a section missing its content — as warnings, which don't stop the
 preview or block an export.
 
 The editor's colours, folding and indentation come from the same `splitLine` the
-parser uses ([relaxed-yaml-mode.js](src/lib/cv/format/relaxed-yaml-mode.js)), so what a
+parser uses ([relaxed-yaml-mode.ts](src/lib/cv/format/relaxed-yaml-mode.ts)), so what a
 line looks like and what it means can't drift apart. It's a `StreamLanguage`
 rather than a Lezer grammar because a line is an indent, some dashes, maybe a
 key and then text — none of which needs a parse tree.
@@ -368,7 +368,7 @@ list of name, figure and description rather than as a grid, which is what it hol
 on a CV and what a PDF reader handles best.
 
 `stack` takes a comma-separated string or a YAML list, whichever reads better;
-`techs` in [inline.js](src/lib/cv/render/inline.js) reads either into a list of
+`techs` in [inline.ts](src/lib/cv/render/inline.ts) reads either into a list of
 tools.
 
 Experience, education and projects are all `entries`, because a degree and a
@@ -380,7 +380,7 @@ of older roles as one titled list with no dates of its own.
 Documents written before the types were renamed — `summary`, `skills`,
 `experience`, `education`, `projects`, `languages`, `certifications`, `oss`,
 with `company`/`school`, `stars` and `hasHeader` — are rewritten when they are
-opened, imported or restored, by [migrate.js](src/lib/cv/format/migrate.js). The
+opened, imported or restored, by [migrate.ts](src/lib/cv/format/migrate.ts). The
 rewrite is line by line, so comments and layout survive it, and it lands in the
 history as a named version of its own. An older version viewed from the history
 is read through the same table, so it still renders.
@@ -388,8 +388,8 @@ is read through the same table, so it still renders.
 An unknown `type` renders as a red line naming itself rather than as nothing, so
 a typo in the YAML is visible in the preview instead of silently dropping a
 section. The editor says the same thing on the line itself, out of the copy of
-this table that [lint.js](src/lib/cv/format/lint.js) holds as `SECTIONS` — so a type
-added here has to be added there too, and lint.test.js fails if the two lists
+this table that [lint.ts](src/lib/cv/format/lint.ts) holds as `SECTIONS` — so a type
+added here has to be added there too, and lint.test.ts fails if the two lists
 stop agreeing.
 
 #### Type
@@ -397,7 +397,7 @@ stop agreeing.
 A font choice is a pairing of two bundled families: one for text, one for labels,
 dates and contact lines. All are SIL OFL static TTFs from the
 `@expo-google-fonts/*` packages, imported with `?url`
-([typefaces.js](src/lib/cv/theme/typefaces.js)).
+([typefaces.ts](src/lib/cv/theme/typefaces.ts)).
 
 | Choice   | Text           | Labels         |
 | -------- | -------------- | -------------- |
@@ -417,11 +417,11 @@ pairing; another family is cached the first time it is used.
 #### Logos
 
 `stack` takes a comma-separated string or a YAML list, whichever reads better;
-`techs` in [inline.js](src/lib/cv/render/inline.js) reads either into a list. The
+`techs` in [inline.ts](src/lib/cv/render/inline.ts) reads either into a list. The
 chip variants draw each entry as a chip with its brand logo, from `iconPaths` in
-[icons.js](src/lib/cv/render/icons.js). Matching is forgiving, because a CV is prose
+[icons.ts](src/lib/cv/render/icons.ts). Matching is forgiving, because a CV is prose
 rather than a manifest: case and punctuation are normalised away and then a few
-reductions are tried in turn, so `Node.js`, `Postgres`, `TypeScript/JavaScript
+reductions are tried in turn, so `Node.ts`, `Postgres`, `TypeScript/JavaScript
 (10+ yrs)`, `React 18` and `ORM: Prisma` all land on a logo while `English C2`
 doesn't. A logo is SVG path data, drawn as `<path>` in the preview and as an
 artifact in the PDF.
@@ -429,7 +429,7 @@ artifact in the PDF.
 The logos are [Simple Icons](https://simpleicons.org) (CC0-1.0), _vendored_ rather
 than depended on: [scripts/gen-tech-icons.mjs](scripts/gen-tech-icons.mjs) fetches a
 curated list from the Iconify API and writes
-[tech-icons.js](src/lib/cv/theme/tech-icons.js). Adding one means adding a line to
+[tech-icons.ts](src/lib/cv/theme/tech-icons.ts). Adding one means adding a line to
 that script and running it again; nothing at runtime touches the network.
 
 ### Keyboard
@@ -438,7 +438,7 @@ Every control in the chrome carries an `accesskey` and underlines the letter it
 answers to — `H` on History, `X` on Export, `N` on the button that opens a tab.
 Which chord unlocks them is the browser's to decide rather than ours: Chromium
 takes plain Alt, Firefox insists on Alt+Shift, and a Mac uses Ctrl+Alt
-throughout. [access-keys.js](src/lib/components/access-keys.js) reads which one
+throughout. [access-keys.ts](src/lib/components/access-keys.ts) reads which one
 applies, once, and every tooltip spells it out — so the same underlined `H`
 reads as `(Alt+H)` or `(Alt+Shift+H)` depending on where it is being read.
 
@@ -475,9 +475,9 @@ And in the preview frame's, written into it by `PreviewFrame`:
 | File                                                   | Holds                                                                  |
 | ------------------------------------------------------ | ---------------------------------------------------------------------- |
 | [cv/frame.css](src/lib/cv/frame.css)                   | the frame's reset, its gutter and scrollbars, the default page box     |
-| `@font-face` rules from typefaces.js                   | the bundled faces                                                      |
+| `@font-face` rules from typefaces.ts                   | the bundled faces                                                      |
 | [cv/html/sheet.css](src/lib/cv/html/sheet.css)         | the arrangement of the sheet, page view, and the print fallback        |
-| what [sheet-css.js](src/lib/cv/html/sheet-css.js) writes | the palette, spacing and type roles for this file's theme and density |
+| what [sheet-css.ts](src/lib/cv/html/sheet-css.ts) writes | the palette, spacing and type roles for this file's theme and density |
 | what `paperCss` writes                                 | the page box and its margin boxes                                      |
 
 #### The chrome's palette
@@ -601,7 +601,7 @@ version, or another tab as it was last stored. Nothing is rendered; it is the
 text that is being asked about.
 
 The diff is structural rather than textual, in
-[diff.js](src/lib/cv/format/diff.js). A plain line diff of a CV is honest and
+[diff.ts](src/lib/cv/format/diff.ts). A plain line diff of a CV is honest and
 unreadable: move a section and every line of it is a deletion here and an
 insertion there, with the one word that changed lost in the middle. So both
 texts go through the parser first and it is the _tree_ that is diffed. Blocks
@@ -627,7 +627,7 @@ merging two unrelated ones.
 ### Offline
 
 Nothing here ever talked to the network, but until there was a service worker the
-browser still could not _load_ the app without a server. `src/service-worker.js`
+browser still could not _load_ the app without a server. `src/service-worker.ts`
 precaches the Vite bundle, everything in `static/`, and the prerendered shell, so a
 single visit is enough; after that it runs with the network off. SvelteKit registers it
 automatically in a production build and leaves it out of `vite dev`, so development
@@ -672,6 +672,6 @@ used, and those are copied into the build.
 `loro-crdt` ships several builds. `loro-codemirror` imports the bare specifier, which
 resolves to a build that loads its WASM with a synchronous main-thread XHR, and would
 be a _second_ WASM instance whose objects the first instance cannot accept. The alias
-in [vite.config.js](vite.config.js) pins every importer to the async `web` build, so
+in [vite.config.js](vite.config.ts) pins every importer to the async `web` build, so
 exactly one `.wasm` is emitted. `optimizeDeps.exclude` is there because pre-bundling
 rewrites the `new URL(..., import.meta.url)` the build uses to find that file.

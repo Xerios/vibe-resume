@@ -15,34 +15,25 @@
  * Markdown is read for its words and its links.
  */
 
-import { isoWhen, parseDates } from '../format/dates.js'
-import { phoneNumber } from '../format/autolink.js'
-import { contactRuns, list, runs, techs, textOf } from './inline.js'
+import { isoWhen, parseDates } from '../format/dates'
+import { phoneNumber } from '../format/autolink'
+import { contactRuns, list, runs, techs, textOf } from './inline'
 
-/** @param {unknown} v */
-const plain = (v) => textOf(runs(v)).trim()
+const plain = (v: unknown): string => textOf(runs(v)).trim()
 
-/** The first link in a value, if it has one. @param {unknown} v */
-const linkOf = (v) => runs(v).find((r) => r.href)?.href
+const linkOf = (v: unknown): string | undefined => runs(v).find((r) => r.href)?.href
 
-/**
- * A `dates` value as JSON Resume's start and end: ISO 8601 dates, with no end
- * for one still going.
- * @param {unknown} v
- * @returns {{ startDate?: string, endDate?: string }}
- */
-function dates(v) {
+function dates(v: unknown): { startDate?: string; endDate?: string } {
   const span = parseDates(plain(v))
   if (!span) return {}
   return { startDate: isoWhen(span.start), ...(span.end && span.end !== 'present' ? { endDate: isoWhen(span.end) } : {}) }
 }
 
-/** Drop the keys with nothing in them, so the JSON says only what the CV does. @template {Record<string, any>} T @param {T} o @returns {Partial<T>} */
-const compact = (o) =>
-  /** @type {Partial<T>} */ (Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0))))
+const compact = <T extends Record<string, any>>(o: T): Partial<T> =>
+  Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0))) as Partial<T>
 
 /** Profiles a CV links to, by the host that gives them away. */
-const NETWORKS = /** @type {[RegExp, string][]} */ ([
+const NETWORKS: [RegExp, string][] = [
   [/(^|\.)linkedin\.com$/i, 'LinkedIn'],
   [/(^|\.)github\.com$/i, 'GitHub'],
   [/(^|\.)gitlab\.com$/i, 'GitLab'],
@@ -51,20 +42,11 @@ const NETWORKS = /** @type {[RegExp, string][]} */ ([
   [/(^|\.)bsky\.app$/i, 'Bluesky'],
   [/(^|\.)dribbble\.com$/i, 'Dribbble'],
   [/(^|\.)behance\.net$/i, 'Behance'],
-])
+]
 
-/**
- * The header as JSON Resume's `basics`: each contact line is a phone number, a
- * mail address, a profile, a site, or — if it is none of those — where the
- * person is.
- * @param {any} h
- * @param {string} summary
- */
-function basics(h, summary) {
-  /** @type {Record<string, any>} */
-  const out = { name: plain(h?.name), label: plain(h?.role), summary }
-  /** @type {{ network: string, username: string, url: string }[]} */
-  const profiles = []
+function basics(h: any, summary: string) {
+  const out: Record<string, any> = { name: plain(h?.name), label: plain(h?.role), summary }
+  const profiles: { network: string; username: string; url: string }[] = []
   for (const line of list(h?.contact)) {
     const text = String(line ?? '')
     const tel = phoneNumber(text)
@@ -95,23 +77,17 @@ function basics(h, summary) {
   return compact(out)
 }
 
-/** Which JSON Resume list an `entries` section belongs in, read off its title. @param {string} title */
-function kindOf(title) {
+function kindOf(title: string): string {
   if (/educat|school|universit|degree|academ|stud(y|ies)|qualif/i.test(title)) return 'education'
   if (/project|portfolio|open.?source/i.test(title)) return 'projects'
   if (/volunt/i.test(title)) return 'volunteer'
   return 'work'
 }
 
-/**
- * @param {any} cv  the parsed document; anything half-typed is tolerated
- * @param {{ now?: Date }} [opts]
- */
-export function toJsonResume(cv, { now = new Date() } = {}) {
+export function toJsonResume(cv: any, { now = new Date() }: { now?: Date } = {}) {
   const sections = list(cv?.sections).filter((s) => s && typeof s === 'object')
   const summary = sections.find((s) => s.type === 'text')
-  /** @type {Record<string, any[]>} */
-  const lists = {
+  const lists: Record<string, any[]> = {
     work: [],
     volunteer: [],
     education: [],

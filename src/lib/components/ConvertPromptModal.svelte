@@ -2,7 +2,7 @@
   import Icon from '@iconify/svelte'
   import IconCheck from '@iconify-icons/lucide/check'
   import IconCopy from '@iconify-icons/lucide/copy'
-  import { conversionPrompt, looksLikeCv, stripFence } from '$lib/cv/format/paste.js'
+  import { conversionPrompt, looksLikeCv, stripFence } from '$lib/cv/format/paste'
   import Modal from './Modal.svelte'
 
   /**

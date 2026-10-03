@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { contactRuns, runs, textOf } from './inline.js'
+import { contactRuns, runs, textOf } from './inline'
 
 describe('runs', () => {
   it('splits emphasis, code and strikethrough into marked runs', () => {

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import DEFAULT_YAML from '../default-cv.yaml?raw'
-import { toJsonResume } from './json-resume.js'
-import { parseCv } from './parse.js'
+import { toJsonResume } from './json-resume'
+import { parseCv } from './parse'
 
-const resume = /** @type {any} */ (toJsonResume(parseCv(DEFAULT_YAML).cv, { now: new Date('2026-01-01T00:00:00Z') }))
+const resume = toJsonResume(parseCv(DEFAULT_YAML).cv, { now: new Date('2026-01-01T00:00:00Z') }) as any
 
 describe('toJsonResume', () => {
   it('sorts the contact lines into basics', () => {
@@ -23,10 +23,15 @@ describe('toJsonResume', () => {
   })
 
   it('makes each role a work entry with ISO dates', () => {
-    expect(resume.work[0]).toMatchObject({ name: 'Acme Corp', position: 'Senior Full-Stack Engineer', startDate: '2020-03', keywords: expect.arrayContaining(['React']) })
+    expect(resume.work[0]).toMatchObject({
+      name: 'Acme Corp',
+      position: 'Senior Full-Stack Engineer',
+      startDate: '2020-03',
+      keywords: expect.arrayContaining(['React']),
+    })
     expect(resume.work[0].endDate).toBeUndefined()
     expect(resume.work[1]).toMatchObject({ startDate: '2016-06', endDate: '2020-02' })
-    expect(resume.work.some((/** @type {any} */ w) => w.name === 'Umbrella Startups')).toBe(true)
+    expect(resume.work.some((w: any) => w.name === 'Umbrella Startups')).toBe(true)
   })
 
   it('sends sections to the list their title says', () => {
@@ -35,7 +40,7 @@ describe('toJsonResume', () => {
     expect(resume.certificates[0]).toMatchObject({ name: 'AWS Certified Solutions Architect – Associate', issuer: 'Amazon Web Services', date: '2023' })
     expect(resume.languages[2]).toEqual({ language: 'German', fluency: 'A2, reading' })
     expect(resume.skills[0]).toMatchObject({ name: 'Full-Stack Core', level: 'Expert', keywords: expect.arrayContaining(['Node.js']) })
-    expect(resume.interests.map((/** @type {any} */ i) => i.name)).toEqual(['Open source', 'Mentoring', 'Trail running', 'Chess'])
+    expect(resume.interests.map((i: any) => i.name)).toEqual(['Open source', 'Mentoring', 'Trail running', 'Chess'])
   })
 
   it('survives a document that is still being typed', () => {

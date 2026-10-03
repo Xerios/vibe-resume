@@ -27,15 +27,13 @@ export const KEYS = {
   compare: 'cv-editor:compare',
   /** Set once the welcome overlay has been dismissed; absent means first visit. */
   welcomeSeen: 'cv-editor:welcome-seen',
-}
+} as const
 
-/** @param {string} fileId */
-export function snapshotKey(fileId) {
+export function snapshotKey(fileId: string): string {
   return `cv-editor:snapshot:v1:${fileId}`
 }
 
-/** @param {Uint8Array} bytes */
-export function bytesToBase64(bytes) {
+export function bytesToBase64(bytes: Uint8Array): string {
   let binary = ''
   const CHUNK = 0x8000 // stay under the argument limit of String.fromCharCode
   for (let i = 0; i < bytes.length; i += CHUNK) {
@@ -44,19 +42,14 @@ export function bytesToBase64(bytes) {
   return btoa(binary)
 }
 
-/** @param {string} b64 */
-export function base64ToBytes(b64) {
+export function base64ToBytes(b64: string): Uint8Array {
   const binary = atob(b64)
   const out = new Uint8Array(binary.length)
   for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i)
   return out
 }
 
-/**
- * @param {string} key
- * @param {string | null} [fallback]
- */
-export function read(key, fallback = null) {
+export function read(key: string, fallback: string | null = null): string | null {
   try {
     return localStorage.getItem(key) ?? fallback
   } catch {
@@ -65,11 +58,9 @@ export function read(key, fallback = null) {
 }
 
 /**
- * @param {string} key
- * @param {string} value
- * @returns {boolean} false when the write was rejected (quota, disabled storage)
+ * Returns false when the write was rejected (quota, disabled storage).
  */
-export function write(key, value) {
+export function write(key: string, value: string): boolean {
   try {
     localStorage.setItem(key, value)
     return true
@@ -78,8 +69,7 @@ export function write(key, value) {
   }
 }
 
-/** @param {string} key */
-export function remove(key) {
+export function remove(key: string): void {
   try {
     localStorage.removeItem(key)
   } catch {
@@ -87,18 +77,13 @@ export function remove(key) {
   }
 }
 
-/** @param {number} bytes */
-export function formatBytes(bytes) {
+export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
 }
 
-/**
- * @param {number | null} epochMs
- * @param {number} [nowMs]
- */
-export function relativeTime(epochMs, nowMs = Date.now()) {
+export function relativeTime(epochMs: number | null, nowMs: number = Date.now()): string {
   if (!epochMs) return 'unknown time'
   const secs = Math.max(0, Math.round((nowMs - epochMs) / 1000))
   if (secs < 60) return 'just now'

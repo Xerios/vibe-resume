@@ -9,23 +9,21 @@
  * the title it had.
  */
 
-import { parse } from './relaxed-yaml.js'
+import { parse } from './relaxed-yaml'
 
 /**
  * Where each part starts, in document order. `label` is null for a line that
  * belongs to no part — `sections:` itself, or whatever else sits at the root.
- * @typedef {{ line: number, label: string | null }} Part
  */
+interface Part {
+  line: number
+  label: string | null
+}
 
-/**
- * @param {string} text
- * @returns {Part[]}
- */
-function outline(text) {
+function outline(text: string): Part[] {
   const { value, lines } = parse(text)
   const sections = Array.isArray(value?.sections) ? value.sections : []
-  /** @type {Part[]} */
-  const parts = []
+  const parts: Part[] = []
   for (const [path, line] of lines) {
     if (path === 'header') parts.push({ line, label: 'Header' })
     else if (path === 'sections') parts.push({ line, label: null })
@@ -34,8 +32,7 @@ function outline(text) {
   return parts.toSorted((a, b) => a.line - b.line)
 }
 
-/** @param {any} section */
-function nameOf(section) {
+function nameOf(section: any): string {
   const title = section?.title
   if (typeof title === 'string' && title.trim()) return title.trim()
   const type = section?.type
@@ -43,21 +40,15 @@ function nameOf(section) {
   return 'Section'
 }
 
-/** 1-based line of a character offset. @param {string} text @param {number} at */
-function lineOf(text, at) {
+/** 1-based line of a character offset. */
+function lineOf(text: string, at: number): number {
   let line = 1
   for (let i = text.indexOf('\n'); i !== -1 && i < at; i = text.indexOf('\n', i + 1)) line++
   return line
 }
 
-/**
- * The labels of every part a range of lines overlaps.
- * @param {Part[]} parts
- * @param {number} first
- * @param {number} last
- * @param {Set<string>} into
- */
-function collect(parts, first, last, into) {
+/** The labels of every part a range of lines overlaps. */
+function collect(parts: Part[], first: number, last: number, into: Set<string>): void {
   for (let i = 0; i < parts.length; i++) {
     const end = i + 1 < parts.length ? parts[i + 1].line - 1 : Infinity
     if (parts[i].line > last) break
@@ -70,18 +61,11 @@ function collect(parts, first, last, into) {
  * Name the parts a text delta touched. A change is placed by its last
  * character rather than the one after it, so a line typed and ended with
  * Enter just above the next section is not counted against that section.
- * @param {string} before  the text the delta applies to
- * @param {string} after   the text it produces
- * @param {import('loro-crdt/web').TextDiff['diff']} ops
- * @returns {string[]}  in the order the delta reaches them
  */
-export function touchedParts(before, after, ops) {
-  /** @type {Set<string>} */
-  const names = new Set()
-  /** @type {Part[] | null} */
-  let partsBefore = null
-  /** @type {Part[] | null} */
-  let partsAfter = null
+export function touchedParts(before: string, after: string, ops: import('loro-crdt/web').TextDiff['diff']): string[] {
+  const names: Set<string> = new Set()
+  let partsBefore: Part[] | null = null
+  let partsAfter: Part[] | null = null
   let fromPos = 0
   let toPos = 0
   for (const op of ops) {

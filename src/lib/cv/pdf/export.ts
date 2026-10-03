@@ -4,22 +4,20 @@
  * it brings pdfkit and fontkit with it.
  */
 
-import { toStrictYaml } from '../format/strict-yaml.js'
-import { docMeta } from '../render/doc-meta.js'
-import { toJsonResume } from '../render/json-resume.js'
-import { FACES, faceFor, fontOf } from '../theme/typefaces.js'
-import { familiesOf } from './fonts.js'
-import { PdfRenderer } from './PdfRenderer.js'
+import { toStrictYaml } from '../format/strict-yaml'
+import { docMeta } from '../render/doc-meta'
+import { toJsonResume } from '../render/json-resume'
+import { FACES, faceFor, fontOf } from '../theme/typefaces'
+import { familiesOf } from './fonts'
+import { PdfRenderer } from './PdfRenderer'
 
-/** @type {Map<string, Promise<ArrayBuffer>>} */
-const fetched = new Map()
+const fetched: Map<string, Promise<ArrayBuffer>> = new Map()
 
 /**
  * A face's bytes, fetched once per page load. The faces are build assets the
  * service worker caches, so this works offline for any font already used.
- * @param {import('../theme/typefaces.js').Face} face
  */
-function load(face) {
+function load(face: import('../theme/typefaces').Face): Promise<ArrayBuffer> {
   let p = fetched.get(face.id)
   if (!p) {
     p = fetch(face.url).then((res) => {
@@ -35,13 +33,10 @@ function load(face) {
 /**
  * Every face a display list can draw with: each family its text names, and the
  * label face the running head is set in.
- * @param {import('./measure.js').DisplayList} list
- * @param {string} font
  */
-function facesOf(list, font) {
+function facesOf(list: import('./measure').DisplayList, font: string): import('../theme/typefaces').Face[] {
   const families = new Set([fontOf(font).label])
-  /** @param {import('./measure.js').StructNode | import('./measure.js').TextItem | import('./measure.js').Paint} n */
-  const visit = (n) => {
+  const visit = (n: import('./measure').StructNode | import('./measure').TextItem | import('./measure').Paint): void => {
     if (n.kind === 'node') n.children.forEach(visit)
     else if (n.kind === 'text') for (const f of familiesOf(n.families)) families.add(f)
   }
@@ -50,26 +45,25 @@ function facesOf(list, font) {
   return FACES.filter((f) => families.has(f.family) || f.id === faceFor(fontOf(font).label, 400).id)
 }
 
-/**
- * @param {object} what
- * @param {import('./measure.js').DisplayList} what.list  the preview, measured
- * @param {any} what.cv       the parsed CV the preview is showing
- * @param {string} what.yaml  its source, as the editor holds it
- * @param {{ font?: string, paper?: Partial<import('../theme/paper.js').Paper> }} what.look
- * @param {string} what.fileName  the tab's name, which the saved file is named after
- * @returns {Promise<boolean>} false if the user backed out of the save dialog
- */
-export async function exportPdf({ list, cv, yaml, look, fileName }) {
+export interface ExportPdfInput {
+  list: import('./measure').DisplayList
+  cv: any
+  yaml: string
+  look: { font?: string; paper?: Partial<import('../theme/paper').Paper> }
+  fileName: string
+}
+
+export async function exportPdf({ list, cv, yaml, look, fileName }: ExportPdfInput): Promise<boolean> {
   const font = look.font ?? 'sans'
   const faces = facesOf(list, font)
-  const fonts = Object.fromEntries(await Promise.all(faces.map(async (f) => /** @type {const} */ ([f.id, await load(f)]))))
+  const fonts = Object.fromEntries(await Promise.all(faces.map(async (f) => [f.id, await load(f)] as const)))
   const enc = new TextEncoder()
   const bytes = await new PdfRenderer({ fonts }).render(list, {
     meta: docMeta(cv),
     font,
     paper: look.paper,
     attachments: [
-      { name: 'cv.yaml', mime: 'application/yaml', description: 'This CV’s source, as YAML', data: enc.encode(toStrictYaml(yaml)) },
+      { name: 'cv.yaml', mime: 'application/yaml', description: "This CV's source, as YAML", data: enc.encode(toStrictYaml(yaml)) },
       {
         name: 'resume.json',
         mime: 'application/json',
@@ -85,13 +79,10 @@ export async function exportPdf({ list, cv, yaml, look, fileName }) {
 /**
  * Through the save dialog where there is one, so the file can go wherever the
  * user wants it; a download where there isn't.
- * @param {Uint8Array} bytes
- * @param {string} name
- * @returns {Promise<boolean>} false if the user backed out of the dialog
  */
-async function save(bytes, name) {
-  const blob = new Blob([/** @type {BlobPart} */ (bytes)], { type: 'application/pdf' })
-  const picker = /** @type {any} */ (window).showSaveFilePicker
+async function save(bytes: Uint8Array, name: string): Promise<boolean> {
+  const blob = new Blob([bytes as BlobPart], { type: 'application/pdf' })
+  const picker = (window as any).showSaveFilePicker
   if (picker) {
     try {
       const handle = await picker({ suggestedName: name, types: [{ description: 'PDF', accept: { 'application/pdf': ['.pdf'] } }] })

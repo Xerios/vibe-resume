@@ -11,25 +11,33 @@
  * the same functions run inline instead, so a caller never has to care.
  */
 
-/**
- * @typedef {{ id: number, name: string, args: unknown[] }} Request
- * @typedef {{ id: number, value?: unknown, error?: string }} Reply
- */
+interface Request {
+  id: number
+  name: string
+  args: unknown[]
+}
+
+interface Reply {
+  id: number
+  value?: unknown
+  error?: string
+}
 
 /**
  * The worker's side of the channel. Typed by hand: the project is checked
  * against the DOM library, which has no worker global scope in it.
- * @typedef {{ postMessage(message: Reply): void, addEventListener(type: 'message', listener: (e: MessageEvent<Request>) => void): void }} WorkerScope
  */
+interface WorkerScope {
+  postMessage(message: Reply): void
+  addEventListener(type: 'message', listener: (e: MessageEvent<Request>) => void): void
+}
 
 /**
  * Answer calls to `fns` from inside a worker.
- * @param {Record<string, (...args: any[]) => unknown>} fns
  */
-export function serve(fns) {
-  const scope = /** @type {WorkerScope} */ (/** @type {unknown} */ (self))
-  /** @param {Reply} message */
-  const reply = (message) =>
+export function serve(fns: Record<string, (...args: unknown[]) => unknown>) {
+  const scope = self as unknown as WorkerScope
+  const reply = (message: Reply) =>
     // oxlint-disable-next-line unicorn/require-post-message-target-origin -- a worker's postMessage has no target origin; that is a window's
     scope.postMessage(message)
   scope.addEventListener('message', (e) => {
@@ -50,19 +58,23 @@ export function serve(fns) {
  * Importing it here means the page carries the code as well as the worker;
  * it does anyway — the editor's completion and the history's labels parse
  * on the main thread.
- *
- * @template {Record<string, (...args: any[]) => unknown>} T
- * @param {() => Worker} start
- * @param {T} fallback
- * @returns {<K extends keyof T & string>(name: K, ...args: Parameters<T[K]>) => Promise<ReturnType<T[K]>>}
  */
-export function connect(start, fallback) {
-  /** @type {Worker | null} */
-  let worker = null
+export function connect<T extends Record<string, (...args: unknown[]) => unknown>>(
+  start: () => Worker,
+  fallback: T,
+): <K extends keyof T & string>(name: K, ...args: Parameters<T[K]>) => Promise<ReturnType<T[K]>> {
+  let worker: Worker | null = null
   let broken = typeof Worker === 'undefined'
   let next = 0
-  /** @type {Map<number, { resolve: (v: any) => void, reject: (e: Error) => void, name: string, args: unknown[] }>} */
-  const pending = new Map()
+  const pending = new Map<
+    number,
+    {
+      resolve: (v: unknown) => void
+      reject: (e: Error) => void
+      name: string
+      args: unknown[]
+    }
+  >()
 
   /** Give up on the worker, and finish what it was asked inline. */
   const fail = () => {
@@ -75,19 +87,18 @@ export function connect(start, fallback) {
     }
   }
 
-  /** @param {string} name @param {unknown[]} args */
-  const inline = async (name, args) => fallback[name](...args)
+  const inline = async (name: string, args: unknown[]): Promise<unknown> => fallback[name as keyof T](...args)
 
   return (name, ...args) => {
-    if (broken) return /** @type {Promise<any>} */ (inline(name, args))
+    if (broken) return inline(name, args) as Promise<ReturnType<T[typeof name & keyof T]>>
     if (!worker) {
       try {
         worker = start()
       } catch {
         fail()
-        return /** @type {Promise<any>} */ (inline(name, args))
+        return inline(name, args) as Promise<ReturnType<T[typeof name & keyof T]>>
       }
-      worker.addEventListener('message', (/** @type {MessageEvent<Reply>} */ e) => {
+      worker.addEventListener('message', (e: MessageEvent<Reply>) => {
         const call = pending.get(e.data.id)
         if (!call) return
         pending.delete(e.data.id)
@@ -98,10 +109,10 @@ export function connect(start, fallback) {
     }
     const id = ++next
     const target = worker
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve: (v: unknown) => void, reject: (e: Error) => void) => {
       pending.set(id, { resolve, reject, name, args })
       // oxlint-disable-next-line unicorn/require-post-message-target-origin -- a Worker's postMessage has no target origin; that is a window's
-      target.postMessage(/** @type {Request} */ ({ id, name, args }))
-    })
+      target.postMessage({ id, name, args } as Request)
+    }) as Promise<ReturnType<T[typeof name & keyof T]>>
   }
 }

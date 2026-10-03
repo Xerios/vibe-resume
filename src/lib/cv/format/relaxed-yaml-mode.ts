@@ -14,20 +14,28 @@
 
 import { LanguageSupport, StreamLanguage, foldService } from '@codemirror/language'
 import { tags as t } from '@lezer/highlight'
-import { contactRuns, dateRuns, inlineRuns } from './inline-markdown.js'
-import { splitLine } from './relaxed-yaml.js'
+import { contactRuns, dateRuns, inlineRuns } from './inline-markdown'
+import { splitLine } from './relaxed-yaml'
 
 /**
- * @typedef {object} State
- * @property {number} block  indent of the line that opened a `|` or `>` body, or -1
- * @property {number} indent indent of the last line that had anything on it
- * @property {boolean} opens that line ended on a `key:` or a bare `-`, so the next one steps in
- * @property {string} base   token the value on this line is made of, under its markdown
- * @property {number} md     column that value starts at, or -1 when the line has no value
- * @property {number} contact indent of the `contact:` the lines below belong to, or -1
- * @property {'' | 'contact' | 'dates'} kind a value read for more than its markdown: a contact line, which
- *   can be a phone number, or a `dates` value
+ * Parser state for a line.
  */
+interface State {
+  /** indent of the line that opened a `|` or `>` body, or -1 */
+  block: number
+  /** indent of the last line that had anything on it */
+  indent: number
+  /** that line ended on a `key:` or a bare `-`, so the next one steps in */
+  opens: boolean
+  /** token the value on this line is made of, under its markdown */
+  base: string
+  /** column that value starts at, or -1 when the line has no value */
+  md: number
+  /** indent of the `contact:` the lines below belong to, or -1 */
+  contact: number
+  /** a value read for more than its markdown: a contact line, which can be a phone number, or a `dates` value */
+  kind: '' | 'contact' | 'dates'
+}
 
 const tokenTable = {
   cvKey: t.definition(t.propertyName),
@@ -60,9 +68,8 @@ const tokenTable = {
  * Whether a scalar is wrapped in its own quotes — the one thing the tokenizer
  * colours differently from bare text. Deliberately looser than the parser's
  * `readScalar`: a half-typed quote should still look like a string.
- * @param {string} s
  */
-function quoted(s) {
+function quoted(s: string): boolean {
   const v = s.trimEnd()
   if (v.length < 2) return false
   const q = v[0]
@@ -73,10 +80,8 @@ function quoted(s) {
  * Emit the next run of the value that starts at `state.md`, markdown and all.
  * The value's own token is decided once, when the line's value begins, so a
  * `true` or a quote halfway through a sentence can't take the rest of it over.
- * @param {import('@codemirror/language').StringStream} stream
- * @param {State} state
  */
-function value(stream, state) {
+function value(stream: import('@codemirror/language').StringStream, state: State): string {
   const runs = state.kind === 'contact' ? contactRuns : state.kind === 'dates' ? dateRuns : inlineRuns
   const run = runs(stream.string, state.md).find((r) => r.to > stream.pos)
   if (!run) {
@@ -87,13 +92,12 @@ function value(stream, state) {
   return run.token ? state.base + ' ' + run.token : state.base
 }
 
-/** @type {import('@codemirror/language').StreamParser<State>} */
-const parser = {
+const parser: import('@codemirror/language').StreamParser<State> = {
   name: 'relaxed-yaml',
 
-  startState: () => ({ block: -1, indent: 0, opens: false, base: 'cvText', md: -1, contact: -1, kind: '' }),
+  startState: (): State => ({ block: -1, indent: 0, opens: false, base: 'cvText', md: -1, contact: -1, kind: '' }),
 
-  token(stream, state) {
+  token(stream: import('@codemirror/language').StringStream, state: State): string | null {
     const line = stream.string
     const p = splitLine(line)
     const blank = p.indent >= line.length
@@ -184,7 +188,7 @@ const parser = {
    * keeps the indent of the line above it. There is nothing further to guess
    * from — a value carries no punctuation the way a brace or a bracket would.
    */
-  indent(state, _textAfter, cx) {
+  indent(state: State, _textAfter: string, cx: import('@codemirror/language').IndentContext): number {
     if (state.block >= 0) return state.block + cx.unit
     return state.indent + (state.opens ? cx.unit : 0)
   },
@@ -204,7 +208,7 @@ export const relaxedYamlLanguage = StreamLanguage.define(parser)
  * needs. A blank line inside the run doesn't end it; trailing ones stay out, so
  * folding a section doesn't swallow the gap before the next one.
  */
-const foldByIndent = foldService.of((state, _from, to) => {
+const foldByIndent = foldService.of((state: import('@codemirror/state').EditorState, _from: number, to: number): { from: number; to: number } | null => {
   const line = state.doc.lineAt(to)
   const p = splitLine(line.text)
   if (p.indent >= line.text.length || p.comment >= 0) return null
@@ -221,6 +225,6 @@ const foldByIndent = foldService.of((state, _from, to) => {
 })
 
 /** The editor's language: the tokenizer, and folding by indentation. */
-export function relaxedYaml() {
+export function relaxedYaml(): LanguageSupport {
   return new LanguageSupport(relaxedYamlLanguage, [foldByIndent])
 }

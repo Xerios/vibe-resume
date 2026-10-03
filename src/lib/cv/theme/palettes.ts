@@ -9,27 +9,32 @@
  * what is on screen is what prints.
  */
 
-/**
- * @typedef {object} Palette
- * @property {string} accent  role, org, bullet marks
- * @property {string} deep    section titles, sub-headings, links
- * @property {string} wash    the faintest tint of the accent
- * @property {string} line    rules and dividers
- * @property {string} paper   the sheet
- * @property {string} ink     body text
- * @property {string} muted   secondary text
- * @property {string} faint   dates and asides
- */
+export interface Palette {
+  /** role, org, bullet marks */
+  accent: string
+  /** section titles, sub-headings, links */
+  deep: string
+  /** the faintest tint of the accent */
+  wash: string
+  /** rules and dividers */
+  line: string
+  /** the sheet */
+  paper: string
+  /** body text */
+  ink: string
+  /** secondary text */
+  muted: string
+  /** dates and asides */
+  faint: string
+}
 
-/**
- * @typedef {object} Theme
- * @property {string} id
- * @property {string} name
- * @property {Palette} colors
- */
+export interface Theme {
+  id: string
+  name: string
+  colors: Palette
+}
 
-/** @type {Theme[]} */
-export const THEMES = [
+export const THEMES: Theme[] = [
   {
     id: 'teal',
     name: 'Teal',
@@ -72,17 +77,14 @@ export const DEFAULT_THEME = 'teal'
 /**
  * Falls back rather than trusting what came out of storage: an id can outlive
  * the palette it named.
- * @param {string | undefined | null} id
  */
-export function resolveTheme(id) {
-  return THEMES.some((t) => t.id === id) ? /** @type {string} */ (id) : DEFAULT_THEME
+export function resolveTheme(id: string | undefined | null): string {
+  return THEMES.some((t) => t.id === id) ? (id as string) : DEFAULT_THEME
 }
 
 /**
  * The colours a theme id comes to, defaulted.
- * @param {string | undefined | null} id
- * @returns {Palette}
  */
-export function palette(id) {
+export function palette(id: string | undefined | null): Palette {
   return (THEMES.find((t) => t.id === resolveTheme(id)) ?? THEMES[0]).colors
 }

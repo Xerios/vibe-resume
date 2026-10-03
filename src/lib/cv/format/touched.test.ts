@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { touchedParts } from './touched.js'
+import { touchedParts } from './touched'
 
 const CV = `header:
   name: Jane
@@ -23,24 +23,20 @@ sections:
 
 /**
  * The delta that turns `before` into `after` by replacing one stretch.
- * @param {string} before
- * @param {string} after
  */
-function delta(before, after) {
+function delta(before: string, after: string) {
   let head = 0
   while (head < before.length && head < after.length && before[head] === after[head]) head++
   let tail = 0
   while (tail < before.length - head && tail < after.length - head && before[before.length - 1 - tail] === after[after.length - 1 - tail]) tail++
-  /** @type {import('loro-crdt/web').TextDiff['diff']} */
-  const ops = []
+  const ops: any[] = []
   if (head) ops.push({ retain: head })
   if (before.length - head - tail) ops.push({ delete: before.length - head - tail })
   if (after.length - head - tail) ops.push({ insert: after.slice(head, after.length - tail) })
   return ops
 }
 
-/** @param {string} before @param {string} after */
-const touched = (before, after) => touchedParts(before, after, delta(before, after))
+const touched = (before: string, after: string) => touchedParts(before, after, delta(before, after))
 
 describe('touchedParts', () => {
   it('names a section by its title', () => {
@@ -56,7 +52,10 @@ describe('touchedParts', () => {
   })
 
   it('names every part one change spans', () => {
-    expect(touched(CV, CV.replace(/Jane[\s\S]*Hello/, 'Jo\nsections:\n  - type: summary\n    title: Summary\n    paragraphs:\n      - Hi'))).toEqual(['Header', 'Summary'])
+    expect(touched(CV, CV.replace(/Jane[\s\S]*Hello/, 'Jo\nsections:\n  - type: summary\n    title: Summary\n    paragraphs:\n      - Hi'))).toEqual([
+      'Header',
+      'Summary',
+    ])
   })
 
   it('names a deleted section by the title it had', () => {

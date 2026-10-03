@@ -125,24 +125,25 @@ binding, version history, CSS layering) in depth. Don't duplicate it here.
 
 ## Conventions
 
-- JS with JSDoc types, not TypeScript. `checkJs` + `strict` are on, so type errors
-  surface through `pnpm check`. `src/app.d.ts` is the only `.ts` file.
+- TypeScript: all source files are `.ts`, with `strict` mode on. `src/app.d.ts` is
+  the single declaration file for global types. JSDoc has been converted to real
+  TypeScript annotations throughout.
 - Runes are forced on for all non-`node_modules` files (`vite.config.js`). Shared
-  reactive state lives in `.svelte.js` classes using `$state` / `$derived`.
+  reactive state lives in `.svelte.ts` classes using `$state` / `$derived`.
 - The app has two routes and they share one set of state objects — the
-  singletons in `src/lib/cv/state/state.svelte.js`. Don't construct a `CvDoc` or
+  singletons in `src/lib/cv/state/state.svelte.ts`. Don't construct a `CvDoc` or
   `FileManager` in a page; import those and call `start()`.
-- A CV is laid out once, as HTML: `render/model.js` builds a tree in reading
-  order (block variants from `render/variants.js` become properties on it),
-  `html/CvSheet.svelte` + `html/sheet.css` lay it out, and `html/paginate.js`
-  breaks it into pages. The PDF is that layout read back by `pdf/measure.js` and
-  drawn by `pdf/PdfRenderer.js`; there is no second layout engine. A new look is
-  model properties + CSS, and the CSS must stay within what measure.js reads
+- A CV is laid out once, as HTML: `render/model.ts` builds a tree in reading
+  order (block variants from `render/variants.ts` become properties on it),
+  `html/CvSheet.svelte` + `html/sheet.css` lay it out, and `html/paginate.ts`
+  breaks it into pages. The PDF is that layout read back by `pdf/measure.ts` and
+  drawn by `pdf/PdfRenderer.ts`; there is no second layout engine. A new look is
+  model properties + CSS, and the CSS must stay within what measure.ts reads
   (text, solid/dashed/dotted borders, fills, radii, translations, `<path>`).
   Decoration must be a real `aria-hidden` element, never `::before`/`::after`.
 - Export must stay PDF/UA-1: every drawn thing is either tagged content or an
   `Artifact`, content is written in DOM order, and only the bundled faces in
-  `theme/typefaces.js` are used. `pdf/PdfRenderer.test.js` checks this against
+  `theme/typefaces.ts` are used. `pdf/PdfRenderer.test.ts` checks this against
   display lists in `pdf/fixtures/`, which are measured from a real browser and
   have to be measured again when the sheet's markup changes.
 - Never write a literal `<style>` or `<script>` tag inside a comment in a Svelte

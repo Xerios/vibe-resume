@@ -10,9 +10,8 @@
  * year isn't among them: it is a coarser date, not another spelling of one, and
  * a degree in `2010 – 2014` beside a job in `03/2020 – Present` is normal.
  * Anything not recognised — another language, `Summer 2019` — is left alone.
- * @type {[RegExp, string][]}
  */
-export const DATE_FORMATS = [
+export const DATE_FORMATS: Array<[RegExp, string]> = [
   [/^\d{1,2}\/\d{4}$/, '03/2020'],
   [/^\d{1,2}\.\d{4}$/, '03.2020'],
   [/^\d{4}-\d{1,2}$/, '2020-03'],
@@ -29,25 +28,29 @@ const OTHER_DATES = /^(?:\d{4}|present|current|now|today|ongoing)$/i
 /**
  * Whether one end of a range is a date: a month in any of the formats, a year,
  * or `Present`.
- * @param {string} part trimmed
  */
-export const isDate = (part) => OTHER_DATES.test(part) || DATE_FORMATS.some(([re]) => re.test(part))
+export const isDate = (part: string): boolean => OTHER_DATES.test(part) || DATE_FORMATS.some(([re]) => re.test(part))
 
 /* ── Reading a date for what it means ────────────────────────────────────── */
 
 /**
  * One end of a range: a year, and a month when the CV gave one.
- * @typedef {{ year: number, month?: number }} When
  */
+export interface When {
+  year: number
+  month?: number
+}
 
 /**
  * What a `dates` value means: where it starts, and where it ends — another
  * date, still going, or nothing for a single date.
- * @typedef {object} DateSpan
- * @property {When} start
- * @property {When | 'present' | null} end
- * @property {{ start: string, sep: string, end: string }} written  the value as typed, cut at the separator
  */
+interface DateSpan {
+  start: When
+  end: When | 'present' | null
+  /** the value as typed, cut at the separator */
+  written: { start: string; sep: string; end: string }
+}
 
 const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
 const LONG = MONTHS.map((m) => m[0].toUpperCase() + m.slice(1))
@@ -58,10 +61,8 @@ const OPEN_END = /^(?:present|current|now|today|ongoing)$/i
 
 /**
  * One end of a range, read: every format DATE_FORMATS knows, or a year.
- * @param {string} part trimmed
- * @returns {When | null}
  */
-function readWhen(part) {
+function readWhen(part: string): When | null {
   let m = /^(\d{1,2})[/.](\d{4})$/.exec(part)
   if (m) return month(Number(m[2]), Number(m[1]))
   m = /^(\d{4})-(\d{1,2})$/.exec(part)
@@ -76,17 +77,14 @@ function readWhen(part) {
   return m ? { year: Number(m[1]) } : null
 }
 
-/** @param {number} year @param {number} m */
-const month = (year, m) => (m >= 1 && m <= 12 ? { year, month: m } : null)
+const month = (year: number, m: number): When | null => (m >= 1 && m <= 12 ? { year, month: m } : null)
 
 /**
  * What a `dates` value means, or null when it isn't one this can read — a
  * season, another language, a typo. A value like that is printed as typed and
  * claims nothing.
- * @param {string} text  the value's plain text
- * @returns {DateSpan | null}
  */
-export function parseDates(text) {
+export function parseDates(text: string): DateSpan | null {
   const value = text.trim()
   if (!value) return null
   const cut = RANGE_SPLIT.exec(value)
@@ -108,10 +106,8 @@ export const DATE_STYLES = ['as-written', 'short', 'long', 'numeric', 'iso']
 
 /**
  * One end, printed.
- * @param {When | 'present'} w
- * @param {string} style  a DATE_STYLES id other than `as-written`
  */
-export function formatWhen(w, style) {
+export function formatWhen(w: When | 'present', style: string): string {
   if (w === 'present') return 'Present'
   if (!w.month) return String(w.year)
   const mm = String(w.month).padStart(2, '0')
@@ -124,17 +120,16 @@ export function formatWhen(w, style) {
 /**
  * One end as an ISO 8601 date — `2020-03`, `2020` — for `<time datetime>` and
  * JSON Resume. An open end has none.
- * @param {When | 'present' | null} w
  */
-export const isoWhen = (w) => (!w || w === 'present' ? '' : w.month ? `${w.year}-${String(w.month).padStart(2, '0')}` : String(w.year))
+export const isoWhen = (w: When | 'present' | null): string =>
+  !w || w === 'present' ? '' : w.month ? `${w.year}-${String(w.month).padStart(2, '0')}` : String(w.year)
 
 /**
  * A span as it reads aloud and as a parser reads it best: months spelled out
  * and `to` between the ends — `March 2020 to Present`. This is what the PDF
  * gives as the dates' actual text, whatever the sheet printed.
- * @param {DateSpan} span
  */
-export function spokenDates(span) {
+export function spokenDates(span: DateSpan): string {
   const start = formatWhen(span.start, 'long')
   return span.end ? `${start} to ${formatWhen(span.end, 'long')}` : start
 }

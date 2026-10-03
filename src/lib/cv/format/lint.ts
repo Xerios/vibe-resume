@@ -16,8 +16,8 @@
  * escape hatch quotes still have.
  */
 
-import { DATE_FORMATS, RANGE_SPLIT } from './dates.js'
-import { parse, splitLine } from './relaxed-yaml.js'
+import { DATE_FORMATS, RANGE_SPLIT } from './dates'
+import { parse, splitLine } from './relaxed-yaml'
 
 /**
  * Every section type, and what it holds.
@@ -25,10 +25,8 @@ import { parse, splitLine } from './relaxed-yaml.js'
  * `holds` is the key the section's content lives under; `item` is the keys an
  * entry may carry, or null when the entries are plain text. `extra` is what the
  * type adds to the keys every section has.
- *
- * @type {Record<string, { holds: string, item: string[] | null, extra?: string[] }>}
  */
-export const SECTIONS = {
+export const SECTIONS: Record<string, { holds: string; item: string[] | null; extra?: string[] }> = {
   text: { holds: 'paragraphs', item: null },
   groups: { holds: 'blocks', item: ['title', 'rows'] },
   entries: { holds: 'items', item: ['subtype', 'title', 'org', 'dates', 'sub', 'sideNote', 'bullets', 'stack', 'items'] },
@@ -52,28 +50,20 @@ const TYPES = Object.keys(SECTIONS)
 
 /**
  * The month formats a `dates` value is written in, as their examples.
- * @param {unknown} value
  */
-const dateFormats = (value) =>
+const dateFormats = (value: unknown): string[] =>
   String(value)
     .replace(/[*_`]/g, '')
     .split(RANGE_SPLIT)
     .map((part) => DATE_FORMATS.find(([re]) => re.test(part.trim()))?.[1])
-    .filter((f) => f !== undefined)
+    .filter((f) => f !== undefined) as string[]
 
-/**
- * @param {unknown} v
- * @returns {v is Record<string, unknown>}
- */
-const isMap = (v) => typeof v === 'object' && v !== null && !Array.isArray(v)
+const isMap = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
 
 /**
  * Read a document and say everything that looks wrong with it.
- *
- * @param {string} text
- * @returns {import('@codemirror/lint').Diagnostic[]}
  */
-export function lintCv(text) {
+export function lintCv(text: string): import('@codemirror/lint').Diagnostic[] {
   const { value, lines, diagnostics } = parse(text)
   const out = [...diagnostics]
 
@@ -87,10 +77,8 @@ export function lintCv(text) {
    * The parser's line map is what ties a path back to a line; taking the range
    * apart again from the source is cheaper than carrying every offset through
    * the parse for the sake of the few nodes anything is ever said about.
-   * @param {string} path
-   * @param {'key' | 'value' | 'line'} part
    */
-  const span = (path, part) => {
+  const span = (path: string, part: 'key' | 'value' | 'line'): { from: number; to: number } | null => {
     const n = lines.get(path)
     if (!n) return null
     const from = starts[n - 1]
@@ -102,24 +90,17 @@ export function lintCv(text) {
     return { from: from + p.content, to: Math.max(end, from + p.content) }
   }
 
-  /**
-   * @param {string} path
-   * @param {'key' | 'value' | 'line'} part
-   * @param {string} message
-   * @param {import('@codemirror/lint').Diagnostic['severity']} [severity]
-   */
-  const say = (path, part, message, severity = 'warning') => {
+  const say = (
+    path: string,
+    part: 'key' | 'value' | 'line',
+    message: string,
+    severity: import('@codemirror/lint').Diagnostic['severity'] = 'warning',
+  ): void => {
     const at = span(path, part)
     if (at) out.push({ ...at, severity, source: 'cv', message })
   }
 
-  /**
-   * @param {Record<string, unknown>} obj
-   * @param {string} path
-   * @param {string[]} allowed
-   * @param {string} what what the thing is, for the message
-   */
-  const checkKeys = (obj, path, allowed, what) => {
+  const checkKeys = (obj: Record<string, unknown>, path: string, allowed: string[], what: string): void => {
     for (const key of Object.keys(obj)) {
       if (allowed.includes(key)) continue
       say(path ? `${path}.${key}` : key, 'key', `Nothing renders \`${key}\` on ${what}. Try one of: ${allowed.join(', ')}.`)
@@ -129,10 +110,8 @@ export function lintCv(text) {
   /**
    * A list that should hold text. An entry that came back a mapping is almost
    * always a line that reads as `key: value` by accident.
-   * @param {unknown[]} arr
-   * @param {string} path
    */
-  const checkTextList = (arr, path) => {
+  const checkTextList = (arr: unknown[], path: string): void => {
     arr.forEach((entry, i) => {
       if (!isMap(entry)) return
       const keys = Object.keys(entry)
@@ -155,9 +134,8 @@ export function lintCv(text) {
 
   const sections = Array.isArray(cv.sections) ? cv.sections : []
   /** Every `dates` value, for the consistency check once the walk is done. */
-  /** @type {{ path: string, formats: string[] }[]} */
-  const dated = []
-  sections.forEach((sec, i) => {
+  const dated: Array<{ path: string; formats: string[] }> = []
+  sections.forEach((sec: unknown, i: number) => {
     const path = `sections.${i}`
     if (!isMap(sec)) {
       say(path, 'line', 'A section has to be a mapping, starting with `type:`.')
@@ -200,7 +178,7 @@ export function lintCv(text) {
         say(itemPath, 'line', `A \`${type}\` entry is a mapping — give it at least \`${spec.item?.[0]}:\`.`)
         return
       }
-      checkKeys(item, itemPath, /** @type {string[]} */ (spec.item), `a \`${type}\` entry`)
+      if (spec.item !== null) checkKeys(item, itemPath, spec.item, `a \`${type}\` entry`)
       if (item.dates != null && !isMap(item.dates) && !Array.isArray(item.dates)) {
         dated.push({ path: `${itemPath}.dates`, formats: dateFormats(item.dates) })
       }
@@ -209,7 +187,7 @@ export function lintCv(text) {
       }
       // `groups` is the one type with a level below its entries.
       if (type === 'groups' && Array.isArray(item.rows)) {
-        item.rows.forEach((/** @type {unknown} */ row, /** @type {number} */ k) => {
+        item.rows.forEach((row: unknown, k: number) => {
           const rowPath = `${itemPath}.rows.${k}`
           if (isMap(row)) checkKeys(row, rowPath, ROW_KEYS, 'a groups row')
           else say(rowPath, 'line', 'A groups row is a mapping — `text:`, and `tier:` in front of it if you want one.')
@@ -227,13 +205,9 @@ export function lintCv(text) {
  * printed text, and a document that switches between `03/2020` and
  * `March 2021` is the one most likely to get a range wrong. The format most of
  * the document uses is the one to keep; a tie goes to whichever came first.
- *
- * @param {{ path: string, formats: string[] }[]} dated
- * @param {(path: string, part: 'value', message: string, severity: 'info') => void} say
  */
-function checkDates(dated, say) {
-  /** @type {Map<string, number>} */
-  const counts = new Map()
+function checkDates(dated: Array<{ path: string; formats: string[] }>, say: (path: string, part: 'value', message: string, severity: 'info') => void): void {
+  const counts: Map<string, number> = new Map()
   for (const { formats } of dated) for (const f of formats) counts.set(f, (counts.get(f) ?? 0) + 1)
   if (counts.size < 2) return
   let main = ''
@@ -242,10 +216,15 @@ function checkDates(dated, say) {
   for (const { path, formats } of dated) {
     const odd = formats.find((f) => f !== main)
     if (odd) {
-      say(path, 'value', `Most dates here read like \`${main}\`; this one reads like \`${odd}\`. One format throughout is easier for résumé parsers to read.`, 'info')
+      say(
+        path,
+        'value',
+        `Most dates here read like \`${main}\`; this one reads like \`${odd}\`. One format throughout is easier for résumé parsers to read.`,
+        'info',
+      )
     }
   }
 }
 
-/** @param {import('@codemirror/lint').Diagnostic[]} list */
-const sorted = (list) => list.toSorted((a, b) => a.from - b.from || a.to - b.to)
+const sorted = (list: import('@codemirror/lint').Diagnostic[]): import('@codemirror/lint').Diagnostic[] =>
+  list.toSorted((a, b) => a.from - b.from || a.to - b.to)

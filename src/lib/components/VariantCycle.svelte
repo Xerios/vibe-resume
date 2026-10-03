@@ -17,7 +17,7 @@
 
   /**
    * @type {{
-   *   slot: import('$lib/cv/render/variants.js').Slot,
+   *   slot: import('$lib/cv/render/variants').Slot,
    *   choices: Record<string, string>,
    *   onPick: (slotId: string, variantId: string) => void,
    *   menuAlign?: 'left' | 'right',

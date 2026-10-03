@@ -8,8 +8,8 @@
   import IconPencil from '@iconify-icons/lucide/pencil'
   import IconTrash from '@iconify-icons/lucide/trash'
   import IconCompare from '@iconify-icons/lucide/git-compare'
-  import { commands } from '$lib/cv/state/commands.js'
-  import { files } from '$lib/cv/state/state.svelte.js'
+  import { commands } from '$lib/cv/state/commands'
+  import { files } from '$lib/cv/state/state.svelte'
   import { fly } from 'svelte/transition'
 
   let editingId = $state(/** @type {string | null} */ (null))
@@ -22,7 +22,7 @@
   let menuId = $state(/** @type {string | null} */ (null))
   /** What had focus when the menu opened, so closing it can hand focus back. */
   let returnTo = $state(/** @type {HTMLElement | null} */ (null))
-  const menuFile = $derived(files.open.find((/** @type {import('$lib/cv/state/files.svelte.js').FileMeta} */ f) => f.id === menuId))
+  const menuFile = $derived(files.open.find((/** @type {import('$lib/cv/state/files.svelte').FileMeta} */ f) => f.id === menuId))
   /**
    * Where that menu is drawn. It is positioned against the viewport rather than
    * against the tab, because #tabs scrolls: a box positioned inside it is
@@ -74,7 +74,7 @@
   // Keep the active tab in view: on switching, opening, and reordering.
   $effect(() => {
     void files.activeId
-    void files.open.map((/** @type {import('$lib/cv/state/files.svelte.js').FileMeta} */ f) => f.id)
+    void files.open.map((/** @type {import('$lib/cv/state/files.svelte').FileMeta} */ f) => f.id)
     const tab = /** @type {HTMLElement | null | undefined} */ (tabsEl?.querySelector('.tab.active'))
     if (tabsEl && tab) {
       const strip = tabsEl.getBoundingClientRect()
@@ -95,7 +95,7 @@
     return !!node && (!!menu?.contains(node) || !!moreBtn?.contains(node))
   }
 
-  /** @param {import('$lib/cv/state/files.svelte.js').FileMeta} f */
+  /** @param {import('$lib/cv/state/files.svelte').FileMeta} f */
   function startRename(f) {
     editingId = f.id
     editValue = f.name
@@ -117,7 +117,7 @@
    * two gestures every file list has trained people to try. The menu offers it
    * a third time, for whoever went looking there first.
    * @param {KeyboardEvent} e
-   * @param {import('$lib/cv/state/files.svelte.js').FileMeta} f
+   * @param {import('$lib/cv/state/files.svelte').FileMeta} f
    */
   function onTabKeydown(e, f) {
     // Alt+arrows are the drag below, for whoever isn't holding a pointer.
@@ -138,7 +138,7 @@
    * @param {1 | -1} by
    */
   function moveTab(id, by) {
-    const ids = files.open.map((/** @type {import('$lib/cv/state/files.svelte.js').FileMeta} */ f) => f.id)
+    const ids = files.open.map((/** @type {import('$lib/cv/state/files.svelte').FileMeta} */ f) => f.id)
     const to = ids.indexOf(id) + by
     if (to < 0 || to >= ids.length) return
     // Left means "take that tab's place"; right means "go past it".
@@ -152,7 +152,7 @@
    * for. The menu is closed on the way in, because it is placed against the
    * viewport and the tab it belongs to is about to move.
    * @param {DragEvent} e
-   * @param {import('$lib/cv/state/files.svelte.js').FileMeta} f
+   * @param {import('$lib/cv/state/files.svelte').FileMeta} f
    */
   function onTabDragStart(e, f) {
     dragId = f.id
@@ -165,7 +165,7 @@
 
   /**
    * @param {DragEvent} e
-   * @param {import('$lib/cv/state/files.svelte.js').FileMeta} f
+   * @param {import('$lib/cv/state/files.svelte').FileMeta} f
    */
   function onTabDragOver(e, f) {
     if (!dragId || dragId === f.id) return
@@ -173,7 +173,7 @@
     if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
 
     const rect = /** @type {HTMLElement} */ (e.currentTarget).getBoundingClientRect()
-    const ids = files.open.map((/** @type {import('$lib/cv/state/files.svelte.js').FileMeta} */ x) => x.id)
+    const ids = files.open.map((/** @type {import('$lib/cv/state/files.svelte').FileMeta} */ x) => x.id)
     const at = ids.indexOf(f.id)
     // Past the middle of a tab is a request to be on its far side.
     const before = e.clientX > rect.left + rect.width / 2 ? (ids[at + 1] ?? null) : f.id
@@ -208,7 +208,7 @@
    * switch to it. While renaming, the input keeps the browser's own menu (cut,
    * copy, paste).
    * @param {MouseEvent} e
-   * @param {import('$lib/cv/state/files.svelte.js').FileMeta} f
+   * @param {import('$lib/cv/state/files.svelte').FileMeta} f
    */
   function onTabContextMenu(e, f) {
     if (editingId === f.id) return

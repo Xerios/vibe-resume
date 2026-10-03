@@ -13,10 +13,10 @@
   import IconSun from '@iconify-icons/lucide/sun'
   import IconCompare from '@iconify-icons/lucide/git-compare'
   import IconTrash from '@iconify-icons/lucide/trash'
-  import { commands } from '$lib/cv/state/commands.js'
-  import { doc, files, ui } from '$lib/cv/state/state.svelte.js'
-  import { swUpdate } from '$lib/sw-update.svelte.js'
-  import { shortcut } from './access-keys.js'
+  import { commands } from '$lib/cv/state/commands'
+  import { doc, files, ui } from '$lib/cv/state/state.svelte'
+  import { swUpdate } from '$lib/sw-update.svelte'
+  import { shortcut } from './access-keys'
 
   const saveLabel = $derived.by(() => {
     if (doc.saveError) return '⚠ not saved'

@@ -7,15 +7,13 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { contactRuns, dateRuns, inlineRuns } from './inline-markdown.js'
+import { contactRuns, dateRuns, inlineRuns } from './inline-markdown'
 
 /**
  * Each run as `token:text`, with plain runs left bare.
- * @param {string} text
- * @param {number} [from]
  */
-function runs(text, from = 0) {
-  return inlineRuns(text, from).map((r) => {
+function runs(text: string, from = 0) {
+  return inlineRuns(text, from).map((r: any) => {
     const s = text.slice(r.from, r.to)
     return r.token ? `${r.token}:${s}` : s
   })
@@ -87,10 +85,9 @@ describe('autolinks', () => {
 
 /**
  * A contact line's runs, the same way.
- * @param {string} text
  */
-function contact(text) {
-  return contactRuns(text).map((r) => {
+function contact(text: string) {
+  return contactRuns(text).map((r: any) => {
     const s = text.slice(r.from, r.to)
     return r.token ? `${r.token}:${s}` : s
   })
@@ -112,10 +109,9 @@ describe('contact lines', () => {
 
 /**
  * A `dates` value's runs, the same way.
- * @param {string} text
  */
-function dates(text) {
-  return dateRuns(text).map((r) => {
+function dates(text: string) {
+  return dateRuns(text).map((r: any) => {
     const s = text.slice(r.from, r.to)
     return r.token ? `${r.token}:${s}` : s
   })
@@ -153,15 +149,7 @@ describe('html tags', () => {
   })
 
   it('still reads the markdown around it', () => {
-    expect(runs('**a**<br>_b_')).toEqual([
-      'cvMdMark:**',
-      'cvMdStrong:a',
-      'cvMdMark:**',
-      'cvMdHtml:<br>',
-      'cvMdMark:_',
-      'cvMdEm:b',
-      'cvMdMark:_',
-    ])
+    expect(runs('**a**<br>_b_')).toEqual(['cvMdMark:**', 'cvMdStrong:a', 'cvMdMark:**', 'cvMdHtml:<br>', 'cvMdMark:_', 'cvMdEm:b', 'cvMdMark:_'])
   })
 })
 

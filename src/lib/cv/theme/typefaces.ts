@@ -47,14 +47,14 @@ import jbmono700 from '@expo-google-fonts/jetbrains-mono/700Bold/JetBrainsMono_7
 import jbmono700i from '@expo-google-fonts/jetbrains-mono/700Bold_Italic/JetBrainsMono_700Bold_Italic.ttf?url'
 import jbmono800 from '@expo-google-fonts/jetbrains-mono/800ExtraBold/JetBrainsMono_800ExtraBold.ttf?url'
 
-/**
- * @typedef {object} Family
- * @property {string} name  as shown to a person
- * @property {string} css   the CSS family name the preview declares its faces under
- */
+export interface Family {
+  /** as shown to a person */
+  name: string
+  /** the CSS family name the preview declares its faces under */
+  css: string
+}
 
-/** @type {Record<string, Family>} */
-export const FAMILIES = {
+export const FAMILIES: Record<string, Family> = {
   inter: { name: 'Inter', css: 'CV Inter' },
   archivo: { name: 'Archivo', css: 'CV Archivo' },
   sourceSans: { name: 'Source Sans 3', css: 'CV Source Sans 3' },
@@ -66,17 +66,16 @@ export const FAMILIES = {
 /** Where a character none of a choice's faces has a glyph for is set: Inter has the widest coverage of the six. */
 export const LAST_RESORT = 'inter'
 
-/**
- * @typedef {object} Face
- * @property {string} id
- * @property {string} family  a FAMILIES key
- * @property {number} weight
- * @property {boolean} italic
- * @property {string} url
- */
+export interface Face {
+  id: string
+  /** a FAMILIES key */
+  family: string
+  weight: number
+  italic: boolean
+  url: string
+}
 
-/** @type {Face[]} */
-export const FACES = [
+export const FACES: Face[] = [
   { id: 'inter-400', family: 'inter', weight: 400, italic: false, url: inter400 },
   { id: 'inter-400i', family: 'inter', weight: 400, italic: true, url: inter400i },
   { id: 'inter-600', family: 'inter', weight: 600, italic: false, url: inter600 },
@@ -119,16 +118,19 @@ export const FACES = [
  * A font choice: the family text is set in, and the family the labels are.
  * The sans choices pair with a typewriter face for labels; the serifs stay in
  * their own family, so the sheet reads as one piece of typesetting.
- * @typedef {object} Font
- * @property {string} id
- * @property {string} name
- * @property {string} hint  one line, shown as the option's tooltip
- * @property {string} text   a FAMILIES key
- * @property {string} label  a FAMILIES key
  */
+export interface Font {
+  id: string
+  name: string
+  /** one line, shown as the option's tooltip */
+  hint: string
+  /** a FAMILIES key */
+  text: string
+  /** a FAMILIES key */
+  label: string
+}
 
-/** @type {Font[]} */
-export const FONTS = [
+export const FONTS: Font[] = [
   { id: 'sans', name: 'Sans', hint: 'Inter, with JetBrains Mono labels — the default', text: 'inter', label: 'jbmono' },
   { id: 'grotesk', name: 'Grotesk', hint: 'Archivo — neutral, tight', text: 'archivo', label: 'jbmono' },
   { id: 'humanist', name: 'Humanist', hint: 'Source Sans 3 — softer, open', text: 'sourceSans', label: 'jbmono' },
@@ -142,21 +144,18 @@ export const DEFAULT_FONT = 'sans'
 /**
  * Falls back rather than trusting what came out of storage — a file saved
  * before this feature has no font, and an id can outlive its pairing.
- * @param {string | undefined | null} id
  */
-export function resolveFont(id) {
-  return FONTS.some((f) => f.id === id) ? /** @type {string} */ (id) : DEFAULT_FONT
+export function resolveFont(id: string | undefined | null): string {
+  return FONTS.some((f) => f.id === id) ? (id as string) : DEFAULT_FONT
 }
 
-/** @param {string | undefined | null} id */
-export const fontOf = (id) => FONTS.find((f) => f.id === resolveFont(id)) ?? FONTS[0]
+export const fontOf = (id: string | undefined | null): Font => FONTS.find((f) => f.id === resolveFont(id)) ?? FONTS[0]
 
 /**
  * Every face a font choice can draw with: its two families, and the last
  * resort for a glyph neither has.
- * @param {string | undefined | null} id
  */
-export function facesFor(id) {
+export function facesFor(id: string | undefined | null): Face[] {
   const font = fontOf(id)
   const families = new Set([font.text, font.label, LAST_RESORT])
   return FACES.filter((f) => families.has(f.family))
@@ -167,12 +166,8 @@ export function facesFor(id) {
  * matches the browser's own matching closely enough: the exact slant if there
  * is one, then the nearest weight at or above the one asked for, then the
  * nearest below it.
- * @param {string} family  a FAMILIES key
- * @param {number} weight
- * @param {boolean} [italic]
- * @returns {Face}
  */
-export function faceFor(family, weight, italic = false) {
+export function faceFor(family: string, weight: number, italic = false): Face {
   const own = FACES.filter((f) => f.family === family)
   const slanted = own.filter((f) => f.italic === italic)
   const pool = slanted.length ? slanted : own
@@ -187,7 +182,7 @@ export function faceFor(family, weight, italic = false) {
  * synthesised, which is what the PDF does too. Declaring a face costs nothing
  * until a sheet uses it.
  */
-export function fontFaceCss() {
+export function fontFaceCss(): string {
   return FACES.map(
     (f) =>
       `@font-face { font-family: '${FAMILIES[f.family].css}'; font-weight: ${f.weight}; font-style: ${f.italic ? 'italic' : 'normal'}; font-display: block; src: url('${f.url}') format('truetype'); }`,

@@ -13,15 +13,19 @@
  */
 
 import { marked } from 'marked'
-import { list, techs } from './inline.js'
+import { list, techs } from './inline'
 
-/**
- * @typedef {object} DocMeta
- * @property {string} title        `Name — CV`, or just `CV` before there is a name
- * @property {string} author       the CV's name
- * @property {string} description  the role, then the opening of the summary
- * @property {string[]} keywords   the skills and stacks, once each
- */
+/** Document metadata: title, author, description, and keywords. */
+export interface DocMeta {
+  /** `Name — CV`, or just `CV` before there is a name */
+  title: string
+  /** the CV's name */
+  author: string
+  /** the role, then the opening of the summary */
+  description: string
+  /** the skills and stacks, once each */
+  keywords: string[]
+}
 
 /** Long enough for a summary's first sentence or two; search snippets stop near here. */
 const DESCRIPTION_MAX = 300
@@ -31,14 +35,12 @@ const KEYWORD_MAX = 40
 const KEYWORDS_MAX = 60
 
 /** marked escapes exactly these, and nothing else needs decoding. */
-/** @type {Record<string, string>} */
-const ENTITIES = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'" }
+const ENTITIES: Record<string, string> = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'" }
 
 /**
  * Inline Markdown → the text a reader sees.
- * @param {unknown} text
  */
-export function plain(text) {
+export function plain(text: unknown): string {
   if (text == null || text === '') return ''
   const html = String(marked.parseInline(String(text).trim()))
   return html
@@ -52,19 +54,18 @@ export function plain(text) {
  * One entry of a skills row or a stack, as a keyword: the label in front of a
  * colon (`ORM: Prisma`) and an aside in brackets (`TypeScript (10+ yrs)`) are
  * the writer talking, not the skill.
- * @param {string} s
  */
-const keyword = (s) =>
+const keyword = (s: string): string =>
   s
     .replace(/^[^:]*:\s*/, '')
     .replace(/\s*\([^)]*\)/g, '')
     .trim()
 
 /**
- * @param {any} cv  the parsed document; anything half-typed is tolerated
- * @returns {DocMeta}
+ * Extract document metadata from the parsed CV.
+ * The parsed document; anything half-typed is tolerated.
  */
-export function docMeta(cv) {
+export function docMeta(cv: any): DocMeta {
   const name = plain(cv?.header?.name)
   const role = plain(cv?.header?.role)
   const sections = list(cv?.sections).filter((s) => s && typeof s === 'object')
@@ -74,8 +75,7 @@ export function docMeta(cv) {
   let description = [role, opening].filter(Boolean).join('. ')
   if (description.length > DESCRIPTION_MAX) description = `${description.slice(0, DESCRIPTION_MAX - 1).trimEnd()}…`
 
-  /** @type {string[]} */
-  const raw = []
+  const raw: string[] = []
   for (const sec of sections) {
     if (sec.type === 'groups') {
       for (const block of list(sec.blocks)) for (const row of list(block?.rows)) raw.push(...techs(plain(row?.text)))
@@ -83,8 +83,7 @@ export function docMeta(cv) {
       for (const item of list(sec.items)) raw.push(...techs(Array.isArray(item?.stack) ? item.stack.map(plain) : plain(item?.stack)))
     }
   }
-  /** @type {Map<string, string>} */
-  const seen = new Map()
+  const seen: Map<string, string> = new Map()
   for (const k of raw.map(keyword)) {
     if (k && k.length <= KEYWORD_MAX && !seen.has(k.toLowerCase())) seen.set(k.toLowerCase(), k)
   }

@@ -9,64 +9,54 @@
  * back in.
  */
 
-import { faceFor, FAMILIES, LAST_RESORT } from '../theme/typefaces.js'
+import { faceFor, FAMILIES, LAST_RESORT } from '../theme/typefaces'
 
 /** CSS family name → FAMILIES key. */
 const BY_CSS = new Map(Object.entries(FAMILIES).map(([key, f]) => [f.css, key]))
 
 /**
  * The bundled families a CSS stack names, in order, ending in the last resort.
- * @param {string[]} stack
  */
-export function familiesOf(stack) {
+export function familiesOf(stack: string[]): string[] {
   const keys = stack.map((name) => BY_CSS.get(name)).filter((k) => k !== undefined)
   return [...new Set([...keys, LAST_RESORT])]
 }
 
-/**
- * A run cut into pieces of one face each.
- * @typedef {{ text: string, face: string }} Piece
- */
+export interface Piece {
+  text: string
+  face: string
+}
 
 export class Fonts {
-  /** @type {Map<string, boolean>} */
-  #glyphs = new Map()
-  /** @type {Map<string, number>} */
-  #widths = new Map()
+  doc: any
 
-  /** @param {any} doc  the PDFDocument, with every face registered under its FACES id */
-  constructor(doc) {
+  #glyphs: Map<string, boolean> = new Map()
+  #widths: Map<string, number> = new Map()
+
+  /** the PDFDocument, with every face registered under its FACES id */
+  constructor(doc: any) {
     this.doc = doc
   }
 
   /**
    * Whether a face has a glyph for a character, asked of the fontkit font
    * pdfkit embeds from.
-   * @param {string} face
-   * @param {string} ch
    */
-  covers(face, ch) {
+  covers(face: string, ch: string): boolean {
     const key = `${face}|${ch}`
     const known = this.#glyphs.get(key)
     if (known !== undefined) return known
-    /** @type {boolean} */
-    const has = /\s/.test(ch) || current(this.doc.font(face)).font.hasGlyphForCodePoint(ch.codePointAt(0))
+    const has: boolean = /\s/.test(ch) || current(this.doc.font(face)).font.hasGlyphForCodePoint(ch.codePointAt(0))
     this.#glyphs.set(key, has)
     return has
   }
 
   /**
    * A run's text, in the faces it is set in.
-   * @param {string} text
-   * @param {string[]} stack  CSS family names
-   * @param {number} weight
-   * @param {boolean} italic
-   * @returns {Piece[]}
    */
-  pieces(text, stack, weight, italic) {
+  pieces(text: string, stack: string[], weight: number, italic: boolean): Piece[] {
     const faces = familiesOf(stack).map((family) => faceFor(family, weight, italic).id)
-    /** @type {Piece[]} */
-    const out = []
+    const out: Piece[] = []
     for (const ch of text) {
       const face = faces.find((f) => this.covers(f, ch)) ?? faces[0]
       const last = out[out.length - 1]
@@ -78,16 +68,12 @@ export class Fonts {
 
   /**
    * A string's advance in a face at a size, in pt.
-   * @param {string} text
-   * @param {string} face
-   * @param {number} size
    */
-  width(text, face, size) {
+  width(text: string, face: string, size: number): number {
     const key = `${face}|${size}|${text}`
     const known = this.#widths.get(key)
     if (known !== undefined) return known
-    /** @type {number} */
-    const w = this.doc.font(face).fontSize(size).widthOfString(text)
+    const w: number = this.doc.font(face).fontSize(size).widthOfString(text)
     this.#widths.set(key, w)
     return w
   }
@@ -97,7 +83,6 @@ export class Fonts {
  * The font pdfkit has current, and the fontkit font behind it (`font`).
  * pdfkit has no public accessor for it, and coverage is needed to fall back the
  * way the browser does.
- * @param {any} doc
  */
 // oxlint-disable-next-line no-underscore-dangle -- pdfkit's only handle on the current font; there is no public API for it
-const current = (doc) => doc._font
+const current = (doc: any): any => doc._font

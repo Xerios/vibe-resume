@@ -1,12 +1,13 @@
 import { LoroExtensions } from 'loro-codemirror'
 import { LoroDoc, UndoManager } from 'loro-crdt/web'
+import type { OpId, Change, Diff, ContainerID, TextDiff } from 'loro-crdt/web'
 // `loro-crdt/web` re-exports everything but the default init function, so pull it
 // straight from the wasm-bindgen module — it is the same instance either way.
 import initWasm from 'loro-crdt/web/loro_wasm.js'
 import DEFAULT_YAML from '../default-cv.yaml?raw'
-import { migrateCv } from '../format/migrate.js'
-import { touchedParts } from '../format/touched.js'
-import { base64ToBytes, bytesToBase64, read, remove, snapshotKey, write } from './storage.js'
+import { migrateCv } from '../format/migrate'
+import { touchedParts } from '../format/touched'
+import { base64ToBytes, bytesToBase64, read, remove, snapshotKey, write } from './storage'
 
 const TEXT_ID = 'yaml'
 const TAGS_ID = 'checkpoints'
@@ -25,8 +26,7 @@ const TAGS_ID = 'checkpoints'
  */
 const STYLE_ID = 'style'
 
-/** @type {readonly ('layout' | 'theme' | 'density' | 'font' | 'variants' | 'paper')[]} */
-const STYLE_KEYS = ['layout', 'theme', 'density', 'font', 'variants', 'paper']
+const STYLE_KEYS = ['layout', 'theme', 'density', 'font', 'variants', 'paper'] as const
 
 /** Commits made by naming a version, kept out of the undo stack. */
 const TAG_ORIGIN = 'cv-tag'
@@ -37,10 +37,11 @@ const TAG_ORIGIN = 'cv-tag'
  * metadata Loro carries, so the kind rides along inside it, separated by a
  * control character no one can type into the "name this version" box.
  */
-const KINDS = /** @type {const} */ (['edit', 'checkpoint', 'export', 'restore', 'initial', 'style'])
-const KIND_SEP = '\u0001'
+const KINDS = ['edit', 'checkpoint', 'export', 'restore', 'initial', 'style'] as const
 
-/** @typedef {(typeof KINDS)[number]} ChangeKind */
+export type ChangeKind = (typeof KINDS)[number]
+
+const KIND_SEP = '\u0001'
 
 /**
  * Diffing every change costs a pass over the oplog each, so counts are worked
@@ -60,47 +61,62 @@ const MERGE_WINDOW_SECONDS = 45
 /** Debounce for the work that follows an edit: history rebuild and persistence. */
 const SETTLE_MS = 400
 
-let wasmReady = /** @type {Promise<unknown> | null} */ (null)
+let wasmReady: Promise<unknown> | null = null
 
-/** @param {LoroDoc} doc */
-const cvText = (doc) => doc.getText(TEXT_ID)
+const cvText = (doc: LoroDoc) => doc.getText(TEXT_ID)
 
 /**
  * Where the style map's other half lives — see `bindStyle`.
- * @typedef {object} StyleHost
- * @property {() => Record<string, any>} base   the registry's copy for the file being adopted
- * @property {(style: Record<string, any>) => void} apply  take a change made in the document
  */
+interface StyleHost {
+  /** the registry's copy for the file being adopted */
+  base: () => Record<string, any>
+  /** take a change made in the document */
+  apply: (style: Record<string, any>) => void
+}
 
 /**
- * @typedef {object} HistoryEntry
- * @property {string} key            stable id, `${peer}@${counter}`
- * @property {string} peer
- * @property {number} counter        counter of the change's *last* op — its frontier
- * @property {number} lamport
- * @property {number} timestamp      unix seconds, 0 when not recorded
- * @property {string} message
- * @property {ChangeKind} kind      what the change was — see `KINDS`
- * @property {string} axis           for a restyle, which part of the presentation it moved; '' for anything else
- * @property {number} length         number of ops in the change
- * @property {ChangeStats | null} stats  characters added and removed, null past `STATS_LIMIT`
- * @property {import('loro-crdt/web').OpId[]} deps  causal parents — the version just before this change
+ * Stable id, `${peer}@${counter}`
  */
+export interface HistoryEntry {
+  key: string
+  peer: string
+  /** counter of the change's *last* op — its frontier */
+  counter: number
+  lamport: number
+  /** unix seconds, 0 when not recorded */
+  timestamp: number
+  message: string
+  /** what the change was — see `KINDS` */
+  kind: ChangeKind
+  /** for a restyle, which part of the presentation it moved; '' for anything else */
+  axis: string
+  /** number of ops in the change */
+  length: number
+  /** characters added and removed, null past `STATS_LIMIT` */
+  stats: ChangeStats | null
+  /** causal parents — the version just before this change */
+  deps: OpId[]
+}
 
 /**
  * How much text a change touched, in characters.
- * @typedef {object} ChangeStats
- * @property {number} added
- * @property {number} removed
  */
+interface ChangeStats {
+  added: number
+  removed: number
+}
 
 /**
  * What a change added or removed, in terms of the text as displayed while
  * previewing it (see `CvDoc#diff`).
- * @typedef {object} VersionDiff
- * @property {{from: number, to: number}[]} added      ranges, in the viewed text, that this change inserted
- * @property {{at: number, text: string}[]} removed     text this change deleted, positioned where it used to sit
  */
+export interface VersionDiff {
+  /** ranges, in the viewed text, that this change inserted */
+  added: Array<{ from: number; to: number }>
+  /** text this change deleted, positioned where it used to sit */
+  removed: Array<{ at: number; text: string }>
+}
 
 /**
  * The CV document: a Loro CRDT holding one text container, mirrored into
@@ -119,11 +135,10 @@ export class CvDoc {
    * the registry's copy. Read rather than written by the app: a restyle goes
    * through `recordStyle`, and what comes back out of here is what an undo, a
    * restore, a version being viewed or another tab has made of it.
-   * @type {Record<string, any>}
    */
-  style = $state({})
-  /** Oldest first. @type {HistoryEntry[]} */
-  history = $state([])
+  style = $state<Record<string, any>>({})
+  /** Oldest first. */
+  history = $state<HistoryEntry[]>([])
   /**
    * True while the file is still exactly what "New CV" made: the shipped
    * template and nothing in its history but the initial version. Such a file
@@ -131,37 +146,29 @@ export class CvDoc {
    */
   pristine = $derived(this.history.length <= 1 && this.yaml === DEFAULT_YAML)
   /** Key of the entry being previewed, or null when we're on the latest version. */
-  viewingKey = $state(/** @type {string | null} */ (null))
-  /** What the previewed entry changed, for highlighting in the editor. @type {VersionDiff | null} */
-  diff = $state(null)
-  /** @type {Date | null} */
-  savedAt = $state(null)
-  /** @type {string | null} */
-  saveError = $state(null)
+  viewingKey = $state<string | null>(null)
+  /** What the previewed entry changed, for highlighting in the editor. */
+  diff = $state<VersionDiff | null>(null)
+  savedAt = $state<Date | null>(null)
+  saveError = $state<string | null>(null)
   snapshotBytes = $state(0)
   /** Bumped whenever the underlying document is swapped, to re-key the editor. */
   docId = $state(0)
-  /** CodeMirror extensions for the current document. @type {any} */
-  extensions = $state(null)
+  /** CodeMirror extensions for the current document. */
+  extensions = $state<any>(null)
 
   /** Newest first — the order the history panel shows. */
   entries = $derived(this.history.slice().toReversed())
   isViewingHistory = $derived(this.viewingKey !== null)
-  /** @type {HistoryEntry | undefined} */
   viewingEntry = $derived(this.history.find((e) => e.key === this.viewingKey))
 
-  /** @type {LoroDoc | null} */
-  #doc = null
-  /** @type {UndoManager | null} */
-  #undo = null
-  /** @type {(() => void)[]} */
-  #subscriptions = []
-  /** @type {ReturnType<typeof setTimeout> | null} */
-  #settleTimer = null
+  #doc: LoroDoc | null = null
+  #undo: UndoManager | null = null
+  #subscriptions: Array<() => void> = []
+  #settleTimer: ReturnType<typeof setTimeout> | null = null
   /** Message to stamp on the next commit the editor binding makes. */
-  #pendingMessage = /** @type {string | null} */ (null)
-  /** @type {(text: string) => void} */
-  #applyText = () => {}
+  #pendingMessage: string | null = null
+  #applyText: (text: string) => void = () => {}
   /**
    * Identifies which document lineage the stored snapshot belongs to. Snapshots
    * from the same lineage are merged; a different one means another tab cleared
@@ -170,28 +177,26 @@ export class CvDoc {
   #epoch = newEpoch()
   /** Which file's storage key this instance is currently reading and writing. */
   #fileId = ''
-  /** Change counts, keyed by entry key. @type {Map<string, ChangeStats>} */
-  #statsCache = new Map()
-  /** Keys of changes that, all told, changed nothing — see `#statsFor`. @type {Set<string>} */
-  #noops = new Set()
-  /** What an edit is called in the history — the parts it touched — keyed like `#statsCache`. @type {Map<string, string>} */
-  #editLabels = new Map()
+  /** Change counts, keyed by entry key. */
+  #statsCache = new Map<string, ChangeStats>()
+  /** Keys of changes that, all told, changed nothing — see `#statsFor`. */
+  #noops = new Set<string>()
+  /** What an edit is called in the history — the parts it touched — keyed like `#statsCache`. */
+  #editLabels = new Map<string, string>()
   /**
    * One copy of the document, moved from version to version while the history
    * is rebuilt, so reading the text at each entry is a checkout rather than a
    * fork each. Only while `#probing`: a copy outlives no edit, since it has none
    * of what came after it.
-   * @type {LoroDoc | null}
    */
-  #probe = null
+  #probe: LoroDoc | null = null
   #probing = false
-  /** The presentation the file had when this document was adopted; the map layers over it. @type {Record<string, any>} */
-  #baseStyle = {}
-  /** Where that copy comes from, and where a change made in here is mirrored back to. @type {StyleHost | null} */
-  #styleHost = null
+  /** The presentation the file had when this document was adopted; the map layers over it. */
+  #baseStyle: Record<string, any> = {}
+  /** Where that copy comes from, and where a change made in here is mirrored back to. */
+  #styleHost: StyleHost | null = null
 
-  /** @param {string} fileId */
-  async init(fileId) {
+  async init(fileId: string): Promise<void> {
     wasmReady ??= initWasm()
     await wasmReady
     this.#fileId = fileId
@@ -208,11 +213,8 @@ export class CvDoc {
    * with it beats pushing the text in afterwards: the history then starts with
    * one "Initial version" holding the real YAML, not the template plus an
    * immediate overwrite.
-   *
-   * @param {string} fileId
-   * @param {string} [seedText]
    */
-  switchTo(fileId, seedText) {
+  switchTo(fileId: string, seedText?: string): void {
     if (!this.#doc || fileId === this.#fileId) return
     this.flush()
     this.#unsubscribeAll()
@@ -224,9 +226,8 @@ export class CvDoc {
    * Let the document push text into the editor. Restore goes through here so
    * that it lands as an ordinary editor transaction, which is what the Loro
    * binding knows how to record.
-   * @param {(text: string) => void} applyText
    */
-  bindEditor(applyText) {
+  bindEditor(applyText: (text: string) => void): void {
     this.#applyText = applyText
   }
 
@@ -242,21 +243,19 @@ export class CvDoc {
    * style of this one at every point in its history. Neither can do the other's
    * job, so the document is authoritative while a file is open and writes
    * through to the registry, which persists it and hands it back at load.
-   *
-   * @param {StyleHost} host
    */
-  bindStyle(host) {
+  bindStyle(host: StyleHost): void {
     this.#styleHost = host
   }
 
-  destroy() {
+  destroy(): void {
     if (this.#settleTimer) clearTimeout(this.#settleTimer)
     this.#unsubscribeAll()
     window.removeEventListener('storage', this.#onStorage)
   }
 
   /** Persist right now, skipping the debounce. Used when the tab is going away. */
-  flush() {
+  flush(): void {
     if (this.#settleTimer) {
       clearTimeout(this.#settleTimer)
       this.#settleTimer = null
@@ -266,11 +265,8 @@ export class CvDoc {
 
   // ── Versions ───────────────────────────────────────────────────────────────
 
-  /**
-   * Mark the current state as a named version.
-   * @param {string} name
-   */
-  checkpoint(name) {
+  /** Mark the current state as a named version. */
+  checkpoint(name: string): void {
     this.#tag('checkpoint', name.trim() || 'Checkpoint')
   }
 
@@ -284,7 +280,7 @@ export class CvDoc {
    * skipped when the last export already carried this exact text — whether the
    * user pressed the button twice or edited and came back to where they were.
    */
-  markExport() {
+  markExport(): void {
     if (!this.#doc || this.isViewingHistory) return
     // An export can land inside the settle debounce, before the last keystrokes
     // have been committed and picked up — so do both now, or the comparison
@@ -297,7 +293,7 @@ export class CvDoc {
   }
 
   /** The text as it stood at the most recent export, or null if there wasn't one. */
-  #lastExport() {
+  #lastExport(): string | null {
     for (let i = this.history.length - 1; i >= 0; i--) {
       const entry = this.history[i]
       if (entry.kind === 'export') return this.textAt(entry)
@@ -308,9 +304,8 @@ export class CvDoc {
   /**
    * The text as it stood at a version. Read off a fork, so the live document
    * is left exactly as it is — attached or not.
-   * @param {HistoryEntry} entry
    */
-  textAt(entry) {
+  textAt(entry: HistoryEntry): string {
     if (!this.#doc) return ''
     return this.#doc
       .forkAt([frontier(entry)])
@@ -323,7 +318,7 @@ export class CvDoc {
    * checked out `yaml` says what is being looked at; this says what the file
    * is.
    */
-  headText() {
+  headText(): string {
     if (!this.#doc) return ''
     if (!this.#doc.isDetached()) return this.#text()
     return this.#doc.forkAt(this.#doc.oplogFrontiers()).getText(TEXT_ID).toString()
@@ -333,10 +328,8 @@ export class CvDoc {
    * Stamp the current state with a kind and a label. The label is stored in a map
    * container, which gives the commit a real operation to carry — so unlike a
    * bare commit this always produces a history entry, even with nothing edited.
-   * @param {ChangeKind} kind
-   * @param {string} label
    */
-  #tag(kind, label) {
+  #tag(kind: ChangeKind, label: string): void {
     if (!this.#doc || this.isViewingHistory) return
     this.#doc.getMap(TAGS_ID).set(new Date().toISOString(), label)
     this.#doc.setChangeMergeInterval(0)
@@ -355,24 +348,20 @@ export class CvDoc {
    * one block's variant, one key of the paper. A run of restyles reads as one line in the history rather
    * than as one per click, and the axes are what that line is named by; see
    * `mergeStyleRuns`.
-   *
-   * @param {Record<string, any>} style
-   * @param {string} label   what the entry reads as, e.g. `Layout — Sidebar`
-   * @param {string} axis    what it moved, e.g. `theme`
    */
-  recordStyle(style, label, axis) {
+  recordStyle(style: Record<string, any>, label: string, axis: string): void {
     if (!this.#doc || this.isViewingHistory) return
     this.#commitStyle(style, label, axis)
   }
 
   /** Take back the last change. */
-  undo() {
+  undo(): boolean {
     if (!this.#undo || this.isViewingHistory) return false
     return this.#undo.undo()
   }
 
   /** Put back the last thing `undo` took. */
-  redo() {
+  redo(): boolean {
     if (!this.#undo || this.isViewingHistory) return false
     return this.#undo.redo()
   }
@@ -380,9 +369,8 @@ export class CvDoc {
   /**
    * Check out a past version. The document goes detached: the editor is
    * read-only until `viewLatest` or `restore`.
-   * @param {HistoryEntry} entry
    */
-  view(entry) {
+  view(entry: HistoryEntry): void {
     if (!this.#doc) return
     this.#doc.checkout([frontier(entry)])
     this.viewingKey = entry.key
@@ -394,7 +382,7 @@ export class CvDoc {
   }
 
   /** Return to the newest version and re-enable editing. */
-  viewLatest() {
+  viewLatest(): void {
     if (!this.#doc) return
     if (this.#doc.isDetached()) this.#doc.checkoutToLatest()
     this.viewingKey = null
@@ -406,9 +394,8 @@ export class CvDoc {
   /**
    * Bring a past version back as the current one, by writing its text over the
    * top. Nothing is discarded — the restore is just another point in history.
-   * @param {HistoryEntry} entry
    */
-  restore(entry) {
+  restore(entry: HistoryEntry): void {
     if (!this.#doc) return
     const fork = this.#doc.forkAt([frontier(entry)])
     // A version from before the section types were renamed comes back in the
@@ -441,7 +428,7 @@ export class CvDoc {
    * Drop the oplog and start over from the current text. The only way to shrink
    * a snapshot that has grown large — past versions are gone for good.
    */
-  clearHistory() {
+  clearHistory(): void {
     if (!this.#doc) return
     this.viewLatest()
     const text = this.#text()
@@ -453,7 +440,7 @@ export class CvDoc {
 
   // ── Internals ──────────────────────────────────────────────────────────────
 
-  #text() {
+  #text(): string {
     return this.#doc ? cvText(this.#doc).toString() : ''
   }
 
@@ -462,19 +449,17 @@ export class CvDoc {
    * to what the map already says is not a change, and neither is one that was
    * never set and still isn't. `null` stands for "nothing of its own", which
    * `#readStyle` reads as a fall-through to the registry's copy.
-   * @param {Record<string, any>} style
-   * @returns {boolean} whether anything moved
    */
-  #writeStyle(style) {
-    const map = /** @type {LoroDoc} */ (this.#doc).getMap(STYLE_ID)
+  #writeStyle(style: Record<string, any>): boolean {
+    const map = (this.#doc as LoroDoc).getMap(STYLE_ID)
     const now = map.toJSON()
     const changed = STYLE_KEYS.filter((key) => !same(now[key], style[key]))
     for (const key of changed) map.set(key, style[key] ?? null)
     return changed.length > 0
   }
 
-  /** Commit a style change now, if it is one. @param {Record<string, any>} style @param {string} label @param {string} axis */
-  #commitStyle(style, label, axis) {
+  /** Commit a style change now, if it is one. */
+  #commitStyle(style: Record<string, any>, label: string, axis: string): void {
     if (!this.#doc || this.isViewingHistory) return
     if (!this.#writeStyle(style)) return
 
@@ -493,7 +478,7 @@ export class CvDoc {
    * the registry, the registry hands the same values back, and the second pass
    * finds nothing to do.
    */
-  #syncStyle() {
+  #syncStyle(): void {
     const next = this.#readStyle()
     if (same(next, this.style)) return
     this.style = next
@@ -501,9 +486,8 @@ export class CvDoc {
   }
 
   /** The map's keys over the registry's copy — see `STYLE_ID`. */
-  #readStyle() {
-    /** @type {Record<string, any>} */
-    const out = { ...this.#baseStyle }
+  #readStyle(): Record<string, any> {
+    const out: Record<string, any> = { ...this.#baseStyle }
     const map = this.#doc?.getMap(STYLE_ID).toJSON() ?? {}
     for (const key of STYLE_KEYS) if (map[key] != null) out[key] = map[key]
     return out
@@ -512,10 +496,9 @@ export class CvDoc {
   /**
    * The text as it stood at a version — through `#probe` while the history is
    * being rebuilt, off a fork of its own otherwise.
-   * @param {import('loro-crdt/web').OpId[]} frontiers
    */
-  #versionText(frontiers) {
-    const doc = /** @type {LoroDoc} */ (this.#doc)
+  #versionText(frontiers: OpId[]): string {
+    const doc = this.#doc as LoroDoc
     if (!this.#probing) return cvText(doc.forkAt(frontiers)).toString()
     // Forked at the oplog's head, not `fork()`: a detached document forks at
     // the version on screen, and the copy would know nothing newer.
@@ -526,25 +509,20 @@ export class CvDoc {
 
   /**
    * Everything a change did, as a diff against the version just before it.
-   * @param {HistoryEntry} entry
-   * @returns {[import('loro-crdt/web').ContainerID, import('loro-crdt/web').Diff][]}
    */
-  #changeDiff(entry) {
+  #changeDiff(entry: HistoryEntry): Array<[ContainerID, Diff]> {
     if (!this.#doc) return []
-    return this.#doc.diff(entry.deps, [frontier(entry)], false)
+    return this.#doc.diff(entry.deps, [frontier(entry)], false) as Array<[ContainerID, Diff]>
   }
 
   /**
    * What a change did to the text, as a delta against the version just before it.
    * Empty when the change touched no text at all — a tag carries only its label.
-   * @param {HistoryEntry} entry
-   * @param {[import('loro-crdt/web').ContainerID, import('loro-crdt/web').Diff][]} [diffs]
-   * @returns {import('loro-crdt/web').TextDiff['diff']}
    */
-  #textOps(entry, diffs = this.#changeDiff(entry)) {
+  #textOps(entry: HistoryEntry, diffs: Array<[ContainerID, Diff]> = this.#changeDiff(entry)): TextDiff['diff'] {
     const found = diffs.find(([, d]) => d.type === 'text')
     if (!found) return []
-    return this.#net(entry, /** @type {import('loro-crdt/web').TextDiff} */ (found[1]).diff)
+    return this.#net(entry, (found[1] as TextDiff).diff)
   }
 
   /**
@@ -553,15 +531,11 @@ export class CvDoc {
    * inside the merge window, say — is a deletion of the old characters and an
    * insertion of new ones that read the same. Trimming each replaced stretch to
    * where the two actually differ leaves only what changed in the reading.
-   * @param {HistoryEntry} entry
-   * @param {import('loro-crdt/web').TextDiff['diff']} ops
-   * @returns {import('loro-crdt/web').TextDiff['diff']}
    */
-  #net(entry, ops) {
+  #net(entry: HistoryEntry, ops: TextDiff['diff']): TextDiff['diff'] {
     if (!this.#doc || !ops.some((op) => op.insert) || !ops.some((op) => op.delete != null)) return ops
     const before = this.#versionText(entry.deps)
-    /** @type {import('loro-crdt/web').TextDiff['diff']} */
-    const out = []
+    const out: TextDiff['diff'] = []
     let pos = 0
     let i = 0
     while (i < ops.length) {
@@ -600,15 +574,13 @@ export class CvDoc {
    *
    * A change that, read that way, did nothing at all — no text moved and nothing
    * else touched — is noted in `#noops`, so the history can leave it out.
-   * @param {HistoryEntry} entry
-   * @returns {ChangeStats}
    */
-  #statsFor(entry) {
+  #statsFor(entry: HistoryEntry): ChangeStats {
     const cached = this.#statsCache.get(entry.key)
     if (cached) return cached
     const diffs = this.#changeDiff(entry)
     const ops = this.#textOps(entry, diffs)
-    const stats = { added: 0, removed: 0 }
+    const stats: ChangeStats = { added: 0, removed: 0 }
     for (const op of ops) {
       if (op.insert) stats.added += op.insert.length
       else if (op.delete != null) stats.removed += op.delete
@@ -627,12 +599,9 @@ export class CvDoc {
    * reads *after* the change (which is what's on screen while previewing it).
    * Deleted text no longer has a position of its own, so it's anchored to the
    * point it once sat at and carries its own content along.
-   * @param {HistoryEntry} entry
-   * @returns {VersionDiff}
    */
-  #diffFor(entry) {
-    /** @type {VersionDiff} */
-    const result = { added: [], removed: [] }
+  #diffFor(entry: HistoryEntry): VersionDiff {
+    const result: VersionDiff = { added: [], removed: [] }
     const ops = this.#textOps(entry)
     if (!ops.length || !this.#doc) return result
     const before = this.#doc.forkAt(entry.deps).getText(TEXT_ID).toString()
@@ -658,17 +627,15 @@ export class CvDoc {
    * events synchronously, so by the time `#applyText` returns the binding has
    * already committed and the pre-commit hook has consumed the name; clearing it
    * afterwards keeps a no-op write from labelling the user's next edit instead.
-   * @param {string} message
-   * @param {string} text
    */
-  #applyNamed(message, text) {
+  #applyNamed(message: string, text: string): void {
     this.#pendingMessage = message
     this.#applyText(text)
     this.#pendingMessage = null
   }
 
   /** Install a document, wire up its subscriptions, and save it. */
-  #adopt(/** @type {LoroDoc} */ doc) {
+  #adopt(doc: LoroDoc): void {
     this.#doc = doc
     this.#statsCache.clear()
     this.#noops.clear()
@@ -719,7 +686,7 @@ export class CvDoc {
     this.#save()
   }
 
-  #unsubscribeAll() {
+  #unsubscribeAll(): void {
     for (const off of this.#subscriptions) off()
     this.#subscriptions = []
   }
@@ -727,9 +694,8 @@ export class CvDoc {
   /**
    * Restore the stored snapshot, or start a fresh document from `seedText` —
    * falling back to the shipped template.
-   * @param {string} [seedText]
    */
-  #load(seedText) {
+  #load(seedText?: string): LoroDoc {
     const stored = read(snapshotKey(this.#fileId))
     if (stored) {
       const { epoch, snapshot } = split(stored)
@@ -749,8 +715,7 @@ export class CvDoc {
     return this.#seed(seedText ?? DEFAULT_YAML)
   }
 
-  /** @param {string} text */
-  #seed(text) {
+  #seed(text: string): LoroDoc {
     const doc = new LoroDoc()
     doc.setRecordTimestamp(true) // history entries are worthless without a time
     cvText(doc).update(migrateCv(text) ?? text)
@@ -759,13 +724,11 @@ export class CvDoc {
     return doc
   }
 
-  #refreshHistory() {
+  #refreshHistory(): void {
     if (!this.#doc) return
-    /** @type {HistoryEntry[]} */
-    const list = []
+    const list: HistoryEntry[] = []
     for (const [peer, changes] of this.#doc.getAllChanges()) {
-      /** The entry the last change went into, and the change itself. @type {{ entry: HistoryEntry, change: import('loro-crdt/web').Change } | null} */
-      let last = null
+      let last: { entry: HistoryEntry; change: Change } | null = null
       for (const c of changes) {
         // A change spans `length` ops; its frontier is the last of them.
         const counter = c.counter + c.length - 1
@@ -785,8 +748,7 @@ export class CvDoc {
           last.change = c
           continue
         }
-        /** @type {HistoryEntry} */
-        const entry = {
+        const entry: HistoryEntry = {
           key: `${peer}@${counter}`,
           peer,
           counter,
@@ -819,7 +781,7 @@ export class CvDoc {
     this.history = merged.filter((entry) => !(entry.kind === 'edit' && this.#noops.has(entry.key)))
   }
 
-  #scheduleSettle() {
+  #scheduleSettle(): void {
     if (this.#settleTimer) clearTimeout(this.#settleTimer)
     this.#settleTimer = setTimeout(() => {
       this.#settleTimer = null
@@ -828,7 +790,7 @@ export class CvDoc {
     }, SETTLE_MS)
   }
 
-  #save() {
+  #save(): void {
     // A detached document would serialise the version being previewed as head.
     if (!this.#doc || this.#doc.isDetached()) return
     const bytes = this.#doc.export({ mode: 'snapshot' })
@@ -842,7 +804,7 @@ export class CvDoc {
   }
 
   /** Another tab wrote a snapshot. Merge it, or take it wholesale after a clear. */
-  #onStorage = (/** @type {StorageEvent} */ e) => {
+  #onStorage = (e: StorageEvent): void => {
     if (e.key !== snapshotKey(this.#fileId) || !e.newValue || !this.#doc) return
     const { epoch, snapshot } = split(e.newValue)
     try {
@@ -868,9 +830,8 @@ export class CvDoc {
  * Bring a stored document written in the old section types up to date, as a
  * change of its own — so the history says what happened, and the version
  * before it is still there to compare against or go back to.
- * @param {LoroDoc} doc
  */
-function upgrade(doc) {
+function upgrade(doc: LoroDoc): void {
   const next = migrateCv(cvText(doc).toString())
   if (next === null) return
   cvText(doc).update(next)
@@ -884,9 +845,8 @@ function upgrade(doc) {
  * browser tab by the settle debounce, which is close enough for a comparison.
  *
  * Only safe once `init` has run somewhere, since that is what loads the WASM.
- * @param {string} fileId
  */
-export function storedText(fileId) {
+export function storedText(fileId: string): string | null {
   const stored = read(snapshotKey(fileId))
   if (!stored) return null
   try {
@@ -899,7 +859,7 @@ export function storedText(fileId) {
   }
 }
 
-const newEpoch = () => Math.random().toString(36).slice(2, 10)
+const newEpoch = (): string => Math.random().toString(36).slice(2, 10)
 
 /**
  * Whether two style values are the same thing. Absent and null are one value
@@ -907,23 +867,15 @@ const newEpoch = () => Math.random().toString(36).slice(2, 10)
  * file has nothing of its own to say — and objects are compared by their
  * contents rather than by the order their keys happen to be written in, since
  * `paper` and `variants` are rebuilt by a spread every time they are touched.
- * @param {unknown} a
- * @param {unknown} b
  */
-const same = (a, b) => stable(a) === stable(b)
+const same = (a: unknown, b: unknown): boolean => stable(a) === stable(b)
 
-/** @param {unknown} value */
-const stable = (value) =>
+const stable = (value: unknown): string =>
   JSON.stringify(value ?? null, (_, v) =>
     v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).toSorted(([x], [y]) => x.localeCompare(y))) : v,
   )
 
-/**
- * @param {ChangeKind} kind
- * @param {string} label
- * @param {string} [axis]  what a restyle moved — see `recordStyle`
- */
-const stampKind = (kind, label, axis) => `${kind}${KIND_SEP}${label}${axis ? KIND_SEP + axis : ''}`
+const stampKind = (kind: ChangeKind, label: string, axis?: string): string => `${kind}${KIND_SEP}${label}${axis ? KIND_SEP + axis : ''}`
 
 /**
  * Read a commit message back into its kind, the label to show, and — for a
@@ -931,13 +883,11 @@ const stampKind = (kind, label, axis) => `${kind}${KIND_SEP}${label}${axis ? KIN
  * stamp: a labelled one was a named version, an empty one was the editor
  * committing a burst of typing. Ones written before axes did carry no third
  * field, which reads as an axis of its own that nothing merges with.
- * @param {string} raw
- * @returns {{kind: ChangeKind, message: string, axis: string}}
  */
-function readKind(raw) {
+function readKind(raw: string): { kind: ChangeKind; message: string; axis: string } {
   const at = raw.indexOf(KIND_SEP)
   if (at !== -1) {
-    const kind = /** @type {ChangeKind} */ (raw.slice(0, at))
+    const kind = raw.slice(0, at) as ChangeKind
     if (KINDS.includes(kind)) {
       const rest = raw.slice(at + 1)
       // Only a restyle carries an axis, and it is the last field.
@@ -965,15 +915,10 @@ function readKind(raw) {
  * one given on each axis the run moved, in the order they were first moved —
  * `Theme — Plum, Font — Inter` — so going back and forth on one axis still
  * names only where it ended.
- *
- * @param {HistoryEntry[]} list  oldest first
- * @returns {HistoryEntry[]}
  */
-function mergeStyleRuns(list) {
-  /** @type {HistoryEntry[]} */
-  const out = []
-  /** The current run's labels, by axis. @type {Map<string, string>} */
-  let labels = new Map()
+function mergeStyleRuns(list: HistoryEntry[]): HistoryEntry[] {
+  const out: HistoryEntry[] = []
+  let labels = new Map<string, string>()
   for (const entry of list) {
     const prev = out[out.length - 1]
     const runs = prev && prev.kind === 'style' && entry.kind === 'style' && prev.peer === entry.peer
@@ -989,33 +934,27 @@ function mergeStyleRuns(list) {
 /**
  * Whether a change carries straight on from an entry: the next op on the same
  * peer, depending on nothing but the entry's last one.
- * @param {import('loro-crdt/web').Change} change
- * @param {HistoryEntry} entry
  */
-const follows = (change, entry) =>
+const follows = (change: Change, entry: HistoryEntry): boolean =>
   change.counter === entry.counter + 1 && change.deps.length === 1 && change.deps[0].peer === entry.peer && change.deps[0].counter === entry.counter
 
 /**
  * An edit's name in the history: the parts it touched, the first few by name.
- * @param {string[]} parts
  */
-const nameParts = (parts) => (parts.length > 3 ? `${parts.slice(0, 3).join(', ')} +${parts.length - 3}` : parts.join(', '))
+const nameParts = (parts: string[]): string => (parts.length > 3 ? `${parts.slice(0, 3).join(', ')} +${parts.length - 3}` : parts.join(', '))
 
-/** @param {HistoryEntry} entry */
-const frontier = (entry) => ({ peer: /** @type {any} */ (entry.peer), counter: entry.counter })
+const frontier = (entry: HistoryEntry): OpId => ({ peer: entry.peer as any, counter: entry.counter })
 
 /**
  * Split a stored value into its lineage marker and snapshot bytes.
- * @param {string} stored
  */
-function split(stored) {
+function split(stored: string): { epoch: string; snapshot: Uint8Array } {
   const at = stored.indexOf(':') // base64 never contains a colon
   if (at === -1) return { epoch: newEpoch(), snapshot: base64ToBytes(stored) }
   return { epoch: stored.slice(0, at), snapshot: base64ToBytes(stored.slice(at + 1)) }
 }
 
-/** @param {HistoryEntry} entry */
-function describe(entry) {
+function describe(entry: HistoryEntry): string {
   if (!entry.timestamp) return entry.message
   return new Date(entry.timestamp * 1000).toLocaleString(undefined, {
     dateStyle: 'medium',

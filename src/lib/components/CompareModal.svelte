@@ -9,14 +9,14 @@
   import { Compartment, EditorState, StateEffect, StateField } from '@codemirror/state'
   import { Decoration, EditorView, WidgetType, drawSelection, lineNumbers } from '@codemirror/view'
   import { wrappedLineIndent } from 'codemirror-wrapped-line-indent'
-  import { mapLine } from '$lib/cv/format/diff.js'
-  import { relaxedYaml } from '$lib/cv/format/relaxed-yaml-mode.js'
-  import { commands } from '$lib/cv/state/commands.js'
-  import { storedText } from '$lib/cv/state/doc.svelte.js'
-  import { KEYS, read, write } from '$lib/cv/state/storage.js'
-  import { doc, files } from '$lib/cv/state/state.svelte.js'
-  import { diffDocuments } from '$lib/workers/index.js'
-  import { highlight } from './cm-highlight.js'
+  import { mapLine } from '$lib/cv/format/diff'
+  import { relaxedYaml } from '$lib/cv/format/relaxed-yaml-mode'
+  import { commands } from '$lib/cv/state/commands'
+  import { storedText } from '$lib/cv/state/doc.svelte'
+  import { KEYS, read, write } from '$lib/cv/state/storage'
+  import { doc, files } from '$lib/cv/state/state.svelte'
+  import { diffDocuments } from '$lib/workers/index'
+  import { highlight } from './cm-highlight'
   import './codemirror.scss'
 
   /**
@@ -84,9 +84,7 @@
     if (ref.fileId === files.activeId) {
       void doc.yaml // the head moves with every edit; a version never does
       const entry =
-        ref.versionKey === null
-          ? undefined
-          : doc.entries.find((/** @type {import('$lib/cv/state/doc.svelte.js').HistoryEntry} */ e) => e.key === ref.versionKey)
+        ref.versionKey === null ? undefined : doc.entries.find((/** @type {import('$lib/cv/state/doc.svelte').HistoryEntry} */ e) => e.key === ref.versionKey)
       return entry ? doc.textAt(entry) : doc.headText()
     }
     let text = stored.get(ref.fileId)
@@ -100,7 +98,7 @@
   const textA = $derived(resolve(refA))
   const textB = $derived(resolve(refB))
 
-  /** What the dialog shows before the first diff lands: nothing, and nothing to step to. @type {import('$lib/cv/format/diff.js').DocDiff} */
+  /** What the dialog shows before the first diff lands: nothing, and nothing to step to. @type {import('$lib/cv/format/diff').DocDiff} */
   const NO_DIFF = { a: [], b: [], moves: [], hunks: [], anchors: [], counts: { added: 0, removed: 0, changed: 0, moved: 0 } }
 
   /**
@@ -108,14 +106,14 @@
    * worker, so it lands a moment after the texts change, and the panes load
    * the texts and their tints together off this rather than the text first.
    */
-  let result = $state.raw(/** @type {{ a: string, b: string, diff: import('$lib/cv/format/diff.js').DocDiff } | null} */ (null))
+  let result = $state.raw(/** @type {{ a: string, b: string, diff: import('$lib/cv/format/diff').DocDiff } | null} */ (null))
   const diff = $derived(result?.diff ?? NO_DIFF)
 
   $effect(() => {
     const a = textA
     const b = textB
     let wanted = true
-    diffDocuments(a, b).then(d => {
+    diffDocuments(a, b).then((d) => {
       if (wanted) result = { a, b, diff: d }
     })
     // A newer pair was asked for before this one answered.
@@ -132,13 +130,13 @@
   let viewA = $state(/** @type {EditorView | null} */ (null))
   let viewB = $state(/** @type {EditorView | null} */ (null))
   /** The diff the views are showing, for the handlers that read it off a click. */
-  let current = /** @type {import('$lib/cv/format/diff.js').DocDiff | null} */ (null)
+  let current = /** @type {import('$lib/cv/format/diff').DocDiff | null} */ (null)
   /** Per pane: until when its scroll events are our doing rather than the user's. */
   const quiet = { a: 0, b: 0 }
   /** The gutter between the panes, where each difference is drawn across. @type {SVGSVGElement | undefined} */
   let gutter = $state(undefined)
 
-  /** What one side's lines became. @type {import('@codemirror/state').StateEffectType<import('$lib/cv/format/diff.js').LineInfo[]>} */
+  /** What one side's lines became. @type {import('@codemirror/state').StateEffectType<import('$lib/cv/format/diff').LineInfo[]>} */
   const setLines = StateEffect.define()
 
   const lineMark = {
@@ -153,7 +151,7 @@
    * The tints, as decorations over the document they describe. Built once per
    * load — the text never changes underneath them, so there is nothing to map.
    * @param {import('@codemirror/state').EditorState} state
-   * @param {import('$lib/cv/format/diff.js').LineInfo[]} infos
+   * @param {import('$lib/cv/format/diff').LineInfo[]} infos
    */
   function decorate(state, infos) {
     /** @type {import('@codemirror/state').Range<Decoration>[]} */
@@ -238,13 +236,13 @@
       }
       return folds
     },
-    provide: f => EditorView.decorations.from(f),
+    provide: (f) => EditorView.decorations.from(f),
   })
 
   /**
    * The runs of one side's lines that are nothing but the same, less the
    * context kept around each difference.
-   * @param {import('$lib/cv/format/diff.js').LineInfo[]} infos
+   * @param {import('$lib/cv/format/diff').LineInfo[]} infos
    * @returns {[number, number][]}
    */
   function foldsFor(infos) {
@@ -255,7 +253,7 @@
     })
     /** @type {[number, number][]} */
     const runs = []
-    for (let i = 0; i < infos.length; ) {
+    for (let i = 0; i < infos.length;) {
       if (keep[i]) {
         i++
         continue
@@ -277,7 +275,7 @@
       for (const e of tr.effects) if (e.is(setLines)) return decorate(tr.state, e.value)
       return deco.map(tr.changes)
     },
-    provide: f => EditorView.decorations.from(f),
+    provide: (f) => EditorView.decorations.from(f),
   })
 
   /**
@@ -306,7 +304,7 @@
           EditorView.domEventHandlers({ click: (e, v) => onClick(side, e, v) }),
           // Lines wrap, and are only measured once they are drawn, so where
           // a line sits can move without anything being scrolled.
-          EditorView.updateListener.of(u => {
+          EditorView.updateListener.of((u) => {
             if (u.geometryChanged || u.heightChanged || u.viewportChanged) redrawLinks()
           }),
         ],
@@ -373,7 +371,7 @@
   /**
    * @param {EditorView} view
    * @param {string} text
-   * @param {import('$lib/cv/format/diff.js').LineInfo[]} infos
+   * @param {import('$lib/cv/format/diff').LineInfo[]} infos
    */
   function load(view, text, infos) {
     view.dispatch({
@@ -392,16 +390,16 @@
 	   between — the same ladder the editor and the preview share. */
 
   /** @param {'a' | 'b'} side */
-  const hush = side => (quiet[side] = performance.now() + SYNC_QUIET_MS)
+  const hush = (side) => (quiet[side] = performance.now() + SYNC_QUIET_MS)
 
   /** @param {'a' | 'b'} side */
-  const hushed = side => performance.now() < quiet[side]
+  const hushed = (side) => performance.now() < quiet[side]
 
   /** @param {'a' | 'b'} side */
-  const other = side => (side === 'a' ? 'b' : 'a')
+  const other = (side) => (side === 'a' ? 'b' : 'a')
 
   /** @param {'a' | 'b'} side */
-  const viewOf = side => (side === 'a' ? viewA : viewB)
+  const viewOf = (side) => (side === 'a' ? viewA : viewB)
 
   /** @param {'a' | 'b'} side */
   function onScroll(side) {
@@ -484,7 +482,7 @@
     if (!info) return
     if (info.twin !== undefined) centre(other(side), info.twin)
     else if (info.move !== undefined) {
-      const move = current.moves.find(m => m.id === info.move)
+      const move = current.moves.find((/** @type {any} */ m) => m.id === info.move)
       if (move) centre(other(side), move[other(side)][0])
     }
   }
@@ -561,7 +559,7 @@
   }
 
   /** @param {[number, number] | null} r */
-  const lines = r => (r ? (r[0] === r[1] ? `line ${r[0]}` : `lines ${r[0]}–${r[1]}`) : '')
+  const lines = (r) => (r ? (r[0] === r[1] ? `line ${r[0]}` : `lines ${r[0]}–${r[1]}`) : '')
 
   function drawLinks() {
     const d = current
@@ -590,7 +588,7 @@
         b: m.b[0],
       })
     }
-    d.hunks.forEach((h, i) => {
+    d.hunks.forEach((/** @type {import('$lib/cv/format/diff').Hunk} */ h, /** @type {number} */ i) => {
       // A move is drawn from the move itself, below, which knows both ends.
       if (h.kind === 'moved') return
       const ya = extent(/** @type {EditorView} */ (viewA), h.a, () => mapLine(d.anchors, 'b', h.b?.[0] ?? 1), top)
@@ -628,7 +626,7 @@
   let flingFrame = 0
 
   /** @param {number} by */
-  const scrollBy = by => {
+  const scrollBy = (by) => {
     if (viewB) viewB.scrollDOM.scrollTop += by
   }
 
@@ -744,7 +742,7 @@
     return () => clearInterval(id)
   })
 
-  /** @typedef {import('$lib/cv/state/doc.svelte.js').HistoryEntry} HistoryEntry */
+  /** @typedef {import('$lib/cv/state/doc.svelte').HistoryEntry} HistoryEntry */
 
   /** @type {Intl.DateTimeFormatOptions} */
   const clock = { hour: 'numeric', minute: '2-digit' }
@@ -830,13 +828,14 @@
         bind:this={firstControl}
         aria-label="Left document"
         value={ref.fileId}
-        onchange={e => setFile(side, e.currentTarget.value)}>
+        onchange={(e) => setFile(side, e.currentTarget.value)}
+      >
         {#each files.open as f (f.id)}
           <option value={f.id}>{f.name}{f.id === files.activeId ? ' (active)' : ''}</option>
         {/each}
       </select>
     {:else}
-      <select class="ds-select compact" aria-label="Right document" value={ref.fileId} onchange={e => setFile(side, e.currentTarget.value)}>
+      <select class="ds-select compact" aria-label="Right document" value={ref.fileId} onchange={(e) => setFile(side, e.currentTarget.value)}>
         {#each files.open as f (f.id)}
           <option value={f.id}>{f.name}{f.id === files.activeId ? ' (active)' : ''}</option>
         {/each}
@@ -848,7 +847,8 @@
       value={ref.versionKey ?? ''}
       disabled={!live}
       title={live ? 'Which version of this file' : 'Only the open file has its history loaded'}
-      onchange={e => setVersion(side, e.currentTarget.value)}>
+      onchange={(e) => setVersion(side, e.currentTarget.value)}
+    >
       <option value="">Current</option>
       {#if live && versionGroups.length}
         <!-- Drawn as a rule where the browser supports one in a list, and
@@ -869,7 +869,13 @@
 <!-- A switch for one setting. A kind of difference brings its colour, which
      the switch is filled with while on, so the row doubles as the legend; and
      its count, which is the tally the header used to carry. -->
-{#snippet toggle(/** @type {Pref} */ key, /** @type {string} */ label, /** @type {string} */ title, /** @type {string | null} */ tone = null, /** @type {number | null} */ count = null)}
+{#snippet toggle(
+  /** @type {Pref} */ key,
+  /** @type {string} */ label,
+  /** @type {string} */ title,
+  /** @type {string | null} */ tone = null,
+  /** @type {number | null} */ count = null,
+)}
   <button class="cmp-switch {tone ?? ''}" role="switch" aria-checked={prefs[key]} {title} onclick={() => flip(key)}>
     <span class="track" aria-hidden="true"></span>
     <span class="label">{label}</span>
@@ -885,10 +891,11 @@
   aria-modal="true"
   aria-labelledby="compare-title"
   tabindex="-1"
-  onpointerdown={e => (downOnBackdrop = e.target === e.currentTarget)}
-  onclick={e => {
+  onpointerdown={(e) => (downOnBackdrop = e.target === e.currentTarget)}
+  onclick={(e) => {
     if (downOnBackdrop && e.target === e.currentTarget) commands.closeCompare()
-  }}>
+  }}
+>
   <div class="cmp-card">
     <header class="cmp-bar">
       <h2 id="compare-title" class="cmp-title">Compare</h2>
@@ -927,8 +934,9 @@
         onpointerdown={onGutterDown}
         onpointermove={onGutterMove}
         onpointerup={onGutterUp}
-        onpointercancel={onGutterUp}>
-        {#each links.filter(l => prefs[l.kind]) as link (link.id)}
+        onpointercancel={onGutterUp}
+      >
+        {#each links.filter((l) => prefs[l.kind]) as link (link.id)}
           <!-- Pointer only: the same jump is a click on either end's lines, and
                the step buttons reach every difference from the keyboard. -->
           <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->

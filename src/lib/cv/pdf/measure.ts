@@ -25,122 +25,137 @@
 /** CSS px to pt. */
 const PT = 0.75
 
-/**
- * @typedef {object} TextItem
- * @property {'text'} kind
- * @property {number} page
- * @property {number} x         left edge, pt
- * @property {number} y         baseline, pt
- * @property {number} w         advance the browser gave it, pt
- * @property {number} h         line height of the run, pt — for a link's clickable box
- * @property {string} text
- * @property {{ at: number, x: number, w: number }[]} words  where each word starts in `text`, and where the browser put it, pt
- * @property {string[]} families  CSS family names, in fallback order
- * @property {number} weight
- * @property {boolean} italic
- * @property {number} size      pt
- * @property {number} tracking  letter spacing, pt
- * @property {string} color     hex
- * @property {string} [href]
- */
+export interface TextItem {
+  kind: 'text'
+  page: number
+  /** left edge, pt */
+  x: number
+  /** baseline, pt */
+  y: number
+  /** advance the browser gave it, pt */
+  w: number
+  /** line height of the run, pt — for a link's clickable box */
+  h: number
+  text: string
+  /** where each word starts in `text`, and where the browser put it, pt */
+  words: { at: number; x: number; w: number }[]
+  /** CSS family names, in fallback order */
+  families: string[]
+  weight: number
+  italic: boolean
+  /** pt */
+  size: number
+  /** letter spacing, pt */
+  tracking: number
+  /** hex */
+  color: string
+  href?: string
+}
+
+export type Paint =
+  | {
+      kind: 'rect'
+      page: number
+      x: number
+      y: number
+      w: number
+      h: number
+      r: number
+      fill?: string
+      stroke?: string
+      lw?: number
+      dash?: [number, number]
+    }
+  | { kind: 'line'; page: number; x1: number; y1: number; x2: number; y2: number; lw: number; color: string; dash?: [number, number] }
+  | { kind: 'path'; page: number; x: number; y: number; scale: number; d: string; fill: string }
+
+export interface StructNode {
+  kind: 'node'
+  tag: string
+  /** a figure's alternative text */
+  alt?: string
+  /** what a span says, where what it prints is a styling of that */
+  actual?: string
+  /** a section's title */
+  title?: string
+  /** a list's ListNumbering — what marks its items */
+  numbering?: string
+  href?: string
+  children: (StructNode | TextItem | Paint)[]
+}
+
+export interface DisplayList {
+  /** page, pt */
+  width: number
+  height: number
+  pages: number
+  /** the page colour */
+  paper: string
+  /** the palette's muted ink, for the running head and foot */
+  muted: string
+  /** the CV's language */
+  lang: string
+  /** the `Document`, in reading order */
+  root: StructNode
+  /** per page */
+  artifacts: (Paint | TextItem)[][]
+}
+
+export interface Pages {
+  /** page, px */
+  width: number
+  height: number
+  /** between pages as the preview lays them out, px */
+  gap: number
+  pages: number
+}
+
+const TAGS: Record<string, string> = { SECTION: 'Sect', HEADER: 'Sect', H1: 'H1', H2: 'H2', H3: 'H3', P: 'P', UL: 'L', LI: 'LI' }
 
 /**
- * @typedef {(
- *   | { kind: 'rect', page: number, x: number, y: number, w: number, h: number, r: number, fill?: string, stroke?: string, lw?: number, dash?: [number, number] }
- *   | { kind: 'line', page: number, x1: number, y1: number, x2: number, y2: number, lw: number, color: string, dash?: [number, number] }
- *   | { kind: 'path', page: number, x: number, y: number, scale: number, d: string, fill: string }
- * )} Paint
+ * The `.sheet` element
  */
-
-/**
- * @typedef {object} StructNode
- * @property {'node'} kind
- * @property {string} tag
- * @property {string} [alt]       a figure's alternative text
- * @property {string} [actual]    what a span says, where what it prints is a styling of that
- * @property {string} [title]     a section's title
- * @property {string} [numbering] a list's ListNumbering — what marks its items
- * @property {string} [href]
- * @property {(StructNode | TextItem | Paint)[]} children
- */
-
-/**
- * @typedef {object} DisplayList
- * @property {number} width   page, pt
- * @property {number} height
- * @property {number} pages
- * @property {string} paper   the page colour
- * @property {string} muted   the palette's muted ink, for the running head and foot
- * @property {string} lang    the CV's language
- * @property {StructNode} root          the `Document`, in reading order
- * @property {(Paint | TextItem)[][]} artifacts  per page
- */
-
-/**
- * @typedef {object} Pages
- * @property {number} width   page, px
- * @property {number} height
- * @property {number} gap     between pages as the preview lays them out, px
- * @property {number} pages
- */
-
-/** @type {Record<string, string>} */
-const TAGS = { SECTION: 'Sect', HEADER: 'Sect', H1: 'H1', H2: 'H2', H3: 'H3', P: 'P', UL: 'L', LI: 'LI' }
-
-/**
- * @param {HTMLElement} sheet  the `.sheet` element
- * @param {Pages} geo
- * @returns {DisplayList}
- */
-export function measure(sheet, geo) {
-  const doc = /** @type {Document} */ (sheet.ownerDocument)
-  const win = /** @type {Window} */ (doc.defaultView)
+export function measure(sheet: HTMLElement, geo: Pages): DisplayList {
+  const doc = sheet.ownerDocument as Document
+  const win = doc.defaultView as Window
   const origin = sheet.getBoundingClientRect()
   const zoom = origin.width / geo.width || 1
   const period = geo.height + geo.gap
   const range = doc.createRange()
 
-  /** @type {DisplayList['artifacts']} */
-  const artifacts = Array.from({ length: geo.pages }, () => [])
+  const artifacts: (Paint | TextItem)[][] = Array.from({ length: geo.pages }, () => [])
 
-  /** A viewport x in px, as pt from the sheet's left edge. @param {number} x */
-  const px = (x) => ((x - origin.left) / zoom) * PT
-  /** A viewport y as the page it is on, and pt from that page's top. @param {number} y */
-  const py = (y) => {
+  /** A viewport x in px, as pt from the sheet's left edge. */
+  const px = (x: number): number => ((x - origin.left) / zoom) * PT
+  /** A viewport y as the page it is on, and pt from that page's top. */
+  const py = (y: number): { page: number; y: number } => {
     const s = (y - origin.top) / zoom
     const page = Math.min(geo.pages - 1, Math.max(0, Math.floor(s / period)))
     return { page, y: (s - page * period) * PT }
   }
-  /** A measured length in px — zoomed with the sheet — as pt. @param {number} l */
-  const len = (l) => (l / zoom) * PT
-  /** A computed style's length in px, which the zoom doesn't touch, as pt. @param {number} l */
-  const css = (l) => l * PT
+  /** A measured length in px — zoomed with the sheet — as pt. */
+  const len = (l: number): number => (l / zoom) * PT
+  /** A computed style's length in px, which the zoom doesn't touch, as pt. */
+  const css = (l: number): number => l * PT
 
   const baselines = baselineProbe(doc)
 
-  /**
-   * @param {Element} el
-   * @param {StructNode} parent
-   * @param {boolean} hidden  inside decoration
-   * @param {boolean} figure  inside a figure, whose paint is its content
-   */
-  function walk(el, parent, hidden, figure) {
+  function walk(el: Element, parent: StructNode, hidden: boolean, figure: boolean): void {
     if (el.hasAttribute('data-skip')) return
     const cs = win.getComputedStyle(el)
     if (cs.display === 'none' || cs.visibility === 'hidden') return
     hidden ||= el.getAttribute('aria-hidden') === 'true'
 
-    /** @type {StructNode} */
-    let node = parent
+    let node: StructNode = parent
     if (!hidden) {
       const role = el.getAttribute('role')
       if (role === 'img') {
         node = child(parent, { kind: 'node', tag: 'Figure', alt: el.getAttribute('aria-label') ?? '', children: [] })
         figure = true
       } else if (el.hasAttribute('data-actual')) {
-        node = child(parent, { kind: 'node', tag: 'Span', actual: /** @type {string} */ (el.getAttribute('data-actual')), children: [] })
+        node = child(parent, { kind: 'node', tag: 'Span', actual: el.getAttribute('data-actual') as string, children: [] })
       } else if (el.tagName === 'A' && el.getAttribute('href')) {
-        node = child(parent, { kind: 'node', tag: 'Link', href: /** @type {string} */ (el.getAttribute('href')), children: [] })
+        node = child(parent, { kind: 'node', tag: 'Link', href: el.getAttribute('href') as string, children: [] })
       } else if (TAGS[el.tagName]) {
         node = child(parent, { kind: 'node', tag: TAGS[el.tagName], children: [] })
         const title = el.getAttribute('data-title')
@@ -156,28 +171,29 @@ export function measure(sheet, geo) {
     for (const p of paint(el, cs)) (figure && !hidden ? node.children : artifacts[p.page]).push(p)
 
     if (el.tagName.toLowerCase() === 'svg') {
-      for (const p of svg(/** @type {SVGSVGElement} */ (/** @type {unknown} */ (el)))) artifacts[p.page].push(p)
+      for (const p of svg(el as unknown as SVGSVGElement)) artifacts[p.page].push(p)
       return
     }
 
     for (const n of el.childNodes) {
-      if (n.nodeType === 1) walk(/** @type {Element} */ (n), node, hidden, figure)
+      if (n.nodeType === 1) walk(n as Element, node, hidden, figure)
       else if (n.nodeType === 3) {
-        for (const t of text(/** @type {Text} */ (n), cs, node)) (hidden ? artifacts[t.page] : node.children).push(t)
+        for (const t of text(n as Text, cs, node)) (hidden ? artifacts[t.page] : node.children).push(t)
       }
     }
   }
 
-  /**
-   * A text node, as one fragment per line it is set on. Each character's box
-   * is read; a line ends where the next character jumps back to the left. A
-   * collapsed space has no box and is left out.
-   * @param {Text} node
-   * @param {CSSStyleDeclaration} cs  its element's style
-   * @param {StructNode} owner
-   * @returns {TextItem[]}
-   */
-  function text(node, cs, owner) {
+  interface LineBox {
+    left: number
+    right: number
+    top: number
+    bottom: number
+    text: string
+    words: { at: number; left: number; right: number }[]
+    gap: boolean
+  }
+
+  function text(node: Text, cs: CSSStyleDeclaration, owner: StructNode): TextItem[] {
     const data = node.data
     if (!data.length) return []
     const size = parseFloat(cs.fontSize)
@@ -190,11 +206,9 @@ export function measure(sheet, geo) {
     const ratio = baselines(cs)
     const href = owner.tag === 'Link' ? owner.href : undefined
 
-    /** @type {TextItem[]} */
-    const out = []
-    /** @type {{ left: number, right: number, top: number, bottom: number, text: string, words: { at: number, left: number, right: number }[], gap: boolean } | null} */
-    let line = null
-    const flush = () => {
+    const out: TextItem[] = []
+    let line: LineBox | null = null
+    const flush = (): void => {
       if (!line || !line.text.trim()) return
       const at = py(line.top + ratio * size * zoom)
       out.push({
@@ -217,7 +231,7 @@ export function measure(sheet, geo) {
     }
     for (let i = 0; i < data.length; i++) {
       // A surrogate pair is one character, and one box.
-      const step = data.codePointAt(i) !== undefined && /** @type {number} */ (data.codePointAt(i)) > 0xffff ? 2 : 1
+      const step = data.codePointAt(i) !== undefined && (data.codePointAt(i) as number) > 0xffff ? 2 : 1
       range.setStart(node, i)
       range.setEnd(node, i + step)
       const r = range.getBoundingClientRect()
@@ -232,7 +246,15 @@ export function measure(sheet, geo) {
       if (!line) {
         // A space the browser drew opens the run — the one after a bold word
         // that ends the text node before. Its box is where the gap is.
-        line = { left: r.left, right: r.right, top: r.top, bottom: r.bottom, text: space ? ' ' : ch, words: space ? [] : [{ at: 0, left: r.left, right: r.right }], gap: space }
+        line = {
+          left: r.left,
+          right: r.right,
+          top: r.top,
+          bottom: r.bottom,
+          text: space ? ' ' : ch,
+          words: space ? [] : [{ at: 0, left: r.left, right: r.right }],
+          gap: space,
+        }
       } else {
         // A word starts after a space; each is placed where the browser put
         // it, so the PDF's spacing between words is the browser's.
@@ -254,24 +276,20 @@ export function measure(sheet, geo) {
    * An element's own paint: a fill, and its borders — as one outline when all
    * four match, or a line per side. An inline element is painted once per line
    * box it spans.
-   * @param {Element} el
-   * @param {CSSStyleDeclaration} cs
-   * @returns {Paint[]}
    */
-  function paint(el, cs) {
+  function paint(el: Element, cs: CSSStyleDeclaration): Paint[] {
     const fill = cs.backgroundColor
-    const sides = /** @type {const} */ (['top', 'right', 'bottom', 'left']).map((s) => ({
+    const sides = (['top', 'right', 'bottom', 'left'] as const).map((s) => ({
       side: s,
       width: parseFloat(cs.getPropertyValue(`border-${s}-width`)) || 0,
       style: cs.getPropertyValue(`border-${s}-style`),
       color: cs.getPropertyValue(`border-${s}-color`),
     }))
-    const visible = (/** @type {typeof sides[number]} */ b) => b.width > 0 && b.style !== 'none' && b.style !== 'hidden' && alpha(b.color) > 0
+    const visible = (b: (typeof sides)[number]): boolean => b.width > 0 && b.style !== 'none' && b.style !== 'hidden' && alpha(b.color) > 0
     const borders = sides.filter(visible)
     if (alpha(fill) === 0 && !borders.length) return []
 
-    /** @type {Paint[]} */
-    const out = []
+    const out: Paint[] = []
     for (const r of el.getClientRects()) {
       if (r.width === 0 && r.height === 0) continue
       const at = py(r.top)
@@ -320,7 +338,7 @@ export function measure(sheet, geo) {
    * @param {number} top
    * @param {number} bottom
    */
-  function vertical(top, bottom) {
+  function vertical(top: number, bottom: number) {
     const a = py(top)
     const b = py(bottom)
     const pageH = geo.height * PT
@@ -335,17 +353,14 @@ export function measure(sheet, geo) {
 
   /**
    * An SVG's paths, placed and scaled from its viewBox onto its box.
-   * @param {SVGSVGElement} el
-   * @returns {Paint[]}
    */
-  function svg(el) {
+  function svg(el: SVGSVGElement): Paint[] {
     const r = el.getBoundingClientRect()
     const vb = el.viewBox.baseVal
     if (!vb || !vb.width || !r.width) return []
     const at = py(r.top)
     const scale = len(r.width) / vb.width
-    /** @type {Paint[]} */
-    const out = []
+    const out: Paint[] = []
     for (const path of el.querySelectorAll('path')) {
       const d = path.getAttribute('d')
       const fill = win.getComputedStyle(path).fill
@@ -355,8 +370,7 @@ export function measure(sheet, geo) {
     return out
   }
 
-  /** @type {StructNode} */
-  const root = { kind: 'node', tag: 'Document', children: [] }
+  const root: StructNode = { kind: 'node', tag: 'Document', children: [] }
   for (const el of sheet.children) walk(el, root, false, false)
 
   const page = sheet.querySelector('.page')
@@ -369,12 +383,10 @@ export function measure(sheet, geo) {
  * Where the baseline sits in a character's box, as a share of the font size,
  * for each face — read once per face from a probe outside the sheet: a run of
  * text with an empty inline-block after it, whose foot is the baseline.
- * @param {Document} doc
  */
-function baselineProbe(doc) {
-  /** @type {Map<string, number>} */
-  const cache = new Map()
-  return (/** @type {CSSStyleDeclaration} */ cs) => {
+function baselineProbe(doc: Document): (cs: CSSStyleDeclaration) => number {
+  const cache: Map<string, number> = new Map()
+  return (cs: CSSStyleDeclaration): number => {
     const key = `${cs.fontFamily}|${cs.fontWeight}|${cs.fontStyle}`
     const known = cache.get(key)
     if (known !== undefined) return known
@@ -397,33 +409,28 @@ function baselineProbe(doc) {
 /**
  * What marks a list's items, as PDF's ListNumbering names it: a disc for the
  * bullets, a circle for the dots, and none for dashes, chips and run-on lists.
- * @param {Element} ul
  */
-const numbering = (ul) => (ul.classList.contains('m-bullet') ? 'Disc' : ul.classList.contains('m-dot') ? 'Circle' : 'None')
+const numbering = (ul: Element): string => (ul.classList.contains('m-bullet') ? 'Disc' : ul.classList.contains('m-dot') ? 'Circle' : 'None')
 
 /**
  * Add a structure node to its parent, and hand it back.
- * @template {StructNode} T
- * @param {StructNode} parent
- * @param {T} node
- * @returns {T}
  */
-function child(parent, node) {
+function child<T extends StructNode>(parent: StructNode, node: T): T {
   parent.children.push(node)
   return node
 }
 
-/** Structure with nothing in it says nothing; drop it. @param {StructNode} node @returns {StructNode} */
-function prune(node) {
+/** Structure with nothing in it says nothing; drop it. */
+function prune(node: StructNode): StructNode {
   node.children = node.children.map((c) => (c.kind === 'node' ? prune(c) : c)).filter((c) => c.kind !== 'node' || c.children.length > 0)
   return node
 }
 
-/** @param {string} style @param {number} lw @returns {{ dash?: [number, number] }} */
-const dash = (style, lw) => (style === 'dashed' ? { dash: [3 * lw, 2 * lw] } : style === 'dotted' ? { dash: [lw, lw] } : {})
+const dash = (style: string, lw: number): { dash?: [number, number] } =>
+  style === 'dashed' ? { dash: [3 * lw, 2 * lw] } : style === 'dotted' ? { dash: [lw, lw] } : {}
 
-/** The alpha of a computed colour. @param {string} c */
-const alpha = (c) => {
+/** The alpha of a computed colour. */
+const alpha = (c: string): number => {
   if (!c || c === 'transparent') return 0
   const m = /rgba?\(([^)]+)\)/.exec(c)
   if (!m) return 1
@@ -432,7 +439,7 @@ const alpha = (c) => {
 }
 
 /** A computed `rgb()` as `#rrggbb`. @param {string} c */
-const hex = (c) => {
+const hex = (c: string): string => {
   const m = /rgba?\(([^)]+)\)/.exec(c ?? '')
   if (!m) return c
   return `#${m[1]

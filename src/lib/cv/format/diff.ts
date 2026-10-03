@@ -20,57 +20,88 @@
  * entry is likely to be named by.
  */
 
-import { parse } from './relaxed-yaml.js'
+import { parse } from './relaxed-yaml'
 
-/** @typedef {'same' | 'added' | 'removed' | 'changed'} LineKind */
+type LineKind = 'same' | 'added' | 'removed' | 'changed'
 
 /**
  * What became of one line.
- * @typedef {object} LineInfo
- * @property {LineKind} kind
- * @property {number} [move]     id of the moved block the line sits in — see `Move`
- * @property {number} [twin]     the line on the other side it pairs with, for `same` and `changed`
- * @property {[number, number][]} [ranges]  column ranges that differ, for `changed`
  */
+export interface LineInfo {
+  kind: LineKind
+  /** id of the moved block the line sits in — see `Move` */
+  move?: number
+  /** the line on the other side it pairs with, for `same` and `changed` */
+  twin?: number
+  /** column ranges that differ, for `changed` */
+  ranges?: Array<[number, number]>
+}
 
 /**
  * A block that is on both sides, in a different place. Line ranges are 1-based
  * and inclusive; `label` is what the block is called, for saying which moved.
- * @typedef {{ id: number, a: [number, number], b: [number, number], label: string }} Move
  */
+interface Move {
+  id: number
+  a: [number, number]
+  b: [number, number]
+  label: string
+}
 
 /**
  * One thing to step to. A side is null where it has nothing to show — a pure
  * insertion has no lines on A.
- * @typedef {{ a: [number, number] | null, b: [number, number] | null, kind: 'added' | 'removed' | 'changed' | 'moved' }} Hunk
  */
+export interface Hunk {
+  a: [number, number] | null
+  b: [number, number] | null
+  kind: 'added' | 'removed' | 'changed' | 'moved'
+}
 
-/** A line on A and the line on B it corresponds to. @typedef {{ a: number, b: number }} Anchor */
+/** A line on A and the line on B it corresponds to. */
+export type Anchor = { a: number; b: number }
 
 /**
- * @typedef {object} DocDiff
- * @property {LineInfo[]} a       one per line of A; index is line − 1
- * @property {LineInfo[]} b
- * @property {Move[]} moves
- * @property {Hunk[]} hunks        in B order, with removals placed where they would have been
- * @property {Anchor[]} anchors    paired lines, strictly increasing on both sides — for scrolling one side to the other
- * @property {{ added: number, removed: number, changed: number, moved: number }} counts
+ * The result of diffing two documents.
  */
+export interface DocDiff {
+  /** one per line of A; index is line − 1 */
+  a: LineInfo[]
+  b: LineInfo[]
+  moves: Move[]
+  /** in B order, with removals placed where they would have been */
+  hunks: Hunk[]
+  /** paired lines, strictly increasing on both sides — for scrolling one side to the other */
+  anchors: Anchor[]
+  counts: { added: number; removed: number; changed: number; moved: number }
+}
 
 /**
  * A node of the parsed document, as a range of lines.
- * @typedef {object} Node
- * @property {string} path
- * @property {string | null} key   what it is paired on; null means "by resemblance only"
- * @property {boolean} item        a list item, which is allowed to move to another parent
- * @property {number} start        first line, 1-based
- * @property {number} end          exclusive; trailing blank lines are left out
- * @property {Node[]} children     in document order
- * @property {number[]} own        lines of its own that no child covers
- * @property {string[]} lines      the source lines of the whole range
  */
+interface Node {
+  path: string
+  /** what it is paired on; null means "by resemblance only" */
+  key: string | null
+  /** a list item, which is allowed to move to another parent */
+  item: boolean
+  /** first line, 1-based */
+  start: number
+  /** exclusive; trailing blank lines are left out */
+  end: number
+  /** in document order */
+  children: Node[]
+  /** lines of its own that no child covers */
+  own: number[]
+  /** the source lines of the whole range */
+  lines: string[]
+}
 
-/** Two children of one parent that were judged the same thing. @typedef {{ a: Node, b: Node }} Pair */
+/** Two children of one parent that were judged the same thing. */
+interface Pair {
+  a: Node
+  b: Node
+}
 
 /** How alike two blocks under one parent have to be to count as one edited block. */
 const SIBLING_MIN = 0.5
@@ -79,33 +110,21 @@ const MOVE_MIN = 0.6
 
 /**
  * Diff two documents.
- * @param {string} textA
- * @param {string} textB
- * @returns {DocDiff}
  */
-export function diffDocuments(textA, textB) {
+export function diffDocuments(textA: string, textB: string): DocDiff {
   const A = buildTree(textA)
   const B = buildTree(textB)
-  const infoA = A.lines.map(() => /** @type {LineInfo} */ ({ kind: 'same' }))
-  const infoB = B.lines.map(() => /** @type {LineInfo} */ ({ kind: 'same' }))
+  const infoA: LineInfo[] = A.lines.map(() => ({ kind: 'same' as const }))
+  const infoB: LineInfo[] = B.lines.map(() => ({ kind: 'same' as const }))
   const assignedA = new Uint8Array(A.lines.length + 1)
   const assignedB = new Uint8Array(B.lines.length + 1)
-  /** @type {Move[]} */
-  const moves = []
-  /** @type {Node[]} */
-  const poolA = []
-  /** @type {Node[]} */
-  const poolB = []
-  /** Nodes that found a counterpart; anything else is wholly gone or wholly new. @type {Set<Node>} */
-  const matched = new Set()
+  const moves: Move[] = []
+  const poolA: Node[] = []
+  const poolB: Node[] = []
+  /** Nodes that found a counterpart; anything else is wholly gone or wholly new. */
+  const matched: Set<Node> = new Set()
 
-  /**
-   * @param {'a' | 'b'} side
-   * @param {number} line
-   * @param {LineInfo} info
-   * @param {number | undefined} move
-   */
-  const set = (side, line, info, move) => {
+  const set = (side: 'a' | 'b', line: number, info: LineInfo, move: number | undefined): void => {
     if (move !== undefined) info.move = move
     if (side === 'a') {
       infoA[line - 1] = info
@@ -116,8 +135,7 @@ export function diffDocuments(textA, textB) {
     }
   }
 
-  /** @param {Node} a @param {Node} b */
-  const newMove = (a, b) => {
+  const newMove = (a: Node, b: Node): number => {
     const id = moves.length + 1
     moves.push({ id, a: [a.start, a.end - 1], b: [b.start, b.end - 1], label: labelOf(b) })
     return id
@@ -126,11 +144,8 @@ export function diffDocuments(textA, textB) {
   /**
    * Diff a pair of lines, in place. `la` and `lb` are line numbers and need not
    * be contiguous — a node's own lines are whatever its children left it.
-   * @param {number[]} la
-   * @param {number[]} lb
-   * @param {number | undefined} move
    */
-  function lcsLines(la, lb, move) {
+  function lcsLines(la: number[], lb: number[], move: number | undefined): void {
     const ta = la.map((n) => A.lines[n - 1].trimEnd())
     const tb = lb.map((n) => B.lines[n - 1].trimEnd())
     for (const op of lineOps(ta, tb)) {
@@ -154,11 +169,8 @@ export function diffDocuments(textA, textB) {
   /**
    * Two nodes judged to be the same thing: pair up their children, recurse
    * into each pair, and line-diff what is left over.
-   * @param {Node} a
-   * @param {Node} b
-   * @param {number | undefined} move  the moved block both sit in, if any
    */
-  function pairTree(a, b, move) {
+  function pairTree(a: Node, b: Node, move: number | undefined): void {
     matched.add(a)
     matched.add(b)
     if (!a.children.length || !b.children.length) {
@@ -187,7 +199,7 @@ export function diffDocuments(textA, textB) {
   // bullet that went to another job. Best resemblance first, and a match takes
   // its descendants out of the running — they are the pair's to diff.
   for (;;) {
-    let best = /** @type {{ a: Node, b: Node, score: number } | null} */ (null)
+    let best: { a: Node; b: Node; score: number } | null = null
     for (const x of poolA) {
       if (matched.has(x) || assignedA[x.start]) continue
       for (const y of poolB) {
@@ -203,7 +215,7 @@ export function diffDocuments(textA, textB) {
   // Everything still unclaimed under an unmatched node was removed or added,
   // blank lines included, so the block reads as one. Lines a matched node
   // never diffed — the blanks between its children — are nothing either way.
-  const sweep = (/** @type {Node} */ node, /** @type {'a' | 'b'} */ side) => {
+  const sweep = (node: Node, side: 'a' | 'b'): void => {
     if (matched.has(node)) {
       for (const c of node.children) sweep(c, side)
       return
@@ -237,11 +249,8 @@ export function diffDocuments(textA, textB) {
  * by interpolating between the two it falls between. Past either end the
  * offset from the nearest anchor is kept. Fractional lines go in and come out,
  * so a scroll position mid-line maps to one.
- * @param {Anchor[]} anchors
- * @param {'a' | 'b'} from  which side `line` is on
- * @param {number} line
  */
-export function mapLine(anchors, from, line) {
+export function mapLine(anchors: Anchor[], from: 'a' | 'b', line: number): number {
   const to = from === 'a' ? 'b' : 'a'
   if (!anchors.length) return line
   const first = anchors[0]
@@ -264,16 +273,13 @@ export function mapLine(anchors, from, line) {
 
 /**
  * Read a document into nodes with line ranges.
- * @param {string} text
- * @returns {{ root: Node, lines: string[] }}
  */
-function buildTree(text) {
+function buildTree(text: string): { root: Node; lines: string[] } {
   // Split the way the editor counts lines: a trailing newline is one more,
   // empty, line.
   const lines = text.split('\n')
   const { value, lines: paths } = parse(text)
-  /** @type {Node} */
-  const root = { path: '', key: null, item: false, start: paths.get('') ?? 1, end: lines.length + 1, children: [], own: [], lines: [] }
+  const root: Node = { path: '', key: null, item: false, start: paths.get('') ?? 1, end: lines.length + 1, children: [], own: [], lines: [] }
   grow(root, value, paths)
   place(root, lines)
   return { root, lines }
@@ -281,21 +287,16 @@ function buildTree(text) {
 
 /**
  * Add a value's children under its node, by the line each starts on.
- * @param {Node} node
- * @param {unknown} value
- * @param {Map<string, number>} paths
  */
-function grow(node, value, paths) {
+function grow(node: Node, value: unknown, paths: Map<string, number>): void {
   if (value === null || typeof value !== 'object') return
   const list = Array.isArray(value)
-  /** @type {[string, unknown][]} */
-  const entries = list ? value.map((v, i) => [String(i), v]) : Object.entries(value)
+  const entries: Array<[string, unknown]> = list ? value.map((v, i) => [String(i), v]) : Object.entries(value)
   for (const [segment, child] of entries) {
     const path = node.path ? `${node.path}.${segment}` : segment
     const start = paths.get(path)
     if (start === undefined) continue
-    /** @type {Node} */
-    const n = { path, key: list ? identity(child) : segment, item: list, start, end: 0, children: [], own: [], lines: [] }
+    const n: Node = { path, key: list ? identity(child) : segment, item: list, start, end: 0, children: [], own: [], lines: [] }
     node.children.push(n)
     grow(n, child, paths)
   }
@@ -305,10 +306,8 @@ function grow(node, value, paths) {
 /**
  * Give every node its end — the next sibling's start, or the parent's end —
  * less any blank lines at its tail, and work out which lines are its own.
- * @param {Node} node
- * @param {string[]} lines
  */
-function place(node, lines) {
+function place(node: Node, lines: string[]): void {
   node.children.forEach((c, i) => {
     c.end = i + 1 < node.children.length ? node.children[i + 1].start : node.end
     place(c, lines)
@@ -325,13 +324,12 @@ function place(node, lines) {
  * What a list item is called, for pairing it with its counterpart. A mapping
  * goes by the first of the keys an entry is usually named by; a scalar goes
  * by its text. A mapping with none of them pairs by resemblance only.
- * @param {unknown} value
  */
-function identity(value) {
+function identity(value: unknown): string | null {
   if (value === null || value === undefined) return null
   if (Array.isArray(value)) return null
   if (typeof value !== 'object') return String(value).trim()
-  const v = /** @type {Record<string, unknown>} */ (value)
+  const v = value as Record<string, unknown>
   for (const k of ['title', 'name', 'text', 'org', 'company', 'school']) {
     if (typeof v[k] === 'string' && v[k].trim()) return `${typeof v.type === 'string' ? `${v.type}|` : ''}${k}=${v[k].trim()}`
   }
@@ -345,9 +343,8 @@ const NAMED_RE = /^(?:[^|=]*\|)?(?:title|name|text|org|company|school)=/
  * What a node is called, as a reader would say it: an entry by its title or
  * name, a bullet by its text, a mapping entry by its key. Anything else by its
  * first line.
- * @param {Node} node
  */
-function labelOf(node) {
+function labelOf(node: Node): string {
   if (node.key !== null) {
     const named = NAMED_RE.exec(node.key)
     return named ? node.key.slice(named[0].length) : node.key
@@ -355,11 +352,11 @@ function labelOf(node) {
   return (node.lines.find((l) => l.trim()) ?? '').trim().replace(/^(?:- )+/, '')
 }
 
-/** Every line of a node, first to last. @param {Node} node */
-const span = (node) => Array.from({ length: node.end - node.start }, (_, i) => node.start + i)
+/** Every line of a node, first to last. */
+const span = (node: Node): number[] => Array.from({ length: node.end - node.start }, (_, i) => node.start + i)
 
-/** The node and every list item beneath it. @param {Node} node @param {Node[]} out */
-function collectItems(node, out) {
+/** The node and every list item beneath it. */
+function collectItems(node: Node, out: Node[]): void {
   if (node.item) out.push(node)
   for (const c of node.children) collectItems(c, out)
 }
@@ -369,16 +366,11 @@ function collectItems(node, out) {
 /**
  * Pair the children of two matched nodes: first by name, in order, then by
  * how much the leftovers resemble each other. Returned in A's order.
- * @param {Node[]} ca
- * @param {Node[]} cb
- * @returns {Pair[]}
  */
-function matchChildren(ca, cb) {
-  /** @type {Pair[]} */
-  const pairs = []
-  const usedB = new Set()
-  /** @type {Map<string, Node[]>} */
-  const byKey = new Map()
+function matchChildren(ca: Node[], cb: Node[]): Pair[] {
+  const pairs: Pair[] = []
+  const usedB: Set<Node> = new Set()
+  const byKey: Map<string, Node[]> = new Map()
   for (const y of cb) {
     if (y.key === null) continue
     const list = byKey.get(y.key)
@@ -395,8 +387,7 @@ function matchChildren(ca, cb) {
     } else leftA.push(x)
   }
 
-  /** @type {{ a: Node, b: Node, score: number }[]} */
-  const candidates = []
+  const candidates: Array<{ a: Node; b: Node; score: number }> = []
   for (const x of leftA) {
     for (const y of cb) {
       if (usedB.has(y)) continue
@@ -419,19 +410,15 @@ function matchChildren(ca, cb) {
  * How alike two blocks are, 0 to 1: Dice over their lines, or over character
  * pairs when both are a single line — a bullet reworded is still mostly the
  * same characters, and not at all the same line.
- * @param {Node} x
- * @param {Node} y
  */
-function similarity(x, y) {
+function similarity(x: Node, y: Node): number {
   if (x.lines.length <= 1 && y.lines.length <= 1) return dice(bigrams(x.lines[0] ?? ''), bigrams(y.lines[0] ?? ''))
   return dice(lineBag(x.lines), lineBag(y.lines))
 }
 
-/** @param {string} text */
-function bigrams(text) {
+function bigrams(text: string): Map<string, number> {
   const s = text.trim()
-  /** @type {Map<string, number>} */
-  const bag = new Map()
+  const bag: Map<string, number> = new Map()
   for (let i = 0; i + 1 < s.length; i++) {
     const g = s.slice(i, i + 2)
     bag.set(g, (bag.get(g) ?? 0) + 1)
@@ -439,10 +426,8 @@ function bigrams(text) {
   return bag
 }
 
-/** @param {string[]} lines */
-function lineBag(lines) {
-  /** @type {Map<string, number>} */
-  const bag = new Map()
+function lineBag(lines: string[]): Map<string, number> {
+  const bag: Map<string, number> = new Map()
   for (const l of lines) {
     const t = l.trim()
     if (t) bag.set(t, (bag.get(t) ?? 0) + 1)
@@ -450,8 +435,8 @@ function lineBag(lines) {
   return bag
 }
 
-/** Dice coefficient of two multisets. @param {Map<string, number>} p @param {Map<string, number>} q */
-function dice(p, q) {
+/** Dice coefficient of two multisets. */
+function dice(p: Map<string, number>, q: Map<string, number>): number {
   let sizeP = 0
   let sizeQ = 0
   let both = 0
@@ -465,12 +450,10 @@ function dice(p, q) {
 /**
  * Indices of the longest strictly increasing run in `values`, by patience
  * sorting — so an out-of-order stretch costs its own length and no more.
- * @param {number[]} values
- * @returns {number[]}
  */
-function longestRun(values) {
+function longestRun(values: number[]): number[] {
   /** Index of the smallest tail seen for a run of each length. */
-  const tails = /** @type {number[]} */ ([])
+  const tails: number[] = []
   const prev = Array.from({ length: values.length }, () => -1)
   for (let i = 0; i < values.length; i++) {
     let lo = 0
@@ -483,29 +466,22 @@ function longestRun(values) {
     if (lo > 0) prev[i] = tails[lo - 1]
     tails[lo] = i
   }
-  /** @type {number[]} */
-  const out = []
+  const out: number[] = []
   for (let i = tails.length ? tails[tails.length - 1] : -1; i >= 0; i = prev[i]) out.push(i)
   return out.toReversed()
 }
 
 // ── Lines ───────────────────────────────────────────────────────────────────
 
-/**
- * @typedef {{ kind: 'same' | 'changed', a: number, b: number } | { kind: 'removed', a: number } | { kind: 'added', b: number }} LineOp
- */
+type LineOp = { kind: 'same' | 'changed'; a: number; b: number } | { kind: 'removed'; a: number } | { kind: 'added'; b: number }
 
 /**
  * An ordinary line diff, as operations over indices into the two lists. A run
  * of removals followed by a run of insertions is read as edits to the lines
  * that line up, and the rest as the removal or insertion it is.
- * @param {string[]} ta
- * @param {string[]} tb
- * @returns {LineOp[]}
  */
-function lineOps(ta, tb) {
-  /** @type {LineOp[]} */
-  const ops = []
+function lineOps(ta: string[], tb: string[]): LineOp[] {
+  const ops: LineOp[] = []
   let pre = 0
   while (pre < ta.length && pre < tb.length && ta[pre] === tb[pre]) pre++
   let suf = 0
@@ -516,11 +492,9 @@ function lineOps(ta, tb) {
   const ma = ta.slice(pre, ta.length - suf)
   const mb = tb.slice(pre, tb.length - suf)
   const table = lcsTable(ma, mb)
-  /** @type {number[]} */
-  let dels = []
-  /** @type {number[]} */
-  let ins = []
-  const flush = () => {
+  let dels: number[] = []
+  let ins: number[] = []
+  const flush = (): void => {
     // Lines are paired up positionally, except that a blank line is never an
     // edit of a line with something on it.
     let k = 0
@@ -555,10 +529,8 @@ function lineOps(ta, tb) {
 /**
  * `table[i][j]` is the length of the longest common subsequence of `a[i..]`
  * and `b[j..]`.
- * @param {string[]} a
- * @param {string[]} b
  */
-function lcsTable(a, b) {
+function lcsTable(a: string[], b: string[]): Int32Array[] {
   const table = Array.from({ length: a.length + 1 }, () => new Int32Array(b.length + 1))
   for (let i = a.length - 1; i >= 0; i--) {
     for (let j = b.length - 1; j >= 0; j--) {
@@ -571,17 +543,14 @@ function lcsTable(a, b) {
 /**
  * Where two lines differ, as a column range on each: what is left after the
  * common head and tail are taken off. An empty range is left out.
- * @param {string} a
- * @param {string} b
- * @returns {[[number, number][], [number, number][]]}
  */
-function lineRanges(a, b) {
+function lineRanges(a: string, b: string): [Array<[number, number]>, Array<[number, number]>] {
   let pre = 0
   while (pre < a.length && pre < b.length && a[pre] === b[pre]) pre++
   let suf = 0
   while (suf < a.length - pre && suf < b.length - pre && a[a.length - 1 - suf] === b[b.length - 1 - suf]) suf++
-  const ra = /** @type {[number, number][]} */ (a.length - suf > pre ? [[pre, a.length - suf]] : [])
-  const rb = /** @type {[number, number][]} */ (b.length - suf > pre ? [[pre, b.length - suf]] : [])
+  const ra: Array<[number, number]> = a.length - suf > pre ? [[pre, a.length - suf]] : []
+  const rb: Array<[number, number]> = b.length - suf > pre ? [[pre, b.length - suf]] : []
   return [ra, rb]
 }
 
@@ -594,20 +563,17 @@ function lineRanges(a, b) {
  * which of two swapped blocks counts as the one that moved was decided when
  * they were paired, so the ladder has to leave out the same one the tint does
  * rather than the shorter one.
- * @param {LineInfo[]} infoA
- * @returns {Anchor[]}
  */
-function buildAnchors(infoA) {
-  /** @type {Anchor[]} */
-  const paired = []
+function buildAnchors(infoA: LineInfo[]): Anchor[] {
+  const paired: Anchor[] = []
   infoA.forEach((l, i) => {
     if (l.twin !== undefined && l.move === undefined) paired.push({ a: i + 1, b: l.twin })
   })
   return longestRun(paired.map((p) => p.b)).map((i) => paired[i])
 }
 
-/** Whether a line is anything but plain. @param {LineInfo} l */
-const marked = (l) => l.kind !== 'same' || l.move !== undefined
+/** Whether a line is anything but plain. */
+const marked = (l: LineInfo): boolean => l.kind !== 'same' || l.move !== undefined
 
 /**
  * Where the run of marked lines starting at `i` ends, as an index just past
@@ -615,11 +581,8 @@ const marked = (l) => l.kind !== 'same' || l.move !== undefined
  * break inside a new section — is carried along rather than cutting the run
  * in two; it has no twin, which is how a blank is told from a line that is
  * genuinely the same on both sides.
- * @param {LineInfo[]} infos
- * @param {number} i
- * @param {(l: LineInfo) => boolean} inRun  whether a line belongs to this run
  */
-function runEnd(infos, i, inRun) {
+function runEnd(infos: LineInfo[], i: number, inRun: (l: LineInfo) => boolean): number {
   let end = i
   while (i < infos.length) {
     if (inRun(infos[i])) end = ++i
@@ -633,14 +596,9 @@ function runEnd(infos, i, inRun) {
  * Runs of lines worth stepping to. Read off B, since that is the side a
  * reader is usually asking about; what A lost and B never had is slotted in
  * where it would have been.
- * @param {LineInfo[]} infoA
- * @param {LineInfo[]} infoB
- * @param {Anchor[]} anchors
- * @returns {Hunk[]}
  */
-function buildHunks(infoA, infoB, anchors) {
-  /** @type {{ at: number, hunk: Hunk }[]} */
-  const found = []
+function buildHunks(infoA: LineInfo[], infoB: LineInfo[], anchors: Anchor[]): Hunk[] {
+  const found: Array<{ at: number; hunk: Hunk }> = []
 
   for (let i = 0; i < infoB.length;) {
     if (!marked(infoB[i])) {

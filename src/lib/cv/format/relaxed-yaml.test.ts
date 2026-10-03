@@ -7,12 +7,10 @@
 
 import { describe, expect, it } from 'vitest'
 import DEFAULT_YAML from '../default-cv.yaml?raw'
-import { KEY_RE, needsQuotes, parse, readScalar, splitLine } from './relaxed-yaml.js'
+import { KEY_RE, needsQuotes, parse, readScalar, splitLine } from './relaxed-yaml'
 
-/** @param {string} text */
-const tree = (text) => parse(text).value
-/** @param {string} text */
-const errors = (text) => parse(text).diagnostics.filter((d) => d.severity === 'error')
+const tree = (text: string) => parse(text).value
+const errors = (text: string) => parse(text).diagnostics.filter((d: any) => d.severity === 'error')
 
 describe('markdown without quotes', () => {
   const doc = `- title: Some text: more text
@@ -202,19 +200,9 @@ describe('the shipped document', () => {
   it('still says what the templates read', () => {
     const cv = tree(DEFAULT_YAML)
     expect(cv.header.contact).toContain('+1 555 010 1234')
-    expect(cv.sections.map((/** @type {any} */ s) => s.type)).toEqual([
-      'text',
-      'groups',
-      'entries',
-      'entries',
-      'entries',
-      'records',
-      'levels',
-      'list',
-      'table',
-    ])
-    expect(cv.sections.find((/** @type {any} */ s) => s.type === 'list').inline).toBe(true)
-    expect(cv.sections.find((/** @type {any} */ s) => s.type === 'table').columns).toBeUndefined()
+    expect(cv.sections.map((s: any) => s.type)).toEqual(['text', 'groups', 'entries', 'entries', 'entries', 'records', 'levels', 'list', 'table'])
+    expect(cv.sections.find((s: any) => s.type === 'list').inline).toBe(true)
+    expect(cv.sections.find((s: any) => s.type === 'table').columns).toBeUndefined()
   })
 })
 

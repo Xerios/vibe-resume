@@ -6,7 +6,7 @@
 
   /**
    * @typedef {object} Props
-   * @property {import('$lib/cv/format/paste.js').PasteIssue} issue the paste being held back
+   * @property {import('$lib/cv/format/paste').PasteIssue} issue the paste being held back
    * @property {(choice: 'prompt' | 'basic' | 'raw') => void} onChoose what to do with it instead
    * @property {() => void} onClose
    */

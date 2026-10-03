@@ -6,20 +6,22 @@
  * from the sheet, so it is set in exactly these too, without a copy of its own.
  */
 
-/**
- * @typedef {object} Choice
- * @property {string} id
- * @property {string} name
- * @property {string} hint  one line, shown as the option's tooltip
- */
+/** A choice option: id, name, and tooltip hint. */
+export interface Choice {
+  id: string
+  name: string
+  /** one line, shown as the option's tooltip */
+  hint: string
+}
 
 /**
  * How the sections are arranged on the page. The two rail layouts send the
  * short, listy sections to a narrow column; the order the columns are listed
  * in a layout is the order they are *read* in, whichever side they are drawn on.
- * @type {(Choice & { columns: ('main' | 'rail')[], railSide: 'left' | 'right' | null })[]}
  */
-export const LAYOUTS = [
+type Layout = Choice & { columns: ('main' | 'rail')[]; railSide: 'left' | 'right' | null }
+
+export const LAYOUTS: Layout[] = [
   { id: 'single', name: 'Single column', hint: 'One column, everything in source order', columns: ['main'], railSide: null },
   { id: 'sidebar', name: 'Sidebar', hint: 'Skills and lists in a left rail, read first', columns: ['rail', 'main'], railSide: 'left' },
   { id: 'rail-right', name: 'Rail right', hint: 'The same rail on the right; the main column reads first', columns: ['main', 'rail'], railSide: 'right' },
@@ -27,25 +29,21 @@ export const LAYOUTS = [
 
 export const DEFAULT_LAYOUT = 'single'
 
-/** @param {string | undefined | null} id */
-export function resolveLayout(id) {
-  return LAYOUTS.some((l) => l.id === id) ? /** @type {string} */ (id) : DEFAULT_LAYOUT
+export function resolveLayout(id: string | undefined | null): string {
+  return LAYOUTS.some((l) => l.id === id) ? (id as string) : DEFAULT_LAYOUT
 }
 
-/** @param {string | undefined | null} id */
-export const layoutOf = (id) => LAYOUTS.find((l) => l.id === resolveLayout(id)) ?? LAYOUTS[0]
+export const layoutOf = (id: string | undefined | null): Layout => LAYOUTS.find((l) => l.id === resolveLayout(id)) ?? LAYOUTS[0]
 
-/** @type {Choice[]} */
-export const DENSITIES = [
+export const DENSITIES: Choice[] = [
   { id: 'normal', name: 'Normal', hint: 'The measure and spacing the sheet is designed at' },
   { id: 'compact', name: 'Compact', hint: 'Tighter type and less air, so more fits on a page' },
 ]
 
 export const DEFAULT_DENSITY = 'normal'
 
-/** @param {string | undefined | null} id */
-export function resolveDensity(id) {
-  return DENSITIES.some((d) => d.id === id) ? /** @type {string} */ (id) : DEFAULT_DENSITY
+export function resolveDensity(id: string | undefined | null): string {
+  return DENSITIES.some((d) => d.id === id) ? (id as string) : DEFAULT_DENSITY
 }
 
 /** The type ladder at normal density, in points. */
@@ -83,42 +81,43 @@ export const RAIL_SHARE = 0.31
 
 /**
  * The sizes and spaces a density comes to.
- * @param {string | undefined | null} density
  */
-export function metrics(density) {
+export function metrics(density: string | undefined | null) {
   const compact = resolveDensity(density) === 'compact'
   const k = compact ? COMPACT.size : 1
   const s = compact ? COMPACT.space : 1
-  /** @type {Record<keyof typeof SIZES, number>} */
-  const size = /** @type {any} */ (Object.fromEntries(Object.entries(SIZES).map(([key, v]) => [key, round(v * k)])))
-  /** @type {Record<keyof typeof SPACE, number>} */
-  const space = /** @type {any} */ (Object.fromEntries(Object.entries(SPACE).map(([key, v]) => [key, round(v * s)])))
+  const size = Object.fromEntries(Object.entries(SIZES).map(([key, v]) => [key, round(v * k)])) as Record<keyof typeof SIZES, number>
+  const space = Object.fromEntries(Object.entries(SPACE).map(([key, v]) => [key, round(v * s)])) as Record<keyof typeof SPACE, number>
   return { size, space, leading: compact ? COMPACT.leading : 1.42 }
 }
 
-/** @param {number} v */
-const round = (v) => Math.round(v * 100) / 100
+const round = (v: number): number => Math.round(v * 100) / 100
 
-/**
- * @typedef {object} TextStyle
- * @property {'text' | 'label'} family  the font choice's text face, or its label face (typefaces.js)
- * @property {number} weight
- * @property {boolean} [italic]
- * @property {keyof typeof SIZES} size
- * @property {keyof import('../theme/palettes.js').Palette | 'danger'} color
- * @property {boolean} [upper]     set in capitals
- * @property {number} [tracking]   letter spacing, pt. Kept to about a tenth of the size at most: text
- *   extraction reads a wider gap between letters as a space, and `S U M M A R Y` is not what a
- *   parser should find.
- * @property {number} [leading]    line height, if not the sheet's own
- */
+/** Text styling configuration: font, weight, size, color, and optional decorations. */
+export interface TextStyle {
+  /** the font choice's text face, or its label face (typefaces.js) */
+  family: 'text' | 'label'
+  weight: number
+  italic?: boolean
+  size: keyof typeof SIZES
+  color: keyof import('../theme/palettes').Palette | 'danger'
+  /** set in capitals */
+  upper?: boolean
+  /**
+   * letter spacing, pt. Kept to about a tenth of the size at most: text
+   * extraction reads a wider gap between letters as a space, and `S U M M A R Y` is not what a
+   * parser should find.
+   */
+  tracking?: number
+  /** line height, if not the sheet's own */
+  leading?: number
+}
 
 /**
  * Every kind of text on the sheet. A model node names one of these as its
  * `role`; the preview makes it a class and the PDF a font, size and colour.
- * @type {Record<string, TextStyle>}
  */
-export const ROLES = {
+export const ROLES: Record<string, TextStyle> = {
   name: { family: 'text', weight: 800, size: 'name', color: 'ink', leading: 1.1 },
   nameBanner: { family: 'text', weight: 800, size: 'name', color: 'ink', upper: true, tracking: 1.5, leading: 1.1 },
   role: { family: 'text', weight: 600, size: 'lg', color: 'accent' },

@@ -19,20 +19,20 @@
  * zoomed, so measured lengths are divided by the zoom first.
  */
 
-/**
- * @typedef {object} PageGeometry
- * @property {number} width   the page, px
- * @property {number} height
- * @property {number} mt      the margins it is set inside, px
- * @property {number} mb
- * @property {number} gap     between pages in page view; 0 without it
- */
+/** The page size and margins. */
+export interface PageGeometry {
+  width: number // the page, px
+  height: number
+  mt: number // the margins it is set inside, px
+  mb: number
+  gap: number // between pages in page view; 0 without it
+}
 
-/**
- * @typedef {object} Pagination
- * @property {number} pages
- * @property {{ left: number, top: number, height: number }[]} dividers  the column divider, one segment per page, px from the sheet's corner
- */
+/** The pagination result. */
+export interface Pagination {
+  pages: number
+  dividers: Array<{ left: number; top: number; height: number }> // the column divider, one segment per page, px from the sheet's corner
+}
 
 /** Pushed blocks are tagged, so the next run can put them back first. */
 const PUSHED = 'data-push'
@@ -43,19 +43,17 @@ const ATOMIC = 'p, h1, h2, h3, li, .cv-row, .keep, .cv-chips, .gutter, .meter, .
 /** What leads the block after it and must not be left at the foot of a page. */
 const HEADING = 'h3, .cv-row'
 
-/** An element's computed style, from its own document's window — the preview frame's. @param {Element} el */
-const style = (el) => /** @type {Window} */ (el.ownerDocument.defaultView).getComputedStyle(el)
+/** An element's computed style, from its own document's window — the preview frame's. */
+const style = (el: Element) => (el.ownerDocument.defaultView as Window).getComputedStyle(el)
 
-/** Whether an element takes part in the flow: decoration and absolutely placed things don't. @param {Element} el */
-const flows = (el) => !el.hasAttribute('aria-hidden') && !el.hasAttribute('data-skip') && style(el).position !== 'absolute'
+/** Whether an element takes part in the flow: decoration and absolutely placed things don't. */
+const flows = (el: Element) => !el.hasAttribute('aria-hidden') && !el.hasAttribute('data-skip') && style(el).position !== 'absolute'
 
 /**
- * @param {HTMLElement} sheet  the `.sheet` element
- * @param {PageGeometry} geo
- * @returns {Pagination}
+ * Breaking the preview into pages — the pages the PDF will have.
  */
-export function paginate(sheet, geo) {
-  for (const el of /** @type {NodeListOf<HTMLElement>} */ (sheet.querySelectorAll(`[${PUSHED}]`))) {
+export function paginate(sheet: HTMLElement, geo: PageGeometry): Pagination {
+  for (const el of sheet.querySelectorAll(`[${PUSHED}]`) as NodeListOf<HTMLElement>) {
     el.style.marginTop = ''
     el.style.removeProperty('--orig-mt')
     el.removeAttribute(PUSHED)
@@ -66,26 +64,24 @@ export function paginate(sheet, geo) {
   const period = geo.height + geo.gap
   const room = geo.height - geo.mt - geo.mb
 
-  /** Where an element is, in px from the top of the sheet. @param {Element} el */
-  const box = (el) => {
+  /** Where an element is, in px from the top of the sheet. */
+  const box = (el: Element) => {
     const r = el.getBoundingClientRect()
     const top = (r.top - sheet.getBoundingClientRect().top) / zoom
     return { top, bottom: top + r.height / zoom, height: r.height / zoom }
   }
-  /** @param {number} y */
-  const pageOf = (y) => Math.max(0, Math.floor(y / period))
-  /** @param {number} k */
-  const contentTop = (k) => k * period + geo.mt
-  /** @param {number} k */
-  const contentBottom = (k) => k * period + geo.height - geo.mb
+  /** Get which page a y-coordinate falls on. */
+  const pageOf = (y: number) => Math.max(0, Math.floor(y / period))
+  /** Get the content top edge of a page. */
+  const contentTop = (k: number) => k * period + geo.mt
+  /** Get the content bottom edge of a page. */
+  const contentBottom = (k: number) => k * period + geo.height - geo.mb
 
   /**
    * Move an element down by `by` px. Its margin may collapse with its parent's,
    * which would swallow part of the push, so the result is checked and topped up.
-   * @param {HTMLElement} el
-   * @param {number} to  where its top should land
    */
-  const push = (el, to) => {
+  const push = (el: HTMLElement, to: number) => {
     if (!el.hasAttribute(PUSHED)) {
       el.style.setProperty('--orig-mt', style(el).marginTop)
       el.setAttribute(PUSHED, '')
@@ -97,33 +93,29 @@ export function paginate(sheet, geo) {
     }
   }
 
-  /** Whether a span crosses the foot of the page it starts on, or starts below it. @param {number} top @param {number} bottom */
-  const crosses = (top, bottom) => {
+  /** Whether a span crosses the foot of the page it starts on, or starts below it. */
+  const crosses = (top: number, bottom: number) => {
     const k = pageOf(top)
     return top > contentBottom(k) + 0.5 || bottom > contentBottom(k) + 0.5
   }
 
-  /** The next page's content top, for something starting at `top`. @param {number} top */
-  const nextTop = (top) => contentTop(pageOf(top) + 1)
+  /** The next page's content top, for something starting at `top`. */
+  const nextTop = (top: number) => contentTop(pageOf(top) + 1)
 
-  /** Whether an element is already the first thing on its page. @param {number} top */
-  const atTop = (top) => top <= contentTop(pageOf(top)) + 0.5
-
+  /** Whether an element is already the first thing on its page. */
+  const atTop = (top: number) => top <= contentTop(pageOf(top)) + 0.5
 
   /**
    * The bottom of the first unsplittable piece of a block: how much of it a
    * heading needs on the same page.
-   * @param {Element} el
-   * @returns {number}
    */
-  const firstPiece = (el) => {
+  const firstPiece = (el: Element): number => {
     if (el.matches(ATOMIC) && box(el).height <= room) return box(el).bottom
     const inner = [...el.children].find(flows)
     return inner ? firstPiece(inner) : box(el).bottom
   }
 
-  /** @param {Element} el */
-  const place = (el) => {
+  const place = (el: Element): void => {
     if (!(el instanceof HTMLElement) || !flows(el)) return
     const b = box(el)
     if (b.height === 0 || !crosses(b.top, b.bottom)) return
@@ -134,8 +126,7 @@ export function paginate(sheet, geo) {
     descend(el)
   }
 
-  /** @param {Element} el */
-  const descend = (el) => {
+  const descend = (el: Element): void => {
     const kids = [...el.children].filter(flows)
     if (el.classList.contains('grid')) return rows(kids)
     kids.forEach((kid, i) => {
@@ -148,7 +139,7 @@ export function paginate(sheet, geo) {
         if (crosses(top, bottom) && !atTop(top) && bottom - top <= room) {
           // The section itself moves, so its top margin goes with it.
           const target = kid.classList.contains('sec-head') ? el : kid
-          push(/** @type {HTMLElement} */ (target), nextTop(top))
+          push(target as HTMLElement, nextTop(top))
           return
         }
       }
@@ -159,11 +150,9 @@ export function paginate(sheet, geo) {
   /**
    * A grid's children, a row at a time: a row moves whole, every item in it by
    * the same amount, so it stays a row.
-   * @param {Element[]} kids
    */
-  const rows = (kids) => {
-    /** @type {Element[][]} */
-    const groups = []
+  const rows = (kids: Element[]): void => {
+    const groups: Element[][] = []
     for (const kid of kids) {
       const last = groups[groups.length - 1]
       if (last && Math.abs(box(last[0]).top - box(kid).top) < 1) last.push(kid)
@@ -176,7 +165,7 @@ export function paginate(sheet, geo) {
       if (bottom - top <= room) {
         if (atTop(top)) continue
         const to = nextTop(top)
-        for (const k of group) push(/** @type {HTMLElement} */ (k), to + (box(k).top - top))
+        for (const k of group) push(k as HTMLElement, to + (box(k).top - top))
       } else for (const k of group) place(k)
     }
   }
@@ -189,8 +178,7 @@ export function paginate(sheet, geo) {
 
   // The divider is the rail's inner edge, from the top of the columns on each
   // page down to as far as the rail reaches on it.
-  /** @type {Pagination['dividers']} */
-  const dividers = []
+  const dividers: Pagination['dividers'] = []
   const rail = sheet.querySelector('.cv-rail')
   if (rail) {
     const r = rail.getBoundingClientRect()

@@ -1,18 +1,25 @@
-import { resolvePaper } from '../theme/paper.js'
-import { KEYS, read, remove, snapshotKey, write } from './storage.js'
+import type { Paper } from '../theme/paper'
+import { resolvePaper } from '../theme/paper'
+import { KEYS, read, remove, snapshotKey, write } from './storage'
 
-/**
- * @typedef {object} FileMeta
- * @property {string} id
- * @property {string} name
- * @property {number | null} deletedAt   ms epoch when moved to trash; null while open
- * @property {string} [layout]           a LAYOUTS id from render/tokens.js; absent means the default
- * @property {string} [theme]            palette id from theme/palettes.js; absent means the default
- * @property {string} [density]          a DENSITIES id from render/tokens.js; absent means the default
- * @property {string} [font]             a FONTS id from theme/typefaces.js; absent means the default
- * @property {Record<string, string>} [variants]  slot id → block variant id, from render/variants.js; a slot left out is its default
- * @property {import('../theme/paper.js').Paper} [paper]  the page box it prints on; absent means A4 portrait
- */
+export interface FileMeta {
+  id: string
+  name: string
+  /** ms epoch when moved to trash; null while open */
+  deletedAt: number | null
+  /** a LAYOUTS id from render/tokens.js; absent means the default */
+  layout?: string
+  /** palette id from theme/palettes.js; absent means the default */
+  theme?: string
+  /** a DENSITIES id from render/tokens.js; absent means the default */
+  density?: string
+  /** a FONTS id from theme/typefaces.js; absent means the default */
+  font?: string
+  /** slot id → block variant id, from render/variants.js; a slot left out is its default */
+  variants?: Record<string, string>
+  /** the page box it prints on; absent means A4 portrait */
+  paper?: Paper
+}
 
 /**
  * The set of documents open in the editor, as tabs. Each file's own CRDT
@@ -26,14 +33,13 @@ import { KEYS, read, remove, snapshotKey, write } from './storage.js'
  * Layout, theme, font, density, block variants and paper ride along here too, because this is
  * the only place that knows them for a file that isn't open. For the file that
  * *is* open they are also in its document, which is what puts a restyle in the
- * version history and on the undo stack — see `bindStyle` in doc.svelte.js.
+ * version history and on the undo stack — see `bindStyle` in doc.svelte.ts.
  * Everything that changes a style here goes through `restyle` in
- * state.svelte.js, which keeps the two in step.
+ * state.svelte.ts, which keeps the two in step.
  */
 export class FileManager {
-  /** @type {FileMeta[]} */
-  files = $state([])
-  activeId = $state(/** @type {string | null} */ (null))
+  files = $state<FileMeta[]>([])
+  activeId = $state<string | null>(null)
 
   /** Left-to-right tab order, oldest first. */
   open = $derived(this.files.filter((f) => !f.deletedAt))
@@ -41,7 +47,7 @@ export class FileManager {
   trashed = $derived(this.files.filter((f) => f.deletedAt).toSorted((a, b) => (b.deletedAt ?? 0) - (a.deletedAt ?? 0)))
   active = $derived(this.files.find((f) => f.id === this.activeId) ?? null)
 
-  init() {
+  init(): void {
     this.files = this.#loadList()
     if (this.files.length === 0) this.#migrateOrSeed()
 
@@ -50,8 +56,7 @@ export class FileManager {
     this.activeId = stored && openIds.includes(stored) ? stored : (openIds[0] ?? this.create())
   }
 
-  /** @param {string} id */
-  switchTo(id) {
+  switchTo(id: string): void {
     if (id === this.activeId) return
     this.activeId = id
     this.#saveActive()
@@ -60,9 +65,8 @@ export class FileManager {
   /**
    * Open a new tab by copying a file's stored snapshot verbatim — the copy
    * carries the source's full history, not just its current text.
-   * @param {string} sourceId
    */
-  duplicate(sourceId) {
+  duplicate(sourceId: string): string {
     const source = this.files.find((f) => f.id === sourceId)
     if (!source) return this.create()
 
@@ -93,9 +97,8 @@ export class FileManager {
   /**
    * A given name is de-duplicated like a generated one — importing the same
    * `cv.yaml` twice should give two distinguishable tabs, not two called "cv".
-   * @param {string} [name]
    */
-  create(name) {
+  create(name?: string): string {
     const id = newId()
     this.files = [...this.files, { id, name: this.#uniqueName(name || 'Untitled'), deletedAt: null }]
     this.#saveList()
@@ -107,13 +110,11 @@ export class FileManager {
   /**
    * Move a file to the trash. Its snapshot key is left in place. Returns the
    * id that should now be active — unchanged unless the trashed file was it.
-   * @param {string} id
-   * @returns {string}
    */
-  trash(id) {
+  trash(id: string): string {
     this.files = this.files.map((f) => (f.id === id ? { ...f, deletedAt: Date.now() } : f))
     this.#saveList()
-    if (this.activeId !== id) return /** @type {string} */ (this.activeId)
+    if (this.activeId !== id) return this.activeId as string
 
     const nextId = this.open[0]?.id ?? this.create()
     this.activeId = nextId
@@ -121,8 +122,8 @@ export class FileManager {
     return nextId
   }
 
-  /** Bring a trashed file back as an open tab. @param {string} id */
-  restore(id) {
+  /** Bring a trashed file back as an open tab. */
+  restore(id: string): void {
     const file = this.files.find((f) => f.id === id)
     if (!file) return
     const name = this.#uniqueName(file.name)
@@ -132,18 +133,14 @@ export class FileManager {
     this.#saveActive()
   }
 
-  /** Permanently delete a trashed file — its snapshot is gone for good. @param {string} id */
-  purge(id) {
+  /** Permanently delete a trashed file — its snapshot is gone for good. */
+  purge(id: string): void {
     this.files = this.files.filter((f) => f.id !== id)
     this.#saveList()
     remove(snapshotKey(id))
   }
 
-  /**
-   * @param {string} id
-   * @param {string} name
-   */
-  rename(id, name) {
+  rename(id: string, name: string): void {
     const trimmed = name.trim()
     if (!trimmed) return
     this.files = this.files.map((f) => (f.id === id ? { ...f, name: trimmed } : f))
@@ -158,11 +155,8 @@ export class FileManager {
    * `open` slice of it, so re-inserting relative to another open file is
    * enough to say where the tab goes. A move that changes nothing is dropped
    * before the write, because this runs on every dragover event.
-   *
-   * @param {string} id
-   * @param {string | null} beforeId
    */
-  reorder(id, beforeId) {
+  reorder(id: string, beforeId: string | null): void {
     if (id === beforeId) return
     const from = this.files.findIndex((f) => f.id === id)
     if (from < 0) return
@@ -185,14 +179,11 @@ export class FileManager {
    * disappears degrades to the default instead of rendering nothing.
    *
    * Not the way to restyle the file being edited: that is `restyle` in
-   * state.svelte.js, which writes here *and* records the change in the
+   * state.svelte.ts, which writes here *and* records the change in the
    * document. This is the plain write, which is also what the document calls
    * back into when an undo or a restore moves the style from that end.
-   *
-   * @param {string} id
-   * @param {{ layout?: string, theme?: string, density?: string, font?: string, variants?: Record<string, string>, paper?: import('../theme/paper.js').Paper }} style
    */
-  setStyle(id, style) {
+  setStyle(id: string, style: Partial<Omit<FileMeta, 'id' | 'name' | 'deletedAt'>>): void {
     this.files = this.files.map((f) => (f.id === id ? { ...f, ...style } : f))
     this.#saveList()
   }
@@ -201,12 +192,8 @@ export class FileManager {
    * Choose one block variant, leaving every other slot where it was. Picking a
    * slot's default drops the entry rather than storing it, so a file put back
    * to the defaults reads as unmodified again.
-   * @param {string} id
-   * @param {string} slotId
-   * @param {string} variantId
-   * @param {boolean} isDefault
    */
-  setVariant(id, slotId, variantId, isDefault) {
+  setVariant(id: string, slotId: string, variantId: string, isDefault: boolean): void {
     const file = this.files.find((f) => f.id === id)
     if (!file) return
     const variants = { ...file.variants }
@@ -221,10 +208,8 @@ export class FileManager {
    * at all carries a complete answer and nothing has to merge two halves at
    * read time; `resolvePaper` is still what fills in a file that has chosen
    * none.
-   * @param {string} id
-   * @param {Partial<import('../theme/paper.js').Paper>} patch
    */
-  setPaper(id, patch) {
+  setPaper(id: string, patch: Partial<Paper>): void {
     const file = this.files.find((f) => f.id === id)
     if (!file) return
     this.setStyle(id, { paper: { ...resolvePaper(file.paper), ...patch } })
@@ -232,7 +217,7 @@ export class FileManager {
 
   // ── Internals ──────────────────────────────────────────────────────────────
 
-  #loadList() {
+  #loadList(): FileMeta[] {
     const raw = read(KEYS.files)
     if (!raw) return []
     try {
@@ -243,16 +228,16 @@ export class FileManager {
     }
   }
 
-  #saveList() {
+  #saveList(): void {
     write(KEYS.files, JSON.stringify(this.files))
   }
 
-  #saveActive() {
+  #saveActive(): void {
     if (this.activeId) write(KEYS.activeFile, this.activeId)
   }
 
   /** First run after this feature shipped: fold the old single-document snapshot in as the first file. */
-  #migrateOrSeed() {
+  #migrateOrSeed(): void {
     const legacy = read(KEYS.legacySnapshot)
     const id = newId()
     if (legacy) {
@@ -263,8 +248,7 @@ export class FileManager {
     this.#saveList()
   }
 
-  /** @param {string} base */
-  #uniqueName(base) {
+  #uniqueName(base: string): string {
     const taken = new Set(this.files.filter((f) => !f.deletedAt).map((f) => f.name))
     if (!taken.has(base)) return base
     let n = 2
@@ -273,7 +257,7 @@ export class FileManager {
   }
 }
 
-const newId = () => Math.random().toString(36).slice(2, 10)
+const newId = (): string => Math.random().toString(36).slice(2, 10)
 
 /**
  * A file's presentation, as the document's style map holds it — everything in
@@ -284,10 +268,7 @@ const newId = () => Math.random().toString(36).slice(2, 10)
  * has never been restyled has nothing to say about any of these, and the
  * resolvers (`resolveLayout`, `resolveTheme`, `resolveDensity`, …) are what turn
  * that into the default at the point it is rendered.
- *
- * @param {FileMeta | null | undefined} file
- * @returns {Record<string, any>}
  */
-export function styleOf(file) {
+export function styleOf(file: FileMeta | null | undefined): Record<string, any> {
   return { layout: file?.layout, theme: file?.theme, density: file?.density, font: file?.font, variants: file?.variants, paper: file?.paper }
 }

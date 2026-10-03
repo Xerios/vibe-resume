@@ -30,11 +30,11 @@
    * that is what keeps two runs from being set apart by a space nobody wrote.
    */
 
-  /** @typedef {import('../render/model.js').Block} Block */
-  /** @typedef {import('../render/model.js').Text} Text */
-  /** @typedef {import('../render/model.js').List} List */
-  /** @typedef {import('../render/model.js').Meter} Meter */
-  /** @typedef {import('../render/inline.js').Run} Run */
+  /** @typedef {import('../render/model').Block} Block */
+  /** @typedef {import('../render/model').Text} Text */
+  /** @typedef {import('../render/model').List} List */
+  /** @typedef {import('../render/model').Meter} Meter */
+  /** @typedef {import('../render/inline').Run} Run */
 
   /**
    * `pages` is how many pages the paginator (paginate.js) found, and only drawn
@@ -43,10 +43,10 @@
    * each page — drawn here rather than as the rail's border, which would run on
    * through the margins and the gaps between pages.
    * @type {{
-   *   model: import('../render/model.js').Model | null,
+   *   model: import('../render/model').Model | null,
    *   paged?: boolean,
    *   pages?: number,
-   *   dividers?: import('./paginate.js').Pagination['dividers'],
+   *   dividers?: import('./paginate').Pagination['dividers'],
    *   running?: { header: string, footer: string, name: string },
    * }}
    */
@@ -68,7 +68,7 @@
   const pad = (n) => String(n).padStart(2, '0')
 
   /** A heading's plain text, as the PDF titles its section with. @param {Text} t */
-  const titleOf = (t) => t.spans.flatMap((s) => s.runs.map((r) => r.text)).join('')
+  const titleOf = (t) => t.spans.flatMap((s) => s.runs.map((/** @type {import('../render/inline').Run} */ r) => r.text)).join('')
 
   const DOTS = [1, 2, 3, 4, 5]
 

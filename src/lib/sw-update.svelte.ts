@@ -28,10 +28,9 @@ const DEV_TEARDOWN_KEY = 'cv:sw-dev-teardown'
 
 class SwUpdate {
   /** A newer worker has finished installing and is ready to take over. */
-  available = $state(false)
+  available = $state<boolean>(false)
 
-  /** @type {ServiceWorkerRegistration | null} */
-  #registration = null
+  #registration = $state<ServiceWorkerRegistration | null>(null)
 
   #started = false
 
@@ -41,7 +40,7 @@ class SwUpdate {
   #checkedAt = 0
 
   /** Idempotent, and in `vite dev` a teardown rather than a setup. */
-  async start() {
+  async start(): Promise<void> {
     if (this.#started) return
     this.#started = true
     if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return
@@ -83,7 +82,7 @@ class SwUpdate {
   }
 
   /** Ask the browser to go and look, at most so often. */
-  async #check() {
+  async #check(): Promise<void> {
     const registration = this.#registration
     if (!registration) return
 
@@ -104,7 +103,7 @@ class SwUpdate {
    * release the page it already controls, so one reload is needed to get out from
    * under it; a session flag keeps that from becoming a loop.
    */
-  async #tearDown() {
+  async #tearDown(): Promise<void> {
     const registrations = await navigator.serviceWorker.getRegistrations()
     if (registrations.length === 0) return
 
@@ -121,7 +120,7 @@ class SwUpdate {
   }
 
   /** Hand the page over to the waiting worker and come back on the new version. */
-  applyUpdate() {
+  applyUpdate(): void {
     if (this.#reloading) return
     this.#reloading = true
 

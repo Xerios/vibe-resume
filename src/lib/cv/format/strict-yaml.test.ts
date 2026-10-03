@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import DEFAULT_YAML from '../default-cv.yaml?raw'
 import LEGACY_YAML from './fixtures/legacy-cv.yaml?raw'
-import { parse } from './relaxed-yaml.js'
-import { toStrictYaml } from './strict-yaml.js'
+import { parse } from './relaxed-yaml'
+import { toStrictYaml } from './strict-yaml'
 
 describe('toStrictYaml', () => {
   it('quotes what standard YAML would misread', () => {

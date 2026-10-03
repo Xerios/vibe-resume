@@ -22,16 +22,16 @@
    */
   import { mount, onDestroy, tick, unmount } from 'svelte'
   import CvSheet from './html/CvSheet.svelte'
-  import { paginate } from './html/paginate.js'
-  import { facesCss, sheetCss } from './html/sheet-css.js'
+  import { paginate } from './html/paginate'
+  import { facesCss, sheetCss } from './html/sheet-css'
   import sheetLayoutCss from './html/sheet.css?raw'
-  import { measure as measureSheet } from './pdf/measure.js'
-  import { docMeta } from './render/doc-meta.js'
-  import { buildModel } from './render/model.js'
-  import { DEFAULT_DENSITY, DEFAULT_LAYOUT } from './render/tokens.js'
-  import { DEFAULT_PAPER, pageBox, pageWidthPx, paperCss } from './theme/paper.js'
-  import { DEFAULT_THEME } from './theme/palettes.js'
-  import { DEFAULT_FONT } from './theme/typefaces.js'
+  import { measure as measureSheet } from './pdf/measure'
+  import { docMeta } from './render/doc-meta'
+  import { buildModel } from './render/model'
+  import { DEFAULT_DENSITY, DEFAULT_LAYOUT } from './render/tokens'
+  import { DEFAULT_PAPER, pageBox, pageWidthPx, paperCss } from './theme/paper'
+  import { DEFAULT_THEME } from './theme/palettes'
+  import { DEFAULT_FONT } from './theme/typefaces'
   import frameCss from './frame.css?raw'
 
   /**
@@ -65,7 +65,7 @@
    *   font?: string,
    *   density?: string,
    *   paged?: boolean,
-   *   paper?: Partial<import('./theme/paper.js').Paper>,
+   *   paper?: Partial<import('./theme/paper').Paper>,
    *   name?: string,
    *   fit?: boolean,
    *   dark?: boolean,
@@ -134,10 +134,10 @@
    * identity is what the mounted component holds on to.
    */
   const sheetProps = $state({
-    model: /** @type {import('./render/model.js').Model | null} */ (null),
+    model: /** @type {import('./render/model').Model | null} */ (null),
     paged: false,
     pages: 1,
-    dividers: /** @type {import('./html/paginate.js').Pagination['dividers']} */ ([]),
+    dividers: /** @type {import('./html/paginate').Pagination['dividers']} */ ([]),
     running: { header: 'none', footer: 'none', name: '' },
   })
 
@@ -197,7 +197,7 @@
   /**
    * The sheet as it is laid out and paginated now, for the PDF — see
    * pdf/measure.js. Null before there is a sheet to measure.
-   * @returns {Promise<import('./pdf/measure.js').DisplayList | null>}
+   * @returns {Promise<import('./pdf/measure').DisplayList | null>}
    */
   export async function measure() {
     await pending

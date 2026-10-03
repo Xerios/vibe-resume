@@ -12,26 +12,26 @@
 import { CompletionContext } from '@codemirror/autocomplete'
 import { EditorState } from '@codemirror/state'
 import { describe, expect, it } from 'vitest'
-import { cvComplete, keysAt, opensValues, sectionSkeleton, spotAt } from './complete.js'
+import { cvComplete, keysAt, opensValues, sectionSkeleton, spotAt } from './complete'
 import DEFAULT_YAML from '../default-cv.yaml?raw'
-import { SECTIONS, lintCv } from './lint.js'
-import { parse, splitLine } from './relaxed-yaml.js'
+import { SECTIONS, lintCv } from './lint'
+import { parse, splitLine } from './relaxed-yaml'
 
 /** A document with the cursor written as `|`. */
-const spot = (/** @type {string} */ src) => spotAt(src.replace('|', ''), src.indexOf('|'))
+const spot = (src: string) => spotAt(src.replace('|', ''), src.indexOf('|'))
 
 /** The keys on offer where the cursor is. */
-const keys = (/** @type {string} */ src) => {
+const keys = (src: string) => {
   const at = spot(src)
   return at && at.what === 'key' ? keysAt(at.path, parse(src.replace('|', '')).value) : null
 }
 
 /** Every label the editor would offer where the cursor is. */
-const labels = (/** @type {string} */ src, explicit = true) => {
+const labels = (src: string, explicit = true) => {
   const text = src.replace('|', '')
   const state = EditorState.create({ doc: text })
   const result = cvComplete(new CompletionContext(state, src.indexOf('|'), explicit))
-  return result?.options.map((o) => o.label) ?? null
+  return result?.options.map((o: any) => o.label) ?? null
 }
 
 describe('where the cursor is', () => {
@@ -165,13 +165,11 @@ describe('the shipped document', () => {
  * CodeMirror's own snippet placement, which is the whole reason the templates
  * are written with tabs: every line after the first is laid out as the start
  * line's indentation, plus one `indentUnit` per leading tab.
- * @param {string} template
- * @param {string} indent
  */
-const place = (template, indent) =>
+const place = (template: string, indent: string) =>
   template
     .split('\n')
-    .map((line, i) => {
+    .map((line: string, i: number) => {
       if (i === 0) return line
       const tabs = /^\t*/.exec(line)?.[0].length ?? 0
       return indent + '  '.repeat(tabs) + line.slice(tabs)
@@ -179,7 +177,7 @@ const place = (template, indent) =>
     .join('\n')
 
 /** A snippet as it reads once every field has been tabbed past. */
-const filled = (/** @type {string} */ text) => text.replace(/#\{([^{}]*)\}/g, '$1')
+const filled = (text: string) => text.replace(/#\{([^{}]*)\}/g, '$1')
 
 describe('the section skeletons', () => {
   it('lands as a section the linter has nothing to say about', () => {

@@ -8,23 +8,23 @@
  * same numbers the PDF is drawn with.
  */
 
-import { DANGER, DECOR, LINK_COLOR, metrics, RAIL_SHARE, ROLES } from '../render/tokens.js'
-import { palette } from '../theme/palettes.js'
-import { FAMILIES, fontFaceCss, fontOf, LAST_RESORT } from '../theme/typefaces.js'
+import { DANGER, DECOR, LINK_COLOR, metrics, RAIL_SHARE, ROLES } from '../render/tokens'
+import { palette } from '../theme/palettes'
+import { FAMILIES, fontFaceCss, fontOf, LAST_RESORT } from '../theme/typefaces'
 
 /** The faces, declared once when the frame is built. */
 export const facesCss = fontFaceCss()
 
-/** A palette key as the custom property holding it. @param {string} key */
-const color = (key) => (key === 'danger' ? DANGER : `var(--c-${key})`)
+/** A palette key as the custom property holding it. */
+const color = (key: string) => (key === 'danger' ? DANGER : `var(--c-${key})`)
 
-/** Families as a CSS font stack. @param {string[]} keys @param {string} generic */
-const stack = (keys, generic) => [...new Set(keys)].map((k) => `'${FAMILIES[k].css}'`).join(', ') + `, ${generic}`
+/** Families as a CSS font stack. */
+const stack = (keys: string[], generic: string) => [...new Set(keys)].map((k) => `'${FAMILIES[k].css}'`).join(', ') + `, ${generic}`
 
 /**
- * @param {{ theme?: string, density?: string, font?: string }} look
+ * Generate CSS custom properties for the sheet.
  */
-export function sheetCss(look) {
+export function sheetCss(look: { theme?: string; density?: string; font?: string }): string {
   const colors = palette(look.theme)
   const { size, space, leading } = metrics(look.density)
   const font = fontOf(look.font)

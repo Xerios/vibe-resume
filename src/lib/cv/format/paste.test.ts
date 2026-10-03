@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import DEFAULT_YAML from '../default-cv.yaml?raw'
-import { appendSections, basicConversion, classifyPaste, conversionPrompt, readMarkdown, stripFence } from './paste.js'
-import { parse } from './relaxed-yaml.js'
+import { appendSections, basicConversion, classifyPaste, conversionPrompt, readMarkdown, stripFence } from './paste'
+import { parse } from './relaxed-yaml'
 
 const MARKDOWN = `# Jane Roe
 jane@example.com · +1 555 010 1234
@@ -15,8 +15,7 @@ jane@example.com · +1 555 010 1234
 ## Education
 BSc, Springfield`
 
-/** @param {Partial<import('./paste.js').PasteIssue>} over */
-const issue = (over) => ({ kind: /** @type {const} */ ('markdown'), text: MARKDOWN, html: '', from: 0, to: 0, whole: true, ...over })
+const issue = (over: Partial<any>) => ({ kind: 'markdown' as const, text: MARKDOWN, html: '', from: 0, to: 0, whole: true, ...over })
 
 describe('classifyPaste', () => {
   it('lets the format through, whole or in part', () => {
@@ -51,7 +50,7 @@ describe('readMarkdown', () => {
   it('makes the shallowest headings sections and everything else lines', () => {
     const { name, sections } = readMarkdown(MARKDOWN, true)
     expect(name).toBe('Jane Roe')
-    expect(sections.map((s) => s.title)).toEqual(['', 'Experience', 'Education'])
+    expect(sections.map((s: any) => s.title)).toEqual(['', 'Experience', 'Education'])
     expect(sections[1].paras).toEqual(['**Engineer, Acme**', '• Built **things**', '• Analytics: Mixpanel'])
   })
 
@@ -65,7 +64,7 @@ describe('basicConversion', () => {
     const edit = basicConversion(issue({}), DEFAULT_YAML)
     expect([edit.from, edit.to]).toEqual([0, DEFAULT_YAML.length])
     const { value, diagnostics } = parse(edit.insert)
-    expect(diagnostics.filter((d) => d.severity === 'error')).toEqual([])
+    expect(diagnostics.filter((d: any) => d.severity === 'error')).toEqual([])
     expect(value.header.name).toBe('Jane Roe')
     expect(value.sections[1].paragraphs).toContain('Analytics: Mixpanel'.replace(/^/, '• '))
   })

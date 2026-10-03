@@ -1,9 +1,9 @@
 <script>
   import Icon from '@iconify/svelte'
   import IconClose from '@iconify-icons/lucide/x'
-  import { commands } from '$lib/cv/state/commands.js'
-  import { files } from '$lib/cv/state/state.svelte.js'
-  import { relativeTime } from '$lib/cv/state/storage.js'
+  import { commands } from '$lib/cv/state/commands'
+  import { files } from '$lib/cv/state/state.svelte'
+  import { relativeTime } from '$lib/cv/state/storage'
   import { fly, scale } from 'svelte/transition'
 
   /** Ticks so the "x minutes ago" labels stay honest. */

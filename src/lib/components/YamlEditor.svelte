@@ -18,12 +18,12 @@
     lineNumbers,
   } from '@codemirror/view'
   import { wrappedLineIndent } from 'codemirror-wrapped-line-indent'
-  import { cvCompletion } from '$lib/cv/format/complete.js'
-  import { classifyPaste } from '$lib/cv/format/paste.js'
-  import { lintCv } from '$lib/workers/index.js'
-  import { relaxedYaml } from '$lib/cv/format/relaxed-yaml-mode.js'
-  import { splitLine } from '$lib/cv/format/relaxed-yaml.js'
-  import { highlight } from './cm-highlight.js'
+  import { cvCompletion } from '$lib/cv/format/complete'
+  import { classifyPaste } from '$lib/cv/format/paste'
+  import { lintCv } from '$lib/workers/index'
+  import { relaxedYaml } from '$lib/cv/format/relaxed-yaml-mode'
+  import { splitLine } from '$lib/cv/format/relaxed-yaml'
+  import { highlight } from './cm-highlight'
   // CodeMirror builds its own DOM, so scoped styles can't reach it — its theme
   // ships as a plain stylesheet imported alongside the component instead.
   import './codemirror.scss'
@@ -32,13 +32,13 @@
     /** Extensions from the Loro binding — document sync and undo/redo live here. */
     loroExtensions,
     readOnly = false,
-    /** What the version on screen changed, highlighted inline. @type {import('$lib/cv/state/doc.svelte.js').VersionDiff | null} */
+    /** What the version on screen changed, highlighted inline. @type {import('$lib/cv/state/doc.svelte').VersionDiff | null} */
     diff = null,
     /** The editor scrolled — the page mirrors the move into the preview. */
     onScroll = () => {},
     /** A line the user just typed on, for the preview to follow. @type {(line: number) => void} */
     onEdit = () => {},
-    /** A paste that isn't the format, held back for the page to ask about. @type {(issue: import('$lib/cv/format/paste.js').PasteIssue) => void} */
+    /** A paste that isn't the format, held back for the page to ask about. @type {(issue: import('$lib/cv/format/paste').PasteIssue) => void} */
     onPasteIssue = () => {},
   } = $props()
 
@@ -151,7 +151,7 @@
     }
   }
 
-  /** @param {import('$lib/cv/state/doc.svelte.js').VersionDiff | null} d */
+  /** @param {import('$lib/cv/state/doc.svelte').VersionDiff | null} d */
   function diffDecorations(d) {
     if (!d || (d.added.length === 0 && d.removed.length === 0)) return Decoration.none
     const ranges = [

@@ -10,22 +10,22 @@
  * The first variant of each slot is its default.
  */
 
-/**
- * @typedef {object} Variant
- * @property {string} id
- * @property {string} name
- * @property {string} hint  one line, shown under the name in the list
- */
+/** A variant option: id, name, and hint. */
+export interface Variant {
+  id: string
+  name: string
+  /** one line, shown under the name in the list */
+  hint: string
+}
 
-/**
- * @typedef {object} Slot
- * @property {string} id
- * @property {string} name
- * @property {Variant[]} variants
- */
+/** A slot grouping variants for a specific part of the sheet. */
+export interface Slot {
+  id: string
+  name: string
+  variants: Variant[]
+}
 
-/** @type {Slot[]} */
-export const SLOTS = [
+export const SLOTS: Slot[] = [
   {
     id: 'header',
     name: 'Header',
@@ -140,21 +140,20 @@ export const SLOTS = [
  * Every slot's choice, falling back to its default rather than trusting the
  * ids given: a file may name a variant that has since gone, and one saved before
  * any of this names none.
- * @param {Record<string, string> | undefined | null} choices
- * @returns {Record<string, string>}
  */
-export function resolveVariants(choices) {
-  /** @type {Record<string, string>} */
-  const out = {}
+export function resolveVariants(choices: Record<string, string> | undefined | null): Record<string, string> {
+  const out: Record<string, string> = {}
   for (const s of SLOTS) {
     const wanted = choices?.[s.id]
-    out[s.id] = s.variants.some((v) => v.id === wanted) ? /** @type {string} */ (wanted) : s.variants[0].id
+    out[s.id] = s.variants.some((v) => v.id === wanted) ? (wanted as string) : s.variants[0].id
   }
   return out
 }
 
-/** Whether any slot is off its default. @param {Record<string, string> | undefined | null} choices */
-export function isModified(choices) {
+/**
+ * Whether any slot is off its default.
+ */
+export function isModified(choices: Record<string, string> | undefined | null): boolean {
   const now = resolveVariants(choices)
   return SLOTS.some((s) => now[s.id] !== s.variants[0].id)
 }

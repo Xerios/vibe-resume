@@ -3,20 +3,21 @@
  * registry, and the window's own preferences. `look` is the active file's
  * presentation read off the registry, defaulted, so the
  * page and the style panel take it from one place rather than each resolving
- * it. What the chrome can *do* to all of this is in commands.js.
+ * it. What the chrome can *do* to all of this is in commands.ts.
  *
  * `start` is idempotent: it's safe to call from a page's `onMount` without
  * worrying whether something else already did the work.
  */
 
-import { resolveDensity, resolveLayout } from '../render/tokens.js'
-import { isModified, resolveVariants, SLOTS } from '../render/variants.js'
-import { resolveTheme } from '../theme/palettes.js'
-import { resolveFont } from '../theme/typefaces.js'
-import { resolvePaper } from '../theme/paper.js'
-import { CvDoc } from './doc.svelte.js'
-import { FileManager, styleOf } from './files.svelte.js'
-import { UiState } from './ui.svelte.js'
+import { resolveDensity, resolveLayout } from '../render/tokens'
+import { isModified, resolveVariants, SLOTS } from '../render/variants'
+import { resolveTheme } from '../theme/palettes'
+import { resolveFont } from '../theme/typefaces'
+import { resolvePaper } from '../theme/paper'
+import type { Paper } from '../theme/paper'
+import { CvDoc } from './doc.svelte'
+import { FileManager, styleOf } from './files.svelte'
+import { UiState } from './ui.svelte'
 
 export const doc = new CvDoc()
 export const files = new FileManager()
@@ -40,7 +41,7 @@ export const look = new Look()
 let started = false
 
 /** Load everything out of storage, once per page load. */
-export function start() {
+export function start(): void {
   if (started) return
   started = true
   files.init()
@@ -57,11 +58,11 @@ export function start() {
   })
   // Async only because of the WASM it waits on; `doc.ready` is what the pages
   // watch, so there is nothing here to await.
-  void doc.init(/** @type {string} */ (files.activeId))
+  void doc.init(files.activeId as string)
 }
 
 /** Write out everything that is sitting on a debounce — the tab is going away. */
-export function flush() {
+export function flush(): void {
   doc.flush()
 }
 
@@ -76,11 +77,11 @@ export function flush() {
  * What the patch touches is the axis the change is on, which is what the history
  * entry for a run of restyles is named by — see `recordStyle`. Two goes at the
  * theme read as the last theme; a theme and then a layout read as both.
- *
- * @param {{ layout?: string, theme?: string, density?: string, font?: string, variants?: Record<string, string>, paper?: import('../theme/paper.js').Paper }} patch
- * @param {string} label   what the history entry reads as, e.g. `Theme — Plum`
  */
-export function restyle(patch, label) {
+export function restyle(
+  patch: { layout?: string; theme?: string; density?: string; font?: string; variants?: Record<string, string>; paper?: Paper },
+  label: string,
+): void {
   const id = files.activeId
   if (!id) return
   files.setStyle(id, patch)
@@ -91,15 +92,12 @@ export function restyle(patch, label) {
  * Choose one block variant. The same as `restyle`, but the patch is one slot
  * of an object the file owns whole. One slot is one axis, so cycling a block
  * through its variants names only the one it ended on in the history.
- * @param {string} slotId
- * @param {string} variantId
- * @param {string} label
  */
-export function restyleVariant(slotId, variantId, label) {
+export function restyleVariant(slotId: string, variantId: string, label: string): void {
   const id = files.activeId
   if (!id) return
   const isDefault = SLOTS.find((s) => s.id === slotId)?.variants[0].id === variantId
-  files.setVariant(id, slotId, variantId, isDefault)
+  files.setVariant(id, slotId, variantId, isDefault ?? false)
   doc.recordStyle(styleOf(files.active), label, `variants:${slotId}`)
 }
 
@@ -110,10 +108,8 @@ export function restyleVariant(slotId, variantId, label) {
  *
  * Each key is its own axis, so turning the sheet on its side and then asking
  * for page numbers are both named in the history: they are two decisions.
- * @param {Partial<import('../theme/paper.js').Paper>} patch
- * @param {string} label
  */
-export function restylePaper(patch, label) {
+export function restylePaper(patch: Partial<Paper>, label: string): void {
   const id = files.activeId
   if (!id) return
   files.setPaper(id, patch)

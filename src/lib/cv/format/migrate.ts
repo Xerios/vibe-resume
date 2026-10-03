@@ -20,10 +20,9 @@
  * as something other than a page of unknown types.
  */
 
-import { parse, splitLine } from './relaxed-yaml.js'
+import { parse, splitLine } from './relaxed-yaml'
 
-/** @type {Record<string, string>} */
-export const TYPE_RENAMES = {
+export const TYPE_RENAMES: Record<string, string> = {
   summary: 'text',
   skills: 'groups',
   experience: 'entries',
@@ -40,51 +39,41 @@ export const OSS_COLUMNS = ['Project', 'Stars / Users', 'Description']
 /** The two names an entry's organisation went by. */
 const ORG_KEYS = ['company', 'school']
 
-/**
- * @param {unknown} v
- * @returns {v is Record<string, any>}
- */
-const isMap = (v) => typeof v === 'object' && v !== null && !Array.isArray(v)
+const isMap = (v: unknown): v is Record<string, any> => typeof v === 'object' && v !== null && !Array.isArray(v)
 
-/** @param {unknown} v */
-const list = (v) => (Array.isArray(v) ? v : [])
+const list = (v: unknown): any[] => (Array.isArray(v) ? v : [])
 
 /**
  * The document in the current section types, or null when it already is.
- * @param {string} text
- * @returns {string | null}
  */
-export function migrateCv(text) {
+export function migrateCv(text: string): string | null {
   const { value, lines: at } = parse(text)
   if (!isMap(value) || !Array.isArray(value.sections)) return null
 
   const src = text.split('\n')
-  /** 0-based line → what it becomes; an empty list drops it. @type {Map<number, string[]>} */
-  const edits = new Map()
+  /** 0-based line → what it becomes; an empty list drops it. */
+  const edits: Map<number, string[]> = new Map()
 
-  /** @param {string} path */
-  const lineOf = (path) => {
+  const lineOf = (path: string): number => {
     const n = at.get(path)
     return n ? n - 1 : -1
   }
 
-  /** @param {string} path @param {string} key */
-  const renameKey = (path, key) => {
+  const renameKey = (path: string, key: string): void => {
     const i = lineOf(path)
     if (i < 0) return
     const p = splitLine(src[i])
     if (p.key !== null) edits.set(i, [src[i].slice(0, p.content) + key + src[i].slice(p.colon)])
   }
 
-  /** @param {string} path @param {string} v */
-  const setValue = (path, v) => {
+  const setValue = (path: string, v: string): void => {
     const i = lineOf(path)
     if (i < 0) return
     const p = splitLine(src[i])
     if (p.value >= 0) edits.set(i, [src[i].slice(0, p.value) + v])
   }
 
-  value.sections.forEach((/** @type {unknown} */ sec, /** @type {number} */ s) => {
+  value.sections.forEach((sec: unknown, s: number) => {
     if (!isMap(sec) || typeof sec.type !== 'string') return
     const base = `sections.${s}`
     const type = TYPE_RENAMES[sec.type] ?? sec.type
@@ -123,9 +112,8 @@ export function migrateCv(text) {
  * A parsed document in the current section types — the tree-level twin of
  * `migrateCv`, for rendering text that is not going to be rewritten. Changes
  * the tree it is given, which is the parser's own fresh copy, and returns it.
- * @param {any} cv
  */
-export function migrateTree(cv) {
+export function migrateTree(cv: any): any {
   if (!isMap(cv) || !Array.isArray(cv.sections)) return cv
   for (const sec of cv.sections) {
     if (!isMap(sec) || !TYPE_RENAMES[sec.type]) continue

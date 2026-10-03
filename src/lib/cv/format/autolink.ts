@@ -35,11 +35,8 @@ export const SCHEME_RE = /^https?:\/\//i
 /** The characters a mail address can start with — and so, before it, can't. */
 export const EMAIL_CHAR = /[A-Za-z0-9._+-]/
 
-/**
- * The length of the bare web address at the start of `text`, or 0.
- * @param {string} text
- */
-export function urlAt(text) {
+/** The length of the bare web address at the start of `text`, or 0. */
+export function urlAt(text: string): number {
   const m = URL_RE.exec(text)
   if (!m) return 0
   let url = m[0]
@@ -54,16 +51,14 @@ export function urlAt(text) {
 /**
  * The length of the bare mail address at the start of `text`, or 0. marked only
  * looks for one where a word starts, so the caller checks the character before.
- * @param {string} text
  */
-export const emailAt = (text) => EMAIL_RE.exec(text)?.[0].length ?? 0
+export const emailAt = (text: string): number => EMAIL_RE.exec(text)?.[0].length ?? 0
 
 /**
  * A web address as the page prints it: without the `https://`, which every
  * reader assumes and nobody types.
- * @param {string} url
  */
-export const displayUrl = (url) => url.replace(SCHEME_RE, '')
+export const displayUrl = (url: string): string => url.replace(SCHEME_RE, '')
 
 /**
  * A phone number with nothing else on the line but an optional `Label:` in
@@ -77,11 +72,8 @@ const PHONE_RE = /^(\s*(?:[^\d+(:[\]]*:\s*)?)(\+?[\d\s().-]+?)\s*$/
  * Only a line that is the number is read as one, so a postcode in an address
  * stays text; and it takes 9 digits, or 7 behind a `+`, so a year range like
  * `2016-2020` does too. 15 is the most E.164 allows.
- *
- * @param {string} text
- * @returns {{ lead: string, number: string, href: string } | null}
  */
-export function phoneNumber(text) {
+export function phoneNumber(text: string): { lead: string; number: string; href: string } | null {
   const m = PHONE_RE.exec(text)
   if (!m) return null
   const digits = m[2].replace(/\D/g, '')

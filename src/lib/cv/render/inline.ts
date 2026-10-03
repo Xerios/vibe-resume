@@ -11,38 +11,36 @@
  */
 
 import { Lexer } from 'marked'
-import { displayUrl, phoneNumber } from '../format/autolink.js'
+import { displayUrl, phoneNumber } from '../format/autolink'
 
-/**
- * @typedef {object} Run
- * @property {string} text
- * @property {boolean} [strong]
- * @property {boolean} [em]
- * @property {boolean} [code]
- * @property {boolean} [del]
- * @property {string} [href]
- * @property {string} [datetime]  a date, as ISO 8601, when the run is one end of a `dates` value
- */
+/** A styled text run: text with optional formatting marks (bold, italic, code, link, etc.). */
+export interface Run {
+  text: string
+  strong?: boolean
+  em?: boolean
+  code?: boolean
+  del?: boolean
+  href?: string
+  /** a date, as ISO 8601, when the run is one end of a `dates` value */
+  datetime?: string
+}
 
-/** @typedef {Omit<Run, 'text'>} Marks */
+/** Marks without the text. */
+export type Marks = Omit<Run, 'text'>
 
 /**
  * A list, whatever the YAML actually said. A half-typed document is the normal
  * case here, so every renderer reads lists through this rather than trusting
  * the shape.
- * @param {unknown} v
- * @returns {any[]}
  */
-export const list = (v) => (Array.isArray(v) ? v : [])
+export const list = (v: unknown): any[] => (Array.isArray(v) ? v : [])
 
 /**
  * A stack line as the list of things in it: `React, Node.js, PostgreSQL` and
  * the YAML list of the same three both come back as three entries. A slash
  * isn't a separator, because `TypeScript/JS` and `CI/CD` are single entries.
- * @param {unknown} value
- * @returns {string[]}
  */
-export function techs(value) {
+export function techs(value: unknown): string[] {
   if (Array.isArray(value)) return value.map((v) => String(v).trim()).filter(Boolean)
   if (!value) return []
   return String(value)
@@ -52,11 +50,9 @@ export function techs(value) {
 }
 
 /** marked leaves entities in text as written; the page used to decode them, so this does. */
-/** @type {Record<string, string>} */
-const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' }
+const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' }
 
-/** @param {string} s */
-const decode = (s) =>
+const decode = (s: string): string =>
   s.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (all, e) => {
     if (e[0] === '#') {
       const code = e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : Number(e.slice(1))
@@ -65,12 +61,7 @@ const decode = (s) =>
     return ENTITIES[e.toLowerCase()] ?? all
   })
 
-/**
- * @param {any[]} tokens
- * @param {Marks} marks
- * @param {Run[]} out
- */
-function walk(tokens, marks, out) {
+function walk(tokens: any[], marks: Marks, out: Run[]): void {
   for (const t of tokens) {
     switch (t.type) {
       case 'strong':
@@ -107,50 +98,26 @@ function walk(tokens, marks, out) {
   }
 }
 
-/**
- * Add a run, merging it into the one before when nothing about the marks
- * differs, so that `a & b` stays one run rather than three.
- * @param {Run[]} out
- * @param {string} text
- * @param {Marks} marks
- */
-function push(out, text, marks) {
+function push(out: Run[], text: string, marks: Marks): void {
   if (!text) return
   const last = out[out.length - 1]
   if (last && same(last, marks)) last.text += text
   else out.push({ text, ...marks })
 }
 
-/** @param {Run} a @param {Marks} b */
-const same = (a, b) => !!a.strong === !!b.strong && !!a.em === !!b.em && !!a.code === !!b.code && !!a.del === !!b.del && a.href === b.href
+const same = (a: Run, b: Marks): boolean => !!a.strong === !!b.strong && !!a.em === !!b.em && !!a.code === !!b.code && !!a.del === !!b.del && a.href === b.href
 
-/**
- * Inline Markdown → runs. Empty, null or not-a-string-yet values come back as
- * no runs at all.
- * @param {unknown} text
- * @returns {Run[]}
- */
-export function runs(text) {
+export function runs(text: unknown): Run[] {
   if (text == null || text === '' || typeof text === 'object') return []
-  /** @type {Run[]} */
-  const out = []
+  const out: Run[] = []
   walk(Lexer.lexInline(String(text).trim(), { gfm: true }), {}, out)
   return out
 }
 
-/**
- * One line of the header's contact block. The same as `runs`, except that a
- * line holding a phone number gets the number as a `tel:` link, which is what
- * makes it something a reader or a parser can be sure of. Which lines count as
- * a number is `phoneNumber`'s call.
- * @param {unknown} line
- * @returns {Run[]}
- */
-export function contactRuns(line) {
+export function contactRuns(line: unknown): Run[] {
   const text = String(line ?? '')
   const tel = phoneNumber(text)
   return runs(tel ? `${tel.lead}[${tel.number}](${tel.href})` : text)
 }
 
-/** The text a set of runs reads as. @param {Run[]} rs */
-export const textOf = (rs) => rs.map((r) => r.text).join('')
+export const textOf = (rs: Run[]): string => rs.map((r) => r.text).join('')

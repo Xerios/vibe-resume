@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { docMeta, plain } from './doc-meta.js'
+import { docMeta, plain } from './doc-meta'
 
 describe('plain', () => {
   it('keeps a link label and drops the emphasis', () => {

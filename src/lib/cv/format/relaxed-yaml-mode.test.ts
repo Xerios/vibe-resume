@@ -8,16 +8,14 @@
 
 import { classHighlighter, highlightTree } from '@lezer/highlight'
 import { describe, expect, it } from 'vitest'
-import { relaxedYamlLanguage } from './relaxed-yaml-mode.js'
+import { relaxedYamlLanguage } from './relaxed-yaml-mode'
 
 /**
  * Every styled run of a document as `text=tags`.
- * @param {string} doc
  */
-function paint(doc) {
-  /** @type {string[]} */
-  const out = []
-  highlightTree(relaxedYamlLanguage.parser.parse(doc), classHighlighter, (from, to, cls) => {
+function paint(doc: string) {
+  const out: string[] = []
+  highlightTree(relaxedYamlLanguage.parser.parse(doc), classHighlighter, (from: number, to: number, cls: string) => {
     out.push(doc.slice(from, to) + '=' + cls.replace(/tok-/g, ''))
   })
   return out

@@ -30,50 +30,64 @@
  * The keyword is what is actually emitted: naming a size lets Chrome's print
  * dialog select the matching paper rather than scaling to whatever was last
  * chosen there, which two explicit lengths do not.
- *
- * @typedef {object} PaperSize
- * @property {string} id
- * @property {string} name
- * @property {string} css   the CSS page-size keyword
- * @property {number} w     portrait width, mm
- * @property {number} h     portrait height, mm
  */
+export interface PaperSize {
+  id: string
+  name: string
+  /** the CSS page-size keyword */
+  css: string
+  /** portrait width, mm */
+  w: number
+  /** portrait height, mm */
+  h: number
+}
 
-/** @type {PaperSize[]} */
-export const PAPER_SIZES = [
+export const PAPER_SIZES: PaperSize[] = [
   { id: 'a4', name: 'A4', css: 'A4', w: 210, h: 297 },
   { id: 'letter', name: 'Letter', css: 'letter', w: 215.9, h: 279.4 },
   { id: 'legal', name: 'Legal', css: 'legal', w: 215.9, h: 355.6 },
 ]
 
-/** @type {{ id: string, name: string, hint: string }[]} */
-export const ORIENTATIONS = [
+export interface Orientation {
+  id: string
+  name: string
+  hint: string
+}
+
+export const ORIENTATIONS: Orientation[] = [
   { id: 'portrait', name: 'Portrait', hint: 'Taller than it is wide — what a CV usually is' },
   { id: 'landscape', name: 'Landscape', hint: 'Wider than it is tall — room for a two-column sheet' },
 ]
 
+export interface Running {
+  id: string
+  name: string
+  hint: string
+}
+
 /**
  * What can stand in the margin above or below the sheet. Both edges offer the
  * same four, since a page number reads as well at the top as at the bottom.
- * @type {{ id: string, name: string, hint: string }[]}
  */
-export const RUNNING = [
+export const RUNNING: Running[] = [
   { id: 'none', name: 'None', hint: 'Nothing in the margin' },
   { id: 'name', name: 'Name', hint: 'The name from the CV, centred' },
   { id: 'page', name: 'Page', hint: 'Which page of how many — 2 / 3' },
   { id: 'both', name: 'Name + page', hint: 'The name on the left, the page number on the right' },
 ]
 
-/**
- * @typedef {object} Paper
- * @property {string} size         a `PAPER_SIZES` id
- * @property {string} orientation  `portrait` or `landscape`
- * @property {string} header       a `RUNNING` id — what stands in the top margin
- * @property {string} footer       a `RUNNING` id — what stands in the bottom margin
- */
+export interface Paper {
+  /** a `PAPER_SIZES` id */
+  size: string
+  /** `portrait` or `landscape` */
+  orientation: string
+  /** a `RUNNING` id — what stands in the top margin */
+  header: string
+  /** a `RUNNING` id — what stands in the bottom margin */
+  footer: string
+}
 
-/** @type {Paper} */
-export const DEFAULT_PAPER = { size: 'a4', orientation: 'portrait', header: 'name', footer: 'page' }
+export const DEFAULT_PAPER: Paper = { size: 'a4', orientation: 'portrait', header: 'name', footer: 'page' }
 
 /** The margins the sheet has always printed with, now stated once. In mm. */
 const MARGIN_X = 13
@@ -89,10 +103,8 @@ const PX_PER_MM = 96 / 25.4
  * before any of this existed has no paper at all, and an id can outlive the
  * list it came from. Always returns every key, so the rest of the app can
  * read `paper.orientation` without asking whether it is there.
- * @param {Partial<Paper> | undefined | null} paper
- * @returns {Paper}
  */
-export function resolvePaper(paper) {
+export function resolvePaper(paper: Partial<Paper> | undefined | null): Paper {
   return {
     size: pick(PAPER_SIZES, paper?.size, DEFAULT_PAPER.size),
     orientation: pick(ORIENTATIONS, paper?.orientation, DEFAULT_PAPER.orientation),
@@ -103,19 +115,23 @@ export function resolvePaper(paper) {
 
 /**
  * One id, if it is still one of the choices, and the default if it isn't.
- * @param {{ id: string }[]} list
- * @param {unknown} id
- * @param {string} fallback
  */
-const pick = (list, id, fallback) => (list.some((item) => item.id === id) ? /** @type {string} */ (id) : fallback)
+const pick = (list: { id: string }[], id: unknown, fallback: string): string => (list.some((item) => item.id === id) ? (id as string) : fallback)
+
+interface PageBox {
+  w: number
+  h: number
+  mx: number
+  mt: number
+  mb: number
+}
 
 /**
  * The page box the orientation actually comes to, in mm, plus the margins it
  * prints with — which grow on whichever edge carries a running head, so the
  * head sits in the margin rather than on top of the first line.
- * @param {Partial<Paper> | undefined | null} paper
  */
-export function pageBox(paper) {
+export function pageBox(paper: Partial<Paper> | undefined | null): PageBox {
   const it = resolvePaper(paper)
   const size = PAPER_SIZES.find((s) => s.id === it.size) ?? PAPER_SIZES[0]
   const landscape = it.orientation === 'landscape'
@@ -130,9 +146,8 @@ export function pageBox(paper) {
 
 /**
  * The page's width in CSS pixels — what a preview has to fit into a pane.
- * @param {Partial<Paper> | undefined | null} paper
  */
-export function pageWidthPx(paper) {
+export function pageWidthPx(paper: Partial<Paper> | undefined | null): number {
   return pageBox(paper).w * PX_PER_MM
 }
 
@@ -145,11 +160,8 @@ export function pageWidthPx(paper) {
  * the only kind of text a margin box can hold — there is no element here to
  * put it in. A CV with no name simply gets no name in its margin rather than
  * an empty box.
- *
- * @param {Partial<Paper> | undefined | null} paper
- * @param {string} [name]  the name from the CV's header
  */
-export function paperCss(paper, name = '') {
+export function paperCss(paper: Partial<Paper> | undefined | null, name = ''): string {
   const it = resolvePaper(paper)
   const size = PAPER_SIZES.find((s) => s.id === it.size) ?? PAPER_SIZES[0]
   const box = pageBox(it)
@@ -171,6 +183,8 @@ ${firstPageRule(head)}#cv-root {
 `
 }
 
+type MarginBoxEntry = [string, string]
+
 /**
  * The margin boxes one edge comes to. `both` splits the edge in two rather
  * than crowding one box, which is what the corners are for; the other modes
@@ -181,18 +195,13 @@ ${firstPageRule(head)}#cv-root {
  * second copy of the mono stack. They come from frame.css's `:root` and not
  * from the palette on `#cv-root`, which is why this is muted grey whatever
  * theme the sheet is in: a running head is furniture, not part of the CV.
- *
- * @param {'top' | 'bottom'} edge
- * @param {string} mode  a `RUNNING` id
- * @param {string} name
  */
-function marginBoxes(edge, mode, name) {
+function marginBoxes(edge: 'top' | 'bottom', mode: string, name: string): string {
   const title = name.trim() ? cssString(name) : ''
   const page = `counter(page) " / " counter(pages)`
   const style = `font-family: var(--mono); font-size: 8pt; color: var(--muted);`
 
-  /** @type {[string, string][]} */
-  const boxes =
+  const boxes: MarginBoxEntry[] =
     mode === 'name' && title
       ? [[`${edge}-center`, title]]
       : mode === 'page'
@@ -217,9 +226,8 @@ function marginBoxes(edge, mode, name) {
  *
  * The footer has no such problem — a page number belongs on page one as much
  * as on any other — so nothing here touches it.
- * @param {string} head  the top edge's margin boxes; empty when it has none
  */
-function firstPageRule(head) {
+function firstPageRule(head: string): string {
   if (!head) return ''
   const boxes = ['top-left', 'top-center', 'top-right']
   return `@page :first {\n${boxes.map((at) => `\t@${at} { content: none }\n`).join('')}}\n`
@@ -229,8 +237,7 @@ function firstPageRule(head) {
  * A string, as CSS `content` will take it. Only two characters can break out
  * of a double-quoted CSS string, and a newline is not allowed inside one at
  * all — a name is one line by the time it gets here anyway.
- * @param {string} text
  */
-function cssString(text) {
+function cssString(text: string): string {
   return `"${text.replace(/[\\"]/g, '\\$&').replace(/\s+/g, ' ').trim()}"`
 }
