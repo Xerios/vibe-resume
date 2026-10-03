@@ -10,6 +10,7 @@ describe('parseDates', () => {
       ['Mar 2020 — Present', { year: 2020, month: 3 }],
       ['Sept. 2020 – Present', { year: 2020, month: 9 }],
       ['March 2020 until present', { year: 2020, month: 3 }],
+      ['June, 2020 – Present', { year: 2020, month: 6 }],
     ]
     for (const [text, start] of cases) {
       expect(parseDates(text)).toMatchObject({ start, end: 'present' })

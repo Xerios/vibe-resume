@@ -9,15 +9,16 @@
  * The ways a CV writes a month, each with the example a message shows. A bare
  * year isn't among them: it is a coarser date, not another spelling of one, and
  * a degree in `2010 – 2014` beside a job in `03/2020 – Present` is normal.
- * Anything not recognised — another language, `Summer 2019` — is left alone.
+ * A comma after the month (`June, 2016`) is the same format. Anything not
+ * recognised — another language, `Summer 2019` — is left alone.
  */
 export const DATE_FORMATS: Array<[RegExp, string]> = [
   [/^\d{1,2}\/\d{4}$/, '03/2020'],
   [/^\d{1,2}\.\d{4}$/, '03.2020'],
   [/^\d{4}-\d{1,2}$/, '2020-03'],
   [/^\d{4}\.\d{1,2}$/, '2020.03'],
-  [/^(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\.?\s+\d{4}$/i, 'Mar 2020'],
-  [/^(?:january|february|march|april|june|july|august|september|october|november|december)\s+\d{4}$/i, 'March 2020'],
+  [/^(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\.?,?\s+\d{4}$/i, 'Mar 2020'],
+  [/^(?:january|february|march|april|june|july|august|september|october|november|december),?\s+\d{4}$/i, 'March 2020'],
 ]
 
 /** The two ends of a range: a dash with room around it, an en or em dash, or a word. */
@@ -68,7 +69,7 @@ function readWhen(part: string): When | null {
   if (m) return month(Number(m[2]), Number(m[1]))
   m = /^(\d{4})[-.](\d{1,2})$/.exec(part)
   if (m) return month(Number(m[1]), Number(m[2]))
-  m = /^([a-z]+)\.?\s+(\d{4})$/i.exec(part)
+  m = /^([a-z]+)\.?,?\s+(\d{4})$/i.exec(part)
   if (m) {
     const name = m[1].toLowerCase()
     const i = MONTHS.findIndex((full) => full === name || (name.length >= 3 && full.startsWith(name)))

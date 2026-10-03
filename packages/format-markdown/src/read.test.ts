@@ -23,6 +23,10 @@ describe('the template', () => {
     expect(read(markdown.template).diagnostics).toEqual([])
   })
 
+  it('is written the way the writing guide asks', () => {
+    expect(markdown.lint(markdown.template)).toEqual([])
+  })
+
   it.each(SLOTS.flatMap((slot) => slot.variants.map((v) => [slot.id, v.id])))('lays out the same as the YAML template, with %s set to %s', (slot, variant) => {
     const look = { variants: { [slot]: variant } }
     expect(withoutSrc(buildModel(md.cv, look))).toEqual(withoutSrc(buildModel(ym.cv, look)))
@@ -137,8 +141,8 @@ describe('the line map', () => {
     expect(lines.get('header.contact.2')).toBe(lineOf(text, 'john.doe@example.com'))
     expect(lines.get('sections.2')).toBe(lineOf(text, '## Experience'))
     expect(lines.get('sections.2.items.1')).toBe(lineOf(text, '### Globex Inc'))
-    expect(lines.get('sections.2.items.0.dates')).toBe(lineOf(text, '**03/2020 – Present**'))
-    expect(lines.get('sections.2.items.0.bullets.2')).toBe(lineOf(text, 'Mentored a team'))
+    expect(lines.get('sections.2.items.0.dates')).toBe(lineOf(text, '**03/2020–Present**'))
+    expect(lines.get('sections.2.items.0.bullets.2')).toBe(lineOf(text, 'Mentor a team'))
     expect(lines.get('sections.1.blocks.0.rows.0')).toBe(lineOf(text, '**Expert:**'))
   })
 

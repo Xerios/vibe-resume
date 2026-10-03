@@ -14,25 +14,15 @@
   import IconCompare from '@iconify-icons/lucide/git-compare'
   import IconTrash from '@iconify-icons/lucide/trash'
   import { commands } from '$lib/cv/state/commands'
-  import { doc, files, ui } from '$lib/cv/state/state.svelte'
+  import { files, ui } from '$lib/cv/state/state.svelte'
   import { swUpdate } from '$lib/sw-update.svelte'
   import { shortcut } from './access-keys'
-
-  const saveLabel = $derived.by(() => {
-    if (doc.saveError) return '⚠ not saved'
-    if (doc.isViewingHistory) return 'viewing history'
-    if (!doc.savedAt) return ''
-    const at = doc.savedAt.toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-    return `saved ${at}`
-  })
 </script>
 
 <!-- The bar that reports. On the left, the two things done across files
-     (Compare, Trash), then when the file was last written to storage — and, only
-     while there is one, that the source doesn't parse. On the right, the switches
+     (Compare, Trash), then — only while there is one — that the source doesn't
+     parse. When the file was saved, and what it is, are the editor bar's
+     (EditorBar.svelte). On the right, the switches
      that decide what the window shows rather than what the CV says. -->
 <div id="status-bar">
   <div class="sb-actions">
@@ -56,7 +46,6 @@
   <span class="sb-sep" aria-hidden="true"></span>
 
   {#if ui.parseError}<span id="status" class="ds-lozenge removed">Syntax error</span>{/if}
-  {#if saveLabel}<span id="save-state" class:err={doc.saveError}>{saveLabel}</span>{/if}
   <div class="ds-spacer"></div>
 
   <div class="sb-actions">
@@ -166,16 +155,6 @@
     border-top: var(--ds-border-width) solid var(--ds-border);
     z-index: 8;
     transition: var(--theme-fade);
-  }
-
-  #save-state {
-    font: var(--ds-font-body-small);
-    color: var(--ds-text-subtlest);
-    white-space: nowrap;
-
-    &.err {
-      color: var(--ds-text-danger);
-    }
   }
 
   /* Between the file actions and the status. */

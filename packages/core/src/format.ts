@@ -16,6 +16,16 @@
 
 import { migrateTree } from './migrate-tree'
 
+/**
+ * A way to fix a diagnostic: what to write over its range. Plain data, so it
+ * crosses from the parse worker as it is; the editor turns it into an edit.
+ */
+export interface Fix {
+  /** what the button says — `Write ‘MySQL’` */
+  label: string
+  insert: string
+}
+
 /** A problem with the text, as character offsets — the shape CodeMirror's linter takes. */
 export interface Diagnostic {
   from: number
@@ -23,6 +33,8 @@ export interface Diagnostic {
   severity: 'error' | 'warning' | 'info' | 'hint'
   message: string
   source?: string
+  /** edits that would settle it, each replacing `from`–`to` */
+  fixes?: Fix[]
 }
 
 /** What a format reads out of a text: the tree, where each part of it is, and what is wrong. */

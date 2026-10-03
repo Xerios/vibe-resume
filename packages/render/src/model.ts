@@ -108,8 +108,11 @@ function dateSpan(value: unknown, src: string | undefined, style: string): Span 
   const fmt = (w: import('@vibe-resume/core/dates').When | 'present', written: string): string => (style === 'as-written' ? written : formatWhen(w, style))
   const out: Run[] = [{ text: fmt(read.start, read.written.start), datetime: isoWhen(read.start) }]
   if (read.end) {
-    out.push({ text: style === 'as-written' ? read.written.sep : ' – ' })
     const end = { text: fmt(read.end, read.written.end) }
+    // An en dash is closed up between single-word ends (`2010–2014`) and
+    // spaced only where an end has a space of its own (`Mar 2020 – Present`).
+    const spaced = /\s/.test(out[0].text + end.text)
+    out.push({ text: style === 'as-written' ? read.written.sep : spaced ? ' – ' : '–' })
     out.push(read.end === 'present' ? end : { ...end, datetime: isoWhen(read.end) })
   }
   return { role: 'dates', runs: out, src, actual: spokenDates(read) }

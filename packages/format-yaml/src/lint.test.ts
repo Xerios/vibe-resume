@@ -7,6 +7,7 @@
 import { describe, expect, it } from 'vitest'
 import DEFAULT_YAML from './template.yaml?raw'
 import { SECTIONS } from '@vibe-resume/core/schema'
+import { yaml } from './index'
 import { lintCv } from './lint'
 
 const messages = (text: string) => lintCv(text).map((d: any) => d.message)
@@ -22,6 +23,10 @@ const doc = (section: string) => `header:\n  name: Jo\nsections:\n  - ${section.
 describe('the shipped document', () => {
   it('has nothing to answer for', () => {
     expect(lintCv(DEFAULT_YAML)).toEqual([])
+  })
+
+  it('is written the way the writing guide asks', () => {
+    expect(yaml.lint(DEFAULT_YAML)).toEqual([])
   })
 
   it('uses every type the table knows about', () => {
@@ -77,6 +82,13 @@ describe('the line that reads as a key', () => {
 
   it('leaves the quoted form alone', () => {
     expect(lintCv(doc("type: entries\ntitle: Work\nitems:\n  - title: Dev\n    bullets:\n      - 'Analytics: Mixpanel, GA'"))).toEqual([])
+  })
+
+  it('offers to wrap such a line in quotes', () => {
+    const text = doc("type: entries\ntitle: Work\nitems:\n  - title: Dev\n    bullets:\n      - Analytics: Bob's GA")
+    const found = only(text)
+    expect(text.slice(found.from, found.to)).toBe("Analytics: Bob's GA")
+    expect(found.fixes).toEqual([{ label: 'Wrap in quotes', insert: "'Analytics: Bob''s GA'" }])
   })
 
   it('catches it in a summary, a plain list and the contact block', () => {

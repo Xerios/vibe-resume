@@ -331,6 +331,13 @@ export const commands = {
     write(KEYS.previewFit, String(ui.fitPreview))
   },
 
+  /** Show or hide the problems under the editor — bringing the editor back if it was hidden. */
+  toggleProblems(): void {
+    ui.problemsOpen = !ui.problemsOpen
+    write(KEYS.problemsOpen, String(ui.problemsOpen))
+    if (ui.problemsOpen && ui.sourceHidden) commands.setSourceHidden(false)
+  },
+
   /** Couple the editor to the pointer over the preview, or stop. See `ui.hoverSync`. */
   toggleHoverSync(): void {
     ui.hoverSync = !ui.hoverSync

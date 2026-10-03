@@ -117,7 +117,9 @@ export const FACES: Face[] = [
 /**
  * A font choice: the family text is set in, and the family the labels are.
  * The sans choices pair with a typewriter face for labels; the serifs stay in
- * their own family, so the sheet reads as one piece of typesetting.
+ * their own family, so the sheet reads as one piece of typesetting — except
+ * Classic, the pairing the yamlresume font guide suggests: serif text with
+ * sans-serif titles.
  */
 export interface Font {
   id: string
@@ -136,6 +138,7 @@ export const FONTS: Font[] = [
   { id: 'humanist', name: 'Humanist', hint: 'Source Sans 3 — softer, open', text: 'sourceSans', label: 'jbmono' },
   { id: 'serif', name: 'Serif', hint: 'Source Serif 4 — traditional print', text: 'sourceSerif', label: 'sourceSerif' },
   { id: 'book', name: 'Book', hint: 'EB Garamond — old-style serif', text: 'garamond', label: 'garamond' },
+  { id: 'classic', name: 'Classic', hint: 'Source Serif 4 text, with Source Sans 3 titles and labels', text: 'sourceSerif', label: 'sourceSans' },
   { id: 'mono', name: 'Mono', hint: 'JetBrains Mono throughout, labels included', text: 'jbmono', label: 'jbmono' },
 ]
 

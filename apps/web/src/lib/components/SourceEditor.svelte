@@ -37,6 +37,8 @@
     onScroll = () => {},
     /** A line the user just typed on, for the preview to follow. @type {(line: number) => void} */
     onEdit = () => {},
+    /** What the lint has to say, kept current as the text moves. @type {(problems: import('$lib/cv/state/ui.svelte').Problem[]) => void} */
+    onProblems = () => {},
   } = $props()
 
   /** @type {HTMLDivElement} */
@@ -71,20 +73,55 @@
 
   /**
    * Everything wrong with the document, as the format sees it — what won't
-   * parse, and what parses into a shape nothing renders.
+   * parse, what parses into a shape nothing renders, and what the writing
+   * guide would change. A fix the format offers becomes one of the tooltip's
+   * actions, written over the diagnostic's range as it stands by then.
    * @param {EditorView} v
    * @returns {Promise<import('@codemirror/lint').Diagnostic[]>}
    */
   async function diagnostics(v) {
-    const found = await lintCv(format, v.state.doc.toString())
+    const found = /** @type {import('@vibe-resume/core/format').Diagnostic[]} */ (await lintCv(format, v.state.doc.toString()))
     const len = v.state.doc.length
     // Clamped because the linter reads a snapshot of the text: by the time the
     // worker answers, the document may already be shorter than what it saw.
     for (const d of found) {
       d.from = Math.min(Math.max(d.from, 0), len)
       d.to = Math.min(Math.max(d.to, d.from), len)
+      const actions = (d.fixes ?? []).map((fix) => ({
+        name: fix.label,
+        /** @type {(target: EditorView, from: number, to: number) => void} */
+        apply: (target, at, end) => {
+          if (!target.state.readOnly) target.dispatch({ changes: { from: at, to: end, insert: fix.insert }, userEvent: 'input.fix' })
+        },
+      }))
+      Object.assign(d, { actions })
     }
     return found
+  }
+
+  /**
+   * Hand the page the diagnostics as they stand — after every lint, and after
+   * every edit, which moves them. CodeMirror keeps them in document order.
+   * @param {import('@codemirror/state').EditorState} state
+   */
+  function reportProblems(state) {
+    /** @type {import('$lib/cv/state/ui.svelte').Problem[]} */
+    const out = []
+    forEachDiagnostic(state, (d, from, to) => {
+      const line = state.doc.lineAt(from)
+      out.push({
+        from,
+        to,
+        line: line.number,
+        column: from - line.from + 1,
+        severity: d.severity,
+        message: d.message,
+        source: d.source,
+        fixes: /** @type {{ fixes?: import('@vibe-resume/core/format').Fix[] }} */ (d).fixes ?? [],
+        text: state.sliceDoc(from, to),
+      })
+    })
+    onProblems(out)
   }
 
   /**
@@ -170,6 +207,7 @@
     })
     return () => {
       gone = true
+      onProblems([])
       if (!view) return
       view.scrollDOM.removeEventListener('scroll', fireScroll)
       view.destroy()
@@ -212,6 +250,9 @@
           EditorView.contentAttributes.of({ spellcheck: 'true' }),
           peekField,
           EditorView.updateListener.of(onUpdate),
+          EditorView.updateListener.of((update) => {
+            if (update.docChanged || update.transactions.some((tr) => tr.effects.some((e) => e.is(setDiagnosticsEffect)))) reportProblems(update.state)
+          }),
           loroExtensions,
         ],
       }),
@@ -303,6 +344,41 @@
     view.dispatch({
       changes: { from: 0, to: view.state.doc.length, insert: text },
     })
+  }
+
+  /**
+   * Select a problem's range and bring it to the middle of the editor.
+   * @param {import('$lib/cv/state/ui.svelte').Problem} problem
+   */
+  export function goTo(problem) {
+    if (!view) return
+    const len = view.state.doc.length
+    const from = Math.min(problem.from, len)
+    view.dispatch({
+      selection: { anchor: from, head: Math.min(problem.to, len) },
+      effects: EditorView.scrollIntoView(from, { y: 'center' }),
+    })
+    view.focus()
+  }
+
+  /**
+   * Apply fixes as one edit, so one undo takes them all back. A problem whose
+   * text has changed since it was found is passed over, and so is one that
+   * overlaps a fix already taken — the next lint says what is left.
+   * @param {Array<{ problem: import('$lib/cv/state/ui.svelte').Problem, fix: import('@vibe-resume/core/format').Fix }>} list
+   */
+  export function applyFixes(list) {
+    if (!view || view.state.readOnly) return
+    const state = view.state
+    /** @type {Array<{ from: number, to: number, insert: string }>} */
+    const changes = []
+    for (const { problem, fix } of list.toSorted((a, b) => a.problem.from - b.problem.from)) {
+      if (problem.to > state.doc.length || state.sliceDoc(problem.from, problem.to) !== problem.text) continue
+      const last = changes.at(-1)
+      if (last && problem.from < last.to) continue
+      changes.push({ from: problem.from, to: problem.to, insert: fix.insert })
+    }
+    if (changes.length) view.dispatch({ changes, userEvent: 'input.fix' })
   }
 
   export function takeFocus() {

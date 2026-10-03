@@ -53,7 +53,7 @@ describe('buildModel', () => {
     expect(job.keep).toBe(true)
     expect(job.body.map((b: import('./model').Block) => b.kind)).toEqual(['H3', 'P', 'L', 'P'])
     expect(line(job.body[0])).toBe('Acme Corp — Senior Full-Stack Engineer')
-    expect(line(job.body[1])).toBe('03/2020 – Present · B2B SaaS platform — Springfield (remote)')
+    expect(line(job.body[1])).toBe('03/2020–Present · B2B SaaS platform — Springfield (remote)')
     expect(line(job.body[3])).toBe('Stack: React, Node.js, TypeScript, PostgreSQL, Docker, AWS')
   })
 
@@ -112,10 +112,11 @@ describe('dates', () => {
   }
 
   it('prints each end in the chosen style, and knows what it says', () => {
-    expect(textOf(dates('as-written').runs)).toBe('03/2020 – Present')
+    expect(textOf(dates('as-written').runs)).toBe('03/2020–Present')
     expect(textOf(dates('short').runs)).toBe('Mar 2020 – Present')
     expect(textOf(dates('long').runs)).toBe('March 2020 – Present')
-    expect(textOf(dates('iso').runs)).toBe('2020-03 – Present')
+    expect(textOf(dates('iso').runs)).toBe('2020-03–Present')
+    expect(textOf(dates('numeric').runs)).toBe('03/2020–Present')
     expect(dates('short').actual).toBe('March 2020 to Present')
     expect(dates('short').runs.map((r: import('./inline').Run) => r.datetime)).toEqual(['2020-03', undefined, undefined])
   })

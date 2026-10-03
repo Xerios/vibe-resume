@@ -1,4 +1,24 @@
+import type { Fix } from '@vibe-resume/core/format'
 import { KEYS, read } from './storage'
+
+/**
+ * A diagnostic as the editor holds it now: its range has moved with the text
+ * since the lint found it, and `text` is what that range holds, so a fix can
+ * tell when the words under it have changed since.
+ */
+export interface Problem {
+  from: number
+  to: number
+  /** 1-based */
+  line: number
+  /** 1-based */
+  column: number
+  severity: 'error' | 'warning' | 'info' | 'hint'
+  message: string
+  source?: string
+  fixes: Fix[]
+  text: string
+}
 
 /** How long a toast stays up. */
 const TOAST_MS = 2200
@@ -43,6 +63,13 @@ export class UiState {
    * again. On unless turned off.
    */
   scrollSync = $state(read(KEYS.scrollSync) !== 'false')
+  /** Whether the list of problems sits under the editor. Off unless turned on. */
+  problemsOpen = $state(read(KEYS.problemsOpen) === 'true')
+  /**
+   * Everything the main editor's lint has to say, in document order. The
+   * editor keeps it current; the problems panel and the status bar read it.
+   */
+  problems = $state.raw<Problem[]>([])
   /**
    * The app's colour scheme, mirrored into the preview frame: the gutter around
    * the sheet follows it, the sheet itself never does. Read from the same key

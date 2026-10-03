@@ -45,7 +45,7 @@ or `@lezer/highlight` break the editor.
 | Chrome                 | `components/{Toolbar,TabBar,StatusBar}.svelte` — the buttons, the tabs, the status bar                                                        |
 | The chrome's palette   | [apps/web/src/lib/styles/tokens.scss](apps/web/src/lib/styles/tokens.scss) — ADS tokens; see _The chrome's palette_ below                     |
 | The YAML dialect       | [packages/format-yaml/src/relaxed-yaml.ts](packages/format-yaml/src/relaxed-yaml.ts) — the parser; see _The YAML dialect_ below               |
-| What the editor says   | [packages/format-yaml/src/lint.ts](packages/format-yaml/src/lint.ts) — the section table, as diagnostics                                      |
+| What the editor says   | [packages/format-yaml/src/lint.ts](packages/format-yaml/src/lint.ts) — the section table, as diagnostics; [packages/core/src/writing.ts](packages/core/src/writing.ts) — the writing, in every format; see _The writing_ below |
 | What the editor offers | [packages/format-yaml/src/editor/complete.ts](packages/format-yaml/src/editor/complete.ts) — the same table, as completions                   |
 | Colours and folding    | [packages/format-yaml/src/editor/relaxed-yaml-mode.ts](packages/format-yaml/src/editor/relaxed-yaml-mode.ts) — the CodeMirror language        |
 | Text to a CV object    | [packages/core/src/format.ts](packages/core/src/format.ts) — `SourceFormat` and `parseWith`; see _Formats_ below                              |
@@ -62,7 +62,7 @@ or `@lezer/highlight` break the editor.
 | Shared state           | [apps/web/src/lib/cv/state/state.svelte.ts](apps/web/src/lib/cv/state/state.svelte.ts) — the document and the file registry                   |
 | Commands               | [apps/web/src/lib/cv/state/commands.ts](apps/web/src/lib/cv/state/commands.ts) — everything the chrome can do, by name                        |
 | Theme                  | [packages/render/src/theme/palettes.ts](packages/render/src/theme/palettes.ts) — the palettes, as data                                        |
-| Type                   | [packages/render/src/theme/typefaces.ts](packages/render/src/theme/typefaces.ts) — the six font choices, and the faces they bundle            |
+| Type                   | [packages/render/src/theme/typefaces.ts](packages/render/src/theme/typefaces.ts) — the seven font choices, and the faces they bundle            |
 | Tech logos             | [packages/render/src/theme/tech-icons.js](packages/render/src/theme/tech-icons.js) — generated; see _Logos_ below                             |
 | Paper                  | [packages/render/src/theme/paper.ts](packages/render/src/theme/paper.ts) — the page box, and what stands in its margins                       |
 | CSS                    | [apps/web/src/app.scss](apps/web/src/app.scss) — the index; see _Where the CSS lives_ below                                                   |
@@ -123,7 +123,7 @@ drew.
 [model.ts](packages/render/src/model.ts) builds a tree out of the parsed source. It is
 the one place that decides what a section _is_: an entry is a heading naming the
 organisation and the title (`Acme Corp — Senior Engineer`), a line of its dates
-and context (`03/2020 – Present · Springfield`), a list of bullets and a
+and context (`03/2020–Present · Springfield`), a list of bullets and a
 `Stack:` line; a skills section is its groups one under another; a language is a
 list item with its level at the right. Its nodes are PDF's own structure types
 (`Sect`, `H1`–`H3`, `P`, `L`, `LI`, `Div`), plus `Row` for "this, with that out
@@ -170,7 +170,7 @@ marked's own inline lexer ([inline.ts](packages/render/src/inline.ts)), so there
 `{@html}` in it. A bare address still prints without its scheme, and a phone
 number on a contact line is still a `tel:` link.
 
-The style panel offers a row of **block variants**, seven **themes**, six **fonts**, two **densities** and
+The style panel offers a row of **block variants**, seven **themes**, seven **fonts**, two **densities** and
 the **paper**. A variant ([variants.ts](packages/render/src/variants.ts)) is an id
 the model reads while building the tree. It changes a property there — a
 section's `head`, an entry's `frame`, a list's `display`, a language's meter —
@@ -335,9 +335,9 @@ Senior Full-Stack Engineer · 10+ years
 
 ### Acme Corp — Senior Full-Stack Engineer
 
-**03/2020 – Present** · Springfield (remote)
+**03/2020–Present** · Springfield (remote)
 
-- Led the development of a customer-facing dashboard.
+- Lead the development of a customer-facing dashboard
 
 Stack: React, Node.js, TypeScript
 
@@ -437,6 +437,40 @@ line looks like and what it means can't drift apart. It's a `StreamLanguage`
 rather than a Lezer grammar because a line is an indent, some dashes, maybe a
 key and then text — none of which needs a parse tree.
 
+#### The writing
+
+The lint above checks a CV's shape; [writing.ts](packages/core/src/writing.ts)
+checks how it reads, after YAMLResume's guides to
+[punctuation](https://yamlresume.dev/docs/guide/punctuations),
+[grammar](https://yamlresume.dev/docs/guide/grammar) and
+[typesetting](https://yamlresume.dev/docs/guide/typesetting). It walks the tree
+any format reads into, finds each value's line through the line map and its
+characters again in the source, so both formats get every rule. What the guides
+say a CV _must_ do is a warning; what they recommend is info:
+
+- **Punctuation** — one space after `, ; : . ! ?` and none before; a space before
+  `(` and after `)`; nothing hanging at the start of a line; a space between a
+  number and its unit (`100 ms`); no spaces around a slash or a joining hyphen;
+  `--`, `---`, ` - ` and `2016-2020` turned into the en or em dash they mean;
+  curly quotation marks; and no full stop at the end of a list item.
+- **Grammar** — a bullet starts with its verb, not `I` or `We`, in the past
+  tense for a role whose dates have ended and the present for one that runs to
+  `Present`. The name isn't `My Resume`, and the header leaves out a date of
+  birth, nationality, marital status and a street address.
+- **Dates** — the year in full (`05/06` reads differently in different
+  countries) and an en dash between the ends, closed up when each end is one
+  word: `2010–2014`, `03/2020–Present`, but `Mar 2020 – Present`. The sheet
+  prints a range by the same rule.
+- **Spelling** — the guide's table of names software CVs get wrong (`javascript`,
+  `mysql`, `IOS`, `jquery`). A name that is also a word — `node`, `JS` — is only
+  corrected where it stands alone in a list. Addresses, code and file names are
+  left alone.
+
+The typesetting guide is the sheet's business rather than the lint's: running
+text is never set below 10pt at either density, the leading stays above 1.2, the
+margins are 12–13mm and everything is set flush left. The font guide's pairing,
+serif text with sans-serif titles, is the **Classic** font choice.
+
 #### What a CV is made of
 
 A document is a header and a list of sections, and a section's `type` is what
@@ -496,6 +530,7 @@ dates and contact lines. All are SIL OFL static TTFs from the
 | Humanist | Source Sans 3  | JetBrains Mono |
 | Serif    | Source Serif 4 | Source Serif 4 |
 | Book     | EB Garamond    | EB Garamond    |
+| Classic  | Source Serif 4 | Source Sans 3  |
 | Mono     | JetBrains Mono | JetBrains Mono |
 
 Bundled rather than OS font stacks, because the PDF has to embed every face it

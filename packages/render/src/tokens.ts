@@ -17,7 +17,7 @@ export interface Choice {
 
 export const DENSITIES: Choice[] = [
   { id: 'normal', name: 'Normal', hint: 'The measure and spacing the sheet is designed at' },
-  { id: 'compact', name: 'Compact', hint: 'Tighter type and less air, so more fits on a page' },
+  { id: 'compact', name: 'Compact', hint: 'Smaller labels and less air, so more fits on a page' },
 ]
 
 export const DEFAULT_DENSITY = 'normal'
@@ -27,7 +27,14 @@ export function resolveDensity(id: string | undefined | null): string {
 }
 
 /** The type ladder at normal density, in points. */
-const SIZES = { '2xs': 7.25, xs: 8, sm: 8.75, md: 9.5, lg: 10, xl: 11, name: 23 }
+const SIZES = { '2xs': 7.25, xs: 8, sm: 8.75, md: 10, lg: 10, xl: 11, name: 23 }
+
+/**
+ * The sizes running text is set at — bullets, rows, paragraphs — and the
+ * least any density takes them to: most faces read best at 10–12pt.
+ */
+const TEXT_SIZES = new Set(['md', 'lg', 'xl'])
+const TEXT_MIN = 10
 
 /** The space between things at normal density, in points. */
 const SPACE = {
@@ -59,7 +66,10 @@ export function metrics(density: string | undefined | null) {
   const compact = resolveDensity(density) === 'compact'
   const k = compact ? COMPACT.size : 1
   const s = compact ? COMPACT.space : 1
-  const size = Object.fromEntries(Object.entries(SIZES).map(([key, v]) => [key, round(v * k)])) as Record<keyof typeof SIZES, number>
+  const size = Object.fromEntries(Object.entries(SIZES).map(([key, v]) => [key, round(TEXT_SIZES.has(key) ? Math.max(TEXT_MIN, v * k) : v * k)])) as Record<
+    keyof typeof SIZES,
+    number
+  >
   const space = Object.fromEntries(Object.entries(SPACE).map(([key, v]) => [key, round(v * s)])) as Record<keyof typeof SPACE, number>
   return { size, space, leading: compact ? COMPACT.leading : 1.42 }
 }

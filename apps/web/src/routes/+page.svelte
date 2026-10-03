@@ -13,6 +13,8 @@
   import TrashPanel from '$lib/components/TrashPanel.svelte'
   import WelcomeOverlay from '$lib/components/WelcomeOverlay.svelte'
   import SourceEditor from '$lib/components/SourceEditor.svelte'
+  import ProblemsPanel from '$lib/components/ProblemsPanel.svelte'
+  import EditorBar from '$lib/components/EditorBar.svelte'
   import PreviewFrame from '@vibe-resume/render/PreviewFrame.svelte'
   import { bindHost, commands } from '$lib/cv/state/commands'
   import { doc as cv, flush, look, start, ui } from '$lib/cv/state/state.svelte'
@@ -594,6 +596,25 @@
     takeOver('editor')
   }
 
+  /* ── Problems ──────────────────────────────────────────────────────────
+     The main editor reports its lint into `ui.problems`; the panel under it
+     hands a choice back here, and the editor is what acts on it. */
+
+  /** @param {import('$lib/cv/state/ui.svelte').Problem[]} list */
+  function showProblems(list) {
+    ui.problems = list
+  }
+
+  /** @param {import('$lib/cv/state/ui.svelte').Problem} problem */
+  function goToProblem(problem) {
+    editor?.goTo(problem)
+  }
+
+  /** @param {Array<{ problem: import('$lib/cv/state/ui.svelte').Problem, fix: import('@vibe-resume/core/format').Fix }>} list */
+  function fixProblems(list) {
+    editor?.applyFixes(list)
+  }
+
   /**
    * Pull the part of the CV a fresh edit produced into view. Only when it isn't
    * already comfortably on screen — typing in the middle of a visible paragraph
@@ -730,8 +751,13 @@
             diff={cv.diff}
             onScroll={onEditorScroll}
             onEdit={noteEdit}
+            onProblems={showProblems}
           />
         {/key}
+        {#if ui.problemsOpen}
+          <ProblemsPanel readOnly={cv.isViewingHistory} onGo={goToProblem} onFix={fixProblems} />
+        {/if}
+        <EditorBar />
       {:else}
         <div id="boot">Loading editor…</div>
       {/if}

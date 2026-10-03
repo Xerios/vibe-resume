@@ -206,8 +206,8 @@ export function parse(text: string): ParseResult {
     if (end >= text.length) break
   }
 
-  const report = (l: Line, col: number, to: number, severity: Diagnostic['severity'], message: string): void => {
-    diagnostics.push({ from: l.from + col, to: l.from + Math.max(to, col), severity, source: 'yaml', message })
+  const report = (l: Line, col: number, to: number, severity: Diagnostic['severity'], message: string, fixes?: Diagnostic['fixes']): void => {
+    diagnostics.push({ from: l.from + col, to: l.from + Math.max(to, col), severity, source: 'yaml', message, ...(fixes && { fixes }) })
   }
 
   for (const l of lines) {
@@ -339,7 +339,9 @@ export function parse(text: string): ParseResult {
 
     const { value, quoted } = readScalar(raw)
     if (quoted && !needsQuotes(String(value), l.key === null && l.dashes.length > 0)) {
-      report(l, from, l.text.trimEnd().length, 'hint', 'These quotes are no longer needed — the text reads the same without them.')
+      report(l, from, l.text.trimEnd().length, 'hint', 'These quotes are no longer needed — the text reads the same without them.', [
+        { label: 'Remove the quotes', insert: String(value) },
+      ])
     }
     return value
   }

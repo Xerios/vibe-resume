@@ -44,29 +44,29 @@ Full-stack engineer with **10+ years** of experience building web applications e
 ## Experience
 
 ### Acme Corp — Senior Full-Stack Engineer
-**03/2020 – Present** · B2B SaaS platform — Springfield (remote)
+**03/2020–Present** · B2B SaaS platform — Springfield (remote)
 
-- Led the development of a customer-facing dashboard used by **thousands of businesses**, from initial design through production rollout.
-- Migrated a legacy monolith to a **modular service architecture**, improving deploy frequency and reducing incident response time.
-- Mentored a team of **4 junior engineers**, establishing code review practices and onboarding documentation.
-- Built and maintained CI/CD pipelines with GitHub Actions, cutting release time from days to hours.
+- Lead the development of a customer-facing dashboard used by **thousands of businesses**, from initial design through production rollout
+- Drive the move from a legacy monolith to a **modular service architecture**, improving deploy frequency and reducing incident response time
+- Mentor a team of **4 junior engineers**, establishing code review practices and onboarding documentation
+- Build and maintain CI/CD pipelines with GitHub Actions, cutting release time from days to hours
 
 Stack: React, Node.js, TypeScript, PostgreSQL, Docker, AWS
 
 ### Globex Inc — Full-Stack Developer
-**06/2016 – 02/2020** · E-commerce platform — Shelbyville
+**06/2016–02/2020** · E-commerce platform — Shelbyville
 
-- Built and shipped new features for a high-traffic e-commerce site serving **millions of monthly visitors**.
-- Optimized checkout flow, improving conversion rate through incremental A/B tested changes.
-- Worked closely with design and product teams to deliver a **responsive redesign** across web and mobile.
+- Built and shipped new features for a high-traffic e-commerce site serving **millions of monthly visitors**
+- Optimized checkout flow, improving conversion rate through incremental A/B tested changes
+- Worked closely with design and product teams to deliver a **responsive redesign** across web and mobile
 
 Stack: Vue.js, Node.js, MySQL, Redis
 
 ### Initech — Junior Developer
-**07/2014 – 05/2016** · Internal tools team — Capital City
+**07/2014–05/2016** · Internal tools team — Capital City
 
-- Developed internal reporting tools used across multiple departments.
-- Automated manual data-entry workflows, saving the team several hours per week.
+- Developed internal reporting tools used across multiple departments
+- Automated manual data-entry workflows, saving the team several hours per week
 
 Stack: PHP, jQuery, MySQL
 
@@ -74,13 +74,13 @@ Stack: PHP, jQuery, MySQL
 
 <!-- subtype: earlier -->
 
-- **Umbrella Startups** — Freelance developer; built small business websites and internal tools. _WordPress, PHP._
-- **University Tech Club** — Volunteer developer; maintained club website and event registration system. _HTML, CSS, JavaScript._
+- **Umbrella Startups** — Freelance developer; built small business websites and internal tools (_WordPress, PHP_)
+- **University Tech Club** — Volunteer developer; maintained club website and event registration system (_HTML, CSS, JavaScript_)
 
 ## Projects
 
 ### [dashboard-kit](https://example.dev/dashboard-kit)
-**2023 – Present** · Charting and layout components for internal dashboards, extracted from the work at Acme and released publicly.
+**2023–Present** · Charting and layout components for internal dashboards, extracted from the work at Acme and released publicly.
 
 Stack: TypeScript, Svelte, Vite
 
@@ -92,7 +92,7 @@ Stack: Go, PostgreSQL, Docker
 ## Education
 
 ### Springfield University — BSc Computer Science
-**2010 – 2014** · Graduated with honours — thesis on distributed systems.
+**2010–2014** · Graduated with honours — thesis on distributed systems.
 
 ## Certifications & Permits
 

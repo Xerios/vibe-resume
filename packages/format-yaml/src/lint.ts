@@ -68,9 +68,9 @@ export function lintCv(text: string): Diagnostic[] {
     return { from: from + p.content, to: Math.max(end, from + p.content) }
   }
 
-  const say = (path: string, part: 'key' | 'value' | 'line', message: string, severity: Diagnostic['severity'] = 'warning'): void => {
+  const say = (path: string, part: 'key' | 'value' | 'line', message: string, severity: Diagnostic['severity'] = 'warning', fixes?: Diagnostic['fixes']): void => {
     const at = span(path, part)
-    if (at) out.push({ ...at, severity, source: 'cv', message })
+    if (at) out.push({ ...at, severity, source: 'cv', message, ...(fixes && { fixes }) })
   }
 
   const checkKeys = (obj: Record<string, unknown>, path: string, allowed: string[], what: string): void => {
@@ -89,7 +89,11 @@ export function lintCv(text: string): Diagnostic[] {
       if (!isMap(entry)) return
       const keys = Object.keys(entry)
       const hint = keys.length === 1 ? `\`${keys[0]}:\` at the start of this line reads as a key.` : 'This line reads as a mapping, not as text.'
-      say(`${path}.${i}`, 'line', `${hint} Wrap the line in single quotes to keep it as text.`)
+      // Only a line that is all there is to the entry can be wrapped as it stands.
+      const at = span(`${path}.${i}`, 'line')
+      const line = at && typeof entry[keys[0]] === 'string' && keys.length === 1 ? text.slice(at.from, at.to) : null
+      const fixes = line ? [{ label: 'Wrap in quotes', insert: `'${line.replaceAll("'", "''")}'` }] : undefined
+      say(`${path}.${i}`, 'line', `${hint} Wrap the line in single quotes to keep it as text.`, 'warning', fixes)
     })
   }
 
