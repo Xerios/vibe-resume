@@ -13,7 +13,7 @@ to `localStorage` with a version history.
 ```sh
 pnpm install
 pnpm dev        # http://localhost:5173
-pnpm build      # static site in apps/web/build/
+pnpm build      # static site in build/
 pnpm check      # svelte-check / tsc in every package, oxlint, vitest
 ```
 
@@ -28,11 +28,11 @@ of their own — and depend on each other only in the direction listed:
 | [packages/format-yaml](packages/format-yaml/src/)         | the relaxed YAML dialect; its CodeMirror half under `editor/`                                   |
 | [packages/format-markdown](packages/format-markdown/src/) | Markdown; its CodeMirror half under `editor/`                                                   |
 | [packages/render](packages/render/src/)                   | the CV model, the sheet, the paginator and the PDF                                              |
-| [apps/web](apps/web/src/)                                 | the SvelteKit app: chrome, editor, state, workers                                               |
+| [app](app/src/)                                 | the SvelteKit app: chrome, editor, state, workers                                               |
 
 A format's root module never imports CodeMirror, because the parse worker loads
 it; the editor loads a format's `editor/` half on demand
-([formats.ts](apps/web/src/lib/formats.ts)). Shared dependencies are pinned once in
+([formats.ts](app/src/lib/formats.ts)). Shared dependencies are pinned once in
 the `catalog:` of `pnpm-workspace.yaml`, since two copies of `@codemirror/state`
 or `@lezer/highlight` break the editor.
 
@@ -40,10 +40,10 @@ or `@lezer/highlight` break the editor.
 
 | Concern                | Where                                                                                                                                         |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Document + history     | [apps/web/src/lib/cv/state/doc.svelte.ts](apps/web/src/lib/cv/state/doc.svelte.ts) — Loro doc, persistence, cross-tab merge                   |
-| Editor                 | [apps/web/src/lib/components/SourceEditor.svelte](apps/web/src/lib/components/SourceEditor.svelte) — CodeMirror 6                             |
+| Document + history     | [app/src/lib/cv/state/doc.svelte.ts](app/src/lib/cv/state/doc.svelte.ts) — Loro doc, persistence, cross-tab merge                   |
+| Editor                 | [app/src/lib/components/SourceEditor.svelte](app/src/lib/components/SourceEditor.svelte) — CodeMirror 6                             |
 | Chrome                 | `components/{Toolbar,TabBar,StatusBar}.svelte` — the buttons, the tabs, the status bar                                                        |
-| The chrome's palette   | [apps/web/src/lib/styles/tokens.scss](apps/web/src/lib/styles/tokens.scss) — ADS tokens; see _The chrome's palette_ below                     |
+| The chrome's palette   | [app/src/lib/styles/tokens.scss](app/src/lib/styles/tokens.scss) — ADS tokens; see _The chrome's palette_ below                     |
 | The YAML dialect       | [packages/format-yaml/src/relaxed-yaml.ts](packages/format-yaml/src/relaxed-yaml.ts) — the parser; see _The YAML dialect_ below               |
 | What the editor says   | [packages/format-yaml/src/lint.ts](packages/format-yaml/src/lint.ts) — the section table, as diagnostics; [packages/core/src/writing.ts](packages/core/src/writing.ts) — the writing, in every format; see _The writing_ below |
 | What the editor offers | [packages/format-yaml/src/editor/complete.ts](packages/format-yaml/src/editor/complete.ts) — the same table, as completions                   |
@@ -59,14 +59,14 @@ or `@lezer/highlight` break the editor.
 | The sheet as PDF       | [packages/render/src/pdf/](packages/render/src/pdf/) — `measure.js` reads the sheet, `PdfRenderer.ts` draws it; see _Exporting_ below         |
 | Starting text          | [template.yaml](packages/format-yaml/src/template.yaml), [template.md](packages/format-markdown/src/template.md) — the same CV in each format |
 | Picking a look         | `components/{StylePicker,VariantCycle}.svelte` — the Style panel, and the row each block slot is drawn as                                     |
-| Shared state           | [apps/web/src/lib/cv/state/state.svelte.ts](apps/web/src/lib/cv/state/state.svelte.ts) — the document and the file registry                   |
-| Commands               | [apps/web/src/lib/cv/state/commands.ts](apps/web/src/lib/cv/state/commands.ts) — everything the chrome can do, by name                        |
+| Shared state           | [app/src/lib/cv/state/state.svelte.ts](app/src/lib/cv/state/state.svelte.ts) — the document and the file registry                   |
+| Commands               | [app/src/lib/cv/state/commands.ts](app/src/lib/cv/state/commands.ts) — everything the chrome can do, by name                        |
 | Theme                  | [packages/render/src/theme/palettes.ts](packages/render/src/theme/palettes.ts) — the palettes, as data                                        |
 | Type                   | [packages/render/src/theme/typefaces.ts](packages/render/src/theme/typefaces.ts) — the seven font choices, and the faces they bundle            |
 | Tech logos             | [packages/render/src/theme/tech-icons.js](packages/render/src/theme/tech-icons.js) — generated; see _Logos_ below                             |
 | Paper                  | [packages/render/src/theme/paper.ts](packages/render/src/theme/paper.ts) — the page box, and what stands in its margins                       |
-| CSS                    | [apps/web/src/app.scss](apps/web/src/app.scss) — the index; see _Where the CSS lives_ below                                                   |
-| Offline                | [apps/web/src/service-worker.ts](apps/web/src/service-worker.ts) — precache; manifest and icons in `static/`                                  |
+| CSS                    | [app/src/app.scss](app/src/app.scss) — the index; see _Where the CSS lives_ below                                                   |
+| Offline                | [app/src/service-worker.ts](app/src/service-worker.ts) — precache; manifest and icons in `static/`                                  |
 
 ### Editor and document
 
@@ -79,9 +79,9 @@ undo at high precedence, and two undo stacks would fight over Ctrl+Z.
 
 Syntax colours are a `HighlightStyle` whose values are CSS custom properties, so
 it can serve both themes; it lives in
-[cm-highlight.ts](apps/web/src/lib/components/cm-highlight.ts), the `--cm-*` tokens it
-names live in [tokens.scss](apps/web/src/lib/styles/tokens.scss), and the rules that spend
-the rest of them are in [codemirror.scss](apps/web/src/lib/components/codemirror.scss).
+[cm-highlight.ts](app/src/lib/components/cm-highlight.ts), the `--cm-*` tokens it
+names live in [tokens.scss](app/src/lib/styles/tokens.scss), and the rules that spend
+the rest of them are in [codemirror.scss](app/src/lib/components/codemirror.scss).
 
 Completion reads the same section table as the linter, forwards:
 [complete.ts](packages/format-yaml/src/editor/complete.ts) imports `SECTIONS` rather than copying it,
@@ -103,14 +103,14 @@ quiet once it says everything it can, so landing in a finished entry doesn't put
 a list of what it already says on the screen. Ctrl-Space still answers anywhere.
 
 The document, the file registry and the part registry are module-level
-singletons in [state.svelte.ts](apps/web/src/lib/cv/state/state.svelte.ts), built once by
+singletons in [state.svelte.ts](app/src/lib/cv/state/state.svelte.ts), built once by
 `start()` on mount rather than inline in the page component. Beside them sit
 `ui` — the window's own preferences and transient chrome state (which panel is
 up, whether the panes are coupled, the toast), see
-[ui.svelte.ts](apps/web/src/lib/cv/state/ui.svelte.ts) — and `look`, the active file's
+[ui.svelte.ts](app/src/lib/cv/state/ui.svelte.ts) — and `look`, the active file's
 presentation resolved to valid ids. The chrome reads all of these directly
 rather than being handed each flag as a prop, and everything it can _do_ is a
-named entry in [commands.ts](apps/web/src/lib/cv/state/commands.ts): a toolbar button, a
+named entry in [commands.ts](app/src/lib/cv/state/commands.ts): a toolbar button, a
 menu item and a keyboard shortcut for the same action all call the same
 command. The page keeps only what needs its own DOM — parsing, the
 preview-to-source mapping, scroll sync and the divider drag.
@@ -176,7 +176,7 @@ the model reads while building the tree. It changes a property there — a
 section's `head`, an entry's `frame`, a list's `display`, a language's meter —
 and sheet.css draws each such property. Because the PDF is measured from the
 sheet, a variant needs no PDF code of its own. Each slot is a
-[VariantCycle](apps/web/src/lib/components/VariantCycle.svelte) row in the panel, and the
+[VariantCycle](app/src/lib/components/VariantCycle.svelte) row in the panel, and the
 first variant of each is its default.
 
 #### Restyling is a change
@@ -186,7 +186,7 @@ also as a `style` map in the file's Loro document. Changing how a CV looks is a
 change to the CV, and the things a change gets here — a line in the version
 history, a place on the undo stack, and coming back with the version that had it
 — are exactly what a restyle wanted.
-[restyle](apps/web/src/lib/cv/state/state.svelte.ts) is the one way to move them: it writes the
+[restyle](app/src/lib/cv/state/state.svelte.ts) is the one way to move them: it writes the
 registry first, so the sheet follows immediately, then records the result in the
 document with a label — `Entry — Card`, `Theme — Plum`, `Paper — Landscape`.
 Ctrl+Z takes one back, from the editor as ever and from anywhere else too, since
@@ -563,7 +563,7 @@ Every control in the chrome carries an `accesskey` and underlines the letter it
 answers to — `H` on History, `X` on Export, `N` on the button that opens a tab.
 Which chord unlocks them is the browser's to decide rather than ours: Chromium
 takes plain Alt, Firefox insists on Alt+Shift, and a Mac uses Ctrl+Alt
-throughout. [access-keys.ts](apps/web/src/lib/components/access-keys.ts) reads which one
+throughout. [access-keys.ts](app/src/lib/components/access-keys.ts) reads which one
 applies, once, and every tooltip spells it out — so the same underlined `H`
 reads as `(Alt+H)` or `(Alt+Shift+H)` depending on where it is being read.
 
@@ -588,12 +588,12 @@ In the app's document:
 
 | File                                                                      | Holds                                                      |
 | ------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| [app.scss](apps/web/src/app.scss)                                         | the index — `@use`s the three below, and nothing else      |
-| [styles/tokens.scss](apps/web/src/lib/styles/tokens.scss)                 | the ADS tokens: colour per scheme, elevation, space, type  |
-| [styles/base.scss](apps/web/src/lib/styles/base.scss)                     | reset, page background, scrollbars, the `#app` shell       |
-| [styles/controls.scss](apps/web/src/lib/styles/controls.scss)             | the `.ds-*` components — button, menu, lozenge and friends |
-| [styles/print.scss](apps/web/src/lib/styles/print.scss)                   | the fallback for a print the app can't intercept           |
-| [components/codemirror.scss](apps/web/src/lib/components/codemirror.scss) | the CodeMirror theme, imported by `SourceEditor.svelte`    |
+| [app.scss](app/src/app.scss)                                         | the index — `@use`s the three below, and nothing else      |
+| [styles/tokens.scss](app/src/lib/styles/tokens.scss)                 | the ADS tokens: colour per scheme, elevation, space, type  |
+| [styles/base.scss](app/src/lib/styles/base.scss)                     | reset, page background, scrollbars, the `#app` shell       |
+| [styles/controls.scss](app/src/lib/styles/controls.scss)             | the `.ds-*` components — button, menu, lozenge and friends |
+| [styles/print.scss](app/src/lib/styles/print.scss)                   | the fallback for a print the app can't intercept           |
+| [components/codemirror.scss](app/src/lib/components/codemirror.scss) | the CodeMirror theme, imported by `SourceEditor.svelte`    |
 
 And in the preview frame's, written into it by `PreviewFrame`:
 
@@ -746,7 +746,7 @@ merging two unrelated ones.
 ### Offline
 
 Nothing here ever talked to the network, but until there was a service worker the
-browser still could not _load_ the app without a server. `apps/web/src/service-worker.ts`
+browser still could not _load_ the app without a server. `app/src/service-worker.ts`
 precaches the Vite bundle, everything in `static/`, and the prerendered shell, so a
 single visit is enough; after that it runs with the network off. SvelteKit registers it
 automatically in a production build and leaves it out of `vite dev`, so development
@@ -792,6 +792,6 @@ used, and those are copied into the build.
 `loro-crdt` ships several builds. `loro-codemirror` imports the bare specifier, which
 resolves to a build that loads its WASM with a synchronous main-thread XHR, and would
 be a _second_ WASM instance whose objects the first instance cannot accept. The alias
-in [vite.config.js](apps/web/vite.config.js) pins every importer to the async `web` build, so
+in [vite.config.js](app/vite.config.js) pins every importer to the async `web` build, so
 exactly one `.wasm` is emitted. `optimizeDeps.exclude` is there because pre-bundling
 rewrites the `new URL(..., import.meta.url)` the build uses to find that file.

@@ -18,7 +18,7 @@ export default defineConfig({
 
       // The editor is a fully client-side, offline-capable app (see src/routes/+layout.js),
       // so it builds to a plain static bundle that can be opened from any web server.
-      adapter: adapter({ fallback: 'index.html' }),
+      adapter: adapter({ pages: '../build', assets: '../build', fallback: 'index.html' }),
 
       // SvelteKit's own registration runs in `vite dev` too, which puts a caching
       // worker in front of the dev server: edits arrive only after the "Update
@@ -30,7 +30,7 @@ export default defineConfig({
       // the node_modules link svelte-check takes them for a published library
       // and wants declaration files; aliased to the real path they are just
       // more of the project's own components.
-      alias: { '@vibe-resume/render': '../../packages/render/src' },
+      alias: { '@vibe-resume/render': '../packages/render/src' },
     }),
   ],
 

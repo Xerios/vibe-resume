@@ -118,29 +118,29 @@ binding, version history, CSS layering) in depth. Don't duplicate it here.
 
 - `pnpm` only. `loro-codemirror` is patched via `patchedDependencies` in
   `pnpm-workspace.yaml`; `npm`/`yarn install` silently drops the patch and undo breaks.
-- A pnpm workspace: `apps/web` (the SvelteKit app) and `packages/{core,format-yaml,
+- A pnpm workspace: `app` (the SvelteKit app) and `packages/{core,format-yaml,
   format-markdown,render}`, consumed as TypeScript source with no build step. Shared
   dependencies (CodeMirror, `@lezer/highlight`, svelte, vite, marked) are pinned in
   the `catalog:` in `pnpm-workspace.yaml` — use `catalog:` for them, since a second
   copy of `@codemirror/state` or `@lezer/highlight` breaks the editor.
 - There is no `svelte.config.js` — SvelteKit config lives in the `sveltekit({...})`
-  plugin options inside `apps/web/vite.config.js`. It aliases `@vibe-resume/render`
+  plugin options inside `app/vite.config.js`. It aliases `@vibe-resume/render`
   to its source so svelte-check treats that package's `.svelte` files as the app's.
 - Tests live with their package and run as root `vitest.config.ts` projects, each
   rooted at its package: `pnpm exec vitest run --project format-markdown`.
 
 ## Conventions
 
-- TypeScript: all source files are `.ts`, with `strict` mode on. `apps/web/src/app.d.ts`
+- TypeScript: all source files are `.ts`, with `strict` mode on. `app/src/app.d.ts`
   is the single declaration file for the app's global types. JSDoc has been converted to real
   TypeScript annotations throughout.
 - Runes are forced on for all non-`node_modules` files (`vite.config.js`). Shared
   reactive state lives in `.svelte.ts` classes using `$state` / `$derived`.
 - The app has two routes and they share one set of state objects — the
-  singletons in `apps/web/src/lib/cv/state/state.svelte.ts`. Don't construct a `CvDoc` or
+  singletons in `app/src/lib/cv/state/state.svelte.ts`. Don't construct a `CvDoc` or
   `FileManager` in a page; import those and call `start()`.
 - A file's format is its name's extension (`.md` Markdown, anything else YAML) — see
-  `apps/web/src/lib/formats.ts`. Every format implements `SourceFormat`
+  `app/src/lib/formats.ts`. Every format implements `SourceFormat`
   (`packages/core/src/format.ts`) and reads into the same CV tree plus a
   dotted-path → line map. A format's root module must not import CodeMirror (the
   parse worker loads it); editor support lives in its `editor/` subpath.
@@ -160,7 +160,7 @@ binding, version history, CSS layering) in depth. Don't duplicate it here.
 - Never write a literal `<style>` or `<script>` tag inside a comment in a Svelte
   `<script>` block — the parser reads it as the real thing and `pnpm check`
   fails, even though the app compiles.
-- Style each piece of UI in its own component's `<style>` block. `apps/web/src/lib/styles/*`,
+- Style each piece of UI in its own component's `<style>` block. `app/src/lib/styles/*`,
   render's `frame.css` and `html/sheet.css`, and `components/codemirror.scss` are global
   only because they style DOM outside the app's own components (CodeMirror's, and
   the sheet mounted into the preview frame).

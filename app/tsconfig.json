@@ -1,7 +1,7 @@
 {
   "extends": "./.svelte-kit/tsconfig.json",
   // pdfkit ships no types; the render package declares what it uses.
-  "files": ["../../packages/render/src/pdf/pdfkit.d.ts"],
+  "files": ["../packages/render/src/pdf/pdfkit.d.ts"],
   "compilerOptions": {
     "allowJs": true,
     "checkJs": true,
