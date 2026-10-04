@@ -74,4 +74,17 @@ describe('lines read for more than their markdown', () => {
       '**=punctuation',
     ])
   })
+
+  it('marks the label of a stack or methodologies line, in the body only', () => {
+    const doc = '# Jo\n- Stack: Go\n## Work\n### Acme\nStack: Go, Rust\n- **Methodologies:** Scrum\n'
+    expect(paint(doc)).toEqual([
+      '# Jo=heading',
+      '- =list',
+      '## Work=heading',
+      '### Acme=heading',
+      'Stack:=labelName strong',
+      '- =list',
+      '**Methodologies:**=labelName strong',
+    ])
+  })
 })

@@ -75,7 +75,7 @@
   /** The marks, as paths in a box of their own, in points. */
   const MARKS = {
     bullet: { box: 5.3, d: 'M2.65 0L5.3 2.65L2.65 5.3L0 2.65Z' },
-    dot: { box: 3.75, d: 'M0 1.875a1.875 1.875 0 1 0 3.75 0a1.875 1.875 0 1 0 -3.75 0Z' },
+    dot: { box: 4.5, d: 'M0 2.25a2.25 2.25 0 1 0 4.5 0a2.25 2.25 0 1 0 -4.5 0Z' },
     dash: { box: 5, d: 'M0 2.125h5v0.75h-5Z' },
   }
 

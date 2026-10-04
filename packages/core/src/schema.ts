@@ -14,7 +14,7 @@
 export const SECTIONS: Record<string, { holds: string; item: string[] | null; extra?: string[] }> = {
   text: { holds: 'paragraphs', item: null },
   groups: { holds: 'blocks', item: ['title', 'rows'] },
-  entries: { holds: 'items', item: ['subtype', 'title', 'org', 'dates', 'sub', 'sideNote', 'summary', 'bullets', 'stack', 'notes', 'items'] },
+  entries: { holds: 'items', item: ['subtype', 'title', 'org', 'dates', 'sub', 'sideNote', 'summary', 'bullets', 'stack', 'methodologies', 'notes', 'items'] },
   list: { holds: 'items', item: null, extra: ['inline'] },
   levels: { holds: 'items', item: ['name', 'level', 'note', 'rating'] },
   records: { holds: 'items', item: ['name', 'issuer', 'dates', 'note'] },

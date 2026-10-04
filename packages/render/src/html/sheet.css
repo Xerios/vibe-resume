@@ -104,8 +104,15 @@
   text-decoration: none;
 }
 
-.sheet a:hover {
+.cv-head a:hover {
   text-decoration: underline;
+}
+
+/* A link in the body is underlined, as a border rather than a text decoration
+   so that measure.ts draws it into the PDF too. The header's contact line is
+   all links, and reads as one without. */
+.cv-body a {
+  border-bottom: 0.5pt solid currentColor;
 }
 
 .sheet .center {
@@ -352,8 +359,8 @@
 }
 
 .m-dot .mark {
-  width: 3.75pt;
-  height: 3.75pt;
+  width: 4.5pt;
+  height: 4.5pt;
 }
 
 .m-dash .mark {

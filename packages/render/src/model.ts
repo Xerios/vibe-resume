@@ -203,7 +203,7 @@ function body(sec: any, path: string, ctx: Context): Block[] {
         {
           kind: 'L',
           display: 'block',
-          marker: 'none',
+          marker: 'dot',
           items: list(sec.items).map((item, i) => {
             const at = `${path}.items.${i}`
             const spans = [span('itemName', item?.name, `${at}.name`)]
@@ -253,9 +253,19 @@ function skills(sec: any, path: string, ctx: Context): Block[] {
               'tag',
             ),
           ]
-        : list(b?.rows).map((r, j) =>
-            text('P', r?.tier ? [span('tier', r.tier), lit('row', ' · '), span('row', r.text)] : [span('row', r?.text)], `${at}.rows.${j}`),
-          )
+        : [
+            {
+              kind: 'L',
+              display: 'block',
+              marker: 'dot',
+              src: `${at}.rows`,
+              items: list(b?.rows).map((r, j) => ({
+                kind: 'LI',
+                src: `${at}.rows.${j}`,
+                body: [text('P', r?.tier ? [span('tier', r.tier), lit('row', ' · '), span('row', r.text)] : [span('row', r?.text)])],
+              })),
+            },
+          ]
     const div: Div = { kind: 'Div', keep: true, src: at, body: title.spans.length ? [title, ...rest] : rest }
     if (variant === 'cards') div.frame = 'card'
     return div
@@ -283,7 +293,7 @@ function plainList(sec: any, path: string, ctx: Context): List {
   return {
     kind: 'L',
     display: 'block',
-    marker: 'bullet',
+    marker: 'dot',
     items: items.map((item, i) => ({ kind: 'LI', src: `${path}.items.${i}`, body: [text('P', [span('bullet', item)])] })),
   }
 }
@@ -354,6 +364,12 @@ function records(sec: any, path: string, ctx: Context): List {
 
 const row = (main: Text, aside: Text | Meter): Block => (aside.kind === 'Meter' || aside.spans.length ? { kind: 'Row', main, aside } : main)
 
+/** The labelled lines that close an entry, by key, with the label each is printed under. */
+const TAILS: [string, string][] = [
+  ['stack', 'Stack: '],
+  ['methodologies', 'Methodologies: '],
+]
+
 const ENTRY_FRAMES: Record<string, Frame> = { timeline: 'timeline', card: 'card', stripe: 'stripe' }
 
 function entry(item: any, at: string, ctx: Context): Div {
@@ -404,12 +420,14 @@ function entry(item: any, at: string, ctx: Context): Div {
       items: bullets.map((b, j) => bulletItem(b, `${at}.bullets.${j}`)),
     })
   }
-  const tools = techs(item?.stack)
-  if (tools.length && ctx.v.stack !== 'none') {
-    if (ctx.v.stack === 'chips') blocks.push(chips(tools, `${at}.stack`, 'stack'))
+  // The stack, then the methodologies, each drawn as the Stack variant asks.
+  for (const [key, label] of TAILS) {
+    const tools = techs(item?.[key])
+    if (!tools.length || ctx.v.stack === 'none') continue
+    if (ctx.v.stack === 'chips') blocks.push(chips(tools, `${at}.${key}`, 'stack'))
     else {
       const line = span('stack', tools.join(', '))
-      blocks.push(text('P', ctx.v.stack === 'plain' ? [line] : [lit('stackLabel', 'Stack: '), line], `${at}.stack`))
+      blocks.push(text('P', ctx.v.stack === 'plain' ? [line] : [lit('stackLabel', label), line], `${at}.${key}`))
     }
   }
 

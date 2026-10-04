@@ -57,6 +57,24 @@ describe('buildModel', () => {
     expect(line(job.body[3])).toBe('Stack: React, Node.js, TypeScript, PostgreSQL, Docker, AWS')
   })
 
+  it("sets an entry's methodologies out the way it sets its stack", () => {
+    const job = (v: Record<string, string>) =>
+      buildModel({ sections: [{ type: 'entries', items: [{ title: 'Dev', stack: 'Go', methodologies: 'Scrum, TDD' }] }] }, { variants: v }).sections[0].body[0] as import('./model').Div
+    expect(line(job({}).body.at(-1) as import('./model').Block)).toBe('Methodologies: Scrum, TDD')
+    expect((job({ stack: 'chips' }).body.at(-1) as import('./model').List).display).toBe('chips')
+    expect(job({ stack: 'none' }).body.map((b: import('./model').Block) => b.kind)).toEqual(['H3'])
+  })
+
+  it("gives skills and plain lists round bullets, and an entry's bullets their own", () => {
+    const m = buildModel(cv)
+    const group = m.sections[1].body[0] as import('./model').Div
+    expect((group.body[1] as import('./model').List).marker).toBe('dot')
+    const interests = buildModel(cv, { variants: { list: 'lines' } }).sections[7].body[0] as import('./model').List
+    expect(interests.marker).toBe('dot')
+    const job = m.sections[2].body[0] as import('./model').Div
+    expect((job.body[2] as import('./model').List).marker).toBe('bullet')
+  })
+
   it('sets nothing side by side', () => {
     const all = SLOTS.flatMap((slot) => slot.variants.map((v) => buildModel(cv, { variants: { [slot.id]: v.id } })))
     for (const m of all) expect(JSON.stringify(m)).not.toMatch(/"cols"|"gutter"/)

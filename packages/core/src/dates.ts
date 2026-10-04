@@ -120,8 +120,8 @@ export function formatWhen(w: When | 'present', style: string): string {
 }
 
 /**
- * One end as an ISO 8601 date — `2020-03`, `2020` — for `<time datetime>` and
- * JSON Resume. An open end has none.
+ * One end as an ISO 8601 date — `2020-03`, `2020` — for `<time datetime>`. An
+ * open end has none.
  */
 export const isoWhen = (w: When | 'present' | null): string =>
   !w || w === 'present' ? '' : w.month ? `${w.year}-${String(w.month).padStart(2, '0')}` : String(w.year)

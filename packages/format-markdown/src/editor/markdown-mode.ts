@@ -9,11 +9,13 @@
  * rules are marked's, so nothing is coloured as a link the page won't make.
  * Two kinds of line are read for more than their markdown: a contact line,
  * which can be a phone number, and the dates line under an entry's heading.
+ * The label of a `Stack:` or `Methodologies:` line is marked out as well.
  */
 
 import { LanguageSupport, StreamLanguage, foldService } from '@codemirror/language'
 import type { StringStream } from '@codemirror/language'
 import { tags as t } from '@lezer/highlight'
+import { LABEL } from '../read'
 import { contactRuns, inlineRuns, metaRuns } from './inline-markdown'
 
 interface State {
@@ -33,6 +35,8 @@ interface State {
   base: string
   /** a line read for more than its markdown */
   kind: '' | 'contact' | 'meta'
+  /** column a `Stack:` or `Methodologies:` label ends at, or -1 */
+  label: number
 }
 
 const HEADING = /^(#{1,6})\s/
@@ -44,6 +48,13 @@ function begin(stream: StringStream, state: State, from: number): void {
   const next = stream.string.indexOf('<!--', from)
   state.md = from
   state.end = next < 0 ? stream.string.length : next
+}
+
+/** In the body, a `Stack:` or `Methodologies:` label opening the line's text, as read.ts reads one. */
+function label(stream: StringStream, state: State): void {
+  const rest = stream.string.slice(state.md).trimStart()
+  const m = state.region === 'body' ? LABEL.exec(rest) : null
+  state.label = m ? stream.string.length - rest.length + m[0].length : -1
 }
 
 /** Emit the next run of the text that starts at `state.md`, markdown and all. */
@@ -87,6 +98,7 @@ function token(stream: StringStream, state: State): string | null {
     state.md = -1
     state.kind = ''
     state.base = ''
+    state.label = -1
     if (!line.trim()) {
       stream.skipToEnd()
       return null
@@ -112,6 +124,7 @@ function token(stream: StringStream, state: State): string | null {
     if (stream.match(LIST)) {
       if (state.region === 'header') state.kind = 'contact'
       begin(stream, state, stream.pos)
+      label(stream, state)
       return 'list'
     }
     if (stream.match(/^>\s?/)) {
@@ -120,6 +133,15 @@ function token(stream: StringStream, state: State): string | null {
     }
     if (dates && !COMMENT_START.test(line)) state.kind = 'meta'
     begin(stream, state, 0)
+    label(stream, state)
+  }
+
+  // The label first; what follows it is ordinary text.
+  if (state.label > stream.pos) {
+    stream.pos = state.label
+    state.kind = ''
+    begin(stream, state, stream.pos)
+    return 'cvLabel'
   }
 
   if (state.md >= 0 && stream.pos < state.end) return text(stream, state)
@@ -133,7 +155,7 @@ function token(stream: StringStream, state: State): string | null {
 
 const parser = {
   name: 'markdown',
-  startState: (): State => ({ comment: false, typeNext: false, region: 'pre', afterEntry: false, md: -1, end: 0, base: '', kind: '' }),
+  startState: (): State => ({ comment: false, typeNext: false, region: 'pre', afterEntry: false, md: -1, end: 0, base: '', kind: '', label: -1 }),
   token,
   tokenTable: {
     heading1: t.heading1,
@@ -159,6 +181,8 @@ const parser = {
     cvDate: t.number,
     // What a section or an entry is — the value of `type` or `subtype` in a comment.
     cvType: [t.typeName, t.strong],
+    // The label of a `Stack:` or `Methodologies:` line.
+    cvLabel: [t.labelName, t.strong],
   },
   languageData: { commentTokens: { block: { open: '<!--', close: '-->' } } },
 }

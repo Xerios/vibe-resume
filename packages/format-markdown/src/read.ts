@@ -14,6 +14,7 @@
  *     **2017.09–2017.12** · Place  its dates, in bold, then where (its `sub`)
  *     - bullet                     bullets
  *     Stack: A, B                  its stack
+ *     Methodologies: C, D          its methodologies, set out as a stack is
  *
  * The bold dates line is the one to write; a plain line that reads as dates,
  * with the line of context under it, is read too.
@@ -82,8 +83,14 @@ const FIELDS = /\s+—\s+/
 const TIER = /^\*\*([^*]+?):?\*\*:?\s+(.*)$/
 /** An entry's `**dates** · place` line: the bold part, or a plain one, then what follows a `·` or `|`. */
 const META = /^(?:\*\*(.+?)\*\*|([^·|]+?))\s*(?:[·|]\s*(.*))?$/
-/** `Stack: …`, in any of the ways it gets written. */
-const STACK = /^(?:\*\*|__)?(?:stack|tech(?:nologies)?|tools)(?::(?:\*\*|__)|(?:\*\*|__)?:)\s*(.*)$/i
+/** The label of a `Stack: …` or `Methodologies: …` line, in any of the ways it gets written. */
+export const LABEL = /^(?:\*\*|__)?(stack|tech(?:nologies)?|tools|methodolog(?:y|ies)|methods)(?::(?:\*\*|__)|(?:\*\*|__)?:)/i
+
+/** A labelled line as the entry key it sets and what it says, or null. */
+function labelled(text: string): { key: 'stack' | 'methodologies'; value: string } | null {
+  const m = LABEL.exec(text)
+  return m ? { key: /^meth/i.test(m[1]) ? 'methodologies' : 'stack', value: text.slice(m[0].length).trim() } : null
+}
 
 /** Keys a comment may set, by where it is. */
 export const DIRECTIVE_KEYS = {
@@ -99,7 +106,8 @@ const TITLE_TYPES: Array<[RegExp, string, (s: Section) => boolean]> = [
   [/language/i, 'levels', (s) => onlyList(s)],
   [/certif|licen|award|course/i, 'records', (s) => onlyList(s)],
   [/interest|hobb/i, 'list', (s) => onlyList(s)],
-  [/open.?source/i, 'table', (s) => onlyList(s)],
+  // Only rows of `name — value — desc`: a list of projects under the title is a list.
+  [/open.?source/i, 'table', (s) => onlyList(s) && s.blocks.every((b) => b.kind === 'list' && b.items.every((it) => it.text.split(FIELDS).length >= 3))],
 ]
 
 const onlyList = (s: Section): boolean => !s.children.length && s.blocks.length > 0 && s.blocks.every((b) => b.kind === 'list')
@@ -212,7 +220,7 @@ export function read(text: string): SourceRead {
     }
     // An indented line under a bullet carries that bullet on, unless it is a
     // `Stack:` line, which ends the list rather than joining its last item.
-    if (list && /^\s/.test(t) && !STACK.test(t.trim())) {
+    if (list && /^\s/.test(t) && !labelled(t.trim())) {
       const last = list[list.length - 1]
       last.text = `${last.text} ${t.trim()}`
       continue
@@ -350,10 +358,10 @@ export function read(text: string): SourceRead {
       if (block.kind === 'list') {
         past = true
         for (const it of block.items) {
-          const stack = STACK.exec(it.text)
-          if (stack && !earlier) {
-            item.stack = stack[1]
-            lines.set(`${at}.stack`, it.line.n)
+          const tail = labelled(it.text)
+          if (tail && !earlier) {
+            item[tail.key] = tail.value
+            lines.set(`${at}.${tail.key}`, it.line.n)
             continue
           }
           item[listKey] ??= []
@@ -369,10 +377,10 @@ export function read(text: string): SourceRead {
       if (metaRead) {
         const own: string[] = []
         for (const line of block.lines) {
-          const stack = STACK.exec(line.text.trim())
-          if (stack) {
-            item.stack = stack[1]
-            lines.set(`${at}.stack`, line.n)
+          const tail = labelled(line.text.trim())
+          if (tail) {
+            item[tail.key] = tail.value
+            lines.set(`${at}.${tail.key}`, line.n)
             past = true
           } else own.push(line.text.trim())
         }
@@ -388,14 +396,14 @@ export function read(text: string): SourceRead {
       metaRead = true
       for (const line of block.lines) {
         const t = line.text.trim()
-        const stack = STACK.exec(t)
+        const tail = labelled(t)
         const meta = item.dates === undefined && item.sub === undefined ? META.exec(t) : null
         // Bold leading the first line is the dates, whatever they say; plain
         // text only when it reads as dates.
         const when = meta ? (meta[1] ?? (parseDates(strip(meta[2])) ? meta[2] : undefined)) : undefined
-        if (stack) {
-          item.stack = stack[1]
-          lines.set(`${at}.stack`, line.n)
+        if (tail) {
+          item[tail.key] = tail.value
+          lines.set(`${at}.${tail.key}`, line.n)
         } else if (meta && when !== undefined) {
           item.dates = strip(when)
           lines.set(`${at}.dates`, line.n)

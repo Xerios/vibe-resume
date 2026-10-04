@@ -250,13 +250,8 @@ PDF/UA-1, so that ATS parsers and screen readers read it as it is meant to be re
   Info dictionary and the XMP both carry the title, author, description and
   keywords from [doc-meta.ts](packages/render/src/doc-meta.ts); the XMP also has
   `dc:language` and declares `pdfuaid:part` 1.
-- **Attachments.** `cv.md` is the source exactly as written,
-  marked as the `Source`.
-  `resume.json` is the CV in the [JSON Resume](https://jsonresume.org/schema)
-  schema ([json-resume.ts](packages/render/src/json-resume.ts)), marked as an
-  `Alternative`: work, education, projects, skills, languages and certificates
-  as fields rather than text, with ISO 8601 dates, which a parser can read
-  without guessing.
+- **Attachment.** `cv.md` is the source exactly as written, marked as the
+  `Source`.
 
 The tests in [PdfRenderer.test.ts](packages/render/src/pdf/PdfRenderer.test.ts) render two
 display lists measured from the browser ([fixtures/](packages/render/src/pdf/fixtures/)),
@@ -418,7 +413,7 @@ holds rather than what a CV usually puts in it:
 | --------- | ------------------------------------------------------------------------------- | -------------- |
 | `text`    | `paragraphs`                                                                    | a summary      |
 | `groups`  | `blocks`, each a `title` and `rows` of `{ tier?, text }`                        | skills         |
-| `entries` | `items` of `{ title, org?, dates?, sub?, bullets?, stack? }`                    | roles, degrees |
+| `entries` | `items` of `{ title, org?, dates?, sub?, bullets?, stack?, methodologies? }`    | roles, degrees |
 | `list`    | `items` of plain strings — `inline: true` runs them on in one line              | interests      |
 | `levels`  | `items` of `{ name, level?, note?, rating? }`                                   | languages      |
 | `records` | `items` of `{ name, issuer?, dates?, note? }`                                   | certifications |
@@ -432,7 +427,8 @@ on a CV and what a PDF reader handles best.
 
 `stack` takes a comma-separated string or a list, whichever reads better;
 `techs` in [inline.ts](packages/render/src/inline.ts) reads either into a list of
-tools.
+tools. `methodologies` (a `Methodologies:` line) is read and drawn the same way,
+under its own label, and follows the Stack variant.
 
 Experience, education and projects are all `entries`, because a degree and a
 role are the same shape: a title, something it belongs to (`org`), dates, a line

@@ -26,6 +26,11 @@ describe('section types', () => {
     expect(typeOf('## Languages\n\n- English — Native')).toBe('levels')
     expect(typeOf('## Certifications\n\n- CKA — CNCF — 2022')).toBe('records')
     expect(typeOf('## Skills\n\n### Core\n\n- TypeScript')).toBe('groups')
+    expect(typeOf('## Open Source\n\n- [kit](https://x.dev) — ★ 12 — A kit')).toBe('table')
+  })
+
+  it('keeps a list of projects under an open-source title a list', () => {
+    expect(typeOf('## Projects & Open Source\n\n- **Kit** — A kit\n- More on GitHub')).toBe('list')
   })
 
   it('falls back to the shape when the title does not fit', () => {
@@ -101,6 +106,10 @@ Stack: Node.js, Koa, Prometheus, Angular`
 
   it('takes a stack line straight after the bullets as the stack, not as more bullet', () => {
     expect(entry('- Built it\nStack: Go, Rust')).toMatchObject({ bullets: ['Built it'], stack: 'Go, Rust' })
+  })
+
+  it('reads a methodologies line beside the stack', () => {
+    expect(entry('- Built it\nStack: Go\n**Methodologies:** Scrum, TDD')).toMatchObject({ bullets: ['Built it'], stack: 'Go', methodologies: 'Scrum, TDD' })
   })
 
   it('carries an indented line on as part of its bullet', () => {

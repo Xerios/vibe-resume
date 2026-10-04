@@ -5,7 +5,6 @@
  */
 
 import { docMeta } from '../doc-meta'
-import { toJsonResume } from '../json-resume'
 import { FACES, faceFor, fontOf } from '../theme/typefaces'
 import { familiesOf } from './fonts'
 import { PdfRenderer } from './PdfRenderer'
@@ -64,13 +63,6 @@ export async function exportPdf({ list, cv, source, look, fileName }: ExportPdfI
     paper: look.paper,
     attachments: [
       { name: source.name, mime: source.mime, description: "This CV's source, as written", data: enc.encode(source.text) },
-      {
-        name: 'resume.json',
-        mime: 'application/json',
-        description: 'This CV in the JSON Resume schema (jsonresume.org), for resume parsers',
-        relationship: 'Alternative',
-        data: enc.encode(JSON.stringify(toJsonResume(cv), null, 2)),
-      },
     ],
   })
   return save(bytes, `${fileName.replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'cv'}.pdf`)
