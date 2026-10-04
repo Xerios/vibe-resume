@@ -32,6 +32,7 @@ export const SLOTS: Slot[] = [
     variants: [
       { id: 'stacked', name: 'Stacked', hint: 'Name over the contact line, both hard left' },
       { id: 'centered', name: 'Centred', hint: 'Name, role and contact down the middle' },
+      { id: 'split', name: 'Split', hint: 'Name and role at the left, contact in a column at the right' },
       { id: 'banner', name: 'Banner', hint: 'A masthead — the name in capitals between two rules' },
     ],
   },

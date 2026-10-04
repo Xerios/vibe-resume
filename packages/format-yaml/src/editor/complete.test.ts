@@ -41,7 +41,7 @@ describe('where the cursor is', () => {
   })
 
   it('reads a key under a mapping as that mapping’s', () => {
-    expect(keys('header:\n  na|')).toEqual(['name', 'role', 'contact', 'lang'])
+    expect(keys('header:\n  na|')).toEqual(['name', 'role', 'left', 'contact', 'lang'])
   })
 
   it('reads a key on a `- ` line as the item’s own', () => {
@@ -118,12 +118,12 @@ describe('what it offers', () => {
   })
 
   it('opens with nothing typed where a key is still missing', () => {
-    expect(labels('header:\n  |', false)).toEqual(['name', 'role', 'contact', 'lang'])
+    expect(labels('header:\n  |', false)).toEqual(['name', 'role', 'left', 'contact', 'lang'])
     expect(labels('sections:\n  - |', false)).toContain('entries section')
   })
 
   it('stays quiet with nothing typed once the mapping says everything it can', () => {
-    expect(labels('header:\n  name: Jo\n  role: Dev\n  contact:\n    - Here\n  |', false)).toBeNull()
+    expect(labels('header:\n  name: Jo\n  role: Dev\n  left:\n    - Dev\n  contact:\n    - Here\n  |', false)).toBeNull()
     // Asking outright still answers, since one of them may be about to be retyped.
     expect(labels('header:\n  name: Jo\n  role: Dev\n  contact:\n    - Here\n  |', true)).toContain('name')
   })

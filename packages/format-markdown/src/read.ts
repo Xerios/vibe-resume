@@ -6,8 +6,8 @@
  * uses a handful of block shapes and each one says where it starts:
  *
  *     # Name                       the header; the first paragraph under it is
- *     Role                         the role, and a list (or a line split on
- *     - contact                    ` · ` / ` | `) is the contact line
+ *     Role                         the role, further lines are `left`, and
+ *     - contact                    a list is the contact block
  *
  *     ## Section                   a section; its type is what its content is
  *     ### Org — Title              an entry (or a group, under a skills section)
@@ -232,6 +232,7 @@ export function read(text: string): SourceRead {
     lines.set('header.name', header.line.n)
     const h: Record<string, any> = { name: header.name }
     const contact: string[] = []
+    const left: string[] = []
     const contactAt = (line: Line): void => {
       if (!lines.has('header.contact')) lines.set('header.contact', line.n)
       lines.set(`header.contact.${contact.length - 1}`, line.n)
@@ -250,13 +251,12 @@ export function read(text: string): SourceRead {
           lines.set('header.role', line.n)
           continue
         }
-        for (const part of line.text.split(/\s+[·|]\s+/)) {
-          if (!part.trim()) continue
-          contact.push(part.trim())
-          contactAt(line)
-        }
+        if (!line.text.trim()) continue
+        left.push(line.text.trim())
+        lines.set(`header.left.${left.length - 1}`, line.n)
       }
     }
+    if (left.length) h.left = left
     if (contact.length) h.contact = contact
     if (typeof header.directive.lang === 'string') h.lang = header.directive.lang
     value.header = h
@@ -342,8 +342,13 @@ export function read(text: string): SourceRead {
     Object.assign(item, child.directive)
     const earlier = item.subtype === 'earlier'
     const listKey = earlier ? 'items' : 'bullets'
+    let metaRead = false
+    // Text above the bullets and stack is the entry's summary; text below them
+    // is kept as notes so the sheet sets it out in the order it was written.
+    let past = false
     for (const block of child.blocks) {
       if (block.kind === 'list') {
+        past = true
         for (const it of block.items) {
           const stack = STACK.exec(it.text)
           if (stack && !earlier) {
@@ -358,8 +363,29 @@ export function read(text: string): SourceRead {
         }
         continue
       }
-      // A paragraph is read a line at a time: the dates and the line of
-      // context are often written one under the other with no blank between.
+      // The first paragraph is the dates and the line of context, often written
+      // one under the other with no blank between. Any paragraph after it is the
+      // entry's own text, kept apart from the context line.
+      if (metaRead) {
+        const own: string[] = []
+        for (const line of block.lines) {
+          const stack = STACK.exec(line.text.trim())
+          if (stack) {
+            item.stack = stack[1]
+            lines.set(`${at}.stack`, line.n)
+            past = true
+          } else own.push(line.text.trim())
+        }
+        if (own.length) {
+          const key = past ? 'notes' : 'summary'
+          item[key] ??= []
+          if (!lines.has(`${at}.${key}`)) lines.set(`${at}.${key}`, block.lines[0].n)
+          lines.set(`${at}.${key}.${item[key].length}`, block.lines[0].n)
+          item[key].push(own.join(' '))
+        }
+        continue
+      }
+      metaRead = true
       for (const line of block.lines) {
         const t = line.text.trim()
         const stack = STACK.exec(t)

@@ -103,7 +103,8 @@ export function lintCv(text: string): Diagnostic[] {
   const cv = /** @type {Record<string, any>} */ (value)
   checkKeys(cv, '', ROOT_KEYS, 'a CV')
   if (isMap(cv.header)) checkKeys(cv.header, 'header', HEADER_KEYS, 'a header')
-  if (Array.isArray(cv.header?.contact)) checkTextList(cv.header.contact, 'header.contact')
+  if (Array.isArray(cv.header?.left)) checkTextList(cv.header.left, 'header.left')
+  if (Array.isArray(cv.header?.contact))checkTextList(cv.header.contact, 'header.contact')
 
   if (cv.sections !== undefined && !Array.isArray(cv.sections)) {
     say('sections', 'key', '`sections` has to be a list — start each one with `- type: …`.')

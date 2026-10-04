@@ -50,6 +50,7 @@ const KEY_INFO: Record<string, string> = {
   sections: 'The body of the CV, in the order it prints.',
   name: 'What this is called.',
   role: 'The line under your name.',
+  left: 'Plain lines under the role, kept in the left column of a split header.',
   contact: 'One line each — where you are, a number, some links.',
   lang: 'The language the CV is written in, as a tag — en, de, fr-CA. Screen readers read it in that voice.',
   type: 'Which of the seven kinds of section this is.',

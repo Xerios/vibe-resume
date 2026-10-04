@@ -89,8 +89,8 @@
   bottom: calc(var(--page-mb) / 2 - 5pt);
 }
 
-.page-header > :last-child,
-.page-footer > :last-child {
+.page-header> :last-child,
+.page-footer> :last-child {
   text-align: right;
 }
 
@@ -154,12 +154,23 @@
   border-bottom: 1.5pt solid var(--c-accent);
 }
 
-.cv-id > * + * {
+.cv-id>*+* {
   margin-top: 3pt;
 }
 
 .cv-head:is([data-style='centered'], [data-style='banner']) .cv-list.inline {
   justify-content: center;
+}
+
+.cv-head[data-style='split'] {
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18pt;
+}
+
+.cv-head[data-style='split'] .cv-contact {
+  text-align: right;
 }
 
 .cv-head[data-style='banner'] {
@@ -171,20 +182,24 @@
    Spacing is margins between siblings, written as three rules the PDF layout
    repeats: a title is followed by --sp-title, a kept block (an entry, a
    skill group) is set apart by --sp-entry, and anything else by --sp-para. */
-.cv-sec + .cv-sec {
+.cv-sec+.cv-sec {
   margin-top: var(--sp-section);
 }
 
-.cv-sec > * + * {
+.cv-sec>*+* {
   margin-top: var(--sp-para);
 }
 
-.cv-sec > .keep + *,
-.cv-sec > * + .keep {
+.cv-sec>p+p {
+  margin-top: var(--sp-para);
+}
+
+.cv-sec>.keep+*,
+.cv-sec>*+.keep {
   margin-top: var(--sp-entry);
 }
 
-.cv-sec > .sec-head + * {
+.cv-sec>.sec-head+* {
   margin-top: var(--sp-title);
 }
 
@@ -233,7 +248,7 @@
 
 /* ── Blocks ─────────────────────────────────────── */
 /* Between blocks, not after the decoration that leads some of them. */
-.cv-div > :not([aria-hidden]) + :not([aria-hidden]) {
+.cv-div> :not([aria-hidden])+ :not([aria-hidden]) {
   margin-top: var(--sp-item);
 }
 
@@ -245,9 +260,16 @@
   gap: 0 10pt;
 }
 
-.cv-row > .aside {
+.cv-row>.aside {
   flex: none;
   white-space: nowrap;
+}
+
+/* A meter's level as written, set beside the graphic. */
+.meter-label {
+  display: flex;
+  align-items: center;
+  gap: 6pt;
 }
 
 /* ── Frames ─────────────────────────────────────── */
@@ -277,7 +299,7 @@
   border-left: 0.75pt solid var(--c-line);
 }
 
-.cv-sec > .f-timeline:not(:last-child) > .tl-rail {
+.cv-sec>.f-timeline:not(:last-child)>.tl-rail {
   bottom: calc(-1 * var(--sp-entry));
 }
 
@@ -300,17 +322,17 @@
   list-style: none;
 }
 
-.cv-list > li + li {
+.cv-list>li+li {
   margin-top: var(--sp-item);
 }
 
-.cv-list > li > :not([aria-hidden]) + :not([aria-hidden]) {
+.cv-list>li> :not([aria-hidden])+ :not([aria-hidden]) {
   margin-top: 1pt;
 }
 
-.m-bullet > li,
-.m-dot > li,
-.m-dash > li {
+.m-bullet>li,
+.m-dot>li,
+.m-dash>li {
   position: relative;
   padding-left: var(--sp-indent);
 }
@@ -345,12 +367,12 @@
   flex-wrap: wrap;
 }
 
-.cv-list.inline > li + li {
+.cv-list.inline>li+li {
   margin-top: 0;
 }
 
 /* An item runs on in the line: its separator and its text side by side. */
-.cv-list.inline > li > * {
+.cv-list.inline>li>* {
   display: inline;
 }
 
@@ -359,7 +381,7 @@
   color: var(--c-faint);
 }
 
-.cv-contact .cv-list > li + li {
+.cv-contact .cv-list>li+li {
   margin-top: 0;
 }
 
@@ -451,14 +473,14 @@
   }
 
   .keep:not(.split),
-  .cv-list > li,
+  .cv-list>li,
   .chip {
     break-inside: avoid;
   }
 
   .sec-head,
-  .cv-div > :is(h3, .cv-row):first-child,
-  .split > h3:first-child + p {
+  .cv-div> :is(h3, .cv-row):first-child,
+  .split>h3:first-child+p {
     break-after: avoid;
   }
 

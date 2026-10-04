@@ -162,7 +162,14 @@
     <div class="cv-row">
       {@render text(node.main)}
       {#if node.aside.kind === 'Meter'}
-        {@render meter(node.aside)}
+        {#if node.aside.label}
+          <div class="aside meter-label">
+            {@render text(node.aside.label)}
+            {@render meter(node.aside)}
+          </div>
+        {:else}
+          {@render meter(node.aside)}
+        {/if}
       {:else}
         {@render text(node.aside, 'aside')}
       {/if}
@@ -206,6 +213,9 @@
         {#if model.header.role}
           {@render text(model.header.role)}
         {/if}
+        {#each model.header.left as line}
+          {@render text(line)}
+        {/each}
       </div>
       {#if model.header.contact}
         <div class="cv-contact">

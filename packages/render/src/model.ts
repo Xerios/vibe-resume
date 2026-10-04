@@ -51,7 +51,7 @@ type Run = import('./inline').Run
 export type Span = { role: string; runs: Run[]; src?: string; actual?: string }
 
 export type Text = { kind: 'H1' | 'H2' | 'H3' | 'P'; spans: Span[]; src?: string; align?: 'center' }
-export type Meter = { kind: 'Meter'; value: number; style: 'dots' | 'bars'; alt: string; src?: string }
+export type Meter = { kind: 'Meter'; value: number; style: 'dots' | 'bars'; alt: string; label?: Text; src?: string }
 export type Row = { kind: 'Row'; main: Text; aside: Text | Meter }
 export type Frame = 'card' | 'stripe' | 'timeline'
 
@@ -88,7 +88,7 @@ export interface Section {
 }
 export interface Model {
   lang: string
-  header: { style: string; name: Text; role: Text | null; contact: List | null }
+  header: { style: string; name: Text; role: Text | null; left: Text[]; contact: List | null }
   sections: Section[]
 }
 
@@ -136,20 +136,31 @@ export function buildModel(cv: any, look: { variants?: Record<string, string> } 
     if (role) role.align = 'center'
   }
 
-  const contact = list(h.contact)
+  // A split header keeps its left lines as plain text under the role and sets
+  // the contact block as a column; any other runs the left lines on into the
+  // contact line, one item to each part between ` · ` / ` | `.
+  const split = v.header === 'split'
+  const lines: { src: string; text: string }[] = []
+  list(h.left).forEach((line, i) => {
+    if (split) lines.push({ src: `header.left.${i}`, text: line })
+    else for (const part of String(line).split(/\s+[·|]\s+/)) if (part.trim()) lines.push({ src: `header.left.${i}`, text: part.trim() })
+  })
+  const left = split ? lines.map((l) => text('P', [{ role: 'contact', runs: contactRuns(l.text) }], l.src)) : []
+  const items = [...(split ? [] : lines), ...list(h.contact).map((line, i) => ({ src: `header.contact.${i}`, text: line }))]
   const header = {
     style: v.header,
     name,
     role,
-    contact: contact.length
+    left,
+    contact: items.length
       ? ({
           kind: 'L' as const,
-          display: 'inline' as const,
+          display: split ? ('block' as const) : ('inline' as const),
           marker: 'none' as const,
-          items: contact.map((line, i) => ({
+          items: items.map((it) => ({
             kind: 'LI' as const,
-            src: `header.contact.${i}`,
-            body: [text('P', [{ role: 'contact', runs: contactRuns(line) }])],
+            src: it.src,
+            body: [text('P', [{ role: 'contact', runs: contactRuns(it.text) }])],
           })),
         } as List)
       : null,
@@ -294,14 +305,17 @@ function levels(sec: any, path: string, ctx: Context): List {
         return { kind: 'LI', src: at, icon: null, body: [text('P', name)] }
       }
       const rating = levelRating(item)
+      const metered = (variant === 'dots' || variant === 'bars') && rating
       const aside: Text | Meter =
-        (variant === 'dots' || variant === 'bars') && rating
+        metered
           ? {
               kind: 'Meter',
               value: rating,
               style: variant,
               alt: `${textOf(level.spans.flatMap((s) => s.runs)) || 'Level'}: ${rating} of 5`,
               src: `${at}.level`,
+              // the level as written (A1, B2…) goes beside what draws it
+              label: level.spans.length ? level : undefined,
             }
           : level
       return { kind: 'LI', src: at, body: [row(text('P', name), aside)] }
@@ -380,6 +394,7 @@ function entry(item: any, at: string, ctx: Context): Div {
     meta.push(span('sub', item.sub, `${at}.sub`))
   }
   if (meta.length) blocks.push(text('P', meta, when.runs.length ? `${at}.dates` : `${at}.sub`))
+  list(item?.summary).forEach((p, j) => blocks.push(text('P', [span('body', p)], `${at}.summary.${j}`)))
   const bullets = list(item?.bullets)
   if (bullets.length) {
     blocks.push({
@@ -397,6 +412,8 @@ function entry(item: any, at: string, ctx: Context): Div {
       blocks.push(text('P', ctx.v.stack === 'plain' ? [line] : [lit('stackLabel', 'Stack: '), line], `${at}.stack`))
     }
   }
+
+  list(item?.notes).forEach((p, j) => blocks.push(text('P', [span('body', p)], `${at}.notes.${j}`)))
 
   const div: Div = { kind: 'Div', keep: true, src: at, body: blocks }
   if (frame) div.frame = frame

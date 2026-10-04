@@ -51,7 +51,7 @@ export function lintWriting(text: string, { value, lines }: Pick<SourceRead, 'va
 
   const check = (s: string, path: string, field: string, listItem: boolean, tense: Tense): Finding[] => {
     if (NOT_PROSE.has(field)) return []
-    if (path.startsWith('header.contact')) return personal(s)
+    if (/^header\.(contact|left)/.test(path)) return personal(s)
     if (field === 'dates') return dates(s)
     const found = [...prose(s), ...spelling(s)]
     if (path === 'header.role') found.push(...personal(s))

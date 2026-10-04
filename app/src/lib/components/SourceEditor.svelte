@@ -385,6 +385,13 @@
     view?.focus()
   }
 
+  /** Focus the editor with the whole source selected — Select All for the app as a whole. */
+  export function selectAll() {
+    if (!view) return
+    view.dispatch({ selection: { anchor: 0, head: view.state.doc.length } })
+    view.focus()
+  }
+
   /**
    * The document's top edge in the scroller's own coordinates. CodeMirror
    * measures line blocks from there, while `scrollTop` counts from the top of

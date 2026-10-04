@@ -176,3 +176,13 @@ describe('what is not a CV', () => {
     expect(read('Hello\n\n# Jo').diagnostics.map((d) => d.message)).toEqual([expect.stringMatching(/before the first heading/)])
   })
 })
+
+describe('an entry’s own paragraph', () => {
+  it('stays apart from the dates line above it', () => {
+    const { cv } = parse('## Experience\n\n### Independent Projects\n**2025.04–present** · Brussels\n\nTEST\n\n- BULLET\n')
+    const item = (cv as any).sections[0].items[0]
+    expect(item.sub).toBe('Brussels')
+    expect(item.summary).toEqual(['TEST'])
+    expect(item.bullets).toEqual(['BULLET'])
+  })
+})

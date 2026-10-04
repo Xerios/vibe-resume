@@ -662,14 +662,26 @@
       e.preventDefault()
       commands.printPDF()
     }
+    // Select All means the source, not the rendered sheet: the frame would
+    // otherwise select its own text, which is no use to anyone. Text fields
+    // and the editor keep their own.
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && (e.key === 'a' || e.key === 'A')) {
+      const target = asElement(e.target)
+      if (!target?.closest('#cm-wrap, input, textarea, [contenteditable="true"]')) {
+        e.preventDefault()
+        editor?.selectAll()
+      }
+    }
     // A restyle is a change in the document like an edit is, so Ctrl+Z has to
     // take one back from anywhere — the toolbar, the sheet, the popover. Inside
     // the editor it is CodeMirror's binding that pops the same stack, so this
-    // stays out of the way there rather than popping it twice.
-    if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+    // stays out of the way there rather than popping it twice. Ctrl+Y is the
+    // same redo, which the frame would otherwise swallow.
+    const key = e.key.toLowerCase()
+    if ((e.ctrlKey || e.metaKey) && (key === 'z' || (key === 'y' && !e.shiftKey))) {
       if (editorPane?.contains(/** @type {Node | null} */ (e.target))) return
       e.preventDefault()
-      if (e.shiftKey) cv.redo()
+      if (key === 'y' || e.shiftKey) cv.redo()
       else cv.undo()
     }
   }
