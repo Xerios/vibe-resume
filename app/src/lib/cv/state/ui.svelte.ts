@@ -71,6 +71,11 @@ export class UiState {
    */
   problems = $state.raw<Problem[]>([])
   /**
+   * Whether any of it is an error or a warning. Suggestions and hints alone
+   * aren't problems, and the UI shouldn't call them that.
+   */
+  hasProblems = $derived(this.problems.some((p) => p.severity === 'error' || p.severity === 'warning'))
+  /**
    * The app's colour scheme, mirrored into the preview frame: the gutter around
    * the sheet follows it, the sheet itself never does. Read from the same key
    * app.html's pre-paint script set the <html> attribute from.

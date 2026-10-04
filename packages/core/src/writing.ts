@@ -49,31 +49,36 @@ export function lintWriting(text: string, { value, lines }: Pick<SourceRead, 'va
   const place = locator(text, lines)
   const out: Diagnostic[] = []
 
-  const check = (s: string, path: string, field: string, listItem: boolean, tense: Tense): Finding[] => {
+  const check = (s: string, path: string, field: string, listItem: boolean, tense: Tense, sentences: boolean): Finding[] => {
     if (NOT_PROSE.has(field)) return []
     if (/^header\.(contact|left)/.test(path)) return personal(s)
     if (field === 'dates') return dates(s)
     const found = [...prose(s), ...spelling(s)]
     if (path === 'header.role') found.push(...personal(s))
     if (path === 'header.name' || /^sections\.\d+\.title$/.test(path)) found.push(...title(s, path === 'header.name'))
-    if (listItem && (field === 'bullets' || field === 'items')) found.push(...ending(s))
+    if (listItem && (field === 'bullets' || field === 'items')) found.push(...ending(s, sentences))
     if (listItem && field === 'bullets') found.push(...opening(s, tense))
     return found
   }
 
   const dated: Array<{ path: string; written: string; formats: string[] }> = []
 
-  const visit = (node: unknown, path: string, field: string, listItem: boolean, tense: Tense): void => {
+  /**
+   * `sentences`: whether the list a value sits in has an item long enough to be
+   * a sentence, so every item in it takes a full stop and the list reads alike.
+   */
+  const visit = (node: unknown, path: string, field: string, listItem: boolean, tense: Tense, sentences = false): void => {
     if (typeof node === 'string') {
       if (field === 'dates') dated.push({ path, written: node, formats: dateFormats(node) })
-      for (const f of check(node, path, field, listItem, tense)) {
+      for (const f of check(node, path, field, listItem, tense, sentences)) {
         const at = place(path, node, f.at, f.len)
         if (!at) continue
         const { exact, ...range } = at
         out.push({ ...range, severity: f.severity, source: 'writing', message: f.message, ...(exact && f.fix && { fixes: [f.fix] }) })
       }
     } else if (Array.isArray(node)) {
-      node.forEach((v, i) => visit(v, `${path}.${i}`, field, true, tense))
+      const long = node.some((v) => typeof v === 'string' && isLong(v.trim()))
+      node.forEach((v, i) => visit(v, `${path}.${i}`, field, true, tense, long))
     } else if (isMap(node)) {
       const own = Array.isArray(node.bullets) ? tenseOf(node.dates) : tense
       for (const [k, v] of Object.entries(node)) visit(v, path ? `${path}.${k}` : k, k, false, own)
@@ -207,8 +212,18 @@ const PROSE: Array<[RegExp, Severity, (m: RegExpExecArray) => string, ((m: strin
   // Recommended: a space between a number and its unit.
   [UNIT, 'info', (m) => `Put a space between a number and its unit: ‘${m[1]} ${m[2]}’.`, (_, m) => fix(`Write ‘${m[1]} ${m[2]}’`, `${m[1]} ${m[2]}`)],
   // Recommended: no spaces around a slash or a hyphen joining two things.
-  [/(?<=[\p{L}\p{N}])(?: +\/ *| *\/ +)(?=[\p{L}\p{N}])/gu, 'info', () => 'No spaces around a slash between alternatives: ‘A/B’.', () => fix('Close up the slash', '/')],
-  [/(?<=\p{L}) +-(?=\p{L})|(?<=\p{L})- +(?!(?:and|or|to)\b)(?=\p{L})/gu, 'info', () => 'No spaces around a hyphen joining words.', () => fix('Close up the hyphen', '-')],
+  [
+    /(?<=[\p{L}\p{N}])(?: +\/ *| *\/ +)(?=[\p{L}\p{N}])/gu,
+    'info',
+    () => 'No spaces around a slash between alternatives: ‘A/B’.',
+    () => fix('Close up the slash', '/'),
+  ],
+  [
+    /(?<=\p{L}) +-(?=\p{L})|(?<=\p{L})- +(?!(?:and|or|to)\b)(?=\p{L})/gu,
+    'info',
+    () => 'No spaces around a hyphen joining words.',
+    () => fix('Close up the hyphen', '-'),
+  ],
   // Dashes: a hyphen joins, an en dash spans, an em dash sets apart.
   [/(?<=\d) - (?=\d)/g, 'info', () => 'A range takes an en dash with no spaces: ‘2019–2021’.', () => fix('Use an en dash', '–')],
   [
@@ -245,13 +260,29 @@ function prose(raw: string): Finding[] {
 /** What may end a list item that isn't punctuation of its own: an ellipsis, or an abbreviation's full stop. */
 const KEPT_ENDING = /(?:\.\.\.|…|\b(?:etc|Inc|Ltd|Co|Corp|Jr|Sr|e\.g|i\.e|vs)\.)$/i
 
+/** How many words make a list item a long sentence rather than a fragment. */
+const LONG_ITEM_WORDS = 15
+
+/** A list item that runs to a long sentence, or to more than one sentence. */
+const isLong = (t: string): boolean => t.split(/\s+/).length >= LONG_ITEM_WORDS || /\p{L}[.!?] +\p{Lu}/u.test(t)
+
 /**
- * Should avoid: punctuation at the end of a list item.
+ * Should avoid: punctuation at the end of a short list item. A long one — a
+ * full sentence or a paragraph — should end with a full stop instead, and so
+ * should every other item in its list (`sentences`), short or not.
  */
-function ending(raw: string): Finding[] {
+function ending(raw: string, sentences: boolean): Finding[] {
   const t = raw.replace(/[\s*_`~]+$/, '')
   const last = t.at(-1) ?? ''
-  if (!/[.;,:!]/.test(last) || KEPT_ENDING.test(t)) return []
+  if (KEPT_ENDING.test(t)) return []
+  if (sentences || isLong(t)) {
+    if (/[.!?]/.test(last)) return []
+    const message = isLong(t) ? 'End a long list item with a full stop.' : 'This list is written in sentences: end each item with a full stop.'
+    if (/[;,:]/.test(last)) return [{ at: t.length - 1, len: 1, severity: 'info', message, fix: fix(`Replace the ‘${last}’ with ‘.’`, '.') }]
+    if (!last) return []
+    return [{ at: t.length - 1, len: 1, severity: 'info', message, fix: fix('Add a full stop', `${last}.`) }]
+  }
+  if (!/[.;,:!]/.test(last)) return []
   return [{ at: t.length - 1, len: 1, severity: 'info', message: `Leave the ‘${last}’ off the end of a list item.`, fix: fix(`Remove the ‘${last}’`, '') }]
 }
 

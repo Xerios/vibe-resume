@@ -17,7 +17,9 @@
  *     Methodologies: C, D          its methodologies, set out as a stack is
  *
  * The bold dates line is the one to write; a plain line that reads as dates,
- * with the line of context under it, is read too.
+ * with the line of context under it, is read too, and so is the place first
+ * with the dates last (`Place · **dates**`). Under a dates line that carries
+ * its place, a further line is the entry's description, not more place.
  *
  * A section's type is taken, in order, from an `<!-- type: … -->` comment
  * under its heading, from its title when the content fits (Skills, Languages,
@@ -83,6 +85,8 @@ const FIELDS = /\s+—\s+/
 const TIER = /^\*\*([^*]+?):?\*\*:?\s+(.*)$/
 /** An entry's `**dates** · place` line: the bold part, or a plain one, then what follows a `·` or `|`. */
 const META = /^(?:\*\*(.+?)\*\*|([^·|]+?))\s*(?:[·|]\s*(.*))?$/
+/** `Place · **dates**`: what comes before the last `·` or `|`, and the bold or plain part after it. */
+const META_LAST = /^(.+?)\s+[·|]\s+(\*\*[^*]+\*\*|[^·|]+?)\s*$/
 /** The label of a `Stack: …` or `Methodologies: …` line, in any of the ways it gets written. */
 export const LABEL = /^(?:\*\*|__)?(stack|tech(?:nologies)?|tools|methodolog(?:y|ies)|methods)(?::(?:\*\*|__)|(?:\*\*|__)?:)/i
 
@@ -102,7 +106,7 @@ export const DIRECTIVE_KEYS = {
 /** Section titles that say what a section is, when its content agrees. */
 const TITLE_TYPES: Array<[RegExp, string, (s: Section) => boolean]> = [
   [/summary|profile|about|objective/i, 'text', (s) => !s.children.length],
-  [/skill/i, 'groups', (s) => s.children.length > 0],
+  [/skill/i, 'groups', (s) => s.children.length > 0 || labelledList(s)],
   [/language/i, 'levels', (s) => onlyList(s)],
   [/certif|licen|award|course/i, 'records', (s) => onlyList(s)],
   [/interest|hobb/i, 'list', (s) => onlyList(s)],
@@ -111,6 +115,9 @@ const TITLE_TYPES: Array<[RegExp, string, (s: Section) => boolean]> = [
 ]
 
 const onlyList = (s: Section): boolean => !s.children.length && s.blocks.length > 0 && s.blocks.every((b) => b.kind === 'list')
+
+/** A list alone whose every item opens on a bold label — `- **Frontend:** Svelte, React` — a group to an item. */
+const labelledList = (s: Section): boolean => onlyList(s) && s.blocks.every((b) => b.kind === 'list' && b.items.every((it) => TIER.test(it.text)))
 
 const strip = (text: string): string => text.replace(/[*_`]/g, '').trim()
 
@@ -319,6 +326,21 @@ export function read(text: string): SourceRead {
           items.push(p.text)
         }
       }
+    } else if (type === 'groups' && !sec.children.length) {
+      // `- **Label:** rows`: the label is the group's title, the rest its one row.
+      for (const block of sec.blocks) {
+        if (block.kind !== 'list') continue
+        for (const it of block.items) {
+          const tier = TIER.exec(it.text)
+          const at = `${path}.${holds}.${items.length}`
+          holdsAt(it.line.n)
+          lines.set(at, it.line.n)
+          lines.set(`${at}.title`, it.line.n)
+          lines.set(`${at}.rows`, it.line.n)
+          lines.set(`${at}.rows.0`, it.line.n)
+          items.push(tier ? { title: tier[1].trim(), rows: [{ text: tier[2] }] } : { title: '', rows: [{ text: it.text }] })
+        }
+      }
     } else if (type === 'entries' || type === 'groups') {
       for (const child of sec.children) {
         const at = `${path}.${holds}.${items.length}`
@@ -394,13 +416,19 @@ export function read(text: string): SourceRead {
         continue
       }
       metaRead = true
+      // Once a line has given the dates and the place, what follows describes the entry.
+      let placed = false
+      const described: Line[] = []
       for (const line of block.lines) {
         const t = line.text.trim()
         const tail = labelled(t)
-        const meta = item.dates === undefined && item.sub === undefined ? META.exec(t) : null
+        const fresh = item.dates === undefined && item.sub === undefined
+        const meta = fresh ? META.exec(t) : null
         // Bold leading the first line is the dates, whatever they say; plain
         // text only when it reads as dates.
         const when = meta ? (meta[1] ?? (parseDates(strip(meta[2])) ? meta[2] : undefined)) : undefined
+        // Otherwise the dates may close the line, after the place — as long as they read as dates.
+        const last = fresh && when === undefined ? META_LAST.exec(t) : null
         if (tail) {
           item[tail.key] = tail.value
           lines.set(`${at}.${tail.key}`, line.n)
@@ -410,13 +438,28 @@ export function read(text: string): SourceRead {
           if (meta[3]) {
             item.sub = meta[3].trim()
             lines.set(`${at}.sub`, line.n)
+            placed = true
           }
+        } else if (last && parseDates(strip(last[2]))) {
+          item.dates = strip(last[2])
+          lines.set(`${at}.dates`, line.n)
+          item.sub = last[1].trim()
+          lines.set(`${at}.sub`, line.n)
+          placed = true
+        } else if (placed) {
+          described.push(line)
         } else if (item.sub === undefined) {
           item.sub = t
           lines.set(`${at}.sub`, line.n)
         } else {
           item.sub = `${item.sub} ${t}`
         }
+      }
+      if (described.length) {
+        item.summary ??= []
+        lines.set(`${at}.summary`, described[0].n)
+        lines.set(`${at}.summary.${item.summary.length}`, described[0].n)
+        item.summary.push(described.map((l) => l.text.trim()).join(' '))
       }
     }
     return item

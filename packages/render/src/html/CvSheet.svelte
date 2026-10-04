@@ -135,7 +135,7 @@
     <ul class="cv-chips" data-src={node.src}>
       {#each node.items as item}
         <li class="chip" data-src={item.src}>
-          {#if item.icon}{@render svg('chip-icon', 24, item.icon)}{/if}
+          {#if item.icon}{@render svg('logo', 24, item.icon)}{/if}
           {#each item.body as b}
             {@render block(b)}
           {/each}
@@ -148,6 +148,7 @@
         <li class={item.frame ? `f-${item.frame}` : undefined} data-src={item.src}>
           {#if node.display === 'inline' && i > 0}<span class="sep" aria-hidden="true">·</span>{/if}
           {#if node.marker !== 'none'}{@render svg('mark', MARKS[node.marker].box, [MARKS[node.marker].d])}{/if}
+          {#if item.icon}{@render svg('logo', 24, item.icon)}{/if}
           {#each item.body as b}
             {@render block(b)}
           {/each}
@@ -177,7 +178,7 @@
   {:else if node.kind === 'L'}
     {@render list(node)}
   {:else if node.kind === 'Div'}
-    <div class="cv-div {node.frame ? `f-${node.frame}` : ''}" class:keep={node.keep} class:split={node.split} data-src={node.src}>
+    <div class="cv-div {node.frame ? `f-${node.frame}` : ''}" class:keep={node.keep} class:split={node.split} class:hang={node.hang} data-src={node.src}>
       {#if node.frame === 'timeline'}<span class="tl-rail" aria-hidden="true"></span><span class="tl-dot" aria-hidden="true"></span>{/if}
       {#each node.body as b}
         {@render block(b)}

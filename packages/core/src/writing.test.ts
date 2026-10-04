@@ -78,6 +78,23 @@ describe('punctuation', () => {
   it('leaves the full stop off a list item, but not off an abbreviation', () => {
     expect(underlined(bullets('', 'Shipped it.', 'Hired designers, engineers, etc.', 'Shipped **this**.'))).toEqual(['.', '.'])
   })
+
+  it('wants a full stop at the end of a long list item', () => {
+    const long = 'Led the migration of the billing platform to a new event-driven architecture across four teams'
+    expect(bullets('', `${long}.`, 'Shipped it. Then it scaled.')).toEqual([])
+    const found = bullets('', long, 'Shipped it. Then it scaled;')
+    expect(underlined(found)).toEqual(['s', ';'])
+    expect(found.map((f) => f.message)).toEqual(['End a long list item with a full stop.', 'End a long list item with a full stop.'])
+  })
+
+  it('wants a full stop on every item of a list that has a long one', () => {
+    const long = 'Led the migration of the billing platform to a new event-driven architecture across four teams.'
+    expect(bullets('', 'Shipped it.', long)).toEqual([])
+    const found = bullets('', 'Shipped it', long, 'Hired two engineers;', 'Hired designers, engineers, etc.')
+    expect(underlined(found)).toEqual(['t', ';'])
+    expect(found[0].message).toBe('This list is written in sentences: end each item with a full stop.')
+    expect(underlined(bullets('', 'Shipped it.', 'Hired two engineers'))).toEqual(['.'])
+  })
 })
 
 describe('grammar', () => {
@@ -207,7 +224,13 @@ describe('fixes', () => {
   it('puts a finished role’s verb in the past tense', () => {
     const cv = { dates: '2016–2020', bullets: ['Develop the API.'] }
     const text = 'dates: 2016–2020\n- Develop the API.'
-    const found = lintWriting(text, { value: cv, lines: new Map([['dates', 1], ['bullets.0', 2]]) })
+    const found = lintWriting(text, {
+      value: cv,
+      lines: new Map([
+        ['dates', 1],
+        ['bullets.0', 2],
+      ]),
+    })
     expect(found.map((d) => d.fixes?.[0])).toEqual([
       { label: 'Write ‘Developed’', insert: 'Developed' },
       { label: 'Remove the ‘.’', insert: '' },

@@ -34,12 +34,15 @@
     class:selected={ui.problemsOpen}
     onclick={commands.toggleProblems}
     aria-pressed={ui.problemsOpen}
-    use:shortcut={['b', ui.problemsOpen ? 'Hide the problems' : 'List the problems, with their fixes']}
+    use:shortcut={[
+      'b',
+      `${ui.problemsOpen ? 'Hide' : 'List'} the ${ui.hasProblems ? 'problems' : 'suggestions'}${ui.problemsOpen ? '' : ', with their fixes'}`,
+    ]}
   >
     <span class="eb-count error"><Icon icon={IconCircleX} width="14" height="14" />{errors}</span>
     <span class="eb-count warning"><Icon icon={IconTriangleAlert} width="14" height="14" />{warnings}</span>
     <span class="eb-count info"><Icon icon={IconInfo} width="14" height="14" />{suggestions}</span>
-    <span class="ds-txt">Pro<u>b</u>lems</span>
+    {#if ui.hasProblems}<span class="ds-txt">Pro<u>b</u>lems</span>{:else}<span class="ds-txt">Suggestions</span>{/if}
   </button>
 
   <div class="ds-spacer"></div>

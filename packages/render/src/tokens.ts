@@ -152,8 +152,12 @@ export const DECOR = {
   meterGap: 2.5,
   barW: 48,
   barH: 4,
-  /** a chip's logo */
+  /** the room a logo takes in its line, and how far past that it is drawn on
+      every side, so it reads larger without moving anything */
   icon: 9,
+  iconBleed: 1,
+  /** the space between a skill group's name and its rows */
+  hangGap: 10,
   /** the padding round a boxed title */
   boxPadX: 6,
   boxPadY: 3,

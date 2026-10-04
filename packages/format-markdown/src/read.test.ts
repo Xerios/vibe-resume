@@ -29,6 +29,20 @@ describe('section types', () => {
     expect(typeOf('## Open Source\n\n- [kit](https://x.dev) — ★ 12 — A kit')).toBe('table')
   })
 
+  it('reads a skills list of `**Label:** …` items as a group per item', () => {
+    const text = '# Jo\n\n## Skills\n\n- **Languages:** TypeScript, SQL\n- **Backend:** Node.js, Hono\n\n---\n'
+    const { cv, lines } = parse(text)
+    expect(cv?.sections?.[0]).toMatchObject({
+      type: 'groups',
+      blocks: [
+        { title: 'Languages', rows: [{ text: 'TypeScript, SQL' }] },
+        { title: 'Backend', rows: [{ text: 'Node.js, Hono' }] },
+      ],
+    })
+    expect(lines?.get('sections.0.blocks.1.rows.0')).toBe(lineOf(text, 'Backend'))
+    expect(typeOf('## Skills\n\n- **Languages:** TypeScript\n- Docker')).toBe('list')
+  })
+
   it('keeps a list of projects under an open-source title a list', () => {
     expect(typeOf('## Projects & Open Source\n\n- **Kit** — A kit\n- More on GitHub')).toBe('list')
   })
@@ -101,7 +115,17 @@ Stack: Node.js, Koa, Prometheus, Angular`
   })
 
   it('does not take a bold phrase later in an entry for its dates', () => {
-    expect(entry('**2020** · Ghent\n**Key work:** the API')).toMatchObject({ dates: '2020', sub: 'Ghent **Key work:** the API' })
+    expect(entry('**2020** · Ghent\n**Key work:** the API')).toMatchObject({ dates: '2020', sub: 'Ghent', summary: ['**Key work:** the API'] })
+  })
+
+  it('reads the place first and the dates last, and the line under them as the description', () => {
+    expect(entry('Brussels (remote) · **July 2019 – April 2025**\nReal-time analytics SaaS\nas a PWA')).toMatchObject({
+      dates: 'July 2019 – April 2025',
+      sub: 'Brussels (remote)',
+      summary: ['Real-time analytics SaaS as a PWA'],
+    })
+    expect(entry('Brussels · 2019 – 2025')).toMatchObject({ dates: '2019 – 2025', sub: 'Brussels' })
+    expect(entry('Brussels · **Remote**')).toMatchObject({ sub: 'Brussels · **Remote**' })
   })
 
   it('takes a stack line straight after the bullets as the stack, not as more bullet', () => {

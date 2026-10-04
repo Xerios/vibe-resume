@@ -49,7 +49,7 @@ describe('buildModel', () => {
   })
 
   it('makes an entry a line of who and what, a line of when and where, then bullets and the stack', () => {
-    const job = buildModel(cv).sections[2].body[0] as import('./model').Div
+    const job = buildModel(cv, { variants: { stack: 'line', dates: 'as-written' } }).sections[2].body[0] as import('./model').Div
     expect(job.keep).toBe(true)
     expect(job.body.map((b: import('./model').Block) => b.kind)).toEqual(['H3', 'P', 'L', 'P'])
     expect(line(job.body[0])).toBe('Acme Corp — Senior Full-Stack Engineer')
@@ -60,15 +60,40 @@ describe('buildModel', () => {
   it("sets an entry's methodologies out the way it sets its stack", () => {
     const job = (v: Record<string, string>) =>
       buildModel({ sections: [{ type: 'entries', items: [{ title: 'Dev', stack: 'Go', methodologies: 'Scrum, TDD' }] }] }, { variants: v }).sections[0].body[0] as import('./model').Div
-    expect(line(job({}).body.at(-1) as import('./model').Block)).toBe('Methodologies: Scrum, TDD')
+    expect(line(job({ stack: 'line' }).body.at(-1) as import('./model').Block)).toBe('Methodologies: Scrum, TDD')
     expect((job({ stack: 'chips' }).body.at(-1) as import('./model').List).display).toBe('chips')
     expect(job({ stack: 'none' }).body.map((b: import('./model').Block) => b.kind)).toEqual(['H3'])
   })
 
-  it("gives skills and plain lists round bullets, and an entry's bullets their own", () => {
+  it('hangs each skill group name beside its rows, run on in one line', () => {
+    const skills = (v: Record<string, string>) => buildModel(cv, { variants: v }).sections[1].body
+    const [ledger] = skills({}) as import('./model').Div[]
+    expect(ledger.hang).toBe(true)
+    const group = ledger.body[0] as import('./model').Div
+    expect(group).toMatchObject({ keep: true, src: 'sections.1.blocks.0' })
+    expect(line(group.body[0])).toBe('Full-Stack Core')
+    expect(line(group.body[1])).toBe('Expert TypeScript/JavaScript (10+ yrs), Node.js, HTML5, CSS/Sass · React, Svelte/SvelteKit; Express, Fastify, NestJS · REST, GraphQL, WebSockets; SPA, SSR')
+
+    const logos = ((skills({ skills: 'logos' })[0] as import('./model').Div).body[0] as import('./model').Div).body[1] as import('./model').List
+    expect(logos).toMatchObject({ display: 'inline', marker: 'none' })
+    expect(logos.items.map((i) => line(i.body[0]))).toContain('Node.js')
+    expect(logos.items.find((i) => line(i.body[0]) === 'Node.js')?.icon?.length).toBeGreaterThan(0)
+
+    expect(line(skills({ skills: 'inline' })[0])).toMatch(/^Full-Stack Core: Expert TypeScript/)
+  })
+
+  it('runs compact certificates on in one line, each with its issuer and date', () => {
+    const certs = (v: Record<string, string>) => buildModel(cv, { variants: v }).sections[5].body[0] as import('./model').List
+    expect(certs({ certifications: 'rows' }).display).toBe('block')
+    const compact = certs({})
+    expect(compact.display).toBe('inline')
+    expect(line(compact.items[1].body[0])).toBe('Certified Kubernetes Administrator, The Linux Foundation, 2022')
+    const bare = buildModel({ sections: [{ type: 'records', items: [{ name: 'MCP' }, { name: 'C# Specialist' }] }] }, {})
+    expect((bare.sections[0].body[0] as import('./model').List).items.map((i) => line(i.body[0]))).toEqual(['MCP', 'C# Specialist'])
+  })
+
+  it("gives plain lists round bullets, and an entry's bullets their own", () => {
     const m = buildModel(cv)
-    const group = m.sections[1].body[0] as import('./model').Div
-    expect((group.body[1] as import('./model').List).marker).toBe('dot')
     const interests = buildModel(cv, { variants: { list: 'lines' } }).sections[7].body[0] as import('./model').List
     expect(interests.marker).toBe('dot')
     const job = m.sections[2].body[0] as import('./model').Div
@@ -93,7 +118,7 @@ describe('buildModel', () => {
 
   it('turns block variants into what the renderers draw', () => {
     const m = buildModel(cv, {
-      variants: { header: 'banner', sectionHead: 'numbered', entry: 'timeline', skills: 'chips', stack: 'chips', languages: 'dots', certifications: 'cards' },
+      variants: { header: 'banner', sectionHead: 'numbered', entry: 'timeline', skills: 'logos', stack: 'chips', languages: 'dots', certifications: 'cards' },
     })
     expect(m.header.style).toBe('banner')
     expect(m.header.name.align).toBe('center')
@@ -126,7 +151,7 @@ describe('buildModel', () => {
   it("falls back to the default variant for an id it doesn't know", () => {
     const m = buildModel(cv, { variants: { entry: 'nope' } })
     const job = m.sections[2].body[0] as import('./model').Div
-    expect(job.frame).toBeUndefined()
+    expect(job.frame).toBe('timeline')
   })
 })
 
@@ -147,7 +172,7 @@ describe('dates', () => {
   })
 
   it("prints a value it can't read as typed, claiming nothing", () => {
-    const m = buildModel({ sections: [{ type: 'records', items: [{ name: 'X', dates: 'Summer 2019' }] }] }, { variants: { dates: 'long' } })
+    const m = buildModel({ sections: [{ type: 'records', items: [{ name: 'X', dates: 'Summer 2019' }] }] }, { variants: { dates: 'long', certifications: 'rows' } })
     const list = m.sections[0].body[0] as import('./model').List
     const row = list.items[0].body[0] as import('./model').Row
     const span = (row.aside as import('./model').Text).spans[0]

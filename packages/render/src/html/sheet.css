@@ -322,6 +322,33 @@
   background: var(--c-paper);
 }
 
+/* ── Hanging names ──────────────────────────────
+   Skill groups as one grid: their names in a column at the left as wide as
+   the longest, each group's rows beside its name. A group is a row of it
+   through subgrid, so it stays a box the paginator can move whole. */
+.cv-div.hang {
+  display: grid;
+  grid-template-columns: fit-content(32%) minmax(0, 1fr);
+  gap: var(--sp-para) var(--d-hangGap);
+}
+
+.cv-div.hang>.cv-div {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: baseline;
+}
+
+.cv-div.hang>.cv-div> :not(h3) {
+  grid-column: 2;
+}
+
+/* The grid's gap spaces the groups, and a name and its rows share a line. */
+.cv-div.hang>.cv-div,
+.cv-div.hang>.cv-div>* {
+  margin-top: 0;
+}
+
 /* ── Lists ──────────────────────────────────────
    The marks are decoration: drawn here by CSS, and as artifacts in the PDF,
    so neither reads them as text. */
@@ -413,11 +440,19 @@
   line-height: 1.25;
 }
 
-.chip-icon {
+/* A logo, in a chip or a run-on list. It is drawn past the room it takes by
+   the same amount on every side, so it reads larger without moving anything. */
+.logo {
   flex: none;
-  width: var(--d-icon);
-  height: var(--d-icon);
+  width: calc(var(--d-icon) + 2 * var(--d-iconBleed));
+  height: calc(var(--d-icon) + 2 * var(--d-iconBleed));
+  margin: calc(-1 * var(--d-iconBleed));
   fill: var(--c-deep);
+}
+
+.cv-list.inline .logo {
+  vertical-align: middle;
+  margin-right: calc(var(--d-iconGap) - var(--d-iconBleed));
 }
 
 /* ── Meters ─────────────────────────────────────

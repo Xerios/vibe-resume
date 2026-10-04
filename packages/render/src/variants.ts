@@ -30,9 +30,9 @@ export const SLOTS: Slot[] = [
     id: 'header',
     name: 'Header',
     variants: [
+      { id: 'split', name: 'Split', hint: 'Name and role at the left, contact in a column at the right' },
       { id: 'stacked', name: 'Stacked', hint: 'Name over the contact line, both hard left' },
       { id: 'centered', name: 'Centred', hint: 'Name, role and contact down the middle' },
-      { id: 'split', name: 'Split', hint: 'Name and role at the left, contact in a column at the right' },
       { id: 'banner', name: 'Banner', hint: 'A masthead — the name in capitals between two rules' },
     ],
   },
@@ -40,11 +40,11 @@ export const SLOTS: Slot[] = [
     id: 'sectionHead',
     name: 'Section title',
     variants: [
+      { id: 'double', name: 'Double', hint: 'Two hairlines trailing every heading' },
       { id: 'ruled', name: 'Ruled', hint: 'A rule trailing every heading' },
       { id: 'ruled-both', name: 'Ruled both', hint: 'A rule either side, so the title centres' },
       { id: 'dotted', name: 'Dotted', hint: 'The trailing rule drawn as dots' },
       { id: 'dashed', name: 'Dashed', hint: 'The trailing rule broken into dashes' },
-      { id: 'double', name: 'Double', hint: 'Two hairlines trailing every heading' },
       { id: 'plain', name: 'Plain', hint: 'No rule — a small tracked-out label' },
       { id: 'boxed', name: 'Boxed', hint: 'The title in an outlined box, no rule' },
       { id: 'numbered', name: 'Numbered', hint: '01 — sections counted as they come' },
@@ -54,17 +54,17 @@ export const SLOTS: Slot[] = [
     id: 'summary',
     name: 'Summary',
     variants: [
+      { id: 'lede', name: 'Lede', hint: 'The opening paragraph set larger' },
       { id: 'plain', name: 'Plain', hint: 'Paragraphs across the full measure' },
       { id: 'centered', name: 'Centred', hint: 'Pulled in from both margins and centred' },
-      { id: 'lede', name: 'Lede', hint: 'The opening paragraph set larger' },
     ],
   },
   {
     id: 'entry',
     name: 'Entry',
     variants: [
-      { id: 'plain', name: 'Plain', hint: 'Organisation and title, then dates and place, bullets under' },
       { id: 'timeline', name: 'Timeline', hint: 'Hung off a vertical rail, a dot per entry' },
+      { id: 'plain', name: 'Plain', hint: 'Organisation and title, then dates and place, bullets under' },
       { id: 'card', name: 'Card', hint: 'Each role in an outlined box of its own' },
       { id: 'stripe', name: 'Stripe', hint: 'Each entry against a thick accent rule' },
       { id: 'minimal', name: 'Minimal', hint: 'Dashes for bullets, nothing else' },
@@ -82,9 +82,9 @@ export const SLOTS: Slot[] = [
     id: 'dates',
     name: 'Dates',
     variants: [
+      { id: 'long', name: 'March 2020', hint: 'Months spelled out' },
       { id: 'as-written', name: 'As written', hint: 'Each date the way the source has it' },
       { id: 'short', name: 'Mar 2020', hint: 'Months as three letters' },
-      { id: 'long', name: 'March 2020', hint: 'Months spelled out' },
       { id: 'numeric', name: '03/2020', hint: 'Month and year in figures' },
       { id: 'iso', name: '2020-03', hint: 'Year first, as ISO 8601 has it' },
     ],
@@ -93,18 +93,17 @@ export const SLOTS: Slot[] = [
     id: 'skills',
     name: 'Skills',
     variants: [
-      { id: 'stacked', name: 'Stacked', hint: 'One group under another, its rows beneath its name' },
+      { id: 'ledger', name: 'Ledger', hint: 'Group names in a column at the left, the rows running on beside each' },
       { id: 'inline', name: 'Inline', hint: 'One paragraph per group, its rows running on after the name' },
-      { id: 'cards', name: 'Cards', hint: 'Every group in an outlined box of its own' },
-      { id: 'chips', name: 'Chips', hint: 'Every skill a chip, with its logo where there is one' },
+      { id: 'logos', name: 'Logos', hint: 'The ledger, every skill with its logo where there is one' },
     ],
   },
   {
     id: 'stack',
     name: 'Stack',
     variants: [
-      { id: 'line', name: 'Line', hint: 'Stack: one tool after another' },
       { id: 'chips', name: 'Chips', hint: 'A chip per tool, each with its logo' },
+      { id: 'line', name: 'Line', hint: 'Stack: one tool after another' },
       { id: 'plain', name: 'Plain', hint: 'The same line without the label' },
       { id: 'none', name: 'None', hint: 'Hidden — the source keeps its tools' },
     ],
@@ -122,19 +121,19 @@ export const SLOTS: Slot[] = [
     id: 'languages',
     name: 'Languages',
     variants: [
+      { id: 'bars', name: 'Bars', hint: 'A bar the level fills its share of' },
       { id: 'rows', name: 'Rows', hint: 'Name and level, one to a row' },
       { id: 'pills', name: 'Pills', hint: 'A pill per language, its level inside it' },
       { id: 'dots', name: 'Dots', hint: 'A five-dot meter read from the level' },
-      { id: 'bars', name: 'Bars', hint: 'A bar the level fills its share of' },
     ],
   },
   {
     id: 'certifications',
     name: 'Certificates',
     variants: [
+      { id: 'compact', name: 'Compact', hint: 'All run on in one line, the issuer and date after each name' },
       { id: 'rows', name: 'Rows', hint: 'One a line, the date out at the right' },
       { id: 'cards', name: 'Cards', hint: 'Every certificate in an outlined box of its own' },
-      { id: 'compact', name: 'Compact', hint: 'One line each, the issuer following the name' },
     ],
   },
 ]

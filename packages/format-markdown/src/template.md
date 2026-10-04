@@ -1,9 +1,8 @@
 # John Doe
 
 Senior Full-Stack Engineer · 10+ years
+Springfield, USA | +1 555 010 1234
 
-- Springfield, USA
-- +1 555 010 1234
 - john.doe@example.com
 - https://github.com/example
 - https://linkedin.com/in/example

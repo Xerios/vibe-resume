@@ -42,7 +42,7 @@
      edit, so a single undo puts them all back. -->
 <section id="problems" aria-labelledby="problems-title">
   <header class="pb-head">
-    <h2 id="problems-title">Problems</h2>
+    <h2 id="problems-title">{ui.hasProblems ? 'Problems' : 'Suggestions'}</h2>
     {#each counts as c (c.severity)}
       <span class="pb-count {c.severity}" title="{c.n} {NAMES[c.severity].toLowerCase()}{c.n === 1 ? '' : 's'}">
         <Icon icon={ICONS[c.severity]} width="14" height="14" />
@@ -54,7 +54,7 @@
       <Icon icon={IconWand} width="16" height="16" />
       <span class="ds-txt">Fix all{fixable.length ? ` (${fixable.length})` : ''}</span>
     </button>
-    <button class="ds-icon-btn compact" aria-label="Close problems" onclick={commands.toggleProblems}>
+    <button class="ds-icon-btn compact" aria-label="Close {ui.hasProblems ? 'problems' : 'suggestions'}" onclick={commands.toggleProblems}>
       <Icon icon={IconX} width="16" height="16" />
     </button>
   </header>

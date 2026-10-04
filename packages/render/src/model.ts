@@ -18,14 +18,15 @@
  *   in words as its alternative text.
  *
  * Presentation reaches the sheet as a small, fixed set of properties:
- * - `frame`, `keep` and `split` on a group
+ * - `frame`, `keep`, `split` and `hang` on a group
  * - `display` and `marker` on a list
  * - `align` on text
  * - `head` on a section and `style` on the header
  *
  * Everything is set in one column, top to bottom. Nothing is placed beside
- * anything else but a heading's dates, so a PDF parser that reads by position
- * reads the CV in the order it is written.
+ * anything else but a heading's dates and a skill group's name, which starts
+ * the line its rows start on, so a PDF parser that reads by position reads the
+ * CV in the order it is written.
  *
  * Every node that stands for a source value carries the value's path as `src`,
  * which is what the preview stamps on its elements as `data-src` so the panes
@@ -73,9 +74,10 @@ export interface Item {
  * A group of blocks. `keep` asks the PDF not to split it across a page, as the
  * print CSS asks of the same things. `split` lets a kept entry break between
  * its parts after all, its heading going with the first of them; it is still
- * spaced as an entry.
+ * spaced as an entry. `hang` sets the headings of the groups in it in a
+ * column at the left, each group's body beside its heading.
  */
-export type Div = { kind: 'Div'; body: Block[]; keep?: boolean; split?: boolean; frame?: Frame; src?: string }
+export type Div = { kind: 'Div'; body: Block[]; keep?: boolean; split?: boolean; hang?: boolean; frame?: Frame; src?: string }
 export type Block = Text | Row | List | Div
 export interface Section {
   kind: 'Sect'
@@ -230,46 +232,45 @@ function skills(sec: any, path: string, ctx: Context): Block[] {
   const variant = ctx.v.skills
   const groups = list(sec.blocks).map((b, i) => ({ b, at: `${path}.blocks.${i}` }))
 
-  if (variant === 'inline') {
-    return groups.map(({ b, at }) => {
-      const spans: Span[] = [span('blockTitle', b?.title, `${at}.title`)]
-      list(b?.rows).forEach((r, j) => {
-        spans.push(lit('row', j === 0 ? ': ' : ' · '))
-        if (r?.tier) spans.push(span('tier', r.tier), lit('row', ' '))
-        spans.push(span('row', r?.text, `${at}.rows.${j}`))
-      })
-      return text('P', spans, at)
+  /** A group's rows run on in one line, ` · ` between them, each after its tier. */
+  const rows = (b: any, at: string, lead: string): Span[] => {
+    const spans: Span[] = []
+    list(b?.rows).forEach((r, j) => {
+      if (j > 0 || lead) spans.push(lit('row', j === 0 ? lead : ' · '))
+      if (r?.tier) spans.push(span('tier', r.tier), lit('row', ' '))
+      spans.push(span('row', r?.text, `${at}.rows.${j}`))
     })
+    return spans
   }
 
-  return groups.map(({ b, at }) => {
-    const title = text('H3', [span('blockTitle', b?.title)], `${at}.title`)
-    const rest: Block[] =
-      variant === 'chips'
-        ? [
-            chips(
-              list(b?.rows).flatMap((r) => techs(r?.text)),
-              `${at}.rows`,
-              'tag',
-            ),
-          ]
-        : [
-            {
+  if (variant === 'inline') {
+    return groups.map(({ b, at }) => text('P', [span('blockTitle', b?.title, `${at}.title`), ...rows(b, at, ': ')], at))
+  }
+
+  // Ledger and Logos: the group names hang in a column at the left, each
+  // group's rows running on beside its name. The name starts the line its rows
+  // start on, so the line still reads name first.
+  const hung: Div = {
+    kind: 'Div',
+    hang: true,
+    body: groups.map(({ b, at }) => {
+      const title = text('H3', [span('blockTitle', b?.title)], `${at}.title`)
+      const rest: Block =
+        variant === 'logos'
+          ? {
               kind: 'L',
-              display: 'block',
-              marker: 'dot',
+              display: 'inline',
+              marker: 'none',
               src: `${at}.rows`,
-              items: list(b?.rows).map((r, j) => ({
-                kind: 'LI',
-                src: `${at}.rows.${j}`,
-                body: [text('P', r?.tier ? [span('tier', r.tier), lit('row', ' · '), span('row', r.text)] : [span('row', r?.text)])],
-              })),
-            },
-          ]
-    const div: Div = { kind: 'Div', keep: true, src: at, body: title.spans.length ? [title, ...rest] : rest }
-    if (variant === 'cards') div.frame = 'card'
-    return div
-  })
+              items: list(b?.rows)
+                .flatMap((r) => techs(r?.text))
+                .map((t) => ({ kind: 'LI', icon: iconPaths(textOf(runs(t))), body: [text('P', [span('row', t)])] })),
+            }
+          : text('P', rows(b, at, ''), `${at}.rows`)
+      return { kind: 'Div', keep: true, src: at, body: title.spans.length ? [title, rest] : [rest] }
+    }),
+  }
+  return [hung]
 }
 
 function chips(items: unknown[], src: string, role: string, icons = true): List {
@@ -335,23 +336,27 @@ function levels(sec: any, path: string, ctx: Context): List {
 
 function records(sec: any, path: string, ctx: Context): List {
   const variant = ctx.v.certifications
+  const compact = variant === 'compact'
   return {
     kind: 'L',
-    display: 'block',
+    // Compact runs the certificates on in one line, each followed by its
+    // issuer, note and date.
+    display: compact ? 'inline' : 'block',
     marker: 'none',
     items: list(sec.items).map((item, i) => {
       const at = `${path}.items.${i}`
       const name = span('itemName', item?.name ?? item?.title, `${at}.name`)
-      const dates = text('P', [dateSpan(item?.dates, `${at}.dates`, ctx.v.dates)])
+      const when = dateSpan(item?.dates, `${at}.dates`, ctx.v.dates)
+      const dates = text('P', [when])
       const meta = [span('issuer', item?.issuer, `${at}.issuer`)]
       if (item?.issuer && item?.note) meta.push(lit('meta', ' · '))
       meta.push(span('meta', item?.note, `${at}.note`))
 
       let blocks: Block[]
-      if (variant === 'compact') {
+      if (compact) {
         const line = [name]
-        if (!empty(meta)) line.push(lit('meta', ' · '), ...meta)
-        blocks = [row(text('P', line), dates)]
+        for (const part of [meta, when.runs.length ? [when] : []]) if (!empty(part)) line.push(lit('meta', ', '), ...part)
+        blocks = [text('P', line)]
       } else {
         blocks = [row(text('P', [name]), dates), ...(empty(meta) ? [] : [text('P', meta)])]
       }

@@ -75,6 +75,20 @@ describe('lines read for more than their markdown', () => {
     ])
   })
 
+  it('marks the dates at the end of the line, after the place', () => {
+    const doc = '# Jo\n## Work\n### Acme\nBrussels · **July 2019 – April 2025**\n'
+    expect(paint(doc)).toEqual([
+      '# Jo=heading',
+      '## Work=heading',
+      '### Acme=heading',
+      '**=punctuation',
+      'July 2019=number strong',
+      ' – =strong',
+      'April 2025=number strong',
+      '**=punctuation',
+    ])
+  })
+
   it('marks the label of a stack or methodologies line, in the body only', () => {
     const doc = '# Jo\n- Stack: Go\n## Work\n### Acme\nStack: Go, Rust\n- **Methodologies:** Scrum\n'
     expect(paint(doc)).toEqual([

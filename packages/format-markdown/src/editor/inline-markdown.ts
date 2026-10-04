@@ -241,7 +241,9 @@ export function dateRuns(text: string, from = 0, to = text.length): Run[] {
  * An entry's dates line — `**03/2020–Present** · Place` — as runs: the dates
  * through `dateRuns`, bold or not, and whatever follows as any other text. As
  * in read.ts, bold leading the line is the dates whatever it says, and a plain
- * line only counts when the part before its `·` or `|` reads as dates.
+ * line only counts when the part before its `·` or `|` reads as dates. Failing
+ * both, the part after the last `·` or `|` is the dates when it reads as them:
+ * `Place · **July 2019 – April 2025**`.
  */
 export function metaRuns(text: string, from = 0, to = text.length): Run[] {
   const slice = text.slice(from, to)
@@ -260,6 +262,18 @@ export function metaRuns(text: string, from = 0, to = text.length): Run[] {
   }
   const sep = slice.search(/[·|]/)
   const end = sep < 0 ? to : from + sep
-  if (!parseDates(text.slice(from, end).replace(/[*_`]/g, ''))) return inlineRuns(text, from, to)
-  return [...dateRuns(text, from, end), ...inlineRuns(text, end, to)]
+  if (parseDates(text.slice(from, end).replace(/[*_`]/g, ''))) return [...dateRuns(text, from, end), ...inlineRuns(text, end, to)]
+  const last = /[·|]\s*(\*\*)?([^·|*]+?)(\*\*)?\s*$/.exec(slice)
+  if (!last || !!last[1] !== !!last[3] || !parseDates(last[2])) return inlineRuns(text, from, to)
+  const open = from + last.index + last[0].indexOf(last[2]) - (last[1] ? 2 : 0)
+  const body = open + (last[1] ? 2 : 0)
+  const close = body + last[2].length
+  const out: Run[] = [...inlineRuns(text, from, open)]
+  if (last[1]) {
+    out.push({ from: open, to: body, token: 'cvMdMark' })
+    for (const r of dateRuns(text, body, close)) out.push({ ...r, token: join(r.token, 'cvMdStrong') })
+    out.push({ from: close, to: close + 2, token: 'cvMdMark' })
+    out.push(...inlineRuns(text, close + 2, to))
+  } else out.push(...dateRuns(text, body, close), ...inlineRuns(text, close, to))
+  return out
 }
