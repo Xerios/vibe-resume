@@ -113,7 +113,7 @@
     // A copy that never reloads never updates, so the status bar says when one is due.
     void swUpdate.start()
 
-    // An installed copy is registered for .yaml/.yml/.md, and files opened from the OS
+    // An installed copy is registered for .md, and files opened from the OS
     // arrive through here rather than as a navigation.
     window.launchQueue?.setConsumer(async ({ files: handles }) => {
       for (const handle of handles) {

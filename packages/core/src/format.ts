@@ -1,9 +1,8 @@
 /**
  * What a source format is, to the rest of the app.
  *
- * A file is text in one of several formats — the relaxed YAML dialect,
- * Markdown — and every one of them reads into the same CV object (see
- * schema.ts), with a map from each value's dotted path to the line it came
+ * A file is text in a format — Markdown, for now — and a format reads it
+ * into a CV object (see schema.ts), with a map from each value's dotted path to the line it came
  * from. That map is what the preview stamps onto what it renders as
  * `data-src`, so hovering or clicking the sheet can point back at the line
  * behind it, whatever the format.
@@ -51,7 +50,7 @@ export interface SourceRead {
  */
 export type Cv = { header?: Record<string, any>; sections?: Array<Record<string, any>>; [key: string]: any }
 
-export type FormatId = 'yaml' | 'markdown'
+export type FormatId = 'markdown'
 
 export interface SourceFormat {
   id: FormatId

@@ -7,7 +7,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { contactRuns, dateRuns, inlineRuns } from './inline-markdown'
+import { contactRuns, dateRuns, inlineRuns, metaRuns } from './inline-markdown'
 
 /**
  * Each run as `token:text`, with plain runs left bare.
@@ -129,6 +129,37 @@ describe('dates', () => {
   it('reads an end that is not a date as any other value', () => {
     expect(dates('Summer 2019 – **2020**')).toEqual(['Summer 2019', ' – ', 'cvMdMark:**', 'cvMdStrong:2020', 'cvMdMark:**'])
     expect(dates('2019-2020')).toEqual(['2019-2020'])
+  })
+})
+
+/**
+ * An entry's dates line's runs, the same way.
+ */
+function meta(text: string) {
+  return metaRuns(text).map((r: any) => {
+    const s = text.slice(r.from, r.to)
+    return r.token ? `${r.token}:${s}` : s
+  })
+}
+
+describe('dates line', () => {
+  it('marks the dates inside the bold, and reads the rest as text', () => {
+    expect(meta('**03/2020–Present** · _Remote_')).toEqual([
+      'cvMdMark:**',
+      'cvDate cvMdStrong:03/2020',
+      'cvMdStrong:–',
+      'cvDate cvMdStrong:Present',
+      'cvMdMark:**',
+      ' · ',
+      'cvMdMark:_',
+      'cvMdEm:Remote',
+      'cvMdMark:_',
+    ])
+  })
+
+  it('reads plain dates only when they are dates', () => {
+    expect(meta('2014–2016 · Place')).toEqual(['cvDate:2014', '–', 'cvDate:2016', ' ', '· Place'])
+    expect(meta('B2B SaaS platform — Springfield')).toEqual(['B2B SaaS platform — Springfield'])
   })
 })
 

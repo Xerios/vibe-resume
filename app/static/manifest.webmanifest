@@ -2,7 +2,7 @@
   "id": "/",
   "name": "Resume Editor",
   "short_name": "Resume Editor",
-  "description": "A local-first Resume Editor: YAML or Markdown on the left, a print-ready CV on the right.",
+  "description": "A local-first Resume Editor: Markdown on the left, a print-ready CV on the right.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -37,8 +37,6 @@
     {
       "action": "/",
       "accept": {
-        "application/yaml": [".yaml", ".yml"],
-        "text/yaml": [".yaml", ".yml"],
         "text/markdown": [".md", ".markdown"]
       }
     }

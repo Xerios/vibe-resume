@@ -29,7 +29,7 @@ export interface Run {
 export type Marks = Omit<Run, 'text'>
 
 /**
- * A list, whatever the YAML actually said. A half-typed document is the normal
+ * A list, whatever the source actually said. A half-typed document is the normal
  * case here, so every renderer reads lists through this rather than trusting
  * the shape.
  */
@@ -37,7 +37,7 @@ export const list = (v: unknown): any[] => (Array.isArray(v) ? v : [])
 
 /**
  * A stack line as the list of things in it: `React, Node.js, PostgreSQL` and
- * the YAML list of the same three both come back as three entries. A slash
+ * a list of the same three both come back as three entries. A slash
  * isn't a separator, because `TypeScript/JS` and `CI/CD` are single entries.
  */
 export function techs(value: unknown): string[] {

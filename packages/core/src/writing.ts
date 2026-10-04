@@ -18,7 +18,7 @@
  * fallback's whole line would replace the line.
  */
 
-import { parseDates } from './dates'
+import { DATE_FORMATS, RANGE_SPLIT, parseDates } from './dates'
 import type { Diagnostic, Fix, SourceRead } from './format'
 
 type Severity = Diagnostic['severity']
@@ -61,8 +61,11 @@ export function lintWriting(text: string, { value, lines }: Pick<SourceRead, 'va
     return found
   }
 
+  const dated: Array<{ path: string; written: string; formats: string[] }> = []
+
   const visit = (node: unknown, path: string, field: string, listItem: boolean, tense: Tense): void => {
     if (typeof node === 'string') {
+      if (field === 'dates') dated.push({ path, written: node, formats: dateFormats(node) })
       for (const f of check(node, path, field, listItem, tense)) {
         const at = place(path, node, f.at, f.len)
         if (!at) continue
@@ -78,7 +81,47 @@ export function lintWriting(text: string, { value, lines }: Pick<SourceRead, 'va
   }
 
   visit(value, '', '', false, null)
+  for (const { path, written, odd, main } of oddDates(dated)) {
+    const at = place(path, written, 0, written.length)
+    if (!at) continue
+    out.push({
+      from: at.from,
+      to: at.to,
+      severity: 'info',
+      source: 'writing',
+      message: `Most dates here read like \`${main}\`; this one reads like \`${odd}\`. One format throughout is easier for résumé parsers to read.`,
+    })
+  }
   return out.toSorted(byPosition)
+}
+
+/* ── One way of writing a month ───────────────────────────────────────────── */
+
+/** The month formats a `dates` value is written in, as their examples. */
+const dateFormats = (value: string): string[] =>
+  value
+    .replace(/[*_`]/g, '')
+    .split(RANGE_SPLIT)
+    .map((part) => DATE_FORMATS.find(([re]) => re.test(part.trim()))?.[1])
+    .filter((f) => f !== undefined)
+
+/**
+ * One way of writing a month throughout. A résumé parser reads dates off the
+ * printed text, and a document that switches between `03/2020` and
+ * `March 2021` is the one most likely to get a range wrong. The format most of
+ * the document uses is the one to keep; a tie goes to whichever came first.
+ */
+function oddDates<T extends { formats: string[] }>(dated: T[]): Array<T & { odd: string; main: string }> {
+  const counts: Map<string, number> = new Map()
+  for (const { formats } of dated) for (const f of formats) counts.set(f, (counts.get(f) ?? 0) + 1)
+  if (counts.size < 2) return []
+  let main = ''
+  for (const [f, n] of counts) if (n > (counts.get(main) ?? 0)) main = f
+
+  return dated.flatMap((d) => {
+    const odd = d.formats.find((f) => f !== main)
+    return odd ? [{ ...d, odd, main }] : []
+  })
 }
 
 /* ── Finding a value's characters in the source ───────────────────────────── */

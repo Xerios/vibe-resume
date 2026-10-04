@@ -144,6 +144,31 @@ describe('spelling', () => {
   })
 })
 
+describe('date formats', () => {
+  const jobs = (list: string[]) =>
+    lint({ sections: [{ type: 'entries', items: list.map((dates) => ({ title: 'Dev', dates })) }] }).filter((f) => f.message.startsWith('Most dates'))
+
+  it('points at the one written differently from the rest', () => {
+    const [found, ...rest] = jobs(['03/2020 – Present', '06/2016 – 02/2020', 'Mar 2014 – May 2016'])
+    expect(rest).toEqual([])
+    expect(found.severity).toBe('info')
+    expect(found.text).toBe('Mar 2014 – May 2016')
+    expect(found.message).toContain('`03/2020`')
+  })
+
+  it('catches a range that switches halfway', () => {
+    expect(jobs(['03/2020 – Present', '06/2016 – Feb 2020'])).toHaveLength(1)
+  })
+
+  it('lets a bare year sit beside months', () => {
+    expect(jobs(['03/2020 – Present', '2010 – 2014', '2016-2020'])).toEqual([])
+  })
+
+  it('leaves what it cannot read alone', () => {
+    expect(jobs(['Summer 2019', 'mars 2020 – présent', '03/2020 – 05/2021'])).toEqual([])
+  })
+})
+
 describe('where a finding lands', () => {
   it('underlines the same occurrence in the source as in the value', () => {
     const text = 'sub: a,b,c'

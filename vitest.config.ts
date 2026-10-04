@@ -8,7 +8,6 @@ export default defineConfig({
   test: {
     projects: [
       { test: { name: 'core', root: 'packages/core' } },
-      { test: { name: 'format-yaml', root: 'packages/format-yaml' } },
       { test: { name: 'format-markdown', root: 'packages/format-markdown' } },
       // The sheet's CSS is imported as text; Vitest stubs CSS out unless told not to.
       { test: { name: 'render', root: 'packages/render', css: true } },

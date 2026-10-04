@@ -95,9 +95,6 @@ importers:
       '@vibe-resume/format-markdown':
         specifier: workspace:*
         version: link:../packages/format-markdown
-      '@vibe-resume/format-yaml':
-        specifier: workspace:*
-        version: link:../packages/format-yaml
       '@vibe-resume/render':
         specifier: workspace:*
         version: link:../packages/render
@@ -149,31 +146,6 @@ importers:
 
   packages/format-markdown:
     dependencies:
-      '@codemirror/language':
-        specifier: 'catalog:'
-        version: 6.12.4
-      '@codemirror/state':
-        specifier: 'catalog:'
-        version: 6.7.5
-      '@lezer/highlight':
-        specifier: 'catalog:'
-        version: 1.2.3
-      '@vibe-resume/core':
-        specifier: workspace:*
-        version: link:../core
-    devDependencies:
-      '@vibe-resume/format-yaml':
-        specifier: workspace:*
-        version: link:../format-yaml
-      '@vibe-resume/render':
-        specifier: workspace:*
-        version: link:../render
-      vite:
-        specifier: 'catalog:'
-        version: 8.3.0(sass@1.104.1)(yaml@2.9.1)
-
-  packages/format-yaml:
-    dependencies:
       '@codemirror/autocomplete':
         specifier: 'catalog:'
         version: 6.20.3
@@ -183,9 +155,6 @@ importers:
       '@codemirror/state':
         specifier: 'catalog:'
         version: 6.7.5
-      '@codemirror/view':
-        specifier: 'catalog:'
-        version: 6.43.12
       '@lezer/highlight':
         specifier: 'catalog:'
         version: 1.2.3
@@ -193,6 +162,9 @@ importers:
         specifier: workspace:*
         version: link:../core
     devDependencies:
+      '@vibe-resume/render':
+        specifier: workspace:*
+        version: link:../render
       vite:
         specifier: 'catalog:'
         version: 8.3.0(sass@1.104.1)(yaml@2.9.1)
@@ -227,9 +199,9 @@ importers:
         specifier: ^0.20.2
         version: 0.20.2
     devDependencies:
-      '@vibe-resume/format-yaml':
+      '@vibe-resume/format-markdown':
         specifier: workspace:*
-        version: link:../format-yaml
+        version: link:../format-markdown
       svelte:
         specifier: 'catalog:'
         version: 5.57.0

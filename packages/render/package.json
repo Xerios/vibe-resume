@@ -22,7 +22,7 @@
     "pdfkit": "^0.20.2"
   },
   "devDependencies": {
-    "@vibe-resume/format-yaml": "workspace:*",
+    "@vibe-resume/format-markdown": "workspace:*",
     "svelte": "catalog:",
     "vite": "catalog:"
   },

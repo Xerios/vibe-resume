@@ -94,8 +94,8 @@ export class FileManager {
 
   /**
    * A given name is de-duplicated like a generated one — importing the same
-   * `cv.yaml` twice should give two distinguishable tabs, not two called
-   * "cv.yaml". The name's extension is the file's format; see formats.ts.
+   * `cv.md` twice should give two distinguishable tabs, not two called
+   * "cv.md". The name's extension is the file's format; see formats.ts.
    */
   create(name?: string): string {
     const id = newId()
@@ -141,8 +141,7 @@ export class FileManager {
 
   /**
    * A new name without a format's extension keeps the old one, so retitling a
-   * Markdown tab doesn't quietly turn it into YAML. Typing another extension
-   * is how a file changes format.
+   * tab doesn't drop its `.md`.
    */
   rename(id: string, name: string): void {
     let trimmed = name.trim()
@@ -251,9 +250,7 @@ export class FileManager {
       write(snapshotKey(id), legacy)
       remove(KEYS.legacySnapshot)
     }
-    // A snapshot from before there were tabs is YAML; a first visit starts in
-    // Markdown, like any new tab.
-    this.files = [{ id, name: legacy ? 'Untitled.yaml' : 'Untitled.md', deletedAt: null }]
+    this.files = [{ id, name: 'Untitled.md', deletedAt: null }]
     this.#saveList()
   }
 

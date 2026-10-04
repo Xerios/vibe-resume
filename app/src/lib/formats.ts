@@ -1,10 +1,9 @@
 /**
  * The source formats a file can be written in, and which one a file is.
  *
- * A file's format is its name's extension — `cv.md` is Markdown, `cv.yaml`
- * is YAML — and a name with no extension is YAML, which is what every file
- * was before there was a choice. Renaming a file into another extension reads
- * the same text in the other format; nothing converts it.
+ * A file's format is its name's extension — `cv.md` is Markdown — and a name
+ * with no extension, or one no format claims, is read as Markdown. Nothing
+ * converts a file's text when its name changes.
  *
  * This module is what the workers load, so it holds only the formats' pure
  * halves. The editor's half of each is loaded on demand, below.
@@ -13,14 +12,13 @@
 import type { Extension } from '@codemirror/state'
 import type { FormatId, SourceFormat } from '@vibe-resume/core/format'
 import { markdown } from '@vibe-resume/format-markdown'
-import { yaml } from '@vibe-resume/format-yaml'
 
-export const formats: Record<FormatId, SourceFormat> = { yaml, markdown }
+export const formats: Record<FormatId, SourceFormat> = { markdown }
 
 /** The format a file name says it is in. */
 export function formatOf(name: string | null | undefined): SourceFormat {
   const lower = (name ?? '').toLowerCase()
-  return Object.values(formats).find((f) => f.extensions.some((ext) => lower.endsWith(ext))) ?? yaml
+  return Object.values(formats).find((f) => f.extensions.some((ext) => lower.endsWith(ext))) ?? markdown
 }
 
 /** What the editor needs from a format, beyond reading it. */
@@ -35,7 +33,6 @@ export interface FormatEditor {
 
 /** Each format's editor support, loaded the first time a file in it is opened. */
 const loaders: Record<FormatId, () => Promise<FormatEditor>> = {
-  yaml: () => import('@vibe-resume/format-yaml/editor'),
   markdown: () => import('@vibe-resume/format-markdown/editor'),
 }
 

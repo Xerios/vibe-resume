@@ -1,5 +1,5 @@
 /**
- * The Markdown inside a scalar, taken apart into runs of text.
+ * The Markdown inside a line, taken apart into runs of text.
  *
  * Every value in a document is rendered through `marked.parseInline`, so a
  * `[label](url)` or a `**claim**` in the editor is markup, not prose. This
@@ -16,6 +16,9 @@
  * `[**a**](u)` comes out as `cvMdLink cvMdStrong` — and is `''` for plain text.
  */
 
+import { ANGLE_RE, EMAIL_CHAR, SCHEME_RE, emailAt, phoneNumber, urlAt } from '@vibe-resume/core/autolink'
+import { RANGE_SPLIT, isDate, parseDates } from '@vibe-resume/core/dates'
+
 /**
  * A run of marked-up text in a value.
  */
@@ -27,9 +30,6 @@ interface Run {
   /** space-separated token names, or '' for plain text */
   token: string
 }
-
-import { ANGLE_RE, EMAIL_CHAR, SCHEME_RE, emailAt, phoneNumber, urlAt } from '@vibe-resume/core/autolink'
-import { RANGE_SPLIT, isDate } from '@vibe-resume/core/dates'
 
 /** Characters that could open something. Everything else is prose, or an autolink. */
 const OPENERS = '[!`*_~<'
@@ -176,8 +176,7 @@ export function inlineRuns(text: string, from = 0, to = text.length, base = ''):
 
 /**
  * The stretch of `[from, to)` inside a pair of wrapping quotes, or the whole of
- * it. A legacy document quotes its numbers and its dates; the page reads what
- * is inside.
+ * it. A quoted number or date is read by what is inside.
  */
 function unquoted(text: string, from: number, to: number): [number, number] {
   const q = /^(['"])(.*)\1\s*$/.exec(text.slice(from, to))
@@ -236,4 +235,31 @@ export function dateRuns(text: string, from = 0, to = text.length): Run[] {
   part(at, stop)
   push(out, stop, to, '')
   return out
+}
+
+/**
+ * An entry's dates line — `**03/2020–Present** · Place` — as runs: the dates
+ * through `dateRuns`, bold or not, and whatever follows as any other text. As
+ * in read.ts, bold leading the line is the dates whatever it says, and a plain
+ * line only counts when the part before its `·` or `|` reads as dates.
+ */
+export function metaRuns(text: string, from = 0, to = text.length): Run[] {
+  const slice = text.slice(from, to)
+  const bold = /^(\s*)\*\*(.+?)\*\*/.exec(slice)
+  if (bold) {
+    const open = from + bold[1].length
+    const body = open + 2
+    const close = body + bold[2].length
+    const out: Run[] = []
+    push(out, from, open, '')
+    out.push({ from: open, to: body, token: 'cvMdMark' })
+    for (const r of dateRuns(text, body, close)) out.push({ ...r, token: join(r.token, 'cvMdStrong') })
+    out.push({ from: close, to: close + 2, token: 'cvMdMark' })
+    out.push(...inlineRuns(text, close + 2, to))
+    return out
+  }
+  const sep = slice.search(/[·|]/)
+  const end = sep < 0 ? to : from + sep
+  if (!parseDates(text.slice(from, end).replace(/[*_`]/g, ''))) return inlineRuns(text, from, to)
+  return [...dateRuns(text, from, end), ...inlineRuns(text, end, to)]
 }

@@ -1,14 +1,8 @@
 import { parseWith } from '@vibe-resume/core/format'
-import { yaml } from '@vibe-resume/format-yaml'
-import { toJsonResume } from '@vibe-resume/render/json-resume'
 import { buildModel } from '@vibe-resume/render/model'
-import { SLOTS } from '@vibe-resume/render/variants'
 import { describe, expect, it } from 'vitest'
 import { markdown } from './index'
 import { read } from './read'
-
-/** The model with its source paths taken out — the two formats put things on different lines. */
-const withoutSrc = (value: unknown): unknown => JSON.parse(JSON.stringify(value, (key, v) => (key === 'src' ? undefined : v)))
 
 const parse = (text: string) => parseWith(markdown, text)
 
@@ -16,25 +10,12 @@ const parse = (text: string) => parseWith(markdown, text)
 const lineOf = (text: string, needle: string) => text.split('\n').findIndex((l) => l.includes(needle)) + 1
 
 describe('the template', () => {
-  const md = parse(markdown.template)
-  const ym = parseWith(yaml, yaml.template)
-
   it('reads without a single warning', () => {
     expect(read(markdown.template).diagnostics).toEqual([])
   })
 
   it('is written the way the writing guide asks', () => {
     expect(markdown.lint(markdown.template)).toEqual([])
-  })
-
-  it.each(SLOTS.flatMap((slot) => slot.variants.map((v) => [slot.id, v.id])))('lays out the same as the YAML template, with %s set to %s', (slot, variant) => {
-    const look = { variants: { [slot]: variant } }
-    expect(withoutSrc(buildModel(md.cv, look))).toEqual(withoutSrc(buildModel(ym.cv, look)))
-  })
-
-  it('says the same in JSON Resume', () => {
-    const now = new Date('2026-01-01T00:00:00Z')
-    expect(toJsonResume(md.cv, { now })).toEqual(toJsonResume(ym.cv, { now }))
   })
 })
 

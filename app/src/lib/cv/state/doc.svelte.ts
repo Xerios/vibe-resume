@@ -5,7 +5,7 @@ import type { OpId, Change, Diff, ContainerID, TextDiff } from 'loro-crdt/web'
 // straight from the wasm-bindgen module — it is the same instance either way.
 import initWasm from 'loro-crdt/web/loro_wasm.js'
 import type { SourceFormat } from '@vibe-resume/core/format'
-import { yaml } from '@vibe-resume/format-yaml'
+import { markdown } from '@vibe-resume/format-markdown'
 import { base64ToBytes, bytesToBase64, read, remove, snapshotKey, write } from './storage'
 
 // Named for the only format there was when snapshots started being stored;
@@ -129,7 +129,7 @@ export interface VersionDiff {
  */
 export class CvDoc {
   /** The format of the file being edited — see `bindFormat`. */
-  #formatOf = $state<() => SourceFormat>(() => yaml)
+  #formatOf = $state<() => SourceFormat>(() => markdown)
   ready = $state(false)
   /** Current text of the document (either the live head, or a checked-out version). */
   text = $state('')

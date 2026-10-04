@@ -357,8 +357,7 @@
     for (const v of [viewA, viewB]) v?.dispatch({ effects: numbers.reconfigure(ext) })
   })
 
-  // Each side is coloured as the format its file is in, so a YAML file and a
-  // Markdown one can sit side by side.
+  // Each side is coloured as the format its file is in.
   $effect(() => {
     for (const [v, ref] of /** @type {const} */ ([
       [viewA, refA],

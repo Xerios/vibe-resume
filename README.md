@@ -1,6 +1,6 @@
 # Resume Editor
 
-A local-first Resume Editor: YAML or Markdown on the left, a print-ready CV on the right.
+A local-first Resume Editor: Markdown on the left, a print-ready CV on the right.
 Everything runs in the browser — no network calls, no CDN, no account.
 
 Grown out of `template-artifact.html` (kept in the repo for reference), with three
@@ -25,7 +25,6 @@ of their own — and depend on each other only in the direction listed:
 | Package                                                   | Holds                                                                                           |
 | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | [packages/core](packages/core/src/)                       | what every format shares: the `SourceFormat` interface, the section table, dates, the line diff |
-| [packages/format-yaml](packages/format-yaml/src/)         | the relaxed YAML dialect; its CodeMirror half under `editor/`                                   |
 | [packages/format-markdown](packages/format-markdown/src/) | Markdown; its CodeMirror half under `editor/`                                                   |
 | [packages/render](packages/render/src/)                   | the CV model, the sheet, the paginator and the PDF                                              |
 | [app](app/src/)                                 | the SvelteKit app: chrome, editor, state, workers                                               |
@@ -44,10 +43,9 @@ or `@lezer/highlight` break the editor.
 | Editor                 | [app/src/lib/components/SourceEditor.svelte](app/src/lib/components/SourceEditor.svelte) — CodeMirror 6                             |
 | Chrome                 | `components/{Toolbar,TabBar,StatusBar}.svelte` — the buttons, the tabs, the status bar                                                        |
 | The chrome's palette   | [app/src/lib/styles/tokens.scss](app/src/lib/styles/tokens.scss) — ADS tokens; see _The chrome's palette_ below                     |
-| The YAML dialect       | [packages/format-yaml/src/relaxed-yaml.ts](packages/format-yaml/src/relaxed-yaml.ts) — the parser; see _The YAML dialect_ below               |
-| What the editor says   | [packages/format-yaml/src/lint.ts](packages/format-yaml/src/lint.ts) — the section table, as diagnostics; [packages/core/src/writing.ts](packages/core/src/writing.ts) — the writing, in every format; see _The writing_ below |
-| What the editor offers | [packages/format-yaml/src/editor/complete.ts](packages/format-yaml/src/editor/complete.ts) — the same table, as completions                   |
-| Colours and folding    | [packages/format-yaml/src/editor/relaxed-yaml-mode.ts](packages/format-yaml/src/editor/relaxed-yaml-mode.ts) — the CodeMirror language        |
+| What the editor says   | [packages/format-markdown/src/read.ts](packages/format-markdown/src/read.ts) — the document's shape, as diagnostics; [packages/core/src/writing.ts](packages/core/src/writing.ts) — the writing; see _The writing_ below |
+| What the editor offers | [packages/format-markdown/src/editor/complete.ts](packages/format-markdown/src/editor/complete.ts) — the keys and values of a directive comment |
+| Colours and folding    | [packages/format-markdown/src/editor/markdown-mode.ts](packages/format-markdown/src/editor/markdown-mode.ts) — the CodeMirror language, coloured out of [inline-markdown.ts](packages/format-markdown/src/editor/inline-markdown.ts) |
 | Text to a CV object    | [packages/core/src/format.ts](packages/core/src/format.ts) — `SourceFormat` and `parseWith`; see _Formats_ below                              |
 | Markdown               | [packages/format-markdown/src/read.ts](packages/format-markdown/src/read.ts) — see _Markdown_ below                                           |
 | What a CV says         | [packages/render/src/model.ts](packages/render/src/model.ts) — the tree the sheet is drawn from, in reading order                             |
@@ -57,7 +55,7 @@ or `@lezer/highlight` break the editor.
 | Preview                | [packages/render/src/PreviewFrame.svelte](packages/render/src/PreviewFrame.svelte) — the iframe the sheet renders in                          |
 | The sheet              | [packages/render/src/html/](packages/render/src/html/) — `CvSheet.svelte`, its stylesheet, the tokens as CSS, and the paginator               |
 | The sheet as PDF       | [packages/render/src/pdf/](packages/render/src/pdf/) — `measure.js` reads the sheet, `PdfRenderer.ts` draws it; see _Exporting_ below         |
-| Starting text          | [template.yaml](packages/format-yaml/src/template.yaml), [template.md](packages/format-markdown/src/template.md) — the same CV in each format |
+| Starting text          | [template.md](packages/format-markdown/src/template.md) — what a new tab starts as |
 | Picking a look         | `components/{StylePicker,VariantCycle}.svelte` — the Style panel, and the row each block slot is drawn as                                     |
 | Shared state           | [app/src/lib/cv/state/state.svelte.ts](app/src/lib/cv/state/state.svelte.ts) — the document and the file registry                   |
 | Commands               | [app/src/lib/cv/state/commands.ts](app/src/lib/cv/state/commands.ts) — everything the chrome can do, by name                        |
@@ -83,24 +81,24 @@ it can serve both themes; it lives in
 names live in [tokens.scss](app/src/lib/styles/tokens.scss), and the rules that spend
 the rest of them are in [codemirror.scss](app/src/lib/components/codemirror.scss).
 
-Completion reads the same section table as the linter, forwards:
-[complete.ts](packages/format-yaml/src/editor/complete.ts) imports `SECTIONS` rather than copying it,
-so a type added there is offered without anything else being touched. What it
-offers depends only on where the cursor is — the keys the enclosing mapping
-accepts, the closed set of answers for the handful of keys that have one, and,
-wherever a new section can start, the whole shape of one as a snippet. Working
-out which mapping the cursor is in is the only hard part, and `spotAt` does it by
-walking the lines above through the same `splitLine` as the parser. Prose gets
-nothing: a bullet, a paragraph and the inside of a `|` body are exactly what the
-format exists to leave alone.
+The Markdown mode ([markdown-mode.ts](packages/format-markdown/src/editor/markdown-mode.ts))
+colours the markdown inside a line out of
+[inline-markdown.ts](packages/format-markdown/src/editor/inline-markdown.ts), whose
+delimiter and autolink rules are marked's, so nothing is coloured as a link, a
+bold word or an address the page won't make one. Two kinds of line are read for
+more than their markdown: a contact line under the name, where a phone number is
+marked as the link the sheet makes of it, and the dates line under a `###`,
+where each end of the range that reads as a date is picked out.
 
-It opens without waiting to be asked, but only where there is a question. A
-closed set of values shows the moment its `: ` is there — `type: ` on its own is
-a question, and only six keys have one to answer it with — and picking `type`
-from the key list runs straight on into picking which type, through CodeMirror's
-`activateOnCompletion`. Keys show while the mapping is still missing some and go
-quiet once it says everything it can, so landing in a finished entry doesn't put
-a list of what it already says on the screen. Ctrl-Space still answers anywhere.
+Completion ([complete.ts](packages/format-markdown/src/editor/complete.ts)) is for
+the one place the text has a closed vocabulary: a directive comment. Inside
+`<!-- … -->` it offers the keys a comment takes where it stands — under `#`,
+under `##`, or under `###` and at the end of a list item, decided the way
+read.ts decides it — and past `type:`, `subtype:`, `inline:` or `rating:` the
+values they take, the section types straight out of `SECTIONS`. Picking a key
+with values runs straight on into picking one, through CodeMirror's
+`activateOnCompletion`. Keys wait for a letter or Ctrl-Space, so a comment that
+is only a comment is left alone; prose gets nothing.
 
 The document, the file registry and the part registry are module-level
 singletons in [state.svelte.ts](app/src/lib/cv/state/state.svelte.ts), built once by
@@ -252,7 +250,7 @@ PDF/UA-1, so that ATS parsers and screen readers read it as it is meant to be re
   Info dictionary and the XMP both carry the title, author, description and
   keywords from [doc-meta.ts](packages/render/src/doc-meta.ts); the XMP also has
   `dc:language` and declares `pdfuaid:part` 1.
-- **Attachments.** `cv.yaml` or `cv.md` is the source exactly as written,
+- **Attachments.** `cv.md` is the source exactly as written,
   marked as the `Source`.
   `resume.json` is the CV in the [JSON Resume](https://jsonresume.org/schema)
   schema ([json-resume.ts](packages/render/src/json-resume.ts)), marked as an
@@ -303,18 +301,14 @@ ladder's — in the frame's own coordinates, and the print stylesheet drops it.
 
 #### Formats
 
-A file is written in one of two formats, and its name says which: `cv.md` is
-Markdown and `cv.yaml` is YAML. A name with no extension is YAML, which is what
-every file was before there was a choice. A new tab is Markdown; the menu's _New
-Tab (YAML)_ starts one from the YAML template instead, and renaming a tab
-into the other extension reads the same text in the other format — nothing
-converts it. A new name typed without an extension keeps the old one.
+A file is Markdown, and its name ends in `.md`. A new name typed without an
+extension keeps the old one. A file from before YAML was dropped keeps its
+`.yaml` name and its text, and is read as Markdown.
 
-Each format is a `SourceFormat` ([format.ts](packages/core/src/format.ts)): an
+The format is a `SourceFormat` ([format.ts](packages/core/src/format.ts)): an
 id, its extensions, a template, `read` and `lint`. `read` returns the tree and a
 map from each value's dotted path — `sections.2.items.0.bullets.1` — to the
-line it came from. Both formats read into the same tree, which is what
-everything after the parser takes, and the map is what lets the preview point
+line it came from. The tree is what everything after the parser takes, and the map is what lets the preview point
 back at the line behind whatever the pointer is on. _Export Source_ downloads
 the text as written.
 
@@ -377,75 +371,15 @@ show comments, so the file still reads as an ordinary resume anywhere else. The
 editor underlines a comment key that means nothing where it is, an unknown type,
 an empty section and text before the first heading.
 
-#### The YAML dialect
-
-It looks like YAML and it is read like YAML, but it isn't quite YAML, and the
-difference is deliberate. A CV is prose, and prose is full of the characters
-YAML reserves. Real YAML makes you quote a link because it starts with `[`, a
-phone number because it starts with `+`, and `ORM: Prisma` because of the colon
-— none of which is anything a person writing a resume should have to know. So
-[relaxed-yaml.ts](packages/format-yaml/src/relaxed-yaml.ts) reads a smaller, line-oriented
-dialect instead, in which a value runs verbatim to the end of its line and
-nothing inside it means anything:
-
-```yaml
-- title: Some text: more text
-  subtitle: **bold text**
-  items:
-    - +1 555 010 1234
-    - [github.com/example](https://github.com/example)
-```
-
-The load-bearing rule is what counts as a key: one unspaced identifier, followed
-by a colon and a space, and only the _first_ one on a line. That is what makes
-`title: Some text: more text` read the obvious way — the second colon is inside
-the value and never looked at. A word with a space in it can't be a key at all,
-so `- Some text: more` stays a string.
-
-Everything else follows from taking values verbatim. A `#` only opens a comment
-at the head of a line, so `ranked # 1` and `#fff` are ordinary text. Indentation
-nests, and a tab in it is an error. Every scalar is a string except a bare `true`
-or `false`, which have to stay boolean because `inline`
-is tested for truthiness and the string `'false'` is true. `|` and `>` still
-open a block. Flow collections, anchors, aliases, tags and `---` are gone — `[`
-is just a bracket now.
-
-Quotes aren't required anywhere any more, but they're still honoured, because
-every resume written before this is full of them: a value wrapped _entirely_ in
-matching quotes is unwrapped, while `'Bob' the builder` isn't wrapped, so it
-stays as typed. Where a pair has stopped doing any work the editor says so as a
-hint rather than removing it behind you.
-
-One ambiguity survives, and it's the one YAML has too. A bullet reading
-`- Analytics: Mixpanel` is a mapping, because `Analytics` is a perfectly good
-key and there's no way to tell it apart from a real entry. Quotes are still the
-escape hatch — `- 'Analytics: Mixpanel'` — and any list that should hold plain
-text is checked for it, so the editor offers the fix rather than leaving you to
-find it in the preview.
-
-That check is one of three things [lint.ts](packages/format-yaml/src/lint.ts) reports, and it
-exists because relaxing the format moved where mistakes land. Almost nothing a
-person types fails to parse now, so a typo shows up as a section that quietly
-renders wrong instead of as an error. The table below is therefore held as data
-as well as prose, and the editor underlines an unknown `type`, a key nothing
-renders, and a section missing its content — as warnings, which don't stop the
-preview or block an export.
-
-The editor's colours, folding and indentation come from the same `splitLine` the
-parser uses ([relaxed-yaml-mode.ts](packages/format-yaml/src/editor/relaxed-yaml-mode.ts)), so what a
-line looks like and what it means can't drift apart. It's a `StreamLanguage`
-rather than a Lezer grammar because a line is an indent, some dashes, maybe a
-key and then text — none of which needs a parse tree.
-
 #### The writing
 
-The lint above checks a CV's shape; [writing.ts](packages/core/src/writing.ts)
+read.ts's warnings check a CV's shape; [writing.ts](packages/core/src/writing.ts)
 checks how it reads, after YAMLResume's guides to
 [punctuation](https://yamlresume.dev/docs/guide/punctuations),
 [grammar](https://yamlresume.dev/docs/guide/grammar) and
 [typesetting](https://yamlresume.dev/docs/guide/typesetting). It walks the tree
 any format reads into, finds each value's line through the line map and its
-characters again in the source, so both formats get every rule. What the guides
+characters again in the source. What the guides
 say a CV _must_ do is a warning; what they recommend is info:
 
 - **Punctuation** — one space after `, ; : . ! ?` and none before; a space before
@@ -460,7 +394,10 @@ say a CV _must_ do is a warning; what they recommend is info:
 - **Dates** — the year in full (`05/06` reads differently in different
   countries) and an en dash between the ends, closed up when each end is one
   word: `2010–2014`, `03/2020–Present`, but `Mar 2020 – Present`. The sheet
-  prints a range by the same rule.
+  prints a range by the same rule. One way of writing a month throughout, too:
+  a range written unlike most of the document's (`Mar 2014` among `03/2020`s)
+  gets an info, since a résumé parser reading dates off the page is likeliest
+  to get that one wrong.
 - **Spelling** — the guide's table of names software CVs get wrong (`javascript`,
   `mysql`, `IOS`, `jquery`). A name that is also a word — `node`, `JS` — is only
   corrected where it stands alone in a list. Addresses, code and file names are
@@ -493,7 +430,7 @@ all how somebody writes one — so it is printed as written. A `table` is read a
 list of name, figure and description rather than as a grid, which is what it holds
 on a CV and what a PDF reader handles best.
 
-`stack` takes a comma-separated string or a YAML list, whichever reads better;
+`stack` takes a comma-separated string or a list, whichever reads better;
 `techs` in [inline.ts](packages/render/src/inline.ts) reads either into a list of
 tools.
 
@@ -510,11 +447,10 @@ by [migrate-tree.ts](packages/core/src/migrate-tree.ts), whatever their format,
 so they still render. The text itself is left as it was written.
 
 An unknown `type` renders as a red line naming itself rather than as nothing, so
-a typo in the YAML is visible in the preview instead of silently dropping a
-section. The editor says the same thing on the line itself, out of the copy of
-this table that [lint.ts](packages/format-yaml/src/lint.ts) holds as `SECTIONS` — so a type
-added here has to be added there too, and lint.test.ts fails if the two lists
-stop agreeing.
+a typo in a type is visible in the preview instead of silently dropping a
+section. The editor says the same thing on the comment that names it, out of the
+copy of this table that [schema.ts](packages/core/src/schema.ts) holds as
+`SECTIONS` — so a type added here has to be added there too.
 
 #### Type
 
@@ -541,7 +477,7 @@ pairing; another family is cached the first time it is used.
 
 #### Logos
 
-`stack` takes a comma-separated string or a YAML list, whichever reads better;
+`stack` takes a comma-separated string or a list, whichever reads better;
 `techs` in [inline.ts](packages/render/src/inline.ts) reads either into a list. The
 chip variants draw each entry as a chip with its brand logo, from `iconPaths` in
 [icons.ts](packages/render/src/icons.ts). Matching is forgiving, because a CV is prose
@@ -726,8 +662,8 @@ version, or another tab as it was last stored. Nothing is rendered; it is the
 text that is being asked about.
 
 The diff is a plain line diff, in [diff.ts](packages/core/src/diff.ts), so it
-knows nothing about any format and compares a YAML file with a Markdown one as
-readily as two versions of the same file. A run of removed lines followed by a
+knows nothing about any format and compares two files as readily as two
+versions of the same file. A run of removed lines followed by a
 run of added ones is read as edits to the lines that line up, with the
 characters that differ marked inside each; a click on an edited line brings its
 other half into view. Each pane is coloured as its own file's format. The two
@@ -769,7 +705,7 @@ every tab of the old one has closed. That keeps an editing session from being sw
 out mid-edit, and it means the cache purge on activation cannot delete a lazily-loaded
 chunk that a live page still wants.
 
-Installed, it registers as a handler for `.yaml` / `.yml` and `.md` / `.markdown`. A file
+Installed, it registers as a handler for `.md` / `.markdown`. A file
 opened from the OS arrives through `launchQueue` and becomes its own tab under its own
 name — which is what says its format — seeded so its version history
 starts with the imported text instead of the template plus an overwrite. The manifest

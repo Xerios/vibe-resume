@@ -1,6 +1,6 @@
 /**
- * A CV written as Markdown, read into the same tree the YAML dialect reads
- * into (see @vibe-resume/core/schema).
+ * A CV written as Markdown, read into the tree every format reads into (see
+ * @vibe-resume/core/schema).
  *
  * The document is read a line at a time, because a CV in Markdown only ever
  * uses a handful of block shapes and each one says where it starts:
@@ -86,7 +86,7 @@ const META = /^(?:\*\*(.+?)\*\*|([^·|]+?))\s*(?:[·|]\s*(.*))?$/
 const STACK = /^(?:\*\*|__)?(?:stack|tech(?:nologies)?|tools)(?::(?:\*\*|__)|(?:\*\*|__)?:)\s*(.*)$/i
 
 /** Keys a comment may set, by where it is. */
-const DIRECTIVE_KEYS = {
+export const DIRECTIVE_KEYS = {
   header: ['lang'],
   section: ['type', 'inline'],
   item: ['subtype', 'sideNote', 'rating'],

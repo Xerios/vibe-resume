@@ -147,7 +147,7 @@ export const commands = {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    // A name from before files carried their extension is still YAML.
+    // A name from before files carried their extension gets the format's.
     a.download = format.extensions.some((ext) => name.toLowerCase().endsWith(ext)) ? name : `${name}${format.extensions[0]}`
     a.click()
     URL.revokeObjectURL(url)

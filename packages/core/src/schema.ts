@@ -1,8 +1,7 @@
 /**
- * What a CV is made of, as data: the section types, what each holds, and the
- * keys every level of the document accepts. README.md's table says the same
- * in prose. Every format reads into this shape, and the YAML editor's lint
- * and completion are both driven by it.
+ * What a CV is made of, as data: the section types and what each holds.
+ * README.md's table says the same in prose. The Markdown reader decides a
+ * section's type against it, and the editor's completion offers its types.
  */
 
 /**
@@ -21,11 +20,3 @@ export const SECTIONS: Record<string, { holds: string; item: string[] | null; ex
   records: { holds: 'items', item: ['name', 'issuer', 'dates', 'note'] },
   table: { holds: 'items', item: ['name', 'value', 'desc'], extra: ['columns'] },
 }
-
-/** The keys any section may carry, whatever its type. */
-export const SECTION_KEYS = ['type', 'title']
-/** A `groups` block's rows, which are a level deeper than anything else gets. */
-export const ROW_KEYS = ['tier', 'text']
-/** The document itself. */
-export const ROOT_KEYS = ['header', 'sections']
-export const HEADER_KEYS = ['name', 'role', 'left', 'contact', 'lang']

@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { docMeta } from '../doc-meta'
 import { parseWith } from '@vibe-resume/core/format'
-import { yaml } from '@vibe-resume/format-yaml'
+import { markdown } from '@vibe-resume/format-markdown'
 import { FACES } from '../theme/typefaces'
 import { PdfRenderer } from './PdfRenderer'
 import PLAIN from './fixtures/plain.json'
@@ -32,7 +32,7 @@ const FONTS = Object.fromEntries(
   }),
 )
 
-const cv = parseWith(yaml, yaml.template).cv
+const cv = parseWith(markdown, markdown.template).cv
 
 /**
  * Render a fixture, uncompressed so the test can read it.
@@ -42,7 +42,7 @@ async function render(list: any, font: string) {
     meta: docMeta(cv),
     font,
     paper: { size: 'a4', orientation: 'portrait', header: 'name', footer: 'page' },
-    attachments: [{ name: 'cv.yaml', mime: 'application/yaml', description: 'Source', data: new TextEncoder().encode(yaml.template) }],
+    attachments: [{ name: 'cv.md', mime: 'text/markdown', description: 'Source', data: new TextEncoder().encode(markdown.template) }],
     now: new Date('2026-01-01T00:00:00Z'),
   })
   return read(pdf)
@@ -275,6 +275,6 @@ describe('PdfRenderer', () => {
     const { s, catalog } = pdf.plain
     expect(catalog).toMatch(/\/AF \[/)
     expect(s).toMatch(/\/Type \/Filespec[\s\S]*?\/AFRelationship \/Source/)
-    expect(s).toMatch(/\/UF \(cv\.yaml\)/)
+    expect(s).toMatch(/\/UF \(cv\.md\)/)
   })
 })

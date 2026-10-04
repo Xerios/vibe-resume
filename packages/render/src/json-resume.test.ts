@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { toJsonResume } from './json-resume'
 import { parseWith } from '@vibe-resume/core/format'
-import { yaml } from '@vibe-resume/format-yaml'
+import { markdown } from '@vibe-resume/format-markdown'
 
-const resume = toJsonResume(parseWith(yaml, yaml.template).cv, { now: new Date('2026-01-01T00:00:00Z') }) as any
+const resume = toJsonResume(parseWith(markdown, markdown.template).cv, { now: new Date('2026-01-01T00:00:00Z') }) as any
 
 describe('toJsonResume', () => {
   it('sorts the contact lines into basics', () => {

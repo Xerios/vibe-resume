@@ -8,7 +8,7 @@
  * So the export carries it beside the PDF, as an associated file marked as an
  * alternative representation of the document.
  *
- * The YAML's section types say what shape a section is but not what it is
+ * A CV's section types say what shape a section is but not what it is
  * about. Experience, education and projects are all `entries`, so the
  * section's title decides which JSON Resume list an `entries` section goes to,
  * and anything it doesn't recognise is work. Every value is plain text: inline

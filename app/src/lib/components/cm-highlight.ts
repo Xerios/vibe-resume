@@ -8,7 +8,7 @@ import { tags as t } from '@lezer/highlight'
  * serves the light and dark ramps alike — the `--cm-*` tokens live in
  * tokens.css and the rules that spend the rest of them in codemirror.css.
  *
- * The first groups are what YAML and Markdown use; the last is markup, JavaScript and CSS,
+ * The first groups are what Markdown uses; the last is markup, JavaScript and CSS,
  * which only the template editor ever shows. Tags nothing in a document matches
  * simply never come up, so the two halves can sit in one style.
  */

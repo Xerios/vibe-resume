@@ -70,11 +70,7 @@
         <div class="t-menu ds-menu" role="menu" bind:this={menu}>
           <button class="ds-menu-item" role="menuitem" onclick={() => pick(() => commands.newFile('markdown'))}>
             <Icon icon={IconFilePlus} width="16" height="16" />
-            <span>New Tab (Markdown)</span>
-          </button>
-          <button class="ds-menu-item" role="menuitem" onclick={() => pick(() => commands.newFile('yaml'))}>
-            <Icon icon={IconFilePlus} width="16" height="16" />
-            <span>New Tab (YAML)</span>
+            <span>New Tab</span>
           </button>
           <button class="ds-menu-item" role="menuitem" onclick={() => pick(() => commands.duplicateTab())}>
             <Icon icon={IconCopy} width="16" height="16" />

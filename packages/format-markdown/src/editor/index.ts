@@ -1,17 +1,18 @@
 /**
- * What the editor needs for Markdown: its colours and folding, and where a
- * line's content starts. Kept apart from the format itself so the
+ * What the editor needs for Markdown: its colours and folding, completion in
+ * directive comments, and where a line's content starts. Kept apart from the format itself so the
  * workers that parse never load CodeMirror.
  */
 
 import type { Extension } from '@codemirror/state'
+import { directiveCompletion } from './complete'
 import { markdownMode } from './markdown-mode'
 
 /** Colours and folding by heading — all a read-only view needs. */
 export const language = (): Extension => markdownMode()
 
 /** Everything the editor adds for this format. */
-export const extensions = (): Extension[] => [markdownMode()]
+export const extensions = (): Extension[] => [markdownMode(), directiveCompletion()]
 
 /**
  * Where the content starts on a line: past a heading's hashes, a list marker

@@ -23,7 +23,7 @@ const BACKPEDAL_RE = /(?:[^?!.,:;*_'"~()&]+|\([^)]*\)|&(?![a-zA-Z0-9]+;$)|[?!.,:
 
 /**
  * marked's `<…>` autolink: any scheme, or a mail address, in angle brackets.
- * marked also refuses control characters in the address; a line of a YAML
+ * marked also refuses control characters in the address; a line of a
  * document has none, so that half is left out.
  */
 export const ANGLE_RE =

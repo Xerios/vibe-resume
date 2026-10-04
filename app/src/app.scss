@@ -14,7 +14,7 @@
      WelcomeOverlay.svelte  #welcome, .w-*
      StylePicker.svelte  #style-pane, .style-*, .layout-*, .theme-*, .font-*
      HistoryPanel.svelte #history-pane, .hist-*, .stat-*
-     YamlEditor.svelte   #cm-wrap (its CodeMirror theme is codemirror.css,
+     SourceEditor.svelte #cm-wrap (its CodeMirror theme is codemirror.css,
                          beside it — scoped styles can't reach CM's own DOM)
      +page.svelte        #split, #editor-pane, #divider, #preview-pane,
                          the banners, #toast

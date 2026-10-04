@@ -5,7 +5,7 @@
    * measured by pdf/measure.js.
    *
    * The DOM comes out in the model's reading order, and the stylesheet decides
-   * where each part is drawn. Every node that stands for a YAML value carries
+   * where each part is drawn. Every node that stands for a source value carries
    * its path as `data-src`, which is what the page uses to tie the preview back
    * to the editor.
    *

@@ -13,13 +13,13 @@
     "check:types": "tsc -p ."
   },
   "dependencies": {
+    "@codemirror/autocomplete": "catalog:",
     "@codemirror/language": "catalog:",
     "@codemirror/state": "catalog:",
     "@lezer/highlight": "catalog:",
     "@vibe-resume/core": "workspace:*"
   },
   "devDependencies": {
-    "@vibe-resume/format-yaml": "workspace:*",
     "@vibe-resume/render": "workspace:*",
     "vite": "catalog:"
   }

@@ -3,9 +3,9 @@ import { textOf } from './inline.js'
 import { buildModel, levelRating } from './model.js'
 import { SLOTS } from './variants'
 import { parseWith } from '@vibe-resume/core/format'
-import { yaml } from '@vibe-resume/format-yaml'
+import { markdown } from '@vibe-resume/format-markdown'
 
-const cv = parseWith(yaml, yaml.template).cv
+const cv = parseWith(markdown, markdown.template).cv
 
 const line = (b: import('./model').Block) => (b as import('./model').Text).spans.map((s: import('./model').Span) => textOf(s.runs)).join('')
 
