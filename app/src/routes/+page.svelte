@@ -38,6 +38,9 @@
 	   nothing once the pane is the whole window. */
   const DESKTOP = '(min-width: 900px)'
 
+  /** Whether a drag is carrying a PDF. @param {DragEvent} e */
+  const isPdf = (e) => [...(e.dataTransfer?.items ?? [])].some((i) => i.kind === 'file' && i.type === 'application/pdf')
+
   /** Which document `parsed` reflects — used to bypass the debounce when a tab switch swaps it out from under us. */
   let lastParsedDocId = ''
   /** The newest parse asked for. One that lands after a newer one was asked for is dropped. */
@@ -122,6 +125,25 @@
       }
     })
 
+    // A PDF dropped anywhere on the app reopens the CV it was exported from.
+    // Caught on the way down, so the editor never takes it for text to insert;
+    // anything else dropped is left to whatever is under the pointer.
+    /** @param {DragEvent} e */
+    const onDragOver = (e) => {
+      if (!isPdf(e)) return
+      e.preventDefault()
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
+    }
+    /** @param {DragEvent} e */
+    const onDrop = (e) => {
+      if (!isPdf(e)) return
+      e.preventDefault()
+      e.stopPropagation()
+      for (const file of e.dataTransfer?.files ?? []) if (file.type === 'application/pdf') void commands.importPdf(file)
+    }
+    window.addEventListener('dragover', onDragOver, true)
+    window.addEventListener('drop', onDrop, true)
+
     // Fit-to-width is offered on a screen with room for it and simply not on
     // one without, where the preview is already as wide as the window.
     const wide = window.matchMedia(DESKTOP)
@@ -160,6 +182,8 @@
       window.removeEventListener('keydown', onKeydown)
       window.removeEventListener('beforeinstallprompt', onInstallPrompt)
       window.removeEventListener('appinstalled', onInstalled)
+      window.removeEventListener('dragover', onDragOver, true)
+      window.removeEventListener('drop', onDrop, true)
       window.removeEventListener('blur', onBlur)
       document.removeEventListener('visibilitychange', onVisibility)
       editorPane.removeEventListener('wheel', claimEditor)

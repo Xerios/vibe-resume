@@ -8,6 +8,7 @@
   import IconMenu from '@iconify-icons/lucide/menu'
   import IconCopy from '@iconify-icons/lucide/copy'
   import IconFilePlus from '@iconify-icons/lucide/file-plus'
+  import IconFileUp from '@iconify-icons/lucide/file-up'
   import IconSparkles from '@iconify-icons/lucide/sparkles'
   import logo from '$lib/assets/favicon.svg'
   import { commands } from '$lib/cv/state/commands'
@@ -58,7 +59,7 @@
      the middle; it gives up its subtitle, then its name, then its logo as the
      bar narrows, and the right side then shrinks to its buttons so the tabs get
      the rest. A Menu button at the left end carries the product name
-     and new CV, compare, themes, history, welcome; on a phone the PDF button says so in so many letters. -->
+     and new CV, import, compare, themes, history, welcome; on a phone the PDF button says so in so many letters. -->
 <header id="toolbar">
   <div class="t-side t-left">
     <div class="t-menu-wrap">
@@ -75,6 +76,10 @@
           <button class="ds-menu-item" role="menuitem" onclick={() => pick(() => commands.duplicateTab())}>
             <Icon icon={IconCopy} width="16" height="16" />
             <span>Duplicate Tab</span>
+          </button>
+          <button class="ds-menu-item" role="menuitem" onclick={() => pick(commands.pickPdf)}>
+            <Icon icon={IconFileUp} width="16" height="16" />
+            <span>Import from PDF…</span>
           </button>
           <div class="ds-menu-sep"></div>
           <button class="ds-menu-item" role="menuitem" onclick={() => pick(() => commands.openCompare())}>

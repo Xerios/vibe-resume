@@ -4,6 +4,7 @@ import { parseWith } from '@vibe-resume/core/format'
 import { markdown } from '@vibe-resume/format-markdown'
 import { FACES } from '../theme/typefaces'
 import { PdfRenderer } from './PdfRenderer'
+import { readSource } from './source'
 import PLAIN from './fixtures/plain.json'
 import STYLED from './fixtures/styled.json'
 
@@ -276,5 +277,26 @@ describe('PdfRenderer', () => {
     expect(catalog).toMatch(/\/AF \[/)
     expect(s).toMatch(/\/Type \/Filespec[\s\S]*?\/AFRelationship \/Source/)
     expect(s).toMatch(/\/UF \(cv\.md\)/)
+  })
+
+  it('gives the source back, compressed or not', async () => {
+    const text = '# Zoë Ångström\n\nCafé — naïve 🙂\n'
+    const sources = await Promise.all(
+      [false, true].map(async (compress) => {
+        const bytes = await new PdfRenderer({ fonts: FONTS, compress }).render(PLAIN as any, {
+          meta: docMeta(cv),
+          font: 'sans',
+          attachments: [{ name: 'cv.md', mime: 'text/markdown', description: 'Source', data: new TextEncoder().encode(text) }],
+        })
+        return readSource(bytes)
+      }),
+    )
+    expect(sources).toEqual([{ mime: 'text/markdown', text }, { mime: 'text/markdown', text }])
+  })
+
+  it('has no source to give back from a PDF without one', async () => {
+    const bytes = await new PdfRenderer({ fonts: FONTS }).render(PLAIN as any, { meta: docMeta(cv), font: 'sans' })
+    expect(await readSource(bytes)).toBeNull()
+    expect(await readSource(new TextEncoder().encode('# not a pdf'))).toBeNull()
   })
 })

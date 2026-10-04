@@ -15,6 +15,7 @@
 import { pushState } from '$app/navigation'
 import { page } from '$app/state'
 import type { DisplayList } from '@vibe-resume/render/pdf/measure'
+import { readSource } from '@vibe-resume/render/pdf/source'
 import { DENSITIES } from '@vibe-resume/render/tokens'
 import { SLOTS } from '@vibe-resume/render/variants'
 import { THEMES } from '@vibe-resume/render/theme/palettes'
@@ -64,7 +65,7 @@ export const commands = {
   },
 
   /**
-   * Open a file that came from outside the editor — an OS file association today — as
+   * Open a file that came from outside the editor — an OS file association, or a PDF's source — as
    * its own tab, under its own name, which says which format it is in. Seeded through `switchTo` so the tab's history starts with the
    * imported text rather than the template plus an overwrite.
    */
@@ -72,6 +73,34 @@ export const commands = {
     const id = files.create(filename)
     doc.switchTo(id, text)
     ui.toast(`Opened ${files.active?.name ?? filename}`)
+  },
+
+  /**
+   * Reopen a CV from a PDF this editor exported, which carries its source as
+   * an attachment — so a CV lost with the browser's storage comes back from
+   * any copy that was sent out. The tab is named after the PDF.
+   */
+  async importPdf(file: File): Promise<void> {
+    const source = await readSource(new Uint8Array(await file.arrayBuffer())).catch(() => null)
+    const format = source && Object.values(formats).find((f) => f.mime === source.mime)
+    if (!source || !format) {
+      ui.toast(`"${file.name}" has no CV source in it — only PDFs exported from here do`)
+      return
+    }
+    const base = file.name.replace(/\.pdf$/i, '') || 'cv'
+    commands.openImported(format.extensions.some((ext) => base.toLowerCase().endsWith(ext)) ? base : `${base}${format.extensions[0]}`, source.text)
+  },
+
+  /** Choose a PDF to reopen — see `importPdf`. */
+  pickPdf(): void {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.pdf,application/pdf'
+    input.addEventListener('change', () => {
+      const file = input.files?.[0]
+      if (file) void commands.importPdf(file)
+    })
+    input.click()
   },
 
   selectTab(id: string): void {
