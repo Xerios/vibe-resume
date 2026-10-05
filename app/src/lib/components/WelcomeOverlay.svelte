@@ -2,6 +2,7 @@
   import Icon from '@iconify/svelte'
   import IconCloudOff from '@iconify-icons/lucide/cloud-off'
   import IconFileCheck from '@iconify-icons/lucide/file-check'
+  import IconGithub from '@iconify-icons/lucide/github'
   import IconHardDrive from '@iconify-icons/lucide/hard-drive'
   import IconShieldCheck from '@iconify-icons/lucide/shield-check'
   import IconClose from '@iconify-icons/lucide/x'
@@ -64,10 +65,11 @@
   aria-modal="true"
   aria-labelledby="welcome-title"
   tabindex="-1"
-  onpointerdown={e => (downOnBackdrop = e.target === e.currentTarget)}
-  onclick={e => {
+  onpointerdown={(e) => (downOnBackdrop = e.target === e.currentTarget)}
+  onclick={(e) => {
     if (downOnBackdrop && e.target === e.currentTarget) onBackdrop()
-  }}>
+  }}
+>
   <!-- An ADS modal: header with title and close, body, footer with the action. -->
   <div class="w-card" class:nudge={nudging}>
     <header class="w-head">
@@ -114,6 +116,10 @@
     </div>
 
     <footer class="w-foot">
+      <a class="w-source" href="https://github.com/Xerios/vibe-resume" target="_blank" rel="noopener noreferrer">
+        <Icon icon={IconGithub} width="16" height="16" />
+        <span>Source code</span>
+      </a>
       <button bind:this={startBtn} class="ds-btn primary" class:nudge={nudging} onclick={commands.dismissWelcome}>
         {firstLaunch ? 'Start writing' : 'Close'}
       </button>
@@ -216,9 +222,26 @@
 
   .w-foot {
     display: flex;
+    align-items: center;
     justify-content: flex-end;
     gap: var(--ds-space-100);
     padding: var(--ds-space-300);
+  }
+
+  /* Pushed to the far left, away from the action. */
+  .w-source {
+    margin-right: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ds-space-075);
+    font: var(--ds-font-body-small);
+    color: var(--ds-text-subtle);
+    text-decoration: none;
+
+    &:hover {
+      color: var(--ds-link);
+      text-decoration: underline;
+    }
   }
 
   /* A stray click on first launch: the card bumps toward the reader and the
