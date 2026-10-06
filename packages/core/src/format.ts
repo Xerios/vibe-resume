@@ -36,6 +36,12 @@ export interface Diagnostic {
   fixes?: Fix[]
 }
 
+/** A heading in the text, and the offset it starts at. */
+export interface Heading {
+  from: number
+  title: string
+}
+
 /** What a format reads out of a text: the tree, where each part of it is, and what is wrong. */
 export interface SourceRead {
   value: unknown
@@ -65,6 +71,12 @@ export interface SourceFormat {
   read(text: string): SourceRead
   /** everything the editor should underline */
   lint(text: string): Diagnostic[]
+  /**
+   * The headings the text is divided by, in reading order. Optional: a format
+   * with no headings has none, and what reads them is only ever naming a part
+   * of the document a change landed in.
+   */
+  outline?(text: string): Heading[]
 }
 
 export type ParseResult = { cv: Cv; lines: Map<string, number>; error: null } | { cv: null; lines: null; error: string }

@@ -113,7 +113,10 @@
     {#each doc.entries as entry (entry.key)}
       {@const isLatest = entry.key === latestKey}
       {@const isActive = doc.viewingKey ? doc.viewingKey === entry.key : isLatest}
-      {@const stats = counts(entry)}
+      <!-- How much text moved is detail about the version you are looking at,
+           not something to read down the whole list, so only the row on screen
+           carries it; every row's tooltip still has it. -->
+      {@const stats = isActive ? counts(entry) : null}
       <li class="hist-row">
         <button class="hist-item kind-{entry.kind}" class:active={isActive} class:latest={isLatest} title={tooltip(entry)} onclick={() => select(entry)}>
           {@render mark(entry.kind)}

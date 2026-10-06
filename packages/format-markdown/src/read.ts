@@ -37,7 +37,7 @@
  */
 
 import { parseDates } from '@vibe-resume/core/dates'
-import type { Diagnostic, SourceRead } from '@vibe-resume/core/format'
+import type { Diagnostic, Heading, SourceRead } from '@vibe-resume/core/format'
 import { SECTIONS } from '@vibe-resume/core/schema'
 
 /** One line of the source, with where it starts. */
@@ -120,6 +120,22 @@ const onlyList = (s: Section): boolean => !s.children.length && s.blocks.length 
 const labelledList = (s: Section): boolean => onlyList(s) && s.blocks.every((b) => b.kind === 'list' && b.items.every((it) => TIER.test(it.text)))
 
 const strip = (text: string): string => text.replace(/[*_`]/g, '').trim()
+
+/**
+ * The document's headings, each with the offset it starts at. Every level
+ * counts: an entry's `###` says where a change landed as well as the `##` over
+ * it does, and the one nearest above is the one picked.
+ */
+export function outline(text: string): Heading[] {
+  const out: Heading[] = []
+  let offset = 0
+  for (const t of text.split('\n')) {
+    const m = HEADING.exec(t)
+    if (m) out.push({ from: offset, title: strip(m[2]) })
+    offset += t.length + 1
+  }
+  return out
+}
 
 export function read(text: string): SourceRead {
   const diagnostics: Diagnostic[] = []

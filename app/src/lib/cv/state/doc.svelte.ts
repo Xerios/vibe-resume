@@ -4,7 +4,7 @@ import type { OpId, Change, Diff, ContainerID, TextDiff } from 'loro-crdt/web'
 // `loro-crdt/web` re-exports everything but the default init function, so pull it
 // straight from the wasm-bindgen module — it is the same instance either way.
 import initWasm from 'loro-crdt/web/loro_wasm.js'
-import type { SourceFormat } from '@vibe-resume/core/format'
+import type { Heading, SourceFormat } from '@vibe-resume/core/format'
 import { markdown } from '@vibe-resume/format-markdown'
 import { base64ToBytes, bytesToBase64, read, remove, snapshotKey, write } from './storage'
 
@@ -49,6 +49,13 @@ const KIND_SEP = '\u0001'
  * out for the newest changes only. Older entries simply show no count.
  */
 const STATS_LIMIT = 200
+
+/**
+ * How many headings an edit is named after before the rest are counted off.
+ * A line has room for a few, and an edit that touched more of the CV than that
+ * is better read as "a lot of it" than as a list running off the edge.
+ */
+const SECTIONS_SHOWN = 3
 
 /**
  * Consecutive *unnamed* commits from the same peer inside this window (seconds)
@@ -182,6 +189,8 @@ export class CvDoc {
   #fileId = ''
   /** Change counts, keyed by entry key. */
   #statsCache = new Map<string, ChangeStats>()
+  /** The headings each change touched, keyed by entry key — see `#sectionsIn`. */
+  #sectionsCache = new Map<string, string[]>()
   /** Keys of changes that, all told, changed nothing — see `#statsFor`. */
   #noops = new Set<string>()
   /**
@@ -594,7 +603,42 @@ export class CvDoc {
     }
     if (!stats.added && !stats.removed && diffs.every(([, d]) => d.type === 'text')) this.#noops.add(entry.key)
     this.#statsCache.set(entry.key, stats)
+    this.#sectionsCache.set(entry.key, this.#sectionsIn(entry, ops))
     return stats
+  }
+
+  /**
+   * Which parts of the CV a change landed in, as the headings over them, in
+   * reading order. An insertion belongs to the heading above where it landed,
+   * plus any heading it brought with it; a deletion to the headings it covered
+   * in the text as it stood *before*, so taking a whole section away is still
+   * named after that section rather than after the one above it.
+   *
+   * Cached with the counts, since the two are read off the same ops.
+   */
+  #sectionsIn(entry: HistoryEntry, ops: TextDiff['diff']): string[] {
+    const outline = this.#formatOf().outline
+    if (!outline || !ops.length) return []
+    const names = new Set<string>()
+    let after: Heading[] | null = null
+    let before: Heading[] | null = null
+    let fromPos = 0
+    let toPos = 0
+    for (const op of ops) {
+      if (op.retain != null) {
+        fromPos += op.retain
+        toPos += op.retain
+      } else if (op.insert) {
+        after ??= outline(this.#versionText([frontier(entry)]))
+        for (const name of spanned(after, toPos, toPos + op.insert.length)) names.add(name)
+        toPos += op.insert.length
+      } else if (op.delete != null) {
+        before ??= outline(this.#versionText(entry.deps))
+        for (const name of spanned(before, fromPos, fromPos + op.delete)) names.add(name)
+        fromPos += op.delete
+      }
+    }
+    return [...names]
   }
 
   /**
@@ -641,6 +685,7 @@ export class CvDoc {
   #adopt(doc: LoroDoc): void {
     this.#doc = doc
     this.#statsCache.clear()
+    this.#sectionsCache.clear()
     this.#noops.clear()
     // Whatever the registry has for this file is what the map layers over, so
     // it has to be read before anything is read back out of the map.
@@ -770,6 +815,9 @@ export class CvDoc {
     try {
       for (const entry of merged.slice(-STATS_LIMIT)) {
         entry.stats = this.#statsFor(entry)
+        // Every edit reads "Edit" on its own; what tells two of them apart is
+        // the part of the CV each one touched.
+        if (entry.kind === 'edit') entry.message = describeEdit(this.#sectionsCache.get(entry.key) ?? [])
       }
     } finally {
       this.#probing = false
@@ -917,6 +965,28 @@ function mergeStyleRuns(list: HistoryEntry[]): HistoryEntry[] {
     else out.push(entry)
   }
   return out
+}
+
+/**
+ * The headings a stretch of text falls under: the nearest one above where it
+ * starts, then every one inside it — a paste of two sections names both.
+ */
+function spanned(headings: Heading[], from: number, to: number): string[] {
+  const inside: string[] = []
+  let above: string | null = null
+  for (const h of headings) {
+    if (h.from <= from) above = h.title
+    else if (h.from < to) inside.push(h.title)
+  }
+  return above === null ? inside : [above, ...inside]
+}
+
+/** What an edit's line reads, given the parts of the CV it touched. */
+function describeEdit(sections: string[]): string {
+  if (!sections.length) return 'Edit'
+  const shown = sections.slice(0, SECTIONS_SHOWN)
+  const rest = sections.length - shown.length
+  return `Edit: ${shown.join(', ')}${rest ? ` +${rest}` : ''}`
 }
 
 /**

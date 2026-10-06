@@ -5,7 +5,7 @@
 
 import type { SourceFormat } from '@vibe-resume/core/format'
 import { byPosition, lintWriting } from '@vibe-resume/core/writing'
-import { read } from './read'
+import { outline, read } from './read'
 import template from './template.md?raw'
 
 export const markdown: SourceFormat = {
@@ -15,6 +15,7 @@ export const markdown: SourceFormat = {
   mime: 'text/markdown',
   template,
   read,
+  outline,
   // Markdown has no syntax errors, so what the reader noticed is all there is
   // of its own; the writing is checked as it is in every format.
   lint: (text) => {

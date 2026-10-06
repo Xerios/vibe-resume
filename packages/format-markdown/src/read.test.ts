@@ -2,7 +2,7 @@ import { parseWith } from '@vibe-resume/core/format'
 import { buildModel } from '@vibe-resume/render/model'
 import { describe, expect, it } from 'vitest'
 import { markdown } from './index'
-import { read } from './read'
+import { outline, read } from './read'
 
 const parse = (text: string) => parseWith(markdown, text)
 
@@ -198,5 +198,17 @@ describe('an entry’s own paragraph', () => {
     expect(item.sub).toBe('Brussels')
     expect(item.summary).toEqual(['TEST'])
     expect(item.bullets).toEqual(['BULLET'])
+  })
+})
+
+describe('the outline', () => {
+  const text = '# Jo Doe\n\n## Summary\n\nProse.\n\n## Skills\n\n### **Core**\n\n- TypeScript\n'
+
+  it('names every heading, whatever its level', () => {
+    expect(outline(text).map((h) => h.title)).toEqual(['Jo Doe', 'Summary', 'Skills', 'Core'])
+  })
+
+  it('puts each one at the offset its line starts on', () => {
+    for (const h of outline(text)) expect(text.slice(h.from)).toMatch(/^#/)
   })
 })
