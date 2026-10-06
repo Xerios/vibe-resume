@@ -125,7 +125,7 @@
       }
     })
 
-    // A PDF dropped anywhere on the app reopens the CV it was exported from.
+    // A PDF dropped anywhere on the app recovers the CV it was exported from.
     // Caught on the way down, so the editor never takes it for text to insert;
     // anything else dropped is left to whatever is under the pointer.
     /** @param {DragEvent} e */
@@ -139,7 +139,7 @@
       if (!isPdf(e)) return
       e.preventDefault()
       e.stopPropagation()
-      for (const file of e.dataTransfer?.files ?? []) if (file.type === 'application/pdf') void commands.importPdf(file)
+      for (const file of e.dataTransfer?.files ?? []) if (file.type === 'application/pdf') void commands.recoverFromPdf(file)
     }
     window.addEventListener('dragover', onDragOver, true)
     window.addEventListener('drop', onDrop, true)
@@ -875,9 +875,10 @@
   <CompareModal left={compare.left} right={compare.right} />
 {/if}
 
-<!-- An ADS flag: bottom-left, on the overlay surface, with an icon. -->
-<div id="toast" class:show={ui.toastOn} role="status">
-  <span class="toast-icon"><Icon icon={IconCheck} width="24" height="24" /></span>
+<!-- An ADS flag: bottom-left, on the overlay surface, with an icon. A failure
+     says so with the banner's warning icon, and is announced as an alert. -->
+<div id="toast" class:show={ui.toastOn} class:error={ui.toastTone === 'error'} role={ui.toastTone === 'error' ? 'alert' : 'status'}>
+  <span class="toast-icon"><Icon icon={ui.toastTone === 'error' ? IconAlert : IconCheck} width="24" height="24" /></span>
   <span>{ui.toastMsg}</span>
 </div>
 
@@ -1042,6 +1043,14 @@
     flex-shrink: 0;
     display: flex;
     color: var(--ds-icon-success);
+  }
+
+  #toast.error {
+    border-color: var(--ds-border-danger);
+
+    .toast-icon {
+      color: var(--ds-icon-danger);
+    }
   }
 
   /* ── Narrow screens ───────────────────────────── */

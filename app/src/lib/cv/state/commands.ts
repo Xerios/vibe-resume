@@ -76,29 +76,31 @@ export const commands = {
   },
 
   /**
-   * Reopen a CV from a PDF this editor exported, which carries its source as
+   * Recover a CV from a PDF this editor exported, which carries its source as
    * an attachment — so a CV lost with the browser's storage comes back from
-   * any copy that was sent out. The tab is named after the PDF.
+   * any copy that was sent out. The tab is named after the PDF. This reads that
+   * attachment; it does not read a CV out of an arbitrary PDF's text, so a PDF
+   * from anywhere else fails, and says why.
    */
-  async importPdf(file: File): Promise<void> {
+  async recoverFromPdf(file: File): Promise<void> {
     const source = await readSource(new Uint8Array(await file.arrayBuffer())).catch(() => null)
     const format = source && Object.values(formats).find((f) => f.mime === source.mime)
     if (!source || !format) {
-      ui.toast(`"${file.name}" has no CV source in it — only PDFs exported from here do`)
+      ui.toast(`Can't recover "${file.name}" — it carries no CV source. Only PDFs exported from this editor can be recovered.`, 'error')
       return
     }
     const base = file.name.replace(/\.pdf$/i, '') || 'cv'
     commands.openImported(format.extensions.some((ext) => base.toLowerCase().endsWith(ext)) ? base : `${base}${format.extensions[0]}`, source.text)
   },
 
-  /** Choose a PDF to reopen — see `importPdf`. */
+  /** Choose a PDF to recover from — see `recoverFromPdf`. */
   pickPdf(): void {
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = '.pdf,application/pdf'
     input.addEventListener('change', () => {
       const file = input.files?.[0]
-      if (file) void commands.importPdf(file)
+      if (file) void commands.recoverFromPdf(file)
     })
     input.click()
   },

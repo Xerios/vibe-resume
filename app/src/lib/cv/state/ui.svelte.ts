@@ -20,8 +20,12 @@ export interface Problem {
   text: string
 }
 
-/** How long a toast stays up. */
+/** How long a toast stays up. A failure gets longer — it has to be read. */
 const TOAST_MS = 2200
+const TOAST_ERROR_MS = 6000
+
+/** Whether a toast reports something that worked or something that didn't. */
+export type ToastTone = 'success' | 'error'
 
 /**
  * How the window is arranged and what this browser prefers: which panels are
@@ -94,13 +98,16 @@ export class UiState {
   parseError = $state<string | null>(null)
   toastMsg = $state('')
   toastOn = $state(false)
+  /** Whether the toast reports a failure rather than something that worked. */
+  toastTone = $state<ToastTone>('success')
   #toastTimer: ReturnType<typeof setTimeout> | undefined
 
-  toast(msg: string): void {
+  toast(msg: string, tone: ToastTone = 'success'): void {
     this.toastMsg = msg
+    this.toastTone = tone
     this.toastOn = true
     clearTimeout(this.#toastTimer)
-    this.#toastTimer = setTimeout(() => (this.toastOn = false), TOAST_MS)
+    this.#toastTimer = setTimeout(() => (this.toastOn = false), tone === 'error' ? TOAST_ERROR_MS : TOAST_MS)
   }
 
   destroy(): void {

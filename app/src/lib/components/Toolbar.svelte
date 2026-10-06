@@ -59,7 +59,7 @@
      the middle; it gives up its subtitle, then its name, then its logo as the
      bar narrows, and the right side then shrinks to its buttons so the tabs get
      the rest. A Menu button at the left end carries the product name
-     and new CV, import, compare, themes, history, welcome; on a phone the PDF button says so in so many letters. -->
+     and new CV, recover from PDF, compare, themes, history, welcome; on a phone the PDF button says so in so many letters. -->
 <header id="toolbar">
   <div class="t-side t-left">
     <div class="t-menu-wrap">
@@ -77,9 +77,14 @@
             <Icon icon={IconCopy} width="16" height="16" />
             <span>Duplicate Tab</span>
           </button>
-          <button class="ds-menu-item" role="menuitem" onclick={() => pick(commands.pickPdf)}>
+          <button
+            class="ds-menu-item"
+            role="menuitem"
+            title="Reopen a CV from a PDF this editor exported — its source travels inside the file"
+            onclick={() => pick(commands.pickPdf)}
+          >
             <Icon icon={IconFileUp} width="16" height="16" />
-            <span>Import from PDF…</span>
+            <span>Recover from PDF…</span>
           </button>
           <div class="ds-menu-sep"></div>
           <button class="ds-menu-item" role="menuitem" onclick={() => pick(() => commands.openCompare())}>
