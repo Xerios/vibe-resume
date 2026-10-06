@@ -70,7 +70,9 @@
     if (downOnBackdrop && e.target === e.currentTarget) onBackdrop()
   }}
 >
-  <!-- An ADS modal: header with title and close, body, footer with the action. -->
+  <!-- A dialog: header with title and close, body, footer with the action.
+       The four things worth knowing are a list, not a grid of cards — four
+       cards is four boxes inside a box, which is three too many. -->
   <div class="w-card" class:nudge={nudging}>
     <header class="w-head">
       <img src={logo} alt="" width="32" height="32" />
@@ -137,54 +139,61 @@
     justify-content: center;
     padding: var(--ds-space-200);
     background: var(--ds-blanket);
-    animation: w-fade 200ms var(--ease);
+    animation: w-fade 150ms var(--ease);
   }
 
-  /* ADS's small modal: 400px, the overlay surface, the large radius. */
+  /* The dialog: the overlay surface inside the same hairline every floating
+     surface here wears, and the shadow that separates it from what it covers.
+     440px — wide enough for the longest point to set in three lines. */
   .w-card {
-    width: min(480px, 100%);
+    width: min(440px, 100%);
     max-height: 100%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     background: var(--ds-surface-overlay);
-    border-radius: var(--ds-radius-large);
+    border: var(--ds-border-width) solid var(--ds-border);
+    border-radius: var(--ds-radius-xlarge);
     box-shadow: var(--ds-shadow-overlay);
-    animation: w-rise 300ms var(--ease);
+    animation: w-rise 200ms var(--ease);
   }
 
   .w-head {
     display: flex;
     align-items: center;
-    gap: var(--ds-space-150);
-    padding: var(--ds-space-300) var(--ds-space-300) var(--ds-space-200);
+    gap: var(--ds-space-100);
+    padding: var(--ds-space-250) var(--ds-space-250) var(--ds-space-150);
 
     img {
       flex-shrink: 0;
-      border-radius: var(--ds-radius-medium);
+      border-radius: var(--ds-radius-small);
     }
 
     h1 {
       flex: 1;
       margin: 0;
       font: var(--ds-font-heading-medium);
+      letter-spacing: var(--tracking-tight);
       color: var(--ds-text);
     }
   }
 
   .w-body {
     overflow-y: auto;
-    padding: var(--ds-space-025) var(--ds-space-300);
+    padding: 0 var(--ds-space-250);
   }
 
   .w-lede {
-    margin: 0 0 var(--ds-space-300);
+    margin: 0 0 var(--ds-space-250);
     font: var(--ds-font-body);
-    color: var(--ds-text);
+    line-height: var(--lh-prose);
+    color: var(--ds-text-subtle);
   }
 
+  /* A list. Each point is its glyph, its heading and a line or two — the air
+     between them is what separates them, not a box around each. */
   .w-points {
-    margin: 0 0 var(--ds-space-300);
+    margin: 0 0 var(--ds-space-250);
     padding: 0;
     list-style: none;
     display: flex;
@@ -196,6 +205,7 @@
       align-items: flex-start;
       gap: var(--ds-space-150);
       font: var(--ds-font-body);
+      line-height: var(--lh-prose);
       color: var(--ds-text-subtle);
     }
 
@@ -203,20 +213,15 @@
       display: block;
       font: var(--ds-font-heading-xsmall);
       color: var(--ds-text);
-      margin-bottom: var(--ds-space-025);
     }
   }
 
-  /* An icon tile, the way ADS lists features: the brand icon on the palest
-     brand fill. */
+  /* The glyph, in the accent and nothing else: no tile, no fill, no edge.
+     Nudged down to the cap height of the heading beside it. */
   .w-icon {
     flex-shrink: 0;
-    display: grid;
-    place-items: center;
-    width: 32px;
-    height: 32px;
-    border-radius: var(--ds-radius-medium);
-    background: var(--ds-background-selected);
+    display: flex;
+    margin-top: 1px;
     color: var(--ds-icon-brand);
   }
 
@@ -225,7 +230,7 @@
     align-items: center;
     justify-content: flex-end;
     gap: var(--ds-space-100);
-    padding: var(--ds-space-300);
+    padding: var(--ds-space-200) var(--ds-space-250) var(--ds-space-250);
   }
 
   /* Pushed to the far left, away from the action. */
@@ -278,7 +283,7 @@
   @keyframes w-rise {
     from {
       opacity: 0;
-      transform: translateY(16px);
+      transform: translateY(4px) scale(0.99);
     }
   }
 

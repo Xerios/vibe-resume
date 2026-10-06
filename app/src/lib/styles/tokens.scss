@@ -1,268 +1,300 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   Design tokens — the Atlassian Design System's, as two schemes.
+   Design tokens — the Atlassian Design System's *vocabulary*, with the
+   palette and density of a Linear-style application UI.
 
    Nothing here selects anything the app draws; every rule that does lives in a
    component's <style> block or in one of the sibling stylesheets listed in
    src/app.scss.
 
-   The vocabulary is ADS's own, letter for letter: `color.text.subtle` in the
+   The names are ADS's own, letter for letter: `color.text.subtle` in the
    Atlassian token set is `--ds-text-subtle` here, `elevation.surface.overlay`
-   is `--ds-surface-overlay`, `space.150` is `--ds-space-150`. Values are the
-   published light and dark values, typed out rather than imported — the
-   @atlaskit/tokens package would pull in a runtime and a theme loader to set
-   a few dozen custom properties. Because the names match, any ADS component
-   page on atlassian.design is a spec this stylesheet can be checked against.
+   is `--ds-surface-overlay`, `space.150` is `--ds-space-150`. The *values*
+   are not ADS's. They describe a tool rather than a page:
 
-   ADS tokens are *semantic*: a rule asks for "the subtle text colour" or "the
-   background of a selected thing", never for a hue or a step. The dark block
-   restates every one of them, so no rule in the app needs a dark branch.
+     near-black grounds in flat steps (#08090A → #1C1D1F), one indigo accent
+     (#5E6AD2) reserved for the primary action and for what is selected, dark
+     solid hairlines rather than translucent ones, no gradients, no glow, and
+     a shadow only on something that genuinely floats.
+
+   Keeping the names means every rule in the app already asks for the right
+   thing — "the subtle text colour", "the background of a selected thing" —
+   and the two schemes restate all of them, so no rule needs a dark branch.
 
    The families, and what each is for:
 
      --ds-text-*          words. `-subtle` for secondary, `-subtlest` for meta.
      --ds-icon-*          glyphs, one notch quieter than the text beside them.
-     --ds-border-*        edges. `-input` for fields, `-focused` for the ring.
+     --ds-border-*        edges. `-input` for fields, `-focused` for the ring,
+                          `-hovered` for the edge a control takes on approach.
      --ds-background-*    fills. `neutral` for a button at rest, `-subtle` for
                           one that is transparent until hovered, `selected` for
                           what is on, `brand-bold` for the one primary action.
      --ds-surface-*       the elevation ladder: sunken < surface < raised <
                           overlay. Paired with the matching --ds-shadow-*.
      --ds-space-*         the 8px grid, named in hundredths of it.
-     --ds-radius-*        corners.
+     --ds-radius-*        corners. Small, because a dense UI with large radii
+                          reads as a set of pills rather than as a surface.
      --ds-font-*          `font` shorthands for the body and heading styles.
 
+   Two of our own sit beside them, prefixed plainly so a reader can tell which
+   vocabulary a rule is spending: `--accent` (the indigo, where a rule needs
+   the colour rather than a ready-made fill) and `--lh-prose`, the line height
+   the few genuinely prose surfaces take instead of the ramp's.
+
    The sheet in the preview frame is not reachable from here and never follows:
-   it is a separate document with its own inputs in src/lib/cv/frame.css.
+   it is a separate document with its own inputs in packages/render/src/frame.css.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── Colour: light ────────────────────────────── */
+/* The default, and the same system in reverse: white panes on a faintly grey
+   ground, near-black text, the same indigo, hairlines light enough to divide
+   without drawing. */
 :root {
   /* Tells the browser which scheme its own chrome should use — the bits no
      stylesheet reaches, like the scrollbars inside a native popup. */
   color-scheme: light;
 
-  --ds-text: #172b4d;
-  --ds-text-subtle: #44546f;
-  --ds-text-subtlest: #626f86;
-  --ds-text-disabled: #091e424f;
+  --ds-text: #282a30;
+  --ds-text-subtle: #6b6f76;
+  --ds-text-subtlest: #8a8f98;
+  --ds-text-disabled: #282a3061;
   --ds-text-inverse: #ffffff;
-  --ds-text-brand: #0c66e4;
-  --ds-text-selected: #0c66e4;
-  --ds-text-danger: #ae2e24;
-  --ds-text-warning: #a54800;
-  --ds-text-warning-inverse: #172b4d;
-  --ds-text-success: #216e4e;
-  --ds-text-information: #0055cc;
-  --ds-text-discovery: #5e4db2;
-  --ds-link: #0c66e4;
-  --ds-link-pressed: #0055cc;
+  --ds-text-brand: #5e6ad2;
+  --ds-text-selected: #5e6ad2;
+  --ds-text-danger: #c5362c;
+  --ds-text-warning: #96620b;
+  --ds-text-warning-inverse: #282a30;
+  --ds-text-success: #2f7d5b;
+  --ds-text-information: #2563c4;
+  --ds-text-discovery: #6b47b8;
+  --ds-link: #5e6ad2;
+  --ds-link-pressed: #4f5ab8;
 
-  --ds-text-accent-blue: #0055cc;
-  --ds-text-accent-green: #216e4e;
-  --ds-text-accent-orange: #a54800;
-  --ds-text-accent-purple: #5e4db2;
-  --ds-text-accent-teal: #206a83;
-  --ds-text-accent-magenta: #943d73;
-  --ds-text-accent-yellow: #7f5f01;
-  --ds-text-accent-gray: #44546f;
+  --ds-text-accent-blue: #2563c4;
+  --ds-text-accent-green: #2f7d5b;
+  --ds-text-accent-orange: #a8570c;
+  --ds-text-accent-purple: #6b47b8;
+  --ds-text-accent-teal: #16697e;
+  --ds-text-accent-magenta: #9c3179;
+  --ds-text-accent-yellow: #8a6508;
+  --ds-text-accent-gray: #6b6f76;
 
-  --ds-icon: #44546f;
-  --ds-icon-subtle: #626f86;
-  --ds-icon-brand: #0c66e4;
-  --ds-icon-selected: #0c66e4;
-  --ds-icon-danger: #c9372c;
-  --ds-icon-warning: #e56910;
-  --ds-icon-success: #22a06b;
-  --ds-icon-information: #1d7afc;
+  --ds-icon: #6b6f76;
+  --ds-icon-subtle: #8a8f98;
+  --ds-icon-brand: #5e6ad2;
+  --ds-icon-selected: #5e6ad2;
+  --ds-icon-danger: #eb5757;
+  --ds-icon-warning: #f2994a;
+  --ds-icon-success: #4cb782;
+  --ds-icon-information: #4ea7fc;
 
-  --ds-border: #091e4224;
-  --ds-border-bold: #758195;
-  --ds-border-input: #8590a2;
-  --ds-border-focused: #388bff;
-  --ds-border-selected: #0c66e4;
-  --ds-border-brand: #0c66e4;
-  --ds-border-danger: #e2483d;
-  --ds-border-warning: #e56910;
-  --ds-border-success: #22a06b;
-  --ds-border-information: #1d7afc;
-  --ds-border-disabled: #091e420f;
+  /* A hairline divides; it does not outline. `-hovered` is the step it takes
+     under the pointer, and `-bold` the one place a line must be seen. */
+  --ds-border: #e9e9ec;
+  --ds-border-hovered: #dcdce0;
+  --ds-border-bold: #c7c7cc;
+  --ds-border-input: #dcdce0;
+  --ds-border-focused: #5e6ad2;
+  --ds-border-selected: #5e6ad2;
+  --ds-border-brand: #5e6ad2;
+  --ds-border-danger: #eb5757;
+  --ds-border-warning: #f2994a;
+  --ds-border-success: #4cb782;
+  --ds-border-information: #4ea7fc;
+  --ds-border-disabled: #f0f0f2;
 
-  --ds-background-neutral: #091e420f;
-  --ds-background-neutral-hovered: #091e4224;
-  --ds-background-neutral-pressed: #091e424f;
+  --ds-background-neutral: #282a300d;
+  --ds-background-neutral-hovered: #282a3014;
+  --ds-background-neutral-pressed: #282a301f;
   --ds-background-neutral-subtle: #00000000;
-  --ds-background-neutral-subtle-hovered: #091e420f;
-  --ds-background-neutral-subtle-pressed: #091e4224;
-  --ds-background-neutral-bold: #44546f;
-  --ds-background-neutral-bold-hovered: #2c3e5d;
-  --ds-background-neutral-bold-pressed: #172b4d;
-  --ds-background-brand-bold: #0c66e4;
-  --ds-background-brand-bold-hovered: #0055cc;
-  --ds-background-brand-bold-pressed: #09326c;
-  --ds-background-selected: #e9f2ff;
-  --ds-background-selected-hovered: #cce0ff;
-  --ds-background-selected-pressed: #85b8ff;
-  --ds-background-danger: #ffeceb;
-  --ds-background-danger-hovered: #ffd5d2;
-  --ds-background-danger-bold: #c9372c;
-  --ds-background-danger-bold-hovered: #ae2e24;
-  --ds-background-danger-bold-pressed: #5d1f1a;
-  --ds-background-warning: #fff7d6;
-  --ds-background-warning-hovered: #f8e6a0;
-  --ds-background-warning-bold: #f5cd47;
-  --ds-background-success: #dcfff1;
-  --ds-background-success-hovered: #baf3db;
-  --ds-background-success-bold: #1f845a;
-  --ds-background-information: #e9f2ff;
-  --ds-background-information-hovered: #cce0ff;
-  --ds-background-information-bold: #1d7afc;
-  --ds-background-discovery: #f3f0ff;
+  --ds-background-neutral-subtle-hovered: #282a300d;
+  --ds-background-neutral-subtle-pressed: #282a3014;
+  --ds-background-neutral-bold: #3c3f45;
+  --ds-background-neutral-bold-hovered: #2f3136;
+  --ds-background-neutral-bold-pressed: #282a30;
+  --ds-background-brand-bold: #5e6ad2;
+  --ds-background-brand-bold-hovered: #5460c6;
+  --ds-background-brand-bold-pressed: #4f5ab8;
+  --ds-background-selected: #5e6ad214;
+  --ds-background-selected-hovered: #5e6ad224;
+  --ds-background-selected-pressed: #5e6ad233;
+  --ds-background-danger: #eb57571a;
+  --ds-background-danger-hovered: #eb57572b;
+  --ds-background-danger-bold: #d64a4a;
+  --ds-background-danger-bold-hovered: #c5362c;
+  --ds-background-danger-bold-pressed: #a82b23;
+  --ds-background-warning: #f2994a1f;
+  --ds-background-warning-hovered: #f2994a33;
+  --ds-background-warning-bold: #f2c94c;
+  --ds-background-success: #4cb7821f;
+  --ds-background-success-hovered: #4cb78233;
+  --ds-background-success-bold: #4cb782;
+  --ds-background-information: #4ea7fc1f;
+  --ds-background-information-hovered: #4ea7fc33;
+  --ds-background-information-bold: #4ea7fc;
+  --ds-background-discovery: #b59aff2b;
   --ds-background-input: #ffffff;
-  --ds-background-input-hovered: #f7f8f9;
-  --ds-background-disabled: #091e4208;
+  --ds-background-input-hovered: #fbfbfc;
+  --ds-background-disabled: #282a3008;
 
-  --ds-background-accent-blue-subtler: #cce0ff;
-  --ds-background-accent-blue-subtlest: #e9f2ff;
-  --ds-background-accent-green-subtler: #baf3db;
-  --ds-background-accent-red-subtler: #ffd5d2;
-  --ds-background-accent-yellow-subtler: #f8e6a0;
-  --ds-background-accent-yellow-subtlest: #fff7d6;
-  --ds-background-accent-blue-bolder: #0c66e4;
+  --ds-background-accent-blue-subtler: #4ea7fc33;
+  --ds-background-accent-blue-subtlest: #4ea7fc1a;
+  --ds-background-accent-green-subtler: #4cb78233;
+  --ds-background-accent-red-subtler: #eb575733;
+  --ds-background-accent-yellow-subtler: #f2c94c47;
+  --ds-background-accent-yellow-subtlest: #f2c94c24;
+  --ds-background-accent-blue-bolder: #4ea7fc;
 
+  /* The ladder is flat on purpose: a pane is told apart from the ground by a
+     few per cent of lightness and a hairline, not by a shadow. */
   --ds-surface: #ffffff;
-  --ds-surface-hovered: #f1f2f4;
-  --ds-surface-pressed: #dcdfe4;
+  --ds-surface-hovered: #fbfbfc;
+  --ds-surface-pressed: #f4f5f8;
   --ds-surface-sunken: #f7f8f9;
   --ds-surface-raised: #ffffff;
-  --ds-surface-raised-hovered: #f1f2f4;
-  --ds-surface-raised-pressed: #dcdfe4;
+  --ds-surface-raised-hovered: #fbfbfc;
+  --ds-surface-raised-pressed: #f4f5f8;
   --ds-surface-overlay: #ffffff;
-  --ds-surface-overlay-hovered: #f1f2f4;
-  --ds-surface-overlay-pressed: #dcdfe4;
+  --ds-surface-overlay-hovered: #f7f8f9;
+  --ds-surface-overlay-pressed: #f0f0f2;
 
-  --ds-shadow-raised: 0px 1px 1px #091e4240, 0px 0px 1px #091e424f;
-  --ds-shadow-overflow: 0px 0px 8px #091e4229, 0px 0px 1px #091e421f;
-  --ds-shadow-overlay: 0px 8px 12px #091e4226, 0px 0px 1px #091e424f;
-  --ds-blanket: #091e427d;
-  --ds-skeleton: #091e420f;
+  /* Only something that genuinely floats gets one, and then tightly: a menu
+     is a surface with an edge, not an object casting light. */
+  --ds-shadow-raised: 0 1px 2px #282a300f;
+  --ds-shadow-overflow: 0 2px 8px #282a3014;
+  --ds-shadow-overlay: 0 8px 24px #282a301f, 0 1px 2px #282a3014;
+  --ds-blanket: #282a3052;
+  --ds-skeleton: #282a300d;
+
+  --accent: #5e6ad2;
 
   /* Read by syncThemeColor() and handed to <meta name="theme-color">, which
      parses a plain colour and nothing else. It is the top navigation's surface,
      since the installed window's titlebar sits directly on top of it. Nothing
      else may spend this token. */
-  --theme-color: #ffffff;
+  --theme-color: #f7f8f9;
 }
 
 /* ── Colour: dark ─────────────────────────────── */
+/* Where the look starts from: four flat near-blacks, soft white text, and
+   borders that are a dark grey of their own rather than white at a few per
+   cent — which is what keeps an edge from glowing against the ground. */
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --ds-text: #b6c2cf;
-  --ds-text-subtle: #9fadbc;
-  --ds-text-subtlest: #8c9bab;
-  --ds-text-disabled: #bfdbf847;
-  --ds-text-inverse: #1d2125;
-  --ds-text-brand: #579dff;
-  --ds-text-selected: #579dff;
-  --ds-text-danger: #fd9891;
-  --ds-text-warning: #f5cd47;
-  --ds-text-warning-inverse: #1d2125;
-  --ds-text-success: #7ee2b8;
-  --ds-text-information: #85b8ff;
-  --ds-text-discovery: #b8acf6;
-  --ds-link: #579dff;
-  --ds-link-pressed: #85b8ff;
+  --ds-text: #f7f8f8;
+  --ds-text-subtle: #8a8f98;
+  --ds-text-subtlest: #62666d;
+  --ds-text-disabled: #f7f8f840;
+  --ds-text-inverse: #ffffff;
+  --ds-text-brand: #9ba3e8;
+  --ds-text-selected: #c0c5f0;
+  --ds-text-danger: #f38b8b;
+  --ds-text-warning: #f2c94c;
+  --ds-text-warning-inverse: #08090a;
+  --ds-text-success: #7dd3a5;
+  --ds-text-information: #8cc7fd;
+  --ds-text-discovery: #c7b2ff;
+  --ds-link: #9ba3e8;
+  --ds-link-pressed: #c0c5f0;
 
-  --ds-text-accent-blue: #85b8ff;
-  --ds-text-accent-green: #7ee2b8;
-  --ds-text-accent-orange: #fec195;
-  --ds-text-accent-purple: #b8acf6;
-  --ds-text-accent-teal: #9dd9ee;
-  --ds-text-accent-magenta: #fdd0ec;
-  --ds-text-accent-yellow: #f5cd47;
-  --ds-text-accent-gray: #9fadbc;
+  --ds-text-accent-blue: #8cc7fd;
+  --ds-text-accent-green: #7dd3a5;
+  --ds-text-accent-orange: #f3b182;
+  --ds-text-accent-purple: #c7b2ff;
+  --ds-text-accent-teal: #7fd4e8;
+  --ds-text-accent-magenta: #eaa0d4;
+  --ds-text-accent-yellow: #e8d26a;
+  --ds-text-accent-gray: #8a8f98;
 
-  --ds-icon: #9fadbc;
-  --ds-icon-subtle: #8696a7;
-  --ds-icon-brand: #579dff;
-  --ds-icon-selected: #579dff;
-  --ds-icon-danger: #f15b50;
-  --ds-icon-warning: #f38a3f;
-  --ds-icon-success: #2abb7f;
-  --ds-icon-information: #388bff;
+  --ds-icon: #8a8f98;
+  --ds-icon-subtle: #62666d;
+  --ds-icon-brand: #9ba3e8;
+  --ds-icon-selected: #c0c5f0;
+  --ds-icon-danger: #eb5757;
+  --ds-icon-warning: #f2994a;
+  --ds-icon-success: #4cb782;
+  --ds-icon-information: #4ea7fc;
 
-  --ds-border: #a6c5e229;
-  --ds-border-bold: #738496;
-  --ds-border-input: #738496;
-  --ds-border-focused: #85b8ff;
-  --ds-border-selected: #579dff;
-  --ds-border-brand: #579dff;
-  --ds-border-danger: #f15b50;
-  --ds-border-warning: #f38a3f;
-  --ds-border-success: #2abb7f;
-  --ds-border-information: #388bff;
-  --ds-border-disabled: #bcd6f01f;
+  --ds-border: #23252a;
+  --ds-border-hovered: #2f3136;
+  --ds-border-bold: #3c3f45;
+  --ds-border-input: #2f3136;
+  --ds-border-focused: #5e6ad2;
+  --ds-border-selected: #5e6ad2;
+  --ds-border-brand: #5e6ad2;
+  --ds-border-danger: #eb5757;
+  --ds-border-warning: #f2994a;
+  --ds-border-success: #4cb782;
+  --ds-border-information: #4ea7fc;
+  --ds-border-disabled: #1a1c1f;
 
-  --ds-background-neutral: #a1bdd914;
-  --ds-background-neutral-hovered: #a6c5e229;
-  --ds-background-neutral-pressed: #bfdbf847;
+  --ds-background-neutral: #f7f8f80d;
+  --ds-background-neutral-hovered: #f7f8f814;
+  --ds-background-neutral-pressed: #f7f8f81f;
   --ds-background-neutral-subtle: #00000000;
-  --ds-background-neutral-subtle-hovered: #a1bdd914;
-  --ds-background-neutral-subtle-pressed: #a6c5e229;
-  --ds-background-neutral-bold: #9fadbc;
-  --ds-background-neutral-bold-hovered: #b6c2cf;
-  --ds-background-neutral-bold-pressed: #c7d1db;
-  --ds-background-brand-bold: #579dff;
-  --ds-background-brand-bold-hovered: #85b8ff;
-  --ds-background-brand-bold-pressed: #cce0ff;
-  --ds-background-selected: #1c2b41;
-  --ds-background-selected-hovered: #09326c;
-  --ds-background-selected-pressed: #0055cc;
-  --ds-background-danger: #42221f;
-  --ds-background-danger-hovered: #5d1f1a;
-  --ds-background-danger-bold: #f87168;
-  --ds-background-danger-bold-hovered: #fd9891;
-  --ds-background-danger-bold-pressed: #ffd5d2;
-  --ds-background-warning: #533f04;
-  --ds-background-warning-hovered: #7f5f01;
-  --ds-background-warning-bold: #f5cd47;
-  --ds-background-success: #164b35;
-  --ds-background-success-hovered: #216e4e;
-  --ds-background-success-bold: #4bce97;
-  --ds-background-information: #1c2b41;
-  --ds-background-information-hovered: #09326c;
-  --ds-background-information-bold: #579dff;
-  --ds-background-discovery: #2b273f;
-  --ds-background-input: #22272b;
-  --ds-background-input-hovered: #282e33;
-  --ds-background-disabled: #bcd6f00a;
+  --ds-background-neutral-subtle-hovered: #f7f8f80d;
+  --ds-background-neutral-subtle-pressed: #f7f8f814;
+  --ds-background-neutral-bold: #8a8f98;
+  --ds-background-neutral-bold-hovered: #9aa0a8;
+  --ds-background-neutral-bold-pressed: #b0b5bd;
+  --ds-background-brand-bold: #5e6ad2;
+  --ds-background-brand-bold-hovered: #6872d8;
+  --ds-background-brand-bold-pressed: #4f5ab8;
+  --ds-background-selected: #5e6ad22b;
+  --ds-background-selected-hovered: #5e6ad23d;
+  --ds-background-selected-pressed: #5e6ad254;
+  --ds-background-danger: #eb57571f;
+  --ds-background-danger-hovered: #eb575733;
+  --ds-background-danger-bold: #d64a4a;
+  --ds-background-danger-bold-hovered: #eb5757;
+  --ds-background-danger-bold-pressed: #c5362c;
+  --ds-background-warning: #f2994a1f;
+  --ds-background-warning-hovered: #f2994a33;
+  --ds-background-warning-bold: #f2c94c;
+  --ds-background-success: #4cb7821f;
+  --ds-background-success-hovered: #4cb78233;
+  --ds-background-success-bold: #4cb782;
+  --ds-background-information: #4ea7fc1f;
+  --ds-background-information-hovered: #4ea7fc33;
+  --ds-background-information-bold: #4ea7fc;
+  --ds-background-discovery: #b59aff24;
+  --ds-background-input: #101113;
+  --ds-background-input-hovered: #16181a;
+  --ds-background-disabled: #f7f8f808;
 
-  --ds-background-accent-blue-subtler: #09326c;
-  --ds-background-accent-blue-subtlest: #1c2b41;
-  --ds-background-accent-green-subtler: #164b35;
-  --ds-background-accent-red-subtler: #5d1f1a;
-  --ds-background-accent-yellow-subtler: #533f04;
-  --ds-background-accent-yellow-subtlest: #332e1b;
-  --ds-background-accent-blue-bolder: #579dff;
+  --ds-background-accent-blue-subtler: #4ea7fc38;
+  --ds-background-accent-blue-subtlest: #4ea7fc1f;
+  --ds-background-accent-green-subtler: #4cb78238;
+  --ds-background-accent-red-subtler: #eb575738;
+  --ds-background-accent-yellow-subtler: #f2c94c38;
+  --ds-background-accent-yellow-subtlest: #f2c94c1f;
+  --ds-background-accent-blue-bolder: #4ea7fc;
 
-  --ds-surface: #1d2125;
-  --ds-surface-hovered: #22272b;
-  --ds-surface-pressed: #282e33;
-  --ds-surface-sunken: #161a1d;
-  --ds-surface-raised: #22272b;
-  --ds-surface-raised-hovered: #282e33;
-  --ds-surface-raised-pressed: #2c333a;
-  --ds-surface-overlay: #282e33;
-  --ds-surface-overlay-hovered: #2c333a;
-  --ds-surface-overlay-pressed: #38414a;
+  /* The ladder, in four flat near-blacks. Sunken is the window's ground, and
+     a pane sits one step above it — two or three per cent, no more. */
+  --ds-surface: #0f1011;
+  --ds-surface-hovered: #16181a;
+  --ds-surface-pressed: #1c1d1f;
+  --ds-surface-sunken: #08090a;
+  --ds-surface-raised: #16181a;
+  --ds-surface-raised-hovered: #1c1d1f;
+  --ds-surface-raised-pressed: #232427;
+  --ds-surface-overlay: #1c1d1f;
+  --ds-surface-overlay-hovered: #232427;
+  --ds-surface-overlay-pressed: #2a2c2f;
 
-  --ds-shadow-raised: 0px 0px 0px 1px #00000000, 0px 1px 1px #03040480, 0px 0px 1px #03040480;
-  --ds-shadow-overflow: 0px 0px 12px #0304048f, 0px 0px 1px #03040480;
-  --ds-shadow-overlay: 0px 0px 0px 1px #39424a, 0px 8px 12px #0304045c, 0px 0px 1px 1px #03040480;
-  --ds-blanket: #10121499;
-  --ds-skeleton: #a1bdd914;
+  /* The hairline is what gives a floating surface its edge in the dark; the
+     shadow only has to separate it from what it covers. */
+  --ds-shadow-raised: 0 1px 2px #00000052;
+  --ds-shadow-overflow: 0 2px 8px #00000080;
+  --ds-shadow-overlay: 0 8px 24px #000000a6, 0 1px 2px #00000080;
+  --ds-blanket: #08090ab8;
+  --ds-skeleton: #f7f8f80d;
 
-  --theme-color: #1d2125;
+  --accent: #5e6ad2;
+
+  --theme-color: #08090a;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -271,7 +303,8 @@
 
 :root {
   /* ── Space ──────────────────────────────────── */
-  /* ADS's 8px grid, named in hundredths of it: 100 is 8px, 050 is half. */
+  /* The 8px grid, named in hundredths of it: 100 is 8px, 050 is half. A dense
+     UI lives in the bottom half of this scale; 400 and 500 are for a dialog. */
   --ds-space-0: 0;
   --ds-space-025: 2px;
   --ds-space-050: 4px;
@@ -285,68 +318,85 @@
   --ds-space-500: 40px;
 
   /* ── Shape ──────────────────────────────────── */
-  /* Small is the button and the field, medium the menu and the card, large
-     the dialog and the floating panel. */
-  --ds-radius-small: 3px;
-  --ds-radius-medium: 4px;
+  /* Small is the button and the field, medium the menu item, large the menu
+     and the card, xlarge the dialog and the floating panel. Kept tight: at
+     this density a large radius eats the corner of a 28px control. */
+  --ds-radius-small: 4px;
+  --ds-radius-medium: 6px;
   --ds-radius-large: 8px;
-  --ds-radius-xlarge: 12px;
+  --ds-radius-xlarge: 10px;
   --ds-radius-full: 9999px;
   --ds-border-width: 1px;
   --ds-border-width-selected: 2px;
 
   /* ── Type ───────────────────────────────────── */
-  /* ADS's type ramp as `font` shorthands, set in the app's own face rather
-     than Atlassian Sans. A rule spends one of these whole — size, line height
-     and weight travel together, which is how ADS specifies them. */
+  /* The ramp as `font` shorthands, in the bundled GitLab Sans. 13px is the
+     body, not 14 — an application UI wants the extra row on screen. A rule
+     spends one of these whole: size, line height and weight travel together.
+
+     Headings are barely larger than the body and lean on weight instead,
+     which is what keeps a panel header from reading as a page title. */
   --sans: 'GitLab Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ubuntu, Roboto, sans-serif;
   --mono: 'GitLab Mono', ui-monospace, Menlo, Consolas, monospace;
 
-  --ds-font-body: 400 14px/20px var(--sans);
+  --ds-font-body: 400 13px/18px var(--sans);
   --ds-font-body-small: 400 12px/16px var(--sans);
   --ds-font-body-ui: 400 11px/14px var(--sans);
-  --ds-font-heading-xxsmall: 600 12px/16px var(--sans);
-  --ds-font-heading-xsmall: 600 14px/16px var(--sans);
-  --ds-font-heading-small: 600 16px/20px var(--sans);
-  --ds-font-heading-medium: 500 20px/24px var(--sans);
-  --ds-font-heading-large: 500 24px/28px var(--sans);
-  --ds-font-code: 400 12px/20px var(--mono);
+  --ds-font-heading-xxsmall: 600 11px/14px var(--sans);
+  --ds-font-heading-xsmall: 600 13px/18px var(--sans);
+  --ds-font-heading-small: 600 14px/20px var(--sans);
+  --ds-font-heading-medium: 600 16px/22px var(--sans);
+  --ds-font-heading-large: 600 20px/26px var(--sans);
+  --ds-font-code: 400 12px/18px var(--mono);
   --ds-font-weight-medium: 500;
   --ds-font-weight-semibold: 600;
   --ds-font-weight-bold: 700;
 
+  /* The few surfaces that are read rather than scanned — a dialog's body, a
+     banner — take this instead of the ramp's line height. 1.5, not 1.7: the
+     paragraphs here are three lines long, and air between them does more
+     than air inside them. */
+  --lh-prose: 1.5;
+
+  /* A heading at 16px and up wants its letters closed up a little; the ramp
+     can't carry tracking, so it is its own token. */
+  --tracking-tight: -0.01em;
+
   /* ── The app's own measures ─────────────────── */
   /* The two bars: one across the top that carries the tabs, the product name
-     and the panel buttons, and a footer with room for a compact button. */
-  --bar-tool: 48px;
-  --bar-status: 32px;
+     and the panel buttons, and a footer with room for a compact button. Both
+     as short as their contents allow — the editor and the preview are what
+     the window is for. */
+  --bar-tool: 40px;
+  --bar-status: 28px;
   --panel-w: 320px;
   /* Where a popover hanging off the chrome starts: the bar above it, plus its
      rule. Derived so the panels that float can't drift from the bar they hang
      under. */
   --overlay-top: calc(var(--bar-tool) + 1px);
-  --control-h: 32px;
-  --control-h-compact: 24px;
-  --field-h: 40px;
-  --field-h-compact: 32px;
+  --control-h: 28px;
+  --control-h-compact: 22px;
+  --field-h: 32px;
+  --field-h-compact: 26px;
 
   /* A scrollbar is furniture on top of a pane whose colour it doesn't know. */
-  --scroll-thumb: var(--ds-border);
-  --scroll-thumb-hover: var(--ds-border-bold);
+  --scroll-thumb: var(--ds-border-bold);
+  --scroll-thumb-hover: var(--ds-text-subtlest);
 
   /* ── Motion ─────────────────────────────────── */
-  /* ADS's ease-out, and its two durations: small things answering the
-     pointer, and the slower fade a whole scheme swap deserves. */
-  --ease: cubic-bezier(0.15, 1, 0.3, 1);
-  --theme-fade: background-color 200ms var(--ease), color 200ms var(--ease), border-color 200ms var(--ease);
+  /* Fast and short. A control answers the pointer in 100ms and moves no
+     distance at all; nothing lifts, nothing bounces, nothing is decorative.
+     The one slower fade is a whole scheme swap, which is a real change. */
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --theme-fade: background-color 160ms var(--ease), color 160ms var(--ease), border-color 160ms var(--ease);
   --hover-fade: background-color 100ms var(--ease), color 100ms var(--ease), border-color 100ms var(--ease);
 
   /* ── Editor ─────────────────────────────────── */
-  /* The syntax roles, out of ADS's accent text set — the colours ADS reserves
-     for categorical labelling, which is what syntax highlighting is. They are
+  /* The syntax roles, out of the accent text set — the colours reserved for
+     categorical labelling, which is what syntax highlighting is. They are
      defined as legible on `surface`, which is what the editor's page is.
 
-     The tokens are read from JS as well as from CSS — see cm-highlight.js. */
+     The tokens are read from JS as well as from CSS — see cm-highlight.ts. */
   --cm-key: var(--ds-text-accent-blue);
   --cm-tag: var(--ds-text-accent-blue);
   --cm-string: var(--ds-text-accent-green);

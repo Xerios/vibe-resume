@@ -4,9 +4,11 @@
    one component; a class that only ever appears in one component does *not*
    belong here, it belongs in that component's <style> block.
 
-   Every rule spends the ADS tokens in tokens.scss and follows the component's
-   spec on atlassian.design: the same appearances, the same three states
-   (rest, hovered, pressed) and the same focus ring.
+   Every rule spends the tokens in tokens.scss and keeps ADS's structure — the
+   same appearances, the same three states (rest, hovered, pressed) and the
+   same focus ring — at an application UI's density and restraint: a control
+   is a fill and a label, nothing moves under the pointer, and the only thing
+   wearing the accent is the one primary action or the thing that is on.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── Button ───────────────────────────────────── */
@@ -20,9 +22,9 @@
   justify-content: center;
   gap: var(--ds-space-050);
   height: var(--control-h);
-  padding: 0 var(--ds-space-150);
+  padding: 0 var(--ds-space-100);
   background: var(--ds-background-neutral);
-  border: none;
+  border: var(--ds-border-width) solid var(--ds-border);
   border-radius: var(--ds-radius-small);
   cursor: pointer;
   font: var(--ds-font-body);
@@ -33,6 +35,8 @@
   text-decoration: none;
   transition: var(--hover-fade);
 
+  /* Only the fill changes. An edge that appears on approach is movement, and
+     a bar of buttons that all do it reads as the chrome twitching. */
   &:hover:not(:disabled) {
     background: var(--ds-background-neutral-hovered);
   }
@@ -41,19 +45,24 @@
     background: var(--ds-background-neutral-pressed);
   }
 
+  /* One pixel of the accent, close in. */
   &:focus-visible {
-    outline: 2px solid var(--ds-border-focused);
-    outline-offset: 2px;
+    outline: var(--ds-border-width) solid var(--ds-border-focused);
+    outline-offset: 1px;
   }
 
   &:disabled {
     background: var(--ds-background-disabled);
+    border-color: var(--ds-border-disabled);
     color: var(--ds-text-disabled);
     cursor: not-allowed;
   }
 
+  /* No box at all until it is approached, and then only a wash: this is the
+     appearance the two bars are made of, and they have to recede. */
   &.subtle {
     background: var(--ds-background-neutral-subtle);
+    border-color: transparent;
 
     &:hover:not(:disabled) {
       background: var(--ds-background-neutral-subtle-hovered);
@@ -65,11 +74,14 @@
 
     &:disabled {
       background: none;
+      border-color: transparent;
     }
   }
 
+  /* The one action on a surface that wears the accent, as a flat fill. */
   &.primary {
     background: var(--ds-background-brand-bold);
+    border-color: transparent;
     color: var(--ds-text-inverse);
 
     &:hover:not(:disabled) {
@@ -83,6 +95,7 @@
 
   &.danger {
     background: var(--ds-background-danger-bold);
+    border-color: transparent;
     color: var(--ds-text-inverse);
 
     &:hover:not(:disabled) {
@@ -97,10 +110,12 @@
   /* After the appearances, so a subtle toggle that is on reads as on. */
   &.selected {
     background: var(--ds-background-selected);
+    border-color: var(--ds-border-selected);
     color: var(--ds-text-selected);
 
     &:hover:not(:disabled) {
       background: var(--ds-background-selected-hovered);
+      border-color: var(--ds-border-selected);
     }
 
     &:active:not(:disabled) {
@@ -110,7 +125,7 @@
 
   &.compact {
     height: var(--control-h-compact);
-    padding: 0 var(--ds-space-100);
+    padding: 0 var(--ds-space-075);
   }
 
   /* The icon is the icon colour, not the label's, except where the button
@@ -131,7 +146,7 @@
   height: var(--control-h);
   padding: 0;
   background: var(--ds-background-neutral-subtle);
-  border: none;
+  border: var(--ds-border-width) solid transparent;
   border-radius: var(--ds-radius-small);
   cursor: pointer;
   color: var(--ds-icon);
@@ -139,6 +154,7 @@
 
   &:hover:not(:disabled) {
     background: var(--ds-background-neutral-subtle-hovered);
+    color: var(--ds-text);
   }
 
   &:active:not(:disabled) {
@@ -146,8 +162,8 @@
   }
 
   &:focus-visible {
-    outline: 2px solid var(--ds-border-focused);
-    outline-offset: 2px;
+    outline: var(--ds-border-width) solid var(--ds-border-focused);
+    outline-offset: 1px;
   }
 
   &:disabled {
@@ -158,10 +174,12 @@
   &.selected,
   &[aria-expanded='true'] {
     background: var(--ds-background-selected);
+    border-color: var(--ds-border-selected);
     color: var(--ds-icon-selected);
 
     &:hover:not(:disabled) {
       background: var(--ds-background-selected-hovered);
+      border-color: var(--ds-border-selected);
     }
   }
 
@@ -181,7 +199,7 @@
   padding: 0 var(--ds-space-075);
   border-radius: var(--ds-radius-full);
   background: var(--ds-background-neutral);
-  color: var(--ds-text);
+  color: var(--ds-text-subtle);
   font: var(--ds-font-body-small);
   font-variant-numeric: tabular-nums;
 
@@ -245,7 +263,7 @@
   height: var(--field-h);
   padding: 0 var(--ds-space-075);
   background: var(--ds-background-input);
-  border: 2px solid var(--ds-border-input);
+  border: var(--ds-border-width) solid var(--ds-border-input);
   border-radius: var(--ds-radius-small);
   font: var(--ds-font-body);
   color: var(--ds-text);
@@ -257,8 +275,11 @@
 
   &:hover:not(:focus):not(:disabled) {
     background: var(--ds-background-input-hovered);
+    border-color: var(--ds-border-hovered);
   }
 
+  /* One line rather than ADS's two: focus recolours the edge it already has,
+     and adds nothing around it. */
   &:focus {
     outline: none;
     border-color: var(--ds-border-focused);
@@ -293,22 +314,27 @@
 .ds-menu {
   display: flex;
   flex-direction: column;
-  min-width: 160px;
-  padding: var(--ds-space-050) 0;
+  min-width: 180px;
+  padding: var(--ds-space-050);
   background: var(--ds-surface-overlay);
-  border-radius: var(--ds-radius-medium);
+  border: var(--ds-border-width) solid var(--ds-border);
+  border-radius: var(--ds-radius-large);
   box-shadow: var(--ds-shadow-overlay);
 }
 
+/* Small, uppercase and quiet — a label on a group, not a title. */
 .ds-menu-heading {
   font: var(--ds-font-heading-xxsmall);
-  color: var(--ds-text-subtle);
-  padding: var(--ds-space-150) var(--ds-space-200) var(--ds-space-075);
+  color: var(--ds-text-subtlest);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: var(--ds-space-100) var(--ds-space-100) var(--ds-space-050);
 }
 
+/* Full width, so it divides the menu rather than the inset items. */
 .ds-menu-sep {
   height: var(--ds-border-width);
-  margin: var(--ds-space-075) 0;
+  margin: var(--ds-space-050) calc(-1 * var(--ds-space-050));
   background: var(--ds-border);
   border: none;
 }
@@ -316,13 +342,13 @@
 .ds-menu-item {
   display: flex;
   align-items: center;
-  gap: var(--ds-space-150);
+  gap: var(--ds-space-100);
   width: 100%;
-  min-height: 40px;
-  padding: var(--ds-space-100) var(--ds-space-200);
+  min-height: 28px;
+  padding: var(--ds-space-050) var(--ds-space-100);
   background: var(--ds-background-neutral-subtle);
   border: none;
-  border-radius: 0;
+  border-radius: var(--ds-radius-small);
   cursor: pointer;
   font: var(--ds-font-body);
   color: var(--ds-text);
@@ -340,8 +366,8 @@
   }
 
   &:focus-visible {
-    outline: 2px solid var(--ds-border-focused);
-    outline-offset: -2px;
+    outline: var(--ds-border-width) solid var(--ds-border-focused);
+    outline-offset: -1px;
   }
 
   &:disabled {
@@ -349,19 +375,13 @@
     cursor: not-allowed;
   }
 
+  /* The fill and the accent on the label are what say it is current; an item
+     this short has no edge to spare for a marker bar. */
   &.selected,
   &[aria-checked='true'],
   &[aria-current='true'] {
     background: var(--ds-background-selected);
     color: var(--ds-text-selected);
-
-    &::before {
-      content: '';
-      position: absolute;
-      inset: 0 auto 0 0;
-      width: var(--ds-border-width-selected);
-      background: var(--ds-border-selected);
-    }
 
     &:hover:not(:disabled) {
       background: var(--ds-background-selected-hovered);
@@ -385,12 +405,14 @@
 /* ── SectionMessage ───────────────────────────── */
 .ds-section-message {
   display: flex;
-  gap: var(--ds-space-200);
-  padding: var(--ds-space-200);
+  gap: var(--ds-space-150);
+  padding: var(--ds-space-150);
+  border: var(--ds-border-width) solid var(--ds-border-information);
   border-radius: var(--ds-radius-medium);
   background: var(--ds-background-information);
   color: var(--ds-text);
   font: var(--ds-font-body);
+  line-height: var(--lh-prose);
 
   > :where(svg) {
     flex-shrink: 0;
@@ -399,6 +421,7 @@
 
   &.warning {
     background: var(--ds-background-warning);
+    border-color: var(--ds-border-warning);
 
     > :where(svg) {
       color: var(--ds-icon-warning);
@@ -407,6 +430,7 @@
 
   &.success {
     background: var(--ds-background-success);
+    border-color: var(--ds-border-success);
 
     > :where(svg) {
       color: var(--ds-icon-success);
@@ -415,6 +439,7 @@
 
   &.danger {
     background: var(--ds-background-danger);
+    border-color: var(--ds-border-danger);
 
     > :where(svg) {
       color: var(--ds-icon-danger);
@@ -424,7 +449,7 @@
 
 .ds-section-message-title {
   font: var(--ds-font-heading-xsmall);
-  margin: 2px 0 var(--ds-space-050);
+  margin: 0 0 var(--ds-space-025);
 }
 
 /* Pushes whatever follows to the far end of a bar. */
@@ -437,7 +462,7 @@
 @media (max-width: 640px) {
   .ds-btn:has(.ds-txt) {
     min-width: var(--control-h);
-    padding: 0 var(--ds-space-075);
+    padding: 0 var(--ds-space-050);
   }
 
   .ds-txt {

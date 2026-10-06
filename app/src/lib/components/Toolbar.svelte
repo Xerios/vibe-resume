@@ -211,6 +211,7 @@
 
   .t-title {
     font: var(--ds-font-heading-small);
+    letter-spacing: var(--tracking-tight);
     color: var(--ds-text);
     white-space: nowrap;
   }

@@ -59,7 +59,7 @@
     display: flex;
     align-items: center;
     gap: var(--ds-space-100);
-    padding: var(--ds-space-050) var(--ds-space-150) var(--ds-space-050) var(--ds-space-100);
+    padding: var(--ds-space-025) var(--ds-space-100) var(--ds-space-025) var(--ds-space-075);
   }
 
   .fold-btn {
@@ -87,8 +87,8 @@
     }
 
     &:focus-visible {
-      outline: 2px solid var(--ds-border-focused);
-      outline-offset: -2px;
+      outline: var(--ds-border-width) solid var(--ds-border-focused);
+      outline-offset: -1px;
     }
   }
 
@@ -96,7 +96,7 @@
   :global(.fold-caret) {
     flex-shrink: 0;
     color: var(--ds-icon-subtle);
-    transition: transform 200ms var(--ease);
+    transition: transform 120ms var(--ease);
   }
 
   .fold-label {
@@ -116,6 +116,6 @@
 
   /* Indented to the label, so a group that is open says where it ends. */
   .fold-body {
-    padding: var(--ds-space-050) var(--ds-space-200) var(--ds-space-200);
+    padding: var(--ds-space-025) var(--ds-space-150) var(--ds-space-150);
   }
 </style>

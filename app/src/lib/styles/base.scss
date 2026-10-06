@@ -24,7 +24,16 @@ body {
   color: var(--ds-text);
   background: var(--ds-surface-sunken);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   transition: var(--theme-fade);
+}
+
+/* Highlighting is the one place the accent appears without being asked for,
+   so it is the fill at its palest rather than the browser's own blue. */
+::selection {
+  background: var(--ds-background-selected-hovered);
+  color: var(--ds-text);
 }
 
 /* The access-key letter every control underlines — see access-keys.js for the
@@ -49,8 +58,8 @@ u {
 }
 
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track,
@@ -59,7 +68,7 @@ u {
 }
 
 /* The transparent border is the inset: padding-box clipping keeps the fill
-   inside it, which is what makes a 10px-wide track carry a 6px thumb. */
+   inside it, which is what makes an 8px-wide track carry a 4px thumb. */
 ::-webkit-scrollbar-thumb {
   background: var(--scroll-thumb);
   background-clip: padding-box;

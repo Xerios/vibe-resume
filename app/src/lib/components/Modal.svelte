@@ -78,18 +78,22 @@
     justify-content: center;
     padding: var(--ds-space-200);
     background: var(--ds-blanket);
-    animation: m-fade 200ms var(--ease);
+    animation: m-fade 150ms var(--ease);
   }
 
+  /* A floating surface, dressed like every other one here: the overlay fill
+     inside the same hairline, the dialog's radius, the shadow that separates
+     it from what it covers. */
   .card {
     max-height: 100%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     background: var(--ds-surface-overlay);
-    border-radius: var(--ds-radius-large);
+    border: var(--ds-border-width) solid var(--ds-border);
+    border-radius: var(--ds-radius-xlarge);
     box-shadow: var(--ds-shadow-overlay);
-    animation: m-rise 300ms var(--ease);
+    animation: m-rise 200ms var(--ease);
 
     &:focus {
       outline: none;
@@ -99,22 +103,25 @@
   .head {
     display: flex;
     align-items: center;
-    gap: var(--ds-space-150);
-    padding: var(--ds-space-300) var(--ds-space-300) var(--ds-space-200);
+    gap: var(--ds-space-100);
+    padding: var(--ds-space-250) var(--ds-space-250) var(--ds-space-150);
 
     h2 {
       flex: 1;
       margin: 0;
       font: var(--ds-font-heading-medium);
+      letter-spacing: var(--tracking-tight);
       color: var(--ds-text);
     }
   }
 
+  /* Read rather than scanned, so it takes the prose line height. */
   .body {
     overflow-y: auto;
-    padding: var(--ds-space-025) var(--ds-space-300);
+    padding: 0 var(--ds-space-250);
     font: var(--ds-font-body);
-    color: var(--ds-text);
+    line-height: var(--lh-prose);
+    color: var(--ds-text-subtle);
   }
 
   .foot {
@@ -122,7 +129,7 @@
     justify-content: flex-end;
     flex-wrap: wrap;
     gap: var(--ds-space-100);
-    padding: var(--ds-space-300);
+    padding: var(--ds-space-200) var(--ds-space-250) var(--ds-space-250);
   }
 
   @keyframes m-fade {
@@ -134,7 +141,7 @@
   @keyframes m-rise {
     from {
       opacity: 0;
-      transform: translateY(16px);
+      transform: translateY(4px) scale(0.99);
     }
   }
 

@@ -291,7 +291,7 @@
      shadow like every other menu in the chrome. */
   .cm-tooltip.cm-tooltip-lint {
     background: var(--ds-surface-overlay);
-    border: none;
+    border: var(--ds-border-width) solid var(--ds-border);
     border-radius: var(--ds-radius-medium);
     box-shadow: var(--ds-shadow-overlay);
     overflow: hidden;
@@ -328,7 +328,7 @@
      colours are scoped under a generated `&light`/`&dark` class. */
   .cm-tooltip.cm-tooltip-autocomplete {
     background: var(--ds-surface-overlay);
-    border: none;
+    border: var(--ds-border-width) solid var(--ds-border);
     border-radius: var(--ds-radius-medium);
     box-shadow: var(--ds-shadow-overlay);
     overflow: hidden;
@@ -403,7 +403,7 @@
   /* The line about the selected entry, off to the side. */
   .cm-tooltip.cm-completionInfo {
     background: var(--ds-surface-overlay);
-    border: none;
+    border: var(--ds-border-width) solid var(--ds-border);
     border-radius: var(--ds-radius-medium);
     box-shadow: var(--ds-shadow-overlay);
     padding: var(--ds-space-100) var(--ds-space-150);

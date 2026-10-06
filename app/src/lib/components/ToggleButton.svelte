@@ -30,7 +30,7 @@
     min-height: var(--control-h);
     padding: var(--ds-space-050) var(--ds-space-100);
     background: var(--ds-background-input);
-    border: var(--ds-border-width) solid var(--ds-border-input);
+    border: var(--ds-border-width) solid var(--ds-border);
     border-radius: var(--ds-radius-small);
     cursor: pointer;
     font: var(--ds-font-body);
@@ -41,8 +41,9 @@
       justify-content: center;
     }
 
-    /* The roomy card: its content stacked and centred, for a picture over a
-       caption rather than a glyph beside a label. */
+    /* The roomy option: its content stacked and centred, for a picture over a
+       caption rather than a glyph beside a label. Still a field, not a card —
+       it does not rise, and it casts nothing. */
     &.big {
       flex-direction: column;
       justify-content: center;
@@ -54,24 +55,24 @@
 
     &:hover {
       background: var(--ds-background-input-hovered);
+      border-color: var(--ds-border-hovered);
     }
 
     &:focus-visible {
       outline: none;
       border-color: var(--ds-border-focused);
-      box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-border-focused);
     }
 
-    /* Chosen: the field takes ADS's selected fill and border, the border
-       thickened inward so nothing around it moves. */
+    /* Chosen: the selected fill inside the accent's own edge. The border stays
+       one pixel, so nothing around it moves. */
     &.selected {
       background: var(--ds-background-selected);
       border-color: var(--ds-border-selected);
-      box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-border-selected);
       color: var(--ds-text-selected);
 
       &:hover {
         background: var(--ds-background-selected-hovered);
+        border-color: var(--ds-border-selected);
       }
     }
   }

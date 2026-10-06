@@ -106,7 +106,7 @@
     display: flex;
     align-items: center;
     gap: var(--ds-space-100);
-    padding: var(--ds-space-050) var(--ds-space-050) var(--ds-space-050) var(--ds-space-150);
+    padding: var(--ds-space-025) var(--ds-space-050) var(--ds-space-025) var(--ds-space-100);
 
     h2 {
       margin: 0;
@@ -149,7 +149,7 @@
     display: flex;
     align-items: baseline;
     gap: var(--ds-space-100);
-    padding: var(--ds-space-050) var(--ds-space-050) var(--ds-space-050) var(--ds-space-150);
+    padding: var(--ds-space-025) var(--ds-space-050) var(--ds-space-025) var(--ds-space-100);
     border: 0;
     background: none;
     color: var(--ds-text);
@@ -158,8 +158,8 @@
     cursor: pointer;
 
     &:focus-visible {
-      outline: 2px solid var(--ds-border-focused);
-      outline-offset: -2px;
+      outline: var(--ds-border-width) solid var(--ds-border-focused);
+      outline-offset: -1px;
     }
   }
 

@@ -148,9 +148,9 @@
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    gap: var(--ds-space-150);
+    gap: var(--ds-space-100);
     height: var(--bar-status);
-    padding: 0 var(--ds-space-100) 0 var(--ds-space-200);
+    padding: 0 var(--ds-space-050) 0 var(--ds-space-150);
     background: var(--ds-surface);
     border-top: var(--ds-border-width) solid var(--ds-border);
     z-index: 8;

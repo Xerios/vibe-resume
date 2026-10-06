@@ -203,18 +203,19 @@
     align-items: stretch;
     height: var(--control-h);
     background: var(--ds-background-input);
-    border: var(--ds-border-width) solid var(--ds-border-input);
+    border: var(--ds-border-width) solid var(--ds-border);
     border-radius: var(--ds-radius-small);
     overflow: hidden;
     transition: var(--hover-fade);
 
     &:hover {
       background: var(--ds-background-input-hovered);
+      border-color: var(--ds-border-hovered);
     }
 
+    /* The edge it already has, recoloured — nothing is added around it. */
     &:focus-within {
       border-color: var(--ds-border-focused);
-      box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-border-focused);
     }
   }
 

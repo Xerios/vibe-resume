@@ -960,12 +960,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: var(--ds-space-500) var(--ds-space-300);
+    padding: var(--ds-space-300) var(--ds-space-200);
     background: var(--ds-blanket);
-    animation: cmp-fade 200ms var(--ease);
+    animation: cmp-fade 150ms var(--ease);
   }
 
-  /* ADS's x-large modal: header, a body that takes the room, a footer. */
+  /* The x-large dialog: header, a body that takes the room, a footer. */
   .cmp-card {
     display: flex;
     flex-direction: column;
@@ -973,9 +973,10 @@
     height: 100%;
     overflow: hidden;
     background: var(--ds-surface-overlay);
-    border-radius: var(--ds-radius-large);
+    border: var(--ds-border-width) solid var(--ds-border);
+    border-radius: var(--ds-radius-xlarge);
     box-shadow: var(--ds-shadow-overlay);
-    animation: cmp-rise 300ms var(--ease);
+    animation: cmp-rise 200ms var(--ease);
   }
 
   /* Title, stepping and close as three columns, so the stepping is centred
@@ -986,12 +987,13 @@
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
     gap: var(--ds-space-150);
-    padding: var(--ds-space-300) var(--ds-space-300) var(--ds-space-200);
+    padding: var(--ds-space-150) var(--ds-space-200) var(--ds-space-100);
   }
 
   .cmp-title {
     margin: 0 var(--ds-space-100) 0 0;
-    font: var(--ds-font-heading-medium);
+    font: var(--ds-font-heading-small);
+    letter-spacing: var(--tracking-tight);
     color: var(--ds-text);
   }
 
@@ -1228,7 +1230,7 @@
   @keyframes cmp-rise {
     from {
       opacity: 0;
-      transform: translateY(16px);
+      transform: translateY(4px) scale(0.995);
     }
   }
 

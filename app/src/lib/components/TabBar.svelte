@@ -456,7 +456,7 @@
     display: flex;
     align-items: center;
     gap: var(--ds-space-025);
-    height: calc(var(--bar-tool) - var(--ds-space-150));
+    height: calc(var(--bar-tool) - var(--ds-space-100));
     padding: 0 var(--ds-space-075) 0 var(--ds-space-100);
     color: var(--ds-text-subtle);
     /* A resting tab is still a tab: the neutral fill and a hairline on three
@@ -465,7 +465,7 @@
     background: var(--ds-background-neutral);
     border: var(--ds-border-width) solid var(--ds-border);
     border-bottom: none;
-    border-radius: var(--ds-radius-large) var(--ds-radius-large) 0 0;
+    border-radius: var(--ds-radius-medium) var(--ds-radius-medium) 0 0;
     transition: var(--hover-fade);
 
     &:hover:not(.active) {
@@ -473,10 +473,12 @@
       background: var(--ds-background-neutral-hovered);
     }
 
+    /* Joined to the editor below it, and that is the whole of it: the pane's
+       own fill, run over the bar's rule. No accent — which tab is open is
+       said by the surface it continues, not by a colour. */
     &.active {
       color: var(--ds-text);
       background: var(--ds-surface);
-      border-width: 2px;
       z-index: 1;
     }
 
@@ -509,8 +511,8 @@
     text-overflow: ellipsis;
 
     &:focus-visible {
-      outline: 2px solid var(--ds-border-focused);
-      outline-offset: -2px;
+      outline: var(--ds-border-width) solid var(--ds-border-focused);
+      outline-offset: -1px;
     }
   }
 

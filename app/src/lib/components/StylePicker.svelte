@@ -173,7 +173,7 @@
     display: flex;
     align-items: center;
     gap: var(--ds-space-100);
-    padding: var(--ds-space-150) var(--ds-space-150) var(--ds-space-150) var(--ds-space-200);
+    padding: var(--ds-space-100) var(--ds-space-100) var(--ds-space-100) var(--ds-space-150);
     border-bottom: var(--ds-border-width) solid var(--ds-border);
   }
 
@@ -187,6 +187,7 @@
     h2 {
       margin: 0;
       font: var(--ds-font-heading-small);
+      letter-spacing: var(--tracking-tight);
       color: var(--ds-text);
     }
   }
@@ -221,7 +222,7 @@
   .font-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: var(--ds-space-100);
+    gap: var(--ds-space-050);
   }
 
   /* One row per question — the sizes, then the two orientations — rather than
@@ -229,7 +230,7 @@
   .paper-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: var(--ds-space-100);
+    gap: var(--ds-space-050);
     margin-bottom: var(--ds-space-100);
 
     &.two {
@@ -296,8 +297,8 @@
       bottom: calc(var(--bar-status) + var(--ds-space-100));
       width: min(var(--panel-w), calc(100vw - 2 * var(--ds-space-100)));
       background: var(--ds-surface-overlay);
-      border: none;
-      border-radius: var(--ds-radius-large);
+      border: var(--ds-border-width) solid var(--ds-border);
+      border-radius: var(--ds-radius-xlarge);
       box-shadow: var(--ds-shadow-overlay);
       z-index: 100;
     }

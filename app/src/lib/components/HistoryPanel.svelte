@@ -170,7 +170,7 @@
 
   .hist-head {
     flex-shrink: 0;
-    padding: var(--ds-space-150) var(--ds-space-150) var(--ds-space-200) var(--ds-space-200);
+    padding: var(--ds-space-100) var(--ds-space-100) var(--ds-space-150) var(--ds-space-150);
     border-bottom: var(--ds-border-width) solid var(--ds-border);
   }
 
@@ -178,11 +178,12 @@
     display: flex;
     align-items: center;
     gap: var(--ds-space-100);
-    margin-bottom: var(--ds-space-150);
+    margin-bottom: var(--ds-space-100);
 
     h2 {
       margin: 0;
       font: var(--ds-font-heading-small);
+      letter-spacing: var(--tracking-tight);
       color: var(--ds-text);
     }
   }
@@ -203,7 +204,7 @@
     overflow-y: auto;
     min-height: 0;
     margin: 0;
-    padding: var(--ds-space-100);
+    padding: var(--ds-space-050);
     list-style: none;
   }
 
@@ -228,13 +229,13 @@
     align-items: center;
     gap: var(--ds-space-100);
     width: 100%;
-    min-height: 36px;
+    min-height: 26px;
     text-align: left;
     background: var(--ds-background-neutral-subtle);
     border: none;
     border-radius: var(--ds-radius-small);
     cursor: pointer;
-    padding: var(--ds-space-075) var(--ds-space-100);
+    padding: var(--ds-space-050) var(--ds-space-075);
     font: var(--ds-font-body);
     color: var(--ds-text);
     position: relative;
@@ -249,8 +250,8 @@
     }
 
     &:focus-visible {
-      outline: 2px solid var(--ds-border-focused);
-      outline-offset: -2px;
+      outline: var(--ds-border-width) solid var(--ds-border-focused);
+      outline-offset: -1px;
     }
 
     /* The version on screen: ADS's selected fill, with the selected bar down
@@ -347,7 +348,7 @@
   .hist-empty {
     font: var(--ds-font-body);
     color: var(--ds-text-subtlest);
-    padding: var(--ds-space-300) var(--ds-space-100);
+    padding: var(--ds-space-250) var(--ds-space-100);
     text-align: center;
   }
 
@@ -356,7 +357,7 @@
     display: flex;
     align-items: center;
     gap: var(--ds-space-100);
-    padding: var(--ds-space-100) var(--ds-space-200);
+    padding: var(--ds-space-075) var(--ds-space-150);
     border-top: var(--ds-border-width) solid var(--ds-border);
     font: var(--ds-font-body-small);
     color: var(--ds-text-subtlest);
@@ -374,8 +375,8 @@
       bottom: calc(var(--bar-status) + var(--ds-space-100));
       width: min(var(--panel-w), calc(100vw - 2 * var(--ds-space-100)));
       background: var(--ds-surface-overlay);
-      border: none;
-      border-radius: var(--ds-radius-large);
+      border: var(--ds-border-width) solid var(--ds-border);
+      border-radius: var(--ds-radius-xlarge);
       box-shadow: var(--ds-shadow-overlay);
       z-index: 100;
     }

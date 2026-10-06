@@ -980,7 +980,7 @@
   #error-banner,
   #detached-banner {
     flex-shrink: 0;
-    margin: var(--ds-space-200) var(--ds-space-200) 0;
+    margin: var(--ds-space-150) var(--ds-space-150) 0;
     z-index: 6;
   }
 
@@ -1006,24 +1006,25 @@
   /* ── Toast ────────────────────────────────────── */
   #toast {
     position: fixed;
-    bottom: calc(var(--bar-status) + var(--ds-space-300));
-    left: var(--ds-space-400);
+    bottom: calc(var(--bar-status) + var(--ds-space-200));
+    left: var(--ds-space-300);
     display: flex;
     align-items: flex-start;
-    gap: var(--ds-space-200);
-    width: min(400px, calc(100vw - 2 * var(--ds-space-200)));
-    padding: var(--ds-space-200);
+    gap: var(--ds-space-150);
+    width: min(360px, calc(100vw - 2 * var(--ds-space-200)));
+    padding: var(--ds-space-150);
     background: var(--ds-surface-overlay);
     color: var(--ds-text);
     font: var(--ds-font-body);
     font-weight: var(--ds-font-weight-medium);
-    border-radius: var(--ds-radius-medium);
+    border: var(--ds-border-width) solid var(--ds-border);
+    border-radius: var(--ds-radius-large);
     box-shadow: var(--ds-shadow-overlay);
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(6px);
     transition:
-      opacity 200ms var(--ease),
-      transform 300ms var(--ease);
+      opacity 150ms var(--ease),
+      transform 150ms var(--ease);
     pointer-events: none;
     z-index: 999;
 
